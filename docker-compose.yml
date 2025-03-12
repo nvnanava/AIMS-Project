@@ -1,0 +1,10 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
+
+services:
+  asp-frontend:
+    image: aims
+    build:
+      context: .
+      dockerfile: AIMS/Dockerfile
+    ports:
+      - 5119:5119
