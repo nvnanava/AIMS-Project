@@ -1,0 +1,24 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
+
+services:
+  asp-frontend:
+    image: aims
+    build:
+      context: .
+      dockerfile: AIMS/Dockerfile
+    ports:
+      - 5119:5119
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver2017
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "password"
+      ACCEPT_EULA: "Y"
+    restart: unless-stopped
+    volumes:
+      - sql_data:/var/opt/mssql
+# for data persistence
+volumes:
+  sql_data:
