@@ -14,7 +14,7 @@ services:
     ports:
       - "1433:1433"
     environment:
-      SA_PASSWORD: "password"
+      SA_PASSWORD: "StrongP@ssword!"
       ACCEPT_EULA: "Y"
     restart: unless-stopped
     volumes:
