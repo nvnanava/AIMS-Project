@@ -1,0 +1,181 @@
+/* Summary Card Section */
+.summary-cards-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 200px;
+    margin: 0 auto 20px auto;
+    background-color: #ecf0f1;
+    border: 3px dashed #34495e;
+    border-radius: 8px;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Asset Management Section */
+.asset-management {
+    width: 100%;
+    height: 682px;
+    background-color: #2c3e50;
+    border-radius: 8px;
+    border: 3px solid #34495e;  
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+/* Asset Header */
+.asset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 50px;
+    background-color: #2c3e50;
+    border-bottom: 3px solid #34495e;
+    border-radius: 0;
+    padding: 0px 5px 0px 20px;
+    margin: 0;
+}
+
+.asset-header .left-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.asset-header .right-section {
+    display: flex;
+    align-items: center;
+}
+
+/* Search Bar */
+.search-container {
+    display: flex;
+    align-items: center;
+    width: 400px;
+    height: 41px;
+    background-color: #ecf0f1;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 5px 12px;
+    transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.search-input {
+    flex: 1;
+    background-color: transparent;
+    text-align: end;
+    border: none;
+    outline: none;
+    padding: 0px;
+}
+
+.search-input:focus {
+    box-shadow: none;
+}
+
+.search-container:focus-within {
+    border-color: #1abc9c;
+    box-shadow: 0 0 8px rgba(26, 188, 156, 0.7);
+}
+
+/* Search Icon */
+.search-icon {
+    background-color: transparent;
+    color: #ecf0f1;
+    border: none;
+    padding: 5px 5px;
+    border-radius: 20px;
+    transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.search-icon:hover {
+    background-color: #d5dbdb;
+}
+
+/* View Full List and Assign Asset Button */
+.view-full-list-button, .assign-asset-button {
+    height: 41px;
+    padding: 0px 16px;
+    background-color: #ecf0f1;
+    color: #34495e;
+    line-height: normal;
+    border: none;
+    box-shadow: inset 0 0 0 3px #00000010;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.assign-asset-button {
+    margin-left: auto;
+    margin-inline-end: 10px;
+    writing-mode: horizontal-tb;
+}
+
+/* Table Styles */
+.table-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    border-radius: 0;
+}
+
+.asset-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ecf0f1;
+}
+
+.asset-table th, .asset-table td {
+    padding: 12px;
+    text-align: center;
+}
+
+.asset-table th {
+    height: 55px;
+    color: #34495e;
+}
+
+.asset-table thead tr, .asset-table tbody tr {
+    border-bottom: 1px solid #34495e;
+}
+
+.asset-table tbody tr:nth-child(even) {
+    background-color: #0000000a;
+}
+
+.asset-table tbody tr:nth-child(odd) {
+    background-color: transparent;
+}
+
+/* Sort Button */
+.sort-btn {
+    background-color: #ecf0f1;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-color: #2c3e50;
+    border-radius: 20px;
+    font-size: 18px;
+    height: 41px;
+    padding: 0px 16px;
+    cursor: pointer;
+    box-shadow: 0px 4px 4px 0px #0000003e;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Status Badges */
+.status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 18px;
+    color: #34495e;
+    box-shadow: 0px 4px 4px 0px #0000003e;
+}
+
+.status.assigned {
+    background-color: #4caf4f5f;
+}
+
+.status.available {
+    background-color: blue;
+}
