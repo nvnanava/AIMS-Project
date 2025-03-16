@@ -1,4 +1,3 @@
-docker compose -p aims build
-docker compose -p aims up -d
+docker compose -p aims up --watch
 docker compose ps
 docker compose logs
