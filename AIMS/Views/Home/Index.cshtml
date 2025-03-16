@@ -2,7 +2,178 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- Placeholder for Summary Cards -->
+<div class="summary-cards-placeholder"
+    <p>Summary Cards Placeholder - Replace this with summary cards section</p>
 </div>
+
+<!-- Asset Table Section -->
+<div class="asset-management">
+    <div class="asset-header">
+        <div class="left-section">
+            <div class="search-container">
+                <span class="input-group-text search-icon" id="search-addon" onclick="triggerSearch()">🔍</span>
+                <input type="text" class="form-control search-input" placeholder="Search for assets or employees..."
+                    aria-label="Search" aria-describedby="search-addon">
+            </div>
+            <button class="view-full-list-button">View Full List | 📋 | ≡</button>
+        </div>
+        <div class="right-section">
+            <button class="assign-asset-button">Assign Asset | 🔗</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="asset-table">
+            <thead>
+                <tr>
+                    <th scope="col">
+                        <button class="sort-btn" onclick="toggleSort(this)">
+                            <span class="sort-text">Asset Name</span>
+                            <span class="sort-icon">🔼</span>
+                        </button>
+                    </th>
+                    <th scope="col">
+                        <button class="sort-btn" onclick="toggleSort(this)">
+                            <span class="sort-text">Type</span>
+                            <span class="sort-icon">🔼</span>
+                        </button>
+                    </th>
+                    <th scope="col">
+                        <button class="sort-btn" onclick="toggleSort(this)">
+                            <span class="sort-text">Tag #</span>
+                            <span class="sort-icon">🔼</span>
+                        </button>
+                    </th>
+                    <th scope="col">
+                        <button class="sort-btn" onclick="toggleSort(this)">
+                            <span class="sort-text">Assigned To</span>
+                            <span class="sort-icon">🔼</span>
+                        </button>
+                    </th>
+                    <th scope="col">
+                        <button class="sort-btn" onclick="toggleSort(this)">
+                            <span class="sort-text">Status</span>
+                            <span class="sort-icon">🔼</span>
+                        </button>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr>
+                    <td>Lenovo ThinkPad E16</td>
+                    <td>Laptop</td>
+                    <td>LT-0020</td>
+                    <td>John Smith (28609)</td>
+                    <td><span class="status assigned">Assigned</span></td>
+                </tr>
+                <tr>
+                    <td>Dell S2421NX</td>
+                    <td>Monitor</td>
+                    <td>MN-0001</td>
+                    <td>Jane Doe (69444)</td>
+                    <td><span class="status assigned">Assigned</span></td>
+                </tr>
+                <tr>
+                    <td>Logitech Zone 300</td>
+                    <td>Headset</td>
+                    <td>HS-0008</td>
+                    <td>Unassigned</td>
+                    <td><span class="status available">Available</span></td>
+                </tr>
+                <tr>
+                    <td>Lenovo IdeaCentre 3</td>
+                    <td>Desktop</td>
+                    <td>DT-0011</td>
+                    <td>Randy Orton (58344)</td>
+                    <td><span class="status available">Damaged</span></td>
+                </tr>
+                <tr>
+                    <td>Microsoft 365 Business</td>
+                    <td>Software</td>
+                    <td>SW-0100</td>
+                    <td>Robin Williams (10971)</td>
+                    <td><span class="status available">Assigned</span></td>
+                </tr>
+                <tr>
+                    <td>HP 527SH</td>
+                    <td>Monitor</td>
+                    <td>MN-0023</td>
+                    <td>Sarah Johnson (62241)</td>
+                    <td><span class="status available">In Repair</span></td>
+                </tr>
+                <tr>
+                    <td>HP Pavillion TP01-2234</td>
+                    <td>Desktop</td>
+                    <td>DT-0075</td>
+                    <td>Unassigned</td>
+                    <td><span class="status available">Available</span></td>
+                </tr>
+                <tr>
+                    <td>Samsung Galaxy Book4</td>
+                    <td>Laptop</td>
+                    <td>LT-0005</td>
+                    <td>Caitlin Clark (90334)</td>
+                    <td><span class="status available">Damaged</span></td>
+                </tr>
+                <tr>
+                    <td>Logitech Zone Vibe 100</td>
+                    <td>Headset</td>
+                    <td>HS-0015</td>
+                    <td>Brian Regan (27094)</td>
+                    <td><span class="status available">In Repair</span></td>
+                </tr>
+                <tr>
+                    <td>Belkin BoostCharge 3.3ft USB-C</td>
+                    <td>Charging Cable</td>
+                    <td>CC-0088</td>
+                    <td>Unassigned</td>
+                    <td><span class="status available">Available</span></td>
+                </tr>
+                <tr>
+                    <td>Dell Inspiron 3030</td>
+                    <td>Desktop</td>
+                    <td>DT-0100</td>
+                    <td>Maximillian Brandt (48291)</td>
+                    <td><span class="status available">Assigned</span></td>
+                </tr>
+                <tr>
+                    <td>Poly Voyager 4320</td>
+                    <td>Headset</td>
+                    <td>HS-0001</td>
+                    <td>Emily Carter (47283)</td>
+                    <td><span class="status available">In Repair</span></td>
+                </tr>
+                <tr>
+                    <td>j5Create 100W Super Charger</td>
+                    <td>Charging Cable</td>
+                    <td>CC-0019</td>
+                    <td>Bruce Wayne (34532)</td>
+                    <td><span class="status available">Damaged</span></td>
+                </tr>
+                <tr>
+                    <td>Dell Inspiron 15</td>
+                    <td>Laptop</td>
+                    <td>LT-0115</td>
+                    <td>Kate Rosenberg (93232)</td>
+                    <td><span class="status available">Assigned</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function toggleSort(button) {
+        let icon = button.querySelector(".sort-icon");
+        icon.textContent = icon.textContent === "🔽" ?  "🔼" : "🔽";
+    }
+</script>
+
+<script>
+    function triggerSearch() {
+        let searchInput = document.querySelector('.search-input');
+        alert("Searching for: " + searchInput.value);
+        // Later, we can replace this with the actual search function
+    }
+</script>
