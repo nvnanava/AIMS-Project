@@ -13,8 +13,6 @@ services:
     build:
       context: .
       dockerfile: AIMS/Dockerfile
-    depends on:
-      - backend
     develop:
       watch:
         - action: rebuild
@@ -23,8 +21,8 @@ services:
     #   - backend
     ports:
       - 5119:5119
-    networks:
-      - new-bridge-net
+   # networks:
+     # - new-bridge-net
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver2022
