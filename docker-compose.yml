@@ -13,6 +13,8 @@ services:
     build:
       context: .
       dockerfile: AIMS/Dockerfile
+    depends on:
+      - backend
     develop:
       watch:
         - action: rebuild
