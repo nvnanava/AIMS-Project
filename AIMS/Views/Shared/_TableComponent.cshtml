@@ -1,0 +1,56 @@
+@model Tuple<List<string>, List<Dictionary<string, string>>>
+
+<div class="table-container">
+    <table class="asset-table">
+        <thead>
+            <tr>
+                @foreach (var header in Model.Item1) {
+                    <th scope="col">
+                        <button class="sort-btn" onclick="toggleSort(this)">
+                            <span class="sort-text">@header</span>
+                            <span class="sort-icon">🔼</span>
+                        </button>
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            @if (Model.Item2.Count == 0) {
+                <tr><td colspan="@Model.Item1.Count" style="text-align: center;">No data available</td></tr>
+            } else {
+                @foreach (var row in Model.Item2) {
+                    <tr>
+                        @foreach (var header in Model.Item1) {
+                            <td>@(row.ContainsKey(header) ? row[header] : "-")</td>
+                        }
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function toggleSort(button) {
+        let icon = button.querySelector(".sort-icon");
+        let column = button.closest("th").cellIndex;
+        let table = document.querySelector("table");
+        let tbody = table.querySelector(" tbody");
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+
+        let ascending = icon.textContent === "🔽";
+        icon.textContent = ascending ? "🔼" : "🔽";
+
+        rows.sort((rowA, rowB) => {
+            let cellA = rowA.cells[column].textContent.trim();
+            let cellB = rowB.cells[column].textContent.trim();
+            
+            return ascending 
+                ? cellA.localeCompare(cellB, undefined, { numeric: true }) 
+                : cellB.localeCompare(cellA, undefined, { numeric: true });
+        });
+        
+        tbody.innerHTML = "";
+        rows.forEach(row => table.appendChild(row));
+    }
+</script>

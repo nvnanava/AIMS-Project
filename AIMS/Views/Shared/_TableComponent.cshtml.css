@@ -1,0 +1,83 @@
+/* Table Styles */
+.table-container {
+    max-height: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 0;
+}
+
+.asset-table {
+     width: 100%;
+    border-collapse: collapse;
+    background-color: #ecf0f1;
+}
+
+.asset-table th, .asset-table td {
+    padding: 12px;
+    text-align: center;
+}
+
+.asset-table th {
+    height: 55px;
+    color: #34495e;
+}
+
+.asset-table thead {
+    position: sticky;
+    top: 0;
+    background-color: #ecf0f1;
+    z-index: 2;
+}
+
+.asset-table thead tr, .asset-table tbody tr {
+    border-bottom: 1px solid #34495e;
+}
+
+.asset-table tbody tr:nth-child(even) {
+    background-color: #0000000a;
+}
+
+.asset-table tbody tr:nth-child(odd) {
+    background-color: transparent;
+}
+
+/* Sort Button */
+.sort-btn {
+    background-color: #ecf0f1;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-color: #2c3e50;
+    border-radius: 20px;
+    font-size: 18px;
+    height: 41px;
+    padding: 0px 16px;
+    cursor: pointer;
+    box-shadow: 0px 4px 4px 0px #0000003e;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Status Badges */
+.status {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 18px;
+    color: #34495e;
+    box-shadow: 0px 4px 4px 0px #0000003e;
+}
+
+.status.assigned {
+    background-color: #0080ff29;
+}
+
+.status.available {
+    background-color: #4caf4f29;
+}
+
+.status.damaged {
+    background-color: #ff000029
+}
+
+.status.inrepair {
+    background-color: #fff20029;
+}
