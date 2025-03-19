@@ -77,7 +77,6 @@
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
 </div>
 
-<script>
     function triggerSearch() {
         let searchInput = document.querySelector('.search-input');
         alert("Searching for: " + searchInput.value);
