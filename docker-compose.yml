@@ -1,6 +1,13 @@
 # Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
 
 services:
+  backend: 
+    build: 
+      - ./backend
+    ports:
+      - 5000:5000
+    networks:
+      - new-bridge-net
   asp-frontend:
     image: aims
     build:
@@ -10,6 +17,8 @@ services:
       watch:
         - action: rebuild
           path: .
+    depends on:
+      - backend
     ports:
       - 5119:5119
     networks:
@@ -28,3 +37,13 @@ services:
 networks:
   new-bridge-net:
     driver: bridge
+    volumes:
+      - sql_data:/var/opt/mssql
+    networks:
+      - new-bridge-net
+networks:
+  new-bridge-net:
+    driver: bridge
+# for data persistence
+volumes:
+  sql_data:
