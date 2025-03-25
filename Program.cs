@@ -1,16 +1,31 @@
+using Microsoft.EntityFrameworkCore;
+using AssetTrackingSystem.Data;
+using AssetTrackingSystem.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
-builder.Services.AddRazorPages(); // Enables Razor Pages
+builder.Services.AddRazorPages();
+
+builder.Services.AddDbContext<AssetDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var db = scope.ServiceProvider.GetRequiredService<AssetDbContext>();
+    if (!db.Assets.Any())
+    {
+        db.Assets.Add(new Asset
+        {
+            Name = "Test Asset",
+            Type = "Type A",
+            Status = "Active",
+            Team = "Team X"
+        });
+        db.SaveChanges();
+    }
 }
-
-app.UseHttpsRedirection();
 
 app.MapRazorPages();
 
