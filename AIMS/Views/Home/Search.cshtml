@@ -1,7 +1,7 @@
 @{
   ViewData["Title"] = "Search";
-  var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
+  var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
   // Define Table Data
   var tableData = new List<Dictionary<string, string>> {
 new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
@@ -40,7 +40,7 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
 new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
 {"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"},
 {"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"},
+new Dictionary<string, string> { {"Asset Name", "100W Super Charger"},
 {"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"},
 {"Status", "Damaged"} },
 new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
@@ -49,4 +49,27 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 };
 }
 
-<div>Nice!</div>
+<div class="table-container">
+  <table class="asset-table">
+    <tbody id="table-body">
+      @if (tableData.Count == 0)
+      {
+        <tr>
+          <td colspan="@tableData.Count" style="text-align: center;">No data available</td>
+        </tr>
+      }
+      else
+      {
+        @foreach (var row in tableData)
+        {
+          <tr>
+            @foreach (var header in tableHeaders)
+            {
+              <td>@(row.ContainsKey(header) ? row[header] : "-")</td>
+            }
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>
