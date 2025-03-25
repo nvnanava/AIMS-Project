@@ -10,13 +10,8 @@
 .asset-table {
   width: 100%;
   border-collapse: separate;
-  background-color: #ecf0f1;
+  /* background-color: #ecf0f1; */
   border-spacing: 0px 10px;
-}
-
-.asset-table tbody tr {
-  margin-top: 10px;
-  margin-bottom: 10px;
 }
 
 .asset-table th,
@@ -28,6 +23,7 @@
 .asset-table thead tr,
 .asset-table tbody tr {
   border-bottom: 1px solid #34495e;
+  height: 150px;
 }
 
 .asset-table tbody tr:nth-child(even) {
@@ -35,7 +31,7 @@
 }
 
 .asset-table tbody tr:nth-child(odd) {
-  background-color: transparent;
+  background-color: #ecf0f1;
 }
 
 

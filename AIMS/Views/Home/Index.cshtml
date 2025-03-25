@@ -64,11 +64,9 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
                 <input type="text" class="form-control search-input" placeholder="Search for assets or employees..."
                     aria-label="Search" aria-describedby="search-addon">
             </div>
-            <form asp-controller="Home" asp-action="Search">
-                <button class="view-full-list-button">View Full
-                    List | 📋
-                    | ≡</button>
-            </form>
+            <div class="view-full-list-button">
+                <a class="view-full-list-link" href="@Url.Action("Search", "Home")">View Full List | 📋 | ≡</a>
+            </div>
         </div>
         <div class="right-section">
             <button class="assign-asset-button">Assign Asset | 🔗</button>
