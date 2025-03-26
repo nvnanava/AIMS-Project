@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using AssetTrackingSystem.Data;
+using AssetTrackingSystem.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace AssetTrackingSystem.Pages
