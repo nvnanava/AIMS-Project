@@ -81,9 +81,10 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
 </div>
 
-function triggerSearch() {
-let searchInput = document.querySelector('.search-input');
-alert("Searching for: " + searchInput.value);
-// Later, we can replace this with the actual search function
-}
+<script>
+    function triggerSearch() {
+        let searchInput = document.querySelector('.search-input');
+        alert("Searching for: " + searchInput.value);
+        // Later, we can replace this with the actual search function
+    }
 </script>

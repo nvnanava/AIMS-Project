@@ -52,11 +52,11 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 <div class="table-container">
   <table class="asset-table">
     <thead>
-      <tr>
+      <tr class="search-container">
         @foreach (var header in tableHeaders)
         {
           <th scope="col">
-            <input class="sort-text" type="text" name="@header" placeholder="@("Filter by " + header)" />
+            <input class="search-input" type="text" name="@header" id="@header" placeholder="@("Filter by " + header)" />
           </th>
         }
       </tr>
@@ -72,10 +72,10 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
       {
         @foreach (var row in tableData)
         {
-          <tr>
+          <tr class="result">
             @foreach (var header in tableHeaders)
             {
-              <td>@(row.ContainsKey(header) ? row[header] : "-")</td>
+              <td id="@header">@(row.ContainsKey(header) ? row[header] : "-")</td>
             }
           </tr>
         }
@@ -83,3 +83,31 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     </tbody>
   </table>
 </div>
+
+<script>
+
+  function filter(e) {
+    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.key === 'Tab') {
+      return;
+    }
+    const inputValue = e.target.value;
+    const results = document.querySelectorAll(".result");
+    const header = e.target.getAttribute('name');
+
+    for (const result of results) {
+      const filter_row = result.querySelector(`[id="${header}"]`);
+      if (filter_row.innerHTML.toLowerCase().includes(inputValue.toLowerCase())) {
+        result.style.display = "";
+      } else {
+        result.style.display = "none";
+      }
+    }
+  }
+
+  const inputs = document.querySelectorAll(".search-input");
+
+  for (const input of inputs) {
+    input.addEventListener("keydown", filter)
+  }
+
+</script>
