@@ -1,7 +1,43 @@
-<tr>
-  <td>
-    <a asp-page="/AssetOverview" asp-route-id="@item.Id">@item.Name</a>
-  </td>
-  <!-- other columns -->
-</tr>
+@page
+@model AssetTrackingSystem.Pages.AssetListModel
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Asset List</title>
+    <link rel="stylesheet" href="~/css/custom.css" />
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Asset Dashboard</h1>
+    </nav>
+
+    <div class="container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Asset Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Team</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Assets)
+                {
+                    <tr>
+                        <td>
+                            <a asp-page="/AssetOverview" asp-route-id="@item.Id">@item.Name</a>
+                        </td>
+                        <td>@item.Type</td>
+                        <td>@item.Status</td>
+                        <td>@item.Team</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
 
