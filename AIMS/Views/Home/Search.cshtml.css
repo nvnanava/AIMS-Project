@@ -5,10 +5,12 @@
   overflow-x: auto;
   overflow-y: auto;
   border-radius: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .asset-table {
-  width: 100%;
+  width: 90%;
   border-collapse: separate;
   /* background-color: #ecf0f1; */
   border-spacing: 0px 10px;
@@ -20,10 +22,24 @@
   text-align: center;
 }
 
-.asset-table thead tr,
-.asset-table tbody tr {
+.asset-table thead tr {
   border-bottom: 1px solid #34495e;
+}
+
+.asset-table tbody tr {
   height: 150px;
+}
+
+.asset-table tbody tr>td:first-child {
+  border-width: 1px 0px 1px 1px;
+}
+
+.asset-table tbody tr>td:not(:first-child):not(:last-child) {
+  border-width: 1px 0px;
+}
+
+.asset-table tbody tr>td:last-child {
+  border-width: 1px 1px 1px 0px;
 }
 
 .asset-table tbody tr:nth-child(even) {

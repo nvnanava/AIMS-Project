@@ -51,6 +51,16 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 
 <div class="table-container">
   <table class="asset-table">
+    <thead>
+      <tr>
+        @foreach (var header in tableHeaders)
+        {
+          <th scope="col">
+            <span class="sort-text">@header</span>
+          </th>
+        }
+      </tr>
+    </thead>
     <tbody id="table-body">
       @if (tableData.Count == 0)
       {
