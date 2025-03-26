@@ -13,6 +13,7 @@
             margin: 0;
             padding: 0;
         }
+
         /* Navbar */
         .navbar {
             background-color: #2C3E50;
@@ -20,11 +21,13 @@
             padding: 20px;
             text-align: center;
         }
+
         .breadcrumb {
             font-size: 14px;
             color: #BDC3C7;
             margin-top: 5px;
         }
+
         /* Form Container */
         .container {
             max-width: 800px;
@@ -34,15 +37,18 @@
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
         /* Form Elements */
         h2 {
             color: #34495E;
         }
+
         label {
             display: block;
             font-weight: bold;
             margin-top: 10px;
         }
+
         input, select {
             width: 100%;
             padding: 10px;
@@ -50,10 +56,12 @@
             border: 1px solid #BDC3C7;
             border-radius: 5px;
         }
+
         input:focus, select:focus {
             border-color: #1ABC9C;
             outline: none;
         }
+
         /* Employee Assignment Toggle */
         .toggle-switch {
             display: flex;
@@ -62,18 +70,23 @@
             margin-top: 20px;
             cursor: pointer;
         }
+
         .toggle-switch input {
             margin-left: 10px;
         }
+
+        /* Hide Employee Fields Initially */
         .hidden {
             display: none;
         }
+
         /* Buttons */
         .button-group {
             display: flex;
             justify-content: space-between;
             margin-top: 20px;
         }
+
         .save-btn {
             background-color: #1ABC9C;
             color: white;
@@ -82,6 +95,7 @@
             cursor: pointer;
             border-radius: 5px;
         }
+
         .cancel-btn {
             background-color: #BDC3C7;
             color: #34495E;
@@ -90,9 +104,11 @@
             cursor: pointer;
             border-radius: 5px;
         }
+
         .save-btn:hover {
             background-color: #16A085;
         }
+
         .cancel-btn:hover {
             background-color: #7F8C8D;
         }
@@ -103,12 +119,13 @@
     <!-- Navigation Bar -->
     <nav class="navbar">
         <h1>Register New Asset</h1>
-        <p class="breadcrumb">Home > Asset Management > Register New Asset</p>
+        <p class="breadcrumb">Home &gt; Asset Management &gt; Register New Asset</p>
     </nav>
 
     <!-- Form Container -->
     <div class="container">
         <form id="assetForm">
+            
             <h2>Asset Information</h2>
 
             <label for="asset-name">Asset Name</label>
@@ -154,6 +171,7 @@
                 <option>Storage</option>
             </select>
 
+            <!-- Employee Assignment Toggle -->
             <h2>Employee Assignment</h2>
             <label class="toggle-switch">
                 Assign Asset to Employee?
@@ -175,6 +193,7 @@
                 </select>
             </div>
 
+            <!-- Action Buttons -->
             <div class="button-group">
                 <button type="submit" class="save-btn">Save Asset</button>
                 <button type="button" class="cancel-btn" onclick="resetForm()">Cancel</button>
