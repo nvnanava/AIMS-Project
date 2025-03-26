@@ -1,1 +1,1 @@
-docker compose -p aims start 
+docker compose -p aims up --watch
