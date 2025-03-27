@@ -52,7 +52,7 @@
 } 
 
 <!-- Placeholder for Summary Cards -->
-<div class="summary-cards-placeholder"
+<div class="summary-cards-placeholder">
     <p>Summary Cards Placeholder - Replace this with summary cards section</p>
 </div>
 
@@ -60,26 +60,53 @@
 <div class="asset-management">
     <div class="asset-header">
         <div class="left-section">
-            <div class="search-container">
-                <span class="input-group-text search-icon" id="search-addon" onclick="triggerSearch()">🔍</span>
-                <input type="text" class="form-control search-input" placeholder="Search for assets or employees..."
-                    aria-label="Search" aria-describedby="search-addon">
-            </div>
-            <button class="view-full-list-button">View Full List | 📋 | ≡</button>
+            <!-- Search Form -->
+            <form method="get" asp-action="Index">
+                <div class="search-container">
+                    <span class="input-group-text search-icon" id="search-addon" onclick="triggerSearch()">🔍</span>
+                    <input type="text" name="search" class="form-control search-input" 
+                           placeholder="Search for assets or employees..."
+                           value="@Context.Request.Query["search"]">
+                </div>
+                <button type="submit" class="view-full-list-button">Search</button>
+            </form>
         </div>
         <div class="right-section">
             <button class="assign-asset-button">Assign Asset | 🔗</button>
         </div>
     </div>
 
-    <!-- Include Table Component -->
-    @if (tableHeaders == null || tableData == null) { <p style="color: red;">Table Data is Missing!</p>}
-    @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
+    <div class="table-container">
+        <table class="asset-table">
+            <thead>
+                <tr>
+                    <th>
+                        <a asp-action="Index" asp-route-sortBy="name">Asset Name</a>
+                    </th>
+                    <th>
+                        <a asp-action="Index" asp-route-sortBy="type">Type</a>
+                    </th>
+                    <th>Tag #</th>
+                    <th>
+                        <a asp-action="Index" asp-route-sortBy="assigned">Assigned To</a>
+                    </th>
+                    <th>
+                        <a asp-action="Index" asp-route-sortBy="status">Status</a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var asset in Model)
+                {
+                    <tr>
+                        <td>@asset.Name</td>
+                        <td>@asset.Type</td>
+                        <td>@asset.TagNumber</td>
+                        <td>@(string.IsNullOrEmpty(asset.AssignedTo) ? "Unassigned" : asset.AssignedTo)</td>
+                        <td><span class="status @asset.Status.ToLower()">@asset.Status</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
-
-    function triggerSearch() {
-        let searchInput = document.querySelector('.search-input');
-        alert("Searching for: " + searchInput.value);
-        // Later, we can replace this with the actual search function
-    }
-</script>
