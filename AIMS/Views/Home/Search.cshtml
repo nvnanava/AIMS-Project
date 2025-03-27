@@ -84,30 +84,73 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
   </table>
 </div>
 
-<script>
+<script type="text/javascript">
 
+  /**
+  This function verifies that a row satisfies a header input's current inputted value.
+
+  It accepts the relevant header name, and the row to verify.
+  */
+  function validateCellUsingHeader(header, row) {
+    // if the row text does not include a filter's current value, it does not satisfy the rule.
+    if (!row.innerHTML.toLowerCase().includes(inputState[header].toLowerCase())) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  /**
+    This is the generalized callback function which will break called when an input's state changes.
+
+    Based on the new value, it will filter out any rules. It makes use of global state to have multiple
+    filters apply at once.
+
+    to avoid more calls to the database aside from the initial page load, we use HTML manipulation.
+  */
   function filter(e) {
+    // stop this function from running on modifier keys
     if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.key === 'Tab') {
       return;
     }
+
+    // new inputted value
     const inputValue = e.target.value;
-    const results = document.querySelectorAll(".result");
     const header = e.target.getAttribute('name');
 
+    // update the state
+    inputState[header] = inputValue;
+
+    // get all the rows
+    const results = document.querySelectorAll(".result");
+
+    // validate each row
     for (const result of results) {
-      const filter_row = result.querySelector(`[id="${header}"]`);
-      if (filter_row.innerHTML.toLowerCase().includes(inputValue.toLowerCase())) {
-        result.style.display = "";
-      } else {
-        result.style.display = "none";
+      // check all headers:
+      for (let i = 0; i < headers.length; i++) {
+        if (!validateCellUsingHeader(headers[i], result)) {
+          result.style.display = "none";
+          break;
+        }
+        // if last header check passes, this row is not filtered
+        if (i == headers.length - 1) {
+          result.style.display = "";
+        }
       }
     }
   }
 
   const inputs = document.querySelectorAll(".search-input");
+  // use the name attributes of the inputs to get the header names.
+  const headers = Array.from(inputs).map(elem => elem.getAttribute("name"));
 
+  // create an empty state for each header at the start
+  const inputState = Object.fromEntries(headers.map((h) => [h, '']));
+
+  // assign an event listener for each input (will activate on: keyboard entry,entry from 
+  // non-keyboard sources).
   for (const input of inputs) {
-    input.addEventListener("keydown", filter)
+    input.addEventListener("input", filter)
   }
 
 </script>
