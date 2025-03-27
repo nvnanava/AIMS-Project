@@ -84,11 +84,11 @@
 }
 
 .asset-table tbody tr:nth-child(even) {
-  background-color: #0000000a;
+  background-color: #ECF0F1;
 }
 
 .asset-table tbody tr:nth-child(odd) {
-  background-color: #ecf0f1;
+  background-color: #E0E4E5;
 }
 
 
