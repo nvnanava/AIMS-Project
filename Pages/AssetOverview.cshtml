@@ -1,0 +1,41 @@
+@page "{id:int}"
+@model AssetTrackingSystem.Pages.AssetOverviewModel
+@{
+    ViewData["Title"] = "Asset Overview";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        .container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #34495E; margin-bottom: 16px; }
+        .card { border: 1px solid #BDC3C7; border-radius: 8px; }
+        .card-body { padding: 16px; }
+        .card-title { font-size: 1.25rem; font-weight: bold; }
+        .card-text { margin-top: 8px; font-size: 1rem; }
+        .back-link { display: inline-block; margin-bottom: 16px; color: #1ABC9C; text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a asp-page="/AssetList" class="back-link">← Back to Dashboard</a>
+        <h1>Asset Overview</h1>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">@Model.AssetName</h5>
+                <p class="card-text">
+                    <strong>Type:</strong> @Model.AssetType<br />
+                    <strong>Status:</strong> @Model.AssetStatus<br />
+                    <strong>Team:</strong> @Model.Team
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
