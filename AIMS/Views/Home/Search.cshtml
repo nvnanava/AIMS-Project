@@ -72,7 +72,7 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
       {
         @foreach (var row in tableData)
         {
-          <tr class="result">
+          <tr class="result" applied-filters="0">
             @foreach (var header in tableHeaders)
             {
               <td id="@header">@(row.ContainsKey(header) ? row[header] : "-")</td>
@@ -91,20 +91,20 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 
   It accepts the relevant header name, and the row to verify.
   */
-  function validateCellUsingHeader(header, row) {
+  function validateCellUsingHeader(header, cell, inputValue) {
     // if the row text does not include a filter's current value, it does not satisfy the rule.
-    if (!row.innerHTML.toLowerCase().includes(inputState[header].toLowerCase())) {
-      return false;
-    } else {
+    if (cell.innerHTML.toLowerCase().includes(inputValue.toLowerCase())) {
       return true;
+    } else {
+      return false;
     }
   }
 
   /**
     This is the generalized callback function which will break called when an input's state changes.
 
-    Based on the new value, it will filter out any rules. It makes use of global state to have multiple
-    filters apply at once.
+    Based on the new value, it will filter out any rules. It uses bit flags to keep track of
+    which rows to display (applied-filters === 0 => display row)
 
     to avoid more calls to the database aside from the initial page load, we use HTML manipulation.
   */
@@ -115,37 +115,63 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     }
 
     // new inputted value
-    const inputValue = e.target.value;
+    const inputValue = e.target.value.trim();
     const header = e.target.getAttribute('name');
-
-    // update the state
-    inputState[header] = inputValue;
 
     // get all the rows
     const results = document.querySelectorAll(".result");
 
     // validate each row
     for (const result of results) {
-      // check all headers:
-      for (let i = 0; i < headers.length; i++) {
-        if (!validateCellUsingHeader(headers[i], result)) {
-          result.style.display = "none";
-          break;
+      // relevant cell in the row that corresponds to the header
+      const filterCell = result.querySelector(`[id="${header}"]`);
+
+      // relevant boolean flags for our filter
+      let relevantFlag = headerFlags[header];
+
+      // get state of previous filter applications
+      const appliedFiltersAttribute = parseInt(result.getAttribute("applied-filters"));
+
+      // updated attribute after boolean logic
+      let newFiltersAttribute = appliedFiltersAttribute;
+
+      // bool: does a new filter apply?
+      const filterApplies = !validateCellUsingHeader(header, filterCell, inputValue);
+
+      // if a filter applies to this row
+      if (filterApplies) {
+        // only do a document manipulation if the filter doesn't already exist
+        if (!((appliedFiltersAttribute | relevantFlag) === appliedFiltersAttribute)) {
+          newFiltersAttribute = appliedFiltersAttribute | relevantFlag;
+          result.setAttribute("applied-filters", newFiltersAttribute);
         }
-        // if last header check passes, this row is not filtered
-        if (i == headers.length - 1) {
-          result.style.display = "";
-        }
+      } else if (!filterApplies && appliedFiltersAttribute !== 0) {
+        // otherwise, remove the filter
+        newFiltersAttribute = appliedFiltersAttribute & ~relevantFlag;
+        result.setAttribute("applied-filters", newFiltersAttribute);
+      }
+
+      // if some filter applies
+      if (newFiltersAttribute !== 0) {
+        // turn off display
+        result.style.display = "none";
+      } else {
+        // otherwise, enable display
+        result.style.display = "";
       }
     }
   }
 
   const inputs = document.querySelectorAll(".search-input");
-  // use the name attributes of the inputs to get the header names.
-  const headers = Array.from(inputs).map(elem => elem.getAttribute("name"));
 
-  // create an empty state for each header at the start
-  const inputState = Object.fromEntries(headers.map((h) => [h, '']));
+  // these bit flags are used to notate which flags apply to any result row n
+  const headerFlags = {
+    ["Asset Name"]: 1 << 0,
+    ["Type"]: 1 << 1,
+    ["Tag #"]: 1 << 2,
+    ["Assignment"]: 1 << 3,
+    ["Status"]: 1 << 4
+  };
 
   // assign an event listener for each input (will activate on: keyboard entry,entry from 
   // non-keyboard sources).
