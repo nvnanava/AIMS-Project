@@ -1,0 +1,74 @@
+.report-page-size {
+    width: 95%;
+    margin: 0 auto 20px auto;
+}
+
+/* Report Management Section */
+.report-management {
+    width: 100%;
+    height: auto;
+    background-color: #FFFFFF;
+    margin: 0 auto 20px auto;
+    overflow: visible;
+}
+
+/* Report Header */
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    height: 50px;
+    padding: 0px 5px 0px 20px;
+    margin: 0;
+}
+
+.report-header .left-section {
+    display: flex;
+    align-items: center;
+}
+
+.report-header .right-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Search Bar */
+.search-container {
+    display: flex;
+    align-items: center;
+    width: 300px;
+    height: 41px;
+    background-color: #ecf0f1;
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 5px 12px;
+}
+
+.search-input {
+    flex: 1;
+    background-color: transparent;
+    text-align: start;
+    border: none;
+    outline: none;
+    padding: 0px;
+}
+
+
+/* View Download CSV and New Report Button */
+.download-csv-button, .new-report-button {
+    height: 41px;
+    padding: 0px 16px;
+    color: #34495e;
+    line-height: normal;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.new-report-button {
+    margin-left: auto;
+    margin-inline-end: 10px;
+    writing-mode: horizontal-tb;
+}
