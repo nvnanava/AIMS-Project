@@ -1,38 +1,33 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using AIMS.Models;
-using System.Linq;
 
 namespace AIMS.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly AIMSContext _context;
 
-    public HomeController(ILogger<HomeController> logger, AIMSContext context)
+    public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
-        _context = context;
     }
+public IActionResult Index(string search)
+{
+    var tableData = new List<Dictionary<string, string>> {};
 
-    public IActionResult Index(string search, string sortBy)
+    if (!string.IsNullOrEmpty(search))
     {
-        var assets = _context.Assets.AsQueryable();
-
-        if (!string.IsNullOrEmpty(search)) {
-            assets = assets.Where(a => a.Name.Contains(search) || a.Type.Contains(search) || a.Status.Contains(search) || (a.AssignedTo ?? "").Contains(search));
-        }
-        assets = sortBy?.ToLower() switch {
-            "name" => assets.OrderBy(a => a.Name),
-            "type" => assets.OrderBy(a => a.Type),
-            "status" => assets.OrderBy(a => a.Status),
-            "assigned" => assets.OrderBy(a => a.AssignedTo),
-            _=> assets
-        };
-        return View(assets.ToList());
+        search = search.ToLower();
+        tableData = tableData
+            .Where(item => item.Any(entry => 
+                entry.Value?.ToLower().Contains(search) ?? false))
+            .ToList();
     }
 
+    return View(tableData);
+}
+   
     public IActionResult Privacy()
     {
         return View();
@@ -43,4 +38,13 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+}
+
+internal class Asset
+{
+    public string Name { get; set; }
+    public string Type { get; set; }
+    public string TagNumber { get; set; }
+    public string AssignedTo { get; set; }
+    public string Status { get; set; }
 }
