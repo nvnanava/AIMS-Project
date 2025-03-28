@@ -12,12 +12,22 @@ public class HomeController : Controller
     {
         _logger = logger;
     }
+public IActionResult Index(string search)
+{
+    var tableData = new List<Dictionary<string, string>> {};
 
-    public IActionResult Index()
+    if (!string.IsNullOrEmpty(search))
     {
-        return View();
+        search = search.ToLower();
+        tableData = tableData
+            .Where(item => item.Any(entry => 
+                entry.Value?.ToLower().Contains(search) ?? false))
+            .ToList();
     }
 
+    return View(tableData);
+}
+   
     public IActionResult Privacy()
     {
         return View();
@@ -28,4 +38,13 @@ public class HomeController : Controller
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
+}
+
+internal class Asset
+{
+    public string Name { get; set; }
+    public string Type { get; set; }
+    public string TagNumber { get; set; }
+    public string AssignedTo { get; set; }
+    public string Status { get; set; }
 }
