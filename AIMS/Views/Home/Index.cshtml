@@ -1,112 +1,133 @@
-﻿@{
+﻿@using AIMS.Models
+@{
     ViewData["Title"] = "Home Page";
 
     // Define Table Headers
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
     
-    // Define Table Data
+    // Define Table Data (all 14 entries)
     var tableData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"}, 
-            {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"}, 
-            {"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"}, 
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"}, 
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"}, 
-            {"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP 527SH"}, 
-            {"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"}, 
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"}, 
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"}, 
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"}, 
-            {"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"}, 
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"}, 
-            {"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"}, 
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"}, 
-            {"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"}, 
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"}, 
-            {"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"}, 
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"}, 
-            {"Status", "Assigned"} }
+        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"}, {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"}, {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"}, {"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"}, {"Status", "Available"} },
+        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"}, {"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"}, {"Status", "Damaged"} },
+        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"}, {"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "HP 527SH"}, {"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"}, {"Status", "In Repair"} },
+        new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"}, {"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"}, {"Status", "Available"} },
+        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"}, {"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"}, {"Status", "Damaged"} },
+        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"}, {"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"}, {"Status", "In Repair"} },
+        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"}, {"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"}, {"Status", "Available"} },
+        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"}, {"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"}, {"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"}, {"Status", "In Repair"} },
+        new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"}, {"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"}, {"Status", "Damaged"} },
+        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"}, {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"}, {"Status", "Assigned"} }
     };
-} 
+}
 
-<!-- Placeholder for Summary Cards -->
+<!-- Original Layout - Summary Cards Placeholder -->
 <div class="summary-cards-placeholder">
     <p>Summary Cards Placeholder - Replace this with summary cards section</p>
 </div>
 
-<!-- Asset Table Section -->
+<!-- Original Layout - Asset Table Section -->
 <div class="asset-management">
     <div class="asset-header">
         <div class="left-section">
-            <!-- Search Form -->
-            <form method="get" asp-action="Index">
-                <div class="search-container">
-                    <span class="input-group-text search-icon" id="search-addon" onclick="triggerSearch()">🔍</span>
-                    <input type="text" name="search" class="form-control search-input" 
-                           placeholder="Search for assets or employees..."
-                           value="@Context.Request.Query["search"]">
-                </div>
-                <button type="submit" class="view-full-list-button">Search</button>
-            </form>
+            <!-- Search Container (modified for functionality) -->
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" 
+                       class="search-input" 
+                       placeholder="Search for assets or employees...">
+            </div>
+            <button id="resetSearch" class="view-full-list-button">View Full List | 📋 | ≡</button>
         </div>
         <div class="right-section">
             <button class="assign-asset-button">Assign Asset | 🔗</button>
         </div>
     </div>
 
-    <div class="table-container">
-        <table class="asset-table">
-            <thead>
-                <tr>
-                    <th>
-                        <a asp-action="Index" asp-route-sortBy="name">Asset Name</a>
-                    </th>
-                    <th>
-                        <a asp-action="Index" asp-route-sortBy="type">Type</a>
-                    </th>
-                    <th>Tag #</th>
-                    <th>
-                        <a asp-action="Index" asp-route-sortBy="assigned">Assigned To</a>
-                    </th>
-                    <th>
-                        <a asp-action="Index" asp-route-sortBy="status">Status</a>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var asset in Model)
+    <!-- Table with all entries -->
+    <table class="asset-table" id="assetTable">
+        <thead>
+            <tr>
+                @foreach (var header in tableHeaders)
                 {
-                    <tr>
-                        <td>@asset.Name</td>
-                        <td>@asset.Type</td>
-                        <td>@asset.TagNumber</td>
-                        <td>@(string.IsNullOrEmpty(asset.AssignedTo) ? "Unassigned" : asset.AssignedTo)</td>
-                        <td><span class="status @asset.Status.ToLower()">@asset.Status</span></td>
-                    </tr>
+                    <th>@header</th>
                 }
-            </tbody>
-        </table>
-    </div>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in tableData)
+            {
+                <tr class="asset-row">
+                    @foreach (var header in tableHeaders)
+                    {
+                        <td>
+                            @if (header == "Status")
+                            {
+                                <span class="status @item[header].ToLower().Replace(" ", "-")">@item[header]</span>
+                            }
+                            else
+                            {
+                                @item[header]
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
+
+<!-- JavaScript for Search Functionality -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const resetButton = document.getElementById('resetSearch');
+        const assetRows = document.querySelectorAll('.asset-row');
+
+        // Search function - works as you type
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            assetRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let shouldShow = false;
+                
+                // Check all columns for matches
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(searchTerm)) {
+                        shouldShow = true;
+                    }
+                });
+                
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        });
+
+        // Reset function - shows all rows
+        resetButton.addEventListener('click', function() {
+            searchInput.value = '';
+            assetRows.forEach(row => {
+                row.style.display = '';
+            });
+        });
+    });
+</script>
+
+<!-- Status Badge Styling -->
+<style>
+    .status {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 0.85em;
+        font-weight: 500;
+        color: white;
+    }
+    .status.assigned { background-color: #4CAF50; }
+    .status.available { background-color: #2196F3; }
+    .status.damaged { background-color: #F44336; }
+    .status.in-repair { background-color: #FF9800; }
+</style>
