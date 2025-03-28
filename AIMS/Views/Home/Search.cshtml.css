@@ -1,0 +1,118 @@
+.search-container {
+  background-color: #34495e;
+  border: 2px solid transparent;
+  padding: 5px 12px;
+  transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.search-input {
+  flex: 1;
+  height: 41px;
+  background-color: #ecf0f1;
+  text-align: center;
+  border: 1px solid #34495e;
+  border-radius: 8px;
+  outline: none;
+  padding: 0px;
+}
+
+.search-input:focus {
+  box-shadow: none;
+  border-color: #1abc9c;
+}
+
+.asset-table thead tr>th:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.asset-table thead tr>th:last-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+/* Table Styles */
+.table-container {
+  max-height: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  border-radius: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.asset-table {
+  width: 90%;
+  border-collapse: separate;
+  /* background-color: #ecf0f1; */
+  border-spacing: 0px 10px;
+}
+
+.asset-table th,
+.asset-table td {
+  padding: 12px;
+  text-align: center;
+}
+
+.asset-table thead tr {
+  border-bottom: 1px solid #34495e;
+}
+
+.asset-table tbody tr {
+  height: 150px;
+}
+
+.asset-table tbody tr>td:first-child {
+  border-width: 1px 0px 1px 1px;
+  border-color: #34495e;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.asset-table tbody tr>td:not(:first-child):not(:last-child) {
+  border-width: 1px 0px;
+  border-color: #34495e;
+}
+
+.asset-table tbody tr>td:last-child {
+  border-width: 1px 1px 1px 0px;
+  border-color: #34495e;
+
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.asset-table tbody tr:nth-child(even) {
+  background-color: #ECF0F1;
+}
+
+.asset-table tbody tr:nth-child(odd) {
+  background-color: #E0E4E5;
+}
+
+
+/* Status Badges */
+.status {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 18px;
+  color: #34495e;
+  box-shadow: 0px 4px 4px 0px #0000003e;
+}
+
+.status.assigned {
+  background-color: #0080ff29;
+}
+
+.status.available {
+  background-color: #4caf4f29;
+}
+
+.status.damaged {
+  background-color: #ff000029
+}
+
+.status.inrepair {
+  background-color: #fff20029;
+}
