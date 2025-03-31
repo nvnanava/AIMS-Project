@@ -1,0 +1,197 @@
+@{
+    ViewData["Title"] = "Reports";
+
+
+    // Define Table Headers
+    var tableHeaders = new List<string> { "Name", "Type", "Description", "Date Created"};
+    
+    // Define Table Data
+    var tableData = new List<Dictionary<string, string>> {
+        new Dictionary<string, string> { {"Name", "Monthly Report for Jan"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Check for Daisy"}, 
+            {"Type", "Asset Report"}, {"Description", "Daisy wanted to see what assets we have"}, 
+            {"Date Created", "12 Dec 2024 03:41:04 PT"} },
+        new Dictionary<string, string> { {"Name", "Send to Higher-ups"}, 
+            {"Type", "Custom Report"}, {"Description", "They asked for all the information we have"}, 
+            {"Date Created", "11 Dec 2024 06:32:51 PT"} },
+        new Dictionary<string, string> { {"Name", "Monthly Report for Dec"}, 
+            {"Type", "Asset Assignments to Users"}, {"Description", ""}, 
+            {"Date Created", "02 Dec 2024 11:05:25 PT"} },
+        new Dictionary<string, string> { {"Name", "Report for Dan"}, 
+            {"Type", "Custom Report"}, {"Description", "Dan asked for report will users and office"}, 
+            {"Date Created", "25 Nov 2024 09:38:31 PT"} },
+        new Dictionary<string, string> { {"Name", "Checking something"}, 
+            {"Type", "Assets Assigned to an Office"}, {"Description", "Needed to do some analysis on how many assets per office"}, 
+            {"Date Created", "07 Nov 2024 04:34:11 PT"} },
+        new Dictionary<string, string> { {"Name", "Monthly Report for Nov"}, 
+            {"Type", "Assets Assigned to an Office"}, {"Description", ""}, 
+            {"Date Created", "01 Nov 2024 10:25:57 PT"} },
+        new Dictionary<string, string> { {"Name", "Print for Wall"}, 
+            {"Type", "Asset Report"}, {"Description", "need to put on wall so everyone can see what assets are where"}, 
+            {"Date Created", "26 Sept 2024 01:28:58 PT"} },
+        new Dictionary<string, string> { {"Name", "Send our reminders"}, 
+            {"Type", "Asset Assignments to Users"}, {"Description", "sending out reminders who has what in case missing items"}, 
+            {"Date Created", "15 Sept 2024 07:15:47 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 1"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 2"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 3"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 4"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 5"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 6"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} }
+    };
+
+}
+<body style="background-color:#ECF0F1;">
+<div class="report-page-size">
+    <h1>Reports</h1>
+
+    <div class="report-management">
+        <div class="report-header">
+            <div class="left-section">
+                <div class="search-container">
+                    <input type="text" class="form-control search-input" placeholder="Search Reports"
+                        aria-label="Search" aria-describedby="search-addon">
+                </div>
+            </div>
+            <div class="right-section">
+
+                <button class="download-csv-button">Download CSV of Selected Files</button>
+                <div class="dropdown">
+                    <button class="btn new-report-button dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                        New Report
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Assignments Users</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Assets Assigned to an Office</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Reports</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom Report (IT Admin Only)</button></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+
+        @if (tableHeaders == null || tableData == null) { <p style="color: red;">Table Data is Missing!</p>}
+        @await Html.PartialAsync("~/Views/Home/ReportTableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
+    </div>
+</div>
+
+</body>
+
+
+
+<!-- Generate Report Modal -->
+<div class="modal fade" id="generateReport" tabindex="-1" aria-labelledby="generateReportLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateReportLabel">Generate a Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+            <form class="row g-3">
+                <div class="col-md-6">
+                    <label for="dateRange1" class="form-label">Start Date</label>
+                    <input type="text" class="form-control" id="dateRange1">
+                </div>
+                <div class="col-md-6">
+                    <label for="dateRange2" class="form-label">End Date</label>
+                    <input type="text" class="form-control" id="dateRange2">
+                </div>
+                <div class="col-12">
+                    <label for="inputDescription" class="form-label">Description (optional)</label>
+                    <input type="text" class="form-control" id="inputDescription">
+                </div>
+            </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary"data-bs-dismiss="modal">Generate Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Custom Report Modal -->
+<div class="modal fade" id="generateCustomReport" tabindex="-1" aria-labelledby="generateCustomReportLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateCustomReportLabel">Generate a Custom Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+            <form class="row g-3">
+                <div class="col-md-6">
+                    <label for="dateRange1" class="form-label">Start Date</label>
+                    <input type="text" class="form-control" id="dateRange1">
+                </div>
+                <div class="col-md-6">
+                    <label for="dateRange2" class="form-label">End Date</label>
+                    <input type="text" class="form-control" id="dateRange2">
+                </div>
+                <div class="col-12">
+                    <label for="inputDescription" class="form-label">Description (optional)</label>
+                    <input type="text" class="form-control" id="inputDescription">
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck">
+                        <label class="form-check-label" for="gridCheck">
+                            See Hardware
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck2">
+                        <label class="form-check-label" for="gridCheck2">
+                            See Software
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck3">
+                        <label class="form-check-label" for="gridCheck3">
+                            See Users
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck4">
+                        <label class="form-check-label" for="gridCheck4">
+                            See Office
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck5">
+                        <label class="form-check-label" for="gridCheck5">
+                            See when software and/or warranty expires
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck6">
+                        <label class="form-check-label" for="gridCheck6">
+                            See what requires maintenance or replacements
+                        </label>
+                    </div>
+                </div>
+            </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary"data-bs-dismiss="modal">Generate Report</button>
+      </div>
+    </div>
+  </div>
+</div>
