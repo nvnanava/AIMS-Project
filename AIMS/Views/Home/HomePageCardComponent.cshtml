@@ -1,37 +1,86 @@
-<div class="homepage-cards">
-    <div class="card">
-    <h3>Monitors</h3>
-    <p class="total">150 total</p>
-    <p class="available">Available: 120</p>
-</div>
+@{
+    Layout = null;  
+}
 
-<div class="card">
-    <h3>Laptops</h3>
-    <p class="total">120 total</p>
-    <p class="available">Available: 85</p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Component Preview</title>
 
-<div class = "card">
-    <h3>Desktops</h3>
-    <p class="total">100 total</p>
-    <p class="available">Available: 70</p>
-</div>
+    <!-- Link to CSS -->
+    <link rel="stylesheet" href="~/css/HomeCardComponent.css" asp-append-version="true">
+    <style>
+        .card-link {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
+</head>
+<body>
 
-<div class="card">
-    <h3>Software Licenses</h3>
-    <p class="total">200 total</p>
-    <p class="available">Available: 180</p>
-</div>
+    <div id="card-container">
+        <a href="/Home/AssetDetailsComponent?category=Monitor" class="card-link">
+            <div class="card">
+                <span class="status-dot green"></span>
+                <h3>Monitors</h3>
+                <img src="~/CardComponentImages/Monitor.png" alt="Monitors" class="card-image">
+                <p class="total">150 total</p>
+                <p class="available">Available: 64%</p> <!-- Percentage data to reflect client meeting notes -->
+            </div>
+        </a>
 
-<div class="card">
-    <h3>Headsets</h3>
-    <p class="total">80 total</p>
-    <p class="available">Available: 60</p>
-</div>
+        <a href="/Home/AssetDetailsComponent?category=Laptop" class="card-link">
+            <div class="card">
+                <span class="status-dot red"></span>
+                <h3>Laptops</h3>
+                <img src="~/CardComponentImages/Laptop.png" alt="Laptops" class="card-image">
+                <p class="total">120 total</p>
+                <p class="runningLow">Low: 8%</p>
+            </div>
+        </a>
 
-<div class="card">
-    <h3>Charging Cables</h3>
-    <p class="total">90 total</p>
-    <p class="available">Available: 75</p>
+        <a href="/Home/AssetDetailsComponent?category=Desktop" class="card-link">
+            <div class="card">
+                <span class="status-dot green"></span>
+                <h3>Desktops</h3>
+                <img src="~/CardComponentImages/Desktop.png" alt="Desktops" class="card-image">
+                <p class="total">100 total</p>
+                <p class="available">Available: 64%</p>
+            </div>
+        </a>
+
+        <a href="/Home/AssetDetailsComponent?category=Software" class="card-link">
+            <div class="card">
+                <span class="status-dot red"></span>
+                <h3>Software Licenses</h3>
+                <img src="~/CardComponentImages/Software.png" alt="Software Licenses" class="card-image">
+                <p class="total">200 total</p>
+                <p class="runningLow">Low: 16%</p>
+            </div>
+        </a>
+
+        <a href="/Home/AssetDetailsComponent?category=Headset" class="card-link">
+            <div class="card">
+                <span class="status-dot green"></span>
+                <h3>Headsets</h3>
+                <img src="~/CardComponentImages/Headset.png" alt="Headset" class="card-image">
+                <p class="total">80 total</p>
+                <p class="available">Available: 64%</p> 
+            </div>
+        </a>
+
+        <a href="/Home/AssetDetailsComponent?category=Charging Cable" class="card-link">
+            <div class="card">
+                <span class="status-dot green"></span>
+                <h3>Charging Cables</h3>
+                <img src="~/CardComponentImages/ChargingCable.png" alt="Charging Cables" class="card-image">
+                <p class="total">90 total</p>
+                <p class="available">Available: 64%</p>
+            </div>
+        </a>
     </div>
-</div>
+
+</body>
+</html>
