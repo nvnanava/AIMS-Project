@@ -42,6 +42,14 @@
     background-color: transparent;
 }
 
+.even-row {
+    background-color: transparent;
+}
+
+.odd-row {
+    background-color: #0000000a;
+}
+
 /* Sort Button */
 .sort-btn {
     background-color: #ecf0f1;
@@ -55,6 +63,11 @@
     cursor: pointer;
     box-shadow: 0px 4px 4px 0px #0000003e;
     transition: all 0.3s ease-in-out;
+}
+
+.sort-btn:hover {
+    border: 3px solid #1abc9c;
+    transition: all 150ms ease-out;
 }
 
 /* Status Badges */
