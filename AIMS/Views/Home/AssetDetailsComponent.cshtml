@@ -1,0 +1,76 @@
+ @await Html.PartialAsync("_AssetAddForm")
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/AssetDetailsComponent.css" asp-asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/_AssetButton.css" asp-asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/_AddAssetForm.css" asp-asp-append-version="true"/>
+}
+
+@{
+    var category = ViewData["Category"]?.ToString() ?? "Unknown";
+    var tableHeaders = ViewData["TableHeaders"] as List<string>;
+    var filteredData = ViewData["FilteredData"] as List<Dictionary<string, string>>;
+    ViewData["Title"] = $"{category} Asset Details";
+}
+
+<h2 class="text-center my-4">@ViewData["Title"]</h2>
+
+@if (filteredData != null && filteredData.Any())
+{
+    <table class="asset-table">
+        <thead>
+            <tr>
+                @foreach (var header in tableHeaders)
+                {
+                    if (header == "Status")
+                    {
+                        <th class="d-flex justify-content-between align-items-center" style="gap: 10px;">
+    <span>Status</span>
+    <div style="margin-left: auto;">
+        @await Html.PartialAsync("_AssetButton")
+       
+    </div>
+</th>
+
+                    }
+                    else
+                    {
+                        <th>@header</th>
+                    }
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in filteredData)
+            {
+                <tr>
+                    @foreach (var header in tableHeaders)
+                    {
+                        if (header == "Status")
+                        {
+                            var status = row[header];
+                            var statusClass = status.ToLower() switch
+                            {
+                                "available" => "status-available",
+                                "assigned" => "status-assigned",
+                                "surveyed" => "status-surveyed",
+                                "in repair" => "status-in-repair",
+                              
+                                _ => ""
+                            };
+                            <td><span class="status-badge @statusClass">@status</span></td>
+                        }
+                        else
+                        {
+                            <td>@row[header]</td>
+                        }
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="text-center">No assets found for <strong>@category</strong>.</p>
+}

@@ -1,0 +1,225 @@
+@{
+  ViewData["Title"] = "Search";
+
+  var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
+  // Define Table Data
+  var tableData = new List<Dictionary<string, string>> {
+new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
+{"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assignment", "John Smith (28809)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
+{"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assignment", "Jane Doe (69444)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
+{"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assignment", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
+{"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assignment", "Randy Orton (58344)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
+{"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assignment", "Robin Williams (10971)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
+{"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assignment", "Sarah Johnson (62241)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"},
+{"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assignment", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
+{"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assignment", "Caitlin Clark (90334)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
+{"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assignment", "Brian Regan (27094)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
+{"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assignment", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
+{"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assignment", "Maximillian Brandt"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
+{"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assignment", "Emily Carter (47283)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "100W Super Charger"},
+{"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assignment", "Bruce Wayne (34532)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
+{"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assignment", "Kate Rosenberg (93232)"},
+{"Status", "Assigned"} }
+};
+}
+
+<div class="global-search mb-3">
+  <input type="text" id="globalSearchInput" class="form-control" placeholder="Search all assets...">
+  <button id="clearSearch" class="btn btn-sm btn-outline-secondary mt-2">Clear All Filters</button>
+</div>
+
+<div class="table-container">
+  <table class="asset-table">
+    <thead>
+      <tr>
+        @foreach (var header in tableHeaders)
+        {
+          <th>@header</th>
+        }
+      </tr>
+      <tr class="search-container">
+        @foreach (var header in tableHeaders)
+        {
+          <th>
+            <input class="search-input" type="text" name="@header" placeholder="Filter @header">
+          </th>
+        }
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      @if (tableData.Count == 0)
+      {
+        <tr>
+          <td colspan="@tableHeaders.Count" style="text-align: center;">No data available</td>
+        </tr>
+      }
+      else
+      {
+        @foreach (var row in tableData)
+        {
+          <tr class="result">
+            @foreach (var header in tableHeaders)
+            {
+              <td id="@header">@(row.ContainsKey(header) ? row[header] : "-")</td>
+            }
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>
+
+
+
+<script type="text/javascript">
+
+  /**
+  This function verifies that a row satisfies a header input's current inputted value.
+
+  It accepts the relevant header name, and the row to verify.
+  */
+  function validateCellUsingHeader(header, cell, inputValue) {
+    // if the row text does not include a filter's current value, it does not satisfy the rule.
+    if (cell.innerHTML.toLowerCase().includes(inputValue.toLowerCase())) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+    This is the generalized callback function which will break called when an input's state changes.
+
+    Based on the new value, it will filter out any rules. It uses bit flags to keep track of
+    which rows to display (applied-filters === 0 => display row)
+
+    to avoid more calls to the database aside from the initial page load, we use HTML manipulation.
+  */
+  function filter(e) {
+    // stop this function from running on modifier keys
+    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.key === 'Tab') {
+      return;
+    }
+
+    // new inputted value
+    const inputValue = e.target.value.trim();
+    const header = e.target.getAttribute('name');
+
+    // get all the rows
+    const results = document.querySelectorAll(".result");
+
+    // validate each row
+    for (const result of results) {
+      // relevant cell in the row that corresponds to the header
+      const filterCell = result.querySelector(`[id="${header}"]`);
+
+      // relevant boolean flags for our filter
+      let relevantFlag = headerFlags[header];
+
+      // get state of previous filter applications
+      const appliedFiltersAttribute = parseInt(result.getAttribute("applied-filters"));
+
+      // updated attribute after boolean logic
+      let newFiltersAttribute = appliedFiltersAttribute;
+
+      // bool: does a new filter apply?
+      const filterApplies = !validateCellUsingHeader(header, filterCell, inputValue);
+
+      // if a filter applies to this row
+      if (filterApplies) {
+        // only do a document manipulation if the filter doesn't already exist
+        if (!((appliedFiltersAttribute | relevantFlag) === appliedFiltersAttribute)) {
+          newFiltersAttribute = appliedFiltersAttribute | relevantFlag;
+          result.setAttribute("applied-filters", newFiltersAttribute);
+        }
+      } else if (!filterApplies && appliedFiltersAttribute !== 0) {
+        // otherwise, remove the filter
+        newFiltersAttribute = appliedFiltersAttribute & ~relevantFlag;
+        result.setAttribute("applied-filters", newFiltersAttribute);
+      }
+
+      // if some filter applies
+      if (newFiltersAttribute !== 0) {
+        // turn off display
+        result.style.display = "none";
+      } else {
+        // otherwise, enable display
+        result.style.display = "";
+      }
+    }
+  }
+
+  const inputs = document.querySelectorAll(".search-input");
+
+  // these bit flags are used to notate which flags apply to any result row n
+  const headerFlags = {
+    ["Asset Name"]: 1 << 0, // 00001
+    ["Type"]: 1 << 1, // 00010
+    ["Tag #"]: 1 << 2, // 00100
+    ["Assignment"]: 1 << 3, // 01000
+    ["Status"]: 1 << 4 // 10000
+  };
+
+  // assign an event listener for each input (will activate on: keyboard entry,entry from 
+  // non-keyboard sources).
+  for (const input of inputs) {
+    input.addEventListener("input", filter)
+  }
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.search-input');
+    const rows = document.querySelectorAll('tbody tr.result');
+    
+    function filter() {
+        const activeFilters = {};
+        inputs.forEach(input => {
+            const value = input.value.trim().toLowerCase();
+            if (value) activeFilters[input.name] = value;
+        });
+        
+        rows.forEach(row => {
+            let showRow = true;
+            for (const [name, value] of Object.entries(activeFilters)) {
+                const cell = row.querySelector(`td[id="${name}"]`);
+                if (!cell?.textContent.toLowerCase().includes(value)) {
+                    showRow = false;
+                    break;
+                }
+            }
+            row.style.display = showRow ? '' : 'none';
+        });
+    }
+    
+    inputs.forEach(input => input.addEventListener('input', filter));
+    filter(); // Initial filter
+});
+</script>
