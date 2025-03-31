@@ -476,6 +476,24 @@
         });
     }
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input');
+    const tableRows = document.querySelectorAll('#table-body tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim().toLowerCase();
+        
+        tableRows.forEach(row => {
+            const rowText = Array.from(row.cells)
+                .map(cell => cell.textContent.toLowerCase())
+                .join(' ');
+            
+            row.style.display = rowText.includes(searchTerm) ? '' : 'none';
+        });
+    });
+});
+</script>
 
 <!-- Status Badge Styling -->
 <style>
