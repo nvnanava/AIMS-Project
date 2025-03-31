@@ -12,8 +12,8 @@ services:
           path: .
     ports:
       - 5119:5119
-    networks:
-     - new-bridge-net
+   # networks:
+     # - new-bridge-net
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver2022
@@ -28,3 +28,6 @@ services:
 networks:
   new-bridge-net:
     driver: bridge
+# for data persistence
+volumes:
+  sql_data:
