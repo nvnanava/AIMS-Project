@@ -30,13 +30,23 @@
                         </li>
                         <li class="nav-item">
 
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Reports">Reports</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home"
+                                asp-action="Reports">Reports</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home"
+                                asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
                 </div>
+                <div>
+                    <div id="search-container" class="search-container"></div>
+                    <span id="search-addon" class="input-group-text search-icon" onclick="triggerSearch()">🔍</span>
+                    <input type="text" id="search-input" class="form-control search-input"
+                        placeholder="Search for assets or employees..." aria-label="Search"
+                        aria-describedby="search-addon">
+                </div>
+            </div>
             </div>
         </nav>
     </header>
@@ -59,4 +69,3 @@
 </body>
 
 </html>
-
