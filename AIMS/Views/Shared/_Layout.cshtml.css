@@ -51,7 +51,6 @@ button.accept-policy {
 
 /* Search Bar */
 .search-container {
-  justify-self: end;
   display: flex;
   align-items: center;
   width: 400px;

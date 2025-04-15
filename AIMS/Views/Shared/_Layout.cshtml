@@ -38,14 +38,23 @@
                                 asp-action="Privacy">Privacy</a>
                         </li>
                     </ul>
+
+
                 </div>
-                <div>
-                    <div id="search-container" class="search-container"></div>
-                    <span id="search-addon" class="input-group-text search-icon" onclick="triggerSearch()">🔍</span>
-                    <input type="text" id="search-input" class="form-control search-input"
-                        placeholder="Search for assets or employees..." aria-label="Search"
-                        aria-describedby="search-addon">
+
+                <div class="navbar-right">
+                    <form asp-controller="Home" asp-action="Search" method="get">
+                        <div id="search-container" class="search-container">
+                            <button type="submit" id="search-addon" class="input-group-text search-icon">🔍</button>
+                            <input name="searchQuery" type="text" id="search-input" class="form-control search-input"
+                                placeholder="Search for assets or employees..." aria-label="Search"
+                                aria-describedby="search-addon">
+                        </div>
+
+                    </form>
                 </div>
+            </div>
+
             </div>
             </div>
         </nav>

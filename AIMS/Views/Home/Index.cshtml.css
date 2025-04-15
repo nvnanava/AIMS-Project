@@ -132,6 +132,11 @@
   cursor: pointer;
 }
 
+.view-full-list-link {
+  color: inherit;
+  text-decoration: none;
+}
+
 .standard-button:hover,
 .assign-asset-button:hover {
   border: 3px solid #1abc9c;
