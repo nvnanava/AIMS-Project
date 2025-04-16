@@ -47,6 +47,12 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assignment", "Kate Rosenberg (93232)"},
 {"Status", "Assigned"} }
 };
+
+  // thank you Norin for this logic
+  tableData = string.IsNullOrEmpty(ViewBag.SearchQuery) ? tableData : tableData
+  .Where(dict => dict.Values.Any(value => value.Contains(ViewBag.SearchQuery)))
+  .ToList();
+
 }
 
 <p>@ViewBag.SearchQuery</p>
@@ -179,5 +185,4 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
   for (const input of inputs) {
     input.addEventListener("input", filter)
   }
-
 </script>
