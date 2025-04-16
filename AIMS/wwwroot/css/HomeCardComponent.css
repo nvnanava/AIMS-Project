@@ -1,0 +1,104 @@
+/* Center everything */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* Container for all cards */
+#card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: center;
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Individual card */
+.card {
+  width: 150px;
+  height: 150px;
+  border: 2px solid #2c3e50; /* default border */
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  background-color: #ecf0f1;
+  box-shadow: 2px 2px 10px #2c3e50;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.status-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.status-dot.green {
+  background-color: #2ecc71; /* green */
+}
+
+.status-dot.red {
+  background-color: #e74c3c; /* red */
+}
+
+/* Hover effect */
+.card:hover {
+  border: 2px solid #2ecc71; /* green border */
+  box-shadow: 0 0 8px rgba(46, 204, 113, 0.6); /* optional glow */
+}
+
+/* Card title */
+.card h3 {
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+/* Card image */
+.card-image {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 5px;
+}
+
+/* Card text */
+.total,
+.available,
+.runningLow {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 2px 0;
+}
+
+/* Different color for availability */
+.available {
+  font-size: 13px;
+  color: #4caf50;
+  margin: 2px 0;
+}
+/* Different color for running low */
+.runningLow {
+  font-size: 13px;
+  color: #c11a11;
+  margin: 2px 0;
+}
+
+.card-link {
+  text-decoration: none;
+  color: inherit;
+}
