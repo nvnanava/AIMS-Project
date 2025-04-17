@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using AIMS.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AIMS.Controllers;
 
@@ -18,6 +18,18 @@ public class HomeController : Controller
         return View();
     }
 
+
+    public IActionResult Reports()
+    {
+        return View();
+    }
+
+
+    public IActionResult Search()
+    {
+        return View();
+    }
+
     public IActionResult Privacy()
     {
         return View();
@@ -29,21 +41,23 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-    public IActionResult HomePageCardComponent() {
+    public IActionResult HomePageCardComponent()
+    {
         return View();
     }
 
-    public IActionResult CardComponent() {
+    public IActionResult CardComponent()
+    {
         return View();
     }
 
- public IActionResult AssetDetailsComponent(string category)
-{
-    this.ViewData["Category"] = category;
+    public IActionResult AssetDetailsComponent(string category)
+    {
+        this.ViewData["Category"] = category; //Saves the category (like "Laptop" or "Software") into ViewData.
 
-    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
+        var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" }; //table headers based off Figma design
 
-    var tableData = new List<Dictionary<string, string>> {
+        var tableData = new List<Dictionary<string, string>> { //hardcoded data for now, will be replaced with database info
          new() { {"Asset Name", "Lenovo ThinkPad E16"}, {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "Dell S2421NX"}, {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "HP EliteBook 840 G7"}, {"Type", "Laptop"}, {"Tag #", "DT-0011"}, {"Status", "Surveyed"} },
@@ -117,19 +131,19 @@ public class HomeController : Controller
 
     };
 
-    // Handle null or invalid categories gracefully
-    if (string.IsNullOrWhiteSpace(category))
-    {
-        category = "Laptop"; // default category
+        // Handle null or invalid categories
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            category = "Laptop"; // default category if no category is passed into orignal URL
+        }
+
+        var filteredData = tableData // filters the assets to only include those where the Asset Type matches the category
+            .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))//LINQ query to filter the data based on asset category
+            .ToList();
+
+        this.ViewData["TableHeaders"] = tableHeaders; //Saves the table headers into ViewData.
+        this.ViewData["FilteredData"] = filteredData; //Saves the filtered data into ViewData.
+
+        return View(); //displays the .cshtml view
     }
-
-    var filteredData = tableData
-        .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))
-        .ToList();
-
-        this.ViewData["TableHeaders"] = tableHeaders;
-    this.ViewData["FilteredData"] = filteredData;
-
-    return View();
-}
 }

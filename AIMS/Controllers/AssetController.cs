@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using AIMS.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AIMS.Controllers;
 
@@ -53,7 +53,7 @@ public class AssetsController : Controller
             new() { {"Asset Name", "Jira Software Cloud"}, {"Type", "Software"}, {"Tag #", "SW-3010"}, {"Status", "In Repair"} },
 
 
-            
+
         };
 
         // Filter by category

@@ -1,9 +1,23 @@
+using AIMS.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddEndpointsApiExplorer(); // take out after development
+builder.Services.AddSwaggerGen(); // take out after development
+
+
+builder.Services.AddDbContext<AimsDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
+
+
+app.UseSwagger(); // take out after development
+app.UseSwaggerUI(); //used for testing APIs. Swagger UI will be available at /swagger/index.html
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
