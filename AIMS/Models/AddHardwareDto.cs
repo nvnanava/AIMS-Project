@@ -9,7 +9,7 @@ namespace AIMS.Models;
 //  Can help in reducing the amount of data sent over the network.
 public class AddHardwareDto
 {
-    [Required] 
+
     public int AssetTag { get; set; } = 0;
 
     [MaxLength(255)]
@@ -19,7 +19,7 @@ public class AddHardwareDto
     public string Manufacturer { get; set; } = null!;
     public string Model { get; set; } = null!;
     public string SerialNumber { get; set; } = null!;
-    
+
     [DataType(DataType.Date)]
     public DateOnly WarrantyExpiration { get; set; }
 

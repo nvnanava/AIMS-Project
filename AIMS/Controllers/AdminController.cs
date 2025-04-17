@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AIMS.Controllers
 {
-  public class AdminController : Controller
-  {
-    public IActionResult Index()
+    public class AdminController : Controller
     {
-      return View();
+        public IActionResult Index()
+        {
+            return View();
+        }
     }
-  }
 }

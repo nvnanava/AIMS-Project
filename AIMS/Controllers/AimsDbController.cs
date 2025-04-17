@@ -15,7 +15,9 @@ namespace AIMS.Controllers
 
         public AimsDbController(AimsDbContext context)
         {
-            this._context = context;    
+
+            this._context = context;
+
         }
 
         // Gets all assets
@@ -67,8 +69,11 @@ namespace AIMS.Controllers
 
         // Gets software by software id //
         // localhost:xxxx/api/AimsDb/software/{softwareId}
-        [HttpGet("software/{softwareId}")]  
-        public IActionResult GetSoftwareById(int softwareId){
+
+        [HttpGet("software/{softwareId}")]
+        public IActionResult GetSoftwareById(int softwareId)
+        {
+
             var software = _context.Softwares.Find(softwareId);
             if (software == null)
             {
@@ -124,14 +129,16 @@ namespace AIMS.Controllers
         // Updates an existing hardware entity using its asset tag
         // localhost:xxxx/api/AimsDb/updatehardware/{assetTag}
         [HttpPut("updatehardware/{assetTag}")]
-        public IActionResult Updatehardware (int assetTag, [FromBody] AddHardwareDto hardwareDto)
+
+        public IActionResult Updatehardware(int assetTag, [FromBody] AddHardwareDto hardwareDto)
+
         {
             var hardware = _context.Hardwares.Find(assetTag);
             if (hardware == null)
             {
                 return NotFound();
             }
-           
+
             hardware.AssetName = hardwareDto.AssetName;
             hardware.AssetType = hardwareDto.AssetType;
             hardware.Status = hardwareDto.Status;

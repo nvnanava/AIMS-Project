@@ -117,7 +117,10 @@
 }
 
 /* View Full List and Assign Asset Button */
-.standard-button, .assign-asset-button {
+
+.standard-button,
+.assign-asset-button {
+
     height: 41px;
     padding: 0px 16px;
     background-color: #ecf0f1;
@@ -131,7 +134,10 @@
     cursor: pointer;
 }
 
-.standard-button:hover, .assign-asset-button:hover {
+
+.standard-button:hover,
+.assign-asset-button:hover {
+
     border: 3px solid #1abc9c;
     transition: all 150ms ease-out;
 }
@@ -176,12 +182,52 @@
     transition: all 150ms ease-out;
 }
 
+
+/* General Dropdown Styling */
+.dropdown-menu {
+    position: absolute;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-radius: 8px;
+    background-color: #ecf0f1;
+    padding: 10px;
+    min-width: 308px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Individual Filter Sections */
+.filter-section {
+    padding: 5px 0;
+}
+
+/* Collapsible Sections */
+.expandable {
+    background-color: #ecf0f1;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-color: #2c3e50;
+    border-radius: 20px;
+    padding: 0px 16px;
+    transition: background-color 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.expandable:hover {
+    border: 3px solid #1abc9c;
+    transition: all 150ms ease-out;
+}
+
 /* Nested Dropdowns */
-#reportsDropdown, #typesDropdown {
+#reportsDropdown,
+#typesDropdown {
+
     margin-top: 5px;
     margin-left: 15px;
     padding: 5px;
     border-left: 2px solid #34495e;
+
+}
+
 
 /* Table Styles */
 .table-container {
@@ -200,6 +246,7 @@
 .asset-table td {
     padding: 12px;
     text-align: center;
+    background-color: #ffffff;
 }
 
 .asset-table th {
@@ -209,15 +256,17 @@
 
 .asset-table thead tr,
 .asset-table tbody tr {
-border-bottom: 1px solid #34495e;
+
+    border-bottom: 1px solid #34495e;
 }
 
 .asset-table tbody tr:nth-child(even) {
-  background-color: #0000000a;
+    background-color: #f0f0f0;
 }
 
 .asset-table tbody tr:nth-child(odd) {
-  background-color: transparent;
+    background-color: #ffffff;
+
 }
 
 /* Sort Button */
@@ -249,5 +298,5 @@ border-bottom: 1px solid #34495e;
 }
 
 .status.available {
-  background-color: blue;
+   background-color: blue;
 }

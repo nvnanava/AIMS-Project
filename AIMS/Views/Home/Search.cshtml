@@ -49,25 +49,14 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 };
 }
 
-<div class="global-search mb-3">
-  <input type="text" id="globalSearchInput" class="form-control" placeholder="Search all assets...">
-  <button id="clearSearch" class="btn btn-sm btn-outline-secondary mt-2">Clear All Filters</button>
-</div>
-
 <div class="table-container">
   <table class="asset-table">
     <thead>
-      <tr>
-        @foreach (var header in tableHeaders)
-        {
-          <th>@header</th>
-        }
-      </tr>
       <tr class="search-container">
         @foreach (var header in tableHeaders)
         {
-          <th>
-            <input class="search-input" type="text" name="@header" placeholder="Filter @header">
+          <th scope="col">
+            <input class="search-input" type="text" name="@header" id="@header" placeholder="@("Filter by " + header)" />
           </th>
         }
       </tr>
@@ -76,14 +65,14 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
       @if (tableData.Count == 0)
       {
         <tr>
-          <td colspan="@tableHeaders.Count" style="text-align: center;">No data available</td>
+          <td colspan="@tableData.Count" style="text-align: center;">No data available</td>
         </tr>
       }
       else
       {
         @foreach (var row in tableData)
         {
-          <tr class="result">
+          <tr class="result" applied-filters="0">
             @foreach (var header in tableHeaders)
             {
               <td id="@header">@(row.ContainsKey(header) ? row[header] : "-")</td>
@@ -94,8 +83,6 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     </tbody>
   </table>
 </div>
-
-
 
 <script type="text/javascript">
 
@@ -192,34 +179,4 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     input.addEventListener("input", filter)
   }
 
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputs = document.querySelectorAll('.search-input');
-    const rows = document.querySelectorAll('tbody tr.result');
-    
-    function filter() {
-        const activeFilters = {};
-        inputs.forEach(input => {
-            const value = input.value.trim().toLowerCase();
-            if (value) activeFilters[input.name] = value;
-        });
-        
-        rows.forEach(row => {
-            let showRow = true;
-            for (const [name, value] of Object.entries(activeFilters)) {
-                const cell = row.querySelector(`td[id="${name}"]`);
-                if (!cell?.textContent.toLowerCase().includes(value)) {
-                    showRow = false;
-                    break;
-                }
-            }
-            row.style.display = showRow ? '' : 'none';
-        });
-    }
-    
-    inputs.forEach(input => input.addEventListener('input', filter));
-    filter(); // Initial filter
-});
 </script>
