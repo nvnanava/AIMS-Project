@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore; //team needs to get entity framework packages
 
+
 namespace AIMS.Models;
 
 public class Report
@@ -16,3 +17,4 @@ public class Report
 
     public DateTime DateCreated { get; set; }
 }
+

@@ -6,7 +6,9 @@ namespace AIMS.Models;
 public class AddSoftwareDto
 {
     [Required]
+    
     public int SoftwareId { get; set; } = 0;
+
     public string SoftwareName { get; set; } = null!;
     public string SoftwareType { get; set; } = null!;
     public string SoftwareVersion { get; set; } = null!;

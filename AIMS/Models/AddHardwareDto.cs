@@ -9,7 +9,7 @@ namespace AIMS.Models;
 //  Can help in reducing the amount of data sent over the network.
 public class AddHardwareDto
 {
-    [Required]
+
     public int AssetTag { get; set; } = 0;
 
     [MaxLength(255)]
