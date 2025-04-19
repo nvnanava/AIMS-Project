@@ -3,90 +3,90 @@
     ViewData["Title"] = "Home Page";
 
     // Define Table Headers
-    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
+    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
     // Define Table Data
     var tableData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"}, 
-            {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"}, 
-            {"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"}, 
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"}, 
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
-            {"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP 527SH"}, 
-            {"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"}, 
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"}, 
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"}, 
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"}, 
-            {"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"}, 
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"}, 
-            {"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"}, 
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"}, 
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"}, 
-            {"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"}, 
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"}, 
-            {"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"}, 
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"}, 
-            {"Status", "Assigned"} }
-    };
+new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
+{"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
+{"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
+{"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
+{"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
+{"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
+{"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"},
+{"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
+{"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
+{"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
+{"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
+{"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
+{"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"},
+{"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
+{"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"},
+{"Status", "Assigned"} }
+};
 
- // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
+    // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
     var users = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> {
-            {"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Jane Doe"}, {"Role", "Employee"}, {"ID", "69444"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Randy Orton"}, {"Role", "Employee"}, {"ID", "58344"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Robin Williams"}, {"Role", "Employee"}, {"ID", "10971"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Emily Carter"}, {"Role", "Employee"}, {"ID", "47283"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Bruce Wayne"}, {"Role", "Employee"}, {"ID", "34532"}, {"Supervisor", "28809"}
-        },
-    };
+new Dictionary<string, string> {
+{"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Jane Doe"}, {"Role", "IT Help Desk"}, {"ID", "69444"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Randy Orton"}, {"Role", "IT Help Desk"}, {"ID", "58344"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Robin Williams"}, {"Role", "IT Help Desk"}, {"ID", "10971"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
+},
+new Dictionary<string, string> {
+{"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
+},
+new Dictionary<string, string> {
+{"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
+},
+new Dictionary<string, string> {
+{"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
+},
+new Dictionary<string, string> {
+{"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
+},
+new Dictionary<string, string> {
+{"Name", "Emily Carter"}, {"Role", "IT Help Desk"}, {"ID", "47283"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Bruce Wayne"}, {"Role", "IT Help Desk"}, {"ID", "34532"}, {"Supervisor", "28809"}
+},
+};
 
     var serializedTableData = JsonSerializer.Serialize(tableData);
     var serializedUsers = JsonSerializer.Serialize(users);
@@ -94,16 +94,20 @@
 
 <!-- Buttons to Switch Views -->
 <div id="view-switch-buttons" class="view-switch-buttons" data-testid="view-switch-buttons">
-    <span id="view-toggle" class="expandable" onclick="toggleViewDropdown()" data-testid="toggle-view-dropdown">Change View ▶️</span>
+    <span id="view-toggle" class="expandable" onclick="toggleViewDropdown()" data-testid="toggle-view-dropdown">Change
+        View ▶️</span>
     <div id="view-dropdown" class="view-dropdown" style="display:none;" data-testid="view-dropdown">
         <label class="view-label admin">
-            <button id="switch-admin" class="standard-button" onclick="switchRole('Admin')" data-testid="switch-admin">Switch to Admin</button>
+            <button id="switch-admin" class="standard-button" onclick="switchRole('Admin')"
+                data-testid="switch-admin">Switch to Admin</button>
         </label><br>
         <label class="view-label supervisor">
-            <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')" data-testid="switch-supervisor">Switch to Supervisor</button>
+            <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')"
+                data-testid="switch-supervisor">Switch to Supervisor</button>
         </label><br>
-        <label class="view-label employee">
-            <button id="switch-employee" class="standard-button" onclick="switchRole('Employee')" data-testid="switch-employee">Switch to Employee</button>
+        <label class="view-label it-help-desk">
+            <button id="switch-it-help-desk" class="standard-button" onclick="switchRole('IT Help Desk')"
+                data-testid="switch-it-help-desk">Switch to IT Help Desk</button>
         </label><br>
     </div>
 </div>
@@ -113,7 +117,7 @@
     <p>Summary Cards Placeholder - Replace this with summary cards section</p>
 </div>
 
-<!-- Welcome Message for Supervisors and Employees -->
+<!-- Welcome Message for Supervisors -->
 <div id="role-message" class="role-message-container" data-testid="role-message">
     <h1 id="welcome-title" class="welcome-title" data-testid="welcome-title"></h1>
     <h2 id="welcome-subtitle" class="welcome-subtitle" data-testid="welcome-subtitle"></h2>
@@ -126,14 +130,16 @@
             <!-- Search Bar -->
             <div id="search-container" class="search-container">
                 <span id="search-addon" class="input-group-text search-icon" onclick="triggerSearch()">🔍</span>
-                <input type="text" id="search-input" class="form-control search-input" placeholder="Search for assets or employees..."
-                    aria-label="Search" aria-describedby="search-addon">
+                <input type="text" id="search-input" class="form-control search-input"
+                    placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
             </div>
             <!-- View Full List Button -->
-            <button id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">View Full List</button>
+            <button id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">View Full
+                List</button>
             <!-- Filter Buttton -->
             <div id="filter-button-container" class="dropdown" data-testid="filter-button" style="position: relative;">
-                <button id="filter-button-toggle" class="standard-button dropdown-toggle" onclick="toggleDropdown()">Filter</button>
+                <button id="filter-button-toggle" class="standard-button dropdown-toggle"
+                    onclick="toggleDropdown()">Filter</button>
                 <div id="filterDropdown" class="dropdown-menu" style="display: none;">
                     <!-- My Assets -->
                     <div id="filter-my-assets-container">
@@ -143,46 +149,64 @@
                     </div>
                     <!-- All My Direct Reports' Assets -->
                     <div id="filter-direct-reports-container" class="filter-section">
-                        <input type="checkbox" id="filter-all-reports" onchange="toggleAllReports()">          
-                        <span id="toggle-direct-reports" class="expandable" onclick="toggleReportsDropdown()">All My Direct Report's Assets ▶️</span>
+                        <input type="checkbox" id="filter-all-reports" onchange="toggleAllReports()">
+                        <span id="toggle-direct-reports" class="expandable" onclick="toggleReportsDropdown()">All My
+                            Direct Report's Assets ▶️</span>
                         <div id="reports-dropdown" style="display: none; margin-left: 20px;"></div>
                     </div>
                     <!-- Filter by Type -->
                     <div id="filter-type-container" class="filter-section">
                         <input type="checkbox" id="filterByTypeAll" onchange="toggleAllTypes()">
-                        <span id="toggle-type-dropdown" class="expandable" onclick="toggleTypesDropdown()">Filter By Type ▶️</span>
+                        <span id="toggle-type-dropdown" class="expandable" onclick="toggleTypesDropdown()">Filter By
+                            Type ▶️</span>
                         <div id="types-dropdown" style="display: none; margin-left: 20px;">
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Monitors" value = "Monitor" onchange="updateTypes()"> Monitors
+                                <input type="checkbox" class="filter-type" data-type="Monitors" value="Monitor"
+                                    onchange="updateTypes()"> Monitors
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Laptops" value = "Laptop" onchange="updateTypes()"> Laptops
+                                <input type="checkbox" class="filter-type" data-type="Laptops" value="Laptop"
+                                    onchange="updateTypes()"> Laptops
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Desktops" value = "Desktop" onchange="updateTypes()"> Desktops
+                                <input type="checkbox" class="filter-type" data-type="Desktops" value="Desktop"
+                                    onchange="updateTypes()"> Desktops
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Software" value = "Software" onchange="updateTypes()"> Software
+                                <input type="checkbox" class="filter-type" data-type="Software" value="Software"
+                                    onchange="updateTypes()"> Software
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Headsets" value = "Headset" onchange="updateTypes()"> Headsets
+                                <input type="checkbox" class="filter-type" data-type="Headsets" value="Headset"
+                                    onchange="updateTypes()"> Headsets
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Charging Cables" value = "Charging Cable" onchange="updateTypes()"> Charging Cables
+                                <input type="checkbox" class="filter-type" data-type="Charging Cables"
+                                    value="Charging Cable" onchange="updateTypes()"> Charging Cables
                             </label><br>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
-        <button id="assign-asset-button" class="assign-asset-button">Assign Asset</button>
+        <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+            <button id="assign-asset-button" class="assign-asset-button" data-bs-toggle="modal"
+                data-bs-target="#assignAssetModal">Assign Asset</button>
+        </div>
     </div>
-</div>
 
     <!-- Include Table Component -->
-    @if (tableHeaders == null || tableData == null) { <p style="color: red;">Table Data is Missing!</p>}
+    @if (tableHeaders == null || tableData == null)
+    {
+        <p style="color: red;">Table Data is Missing!</p>
+    }
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
+
+    <!-- Include Modal HTML -->
+    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml")
+
+    <!-- Include Modal Functionality Script -->
+    <script src="~/js/assignAssetModal.js"></script>
 </div>
 
 <script>
@@ -200,16 +224,11 @@
         });
     }
 
-    // Return assets for a supervisor and their direct reports 
+    // Return assets for a supervisor and their direct reports
     function getAssetsForSupervisor(supervisorID) {
         const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
         return tableData.filter(item =>
-        reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
-    }
-
-    // Return assets for a specific employee
-    function getAssetsForEmployee(employeeID) {
-        return tableData.filter(item => item["Assigned To"].includes(employeeID));
+            reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
     }
 
     // Updates welcome message based on role
@@ -218,18 +237,12 @@
         const title = document.getElementById("welcome-title");
         const subtitle = document.getElementById("welcome-subtitle");
 
-        if (user.role === "Admin") {
+        if (user.role === "Admin" || user.role === "IT Help Desk") {
             messageContainer.style.display = "none";
         } else {
             messageContainer.style.display = "block";
-
-            if (user.role === "Supervisor") {
-                title.textContent = `Welcome ${user.name}!`;
-                subtitle.textContent = `Here's an overview of your assets along with those assigned to your team.`;
-            } else if (user.role === "Employee") {
-                title.textContent = `Welcome ${user.name}!`;
-                subtitle.textContent = `Here's a list of assets assigned to you.`;
-            }
+            title.textContent = `Welcome ${user.name}!`;
+            subtitle.textContent = `Here's an overview of your assets along with those assigned to your team.`;
         }
     }
 
@@ -260,14 +273,15 @@
             filterButton.style.display = "block";
             populateDirectReports("28809");
             filterForSupervisor("28809");
-            updateWelcomeMessage({name: "John Smith", id: "28809", role: "Supervisor"});
+            updateWelcomeMessage({ name: "John Smith", id: "28809", role: "Supervisor" });
+            applyRowStriping();
         } else {
-            summaryCardsSection.style.display = "none";
+            summaryCardsSection.style.display = "flex";
             assignAssetSection.style.display = "none";
-            viewFullListButton.style.display = "none";
+            viewFullListButton.style.display = "block";
             filterButton.style.display = "none";
-            updateWelcomeMessage({name: "Jane Doe", id: "69444", role: "Employee"});
-            filterTableForUser("69444");
+            messageContainer.style.display = "none";
+            resetTableVisibility();
         }
         viewDropdown.style.display = 'none';
     }
@@ -305,7 +319,7 @@
     function toggleTypesDropdown() {
         const typesDropdown = document.querySelector('#types-dropdown');
         const typesToggle = document.querySelector('span[onclick="toggleTypesDropdown()"]');
-        
+
         if (typesDropdown.style.display === 'none') {
             typesDropdown.style.display = 'block';
             typesToggle.innerHTML = 'Filter By Type 🔽';
@@ -339,14 +353,14 @@
     function updateReports() {
         const allReportsCheckbox = document.querySelector('#filter-all-reports');
         const reportsCheckboxes = document.querySelectorAll('.filter-report');
-        
+
         let allChecked = true;
         reportsCheckboxes.forEach(cb => {
             if (!cb.checked) {
                 allChecked = false;
             }
         });
-        
+
         allReportsCheckbox.checked = allChecked;
         filterTable();
     }
@@ -368,7 +382,7 @@
     }
 
     // --- Dynamic Filter Content ---
-    
+
     // Populates direct report checkboxes under a supervisor
     function populateDirectReports(supervisorID) {
         const reportDropdown = document.querySelector('#reports-dropdown');
@@ -398,53 +412,58 @@
         // Get all checked direct report checkboxes (visible only to the supervisors)
         const reportCheckboxes = document.querySelectorAll(".filter-report:checked");
         const selectedReports = Array.from(reportCheckboxes).map(cb => cb.dataset.report);
-        
+
         // For now I'm hardcoding this just for simulation purposes.
         const supervisorID = "28809";
 
         // Check if "My Assets is" checked.
         const showMyAssets = document.querySelector("#filter-my-assets")?.checked;
-        
-        // Lopp through all the table rows in the body.
+
+        // Loop through all the table rows in the body.
         const rows = document.querySelectorAll("#table-body tr");
         rows.forEach(row => {
             // --- Search Filter ---
-            let matchesSearch = false;
-            row.querySelectorAll("td").forEach(cell => {
-                if (cell.textContent.toLowerCase().includes(input)) {
-                    matchesSearch = true;
-                }
-            });
+            const cells = row.querySelectorAll("td");
+            const assignedToCell = cells[3];
+            const typeCell = cells[1];
 
-            // --- Extract Assigned To ID --- 
-            const assignedToCell = row.querySelector("td:nth-child(4)");
-            const assignedToRaw = assignedToCell?.textContent.trim() || "";
-            const assignedToMatch = assignedToRaw.match(/\((\d+)\)/);
-            const assignedToID = assignedToMatch ? assignedToMatch[1] : null;
+            const assignedToText = assignedToCell?.textContent || "";
+            const typeText = typeCell?.textContent.trim() || "";
+            const match = assignedToText.match(/\((\d+)\)/);
+            const assignedToID = match ? match[1] : "";
+
+            const matchesSearch = Array.from(cells).some(cell =>
+                cell.textContent.toLowerCase().includes(input)
+            );
 
             // --- Determine Ownership ---
             const isSupervisorAsset = assignedToID === supervisorID;
             const isDirectReportAsset = selectedReports.includes(assignedToID);
+            const isInSupervisorView =
+                isSupervisorAsset ||
+                isDirectReportAsset ||
+                (assignedToID && users.find(u => u.ID === assignedToID)?.Supervisor === supervisorID);
 
             // --- Type Filter ---
-            const typeCell = row.querySelector("td:nth-child(2)");
-            const rowType = typeCell?.textContent.trim() || "";
-            matchesType = (selectedTypes.length === 0 || selectedTypes.includes(rowType));
+            matchesType = selectedTypes.length === 0 || selectedTypes.includes(typeText);
+            const ownershipFilterActive = showMyAssets || selectedReports.length > 0;
 
-            // --- Final Visibility Logic ---
-            const visible = matchesSearch && matchesType && (
-                (showMyAssets && isSupervisorAsset) || isDirectReportAsset
-            );
+            let visible = false;
 
+            if (ownershipFilterActive) {
+                visible = matchesSearch && matchesType && ((showMyAssets && isSupervisorAsset) || isDirectReportAsset);
+            } else {
+                visible = matchesSearch && matchesType && isInSupervisorView;
+            }
             row.style.display = visible ? "" : "none";
-
         });
+
+        applyRowStriping();
     }
 
     // Filters visible rows for supervisor and their team
     function filterForSupervisor(supervisorID) {
         const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
-        console.log("REPORTIDS", reportIDs);
         const rows = document.querySelectorAll("#table-body tr");
 
         rows.forEach(row => {
@@ -469,10 +488,22 @@
             const assignedToCell = row.querySelector("td:nth-child(4)");
             const assignedToRaw = assignedToCell?.textContent.trim() || "";
             const match = assignedToRaw.match(/\((\d+)\)/);
-            console.log("MATCH:", match);
             const assigneToID = match ? match[1] : null;
 
             row.style.display = assigneToID === userID ? "" : "none";
+        });
+    }
+
+    function applyRowStriping() {
+        const allRows = Array.from(document.querySelectorAll("#table-body tr"));
+
+        //Remove all existing .even/.odd classes first
+        allRows.forEach(row => row.classList.remove("even-row", "odd-row"));
+
+        // Then apple new striping to visible rows only
+        const visibleRows = Array.from(allRows).filter(row => row.style.display !== "none");
+        visibleRows.forEach((row, index) => {
+            row.classList.add(index % 2 === 0 ? "even-row" : "odd-row");
         });
     }
 </script>
