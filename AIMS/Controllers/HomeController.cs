@@ -25,8 +25,16 @@ public class HomeController : Controller
     }
 
 
-    public IActionResult Search()
+    public IActionResult Search(string? searchQuery)
     {
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            ViewBag.SearchQuery = searchQuery;
+        }
+        else
+        {
+            ViewBag.SearchQuery = "";
+        }
         return View();
     }
 
@@ -41,21 +49,23 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-    public IActionResult HomePageCardComponent() {
+    public IActionResult HomePageCardComponent()
+    {
         return View();
     }
 
-    public IActionResult CardComponent() {
+    public IActionResult CardComponent()
+    {
         return View();
     }
 
- public IActionResult AssetDetailsComponent(string category)
-{
-    this.ViewData["Category"] = category;
+    public IActionResult AssetDetailsComponent(string category)
+    {
+        this.ViewData["Category"] = category;
 
-    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
+        var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
 
-    var tableData = new List<Dictionary<string, string>> {
+        var tableData = new List<Dictionary<string, string>> {
          new() { {"Asset Name", "Lenovo ThinkPad E16"}, {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "Dell S2421NX"}, {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "HP EliteBook 840 G7"}, {"Type", "Laptop"}, {"Tag #", "DT-0011"}, {"Status", "Surveyed"} },
@@ -129,19 +139,19 @@ public class HomeController : Controller
 
     };
 
-    // Handle null or invalid categories gracefully
-    if (string.IsNullOrWhiteSpace(category))
-    {
-        category = "Laptop"; // default category
-    }
+        // Handle null or invalid categories gracefully
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            category = "Laptop"; // default category
+        }
 
-    var filteredData = tableData
-        .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))
-        .ToList();
+        var filteredData = tableData
+            .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
         this.ViewData["TableHeaders"] = tableHeaders;
-    this.ViewData["FilteredData"] = filteredData;
+        this.ViewData["FilteredData"] = filteredData;
 
-    return View();
-}
+        return View();
+    }
 }

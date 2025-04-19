@@ -1,12 +1,18 @@
+table {
+  width: 100%;
+  table-layout: fixed;
+  /* This is the magic line */
+}
+
 .search-container {
   background-color: #34495e;
   border: 2px solid transparent;
   padding: 5px 12px;
   transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  width: 100%;
 }
 
 .search-input {
-  flex: 1;
   height: 41px;
   background-color: #ecf0f1;
   text-align: center;
@@ -21,14 +27,27 @@
   border-color: #1abc9c;
 }
 
+.form-select {
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.form-select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
 .asset-table thead tr>th:first-child {
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
 }
 
 .asset-table thead tr>th:last-child {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 
 /* Table Styles */
