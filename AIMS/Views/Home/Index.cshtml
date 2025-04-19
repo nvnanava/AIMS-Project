@@ -3,90 +3,90 @@
     ViewData["Title"] = "Home Page";
 
     // Define Table Headers
-    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
+    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
     // Define Table Data
     var tableData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
-            {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"},
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
-            {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"},
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
-            {"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"},
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
-            {"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"},
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
-            {"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"},
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
-            {"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"},
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"},
-            {"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"},
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
-            {"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"},
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
-            {"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"},
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
-            {"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"},
-            {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
-            {"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"},
-            {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
-            {"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"},
-            {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"},
-            {"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"},
-            {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
-            {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"},
-            {"Status", "Assigned"} }
-    };
+new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
+{"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
+{"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
+{"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
+{"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
+{"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
+{"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"},
+{"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
+{"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
+{"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
+{"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"},
+{"Status", "Available"} },
+new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
+{"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"},
+{"Status", "Assigned"} },
+new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
+{"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"},
+{"Status", "In Repair"} },
+new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"},
+{"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"},
+{"Status", "Damaged"} },
+new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
+{"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"},
+{"Status", "Assigned"} }
+};
 
- // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
+    // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
     var users = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> {
-            {"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Jane Doe"}, {"Role", "Employee"}, {"ID", "69444"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Randy Orton"}, {"Role", "Employee"}, {"ID", "58344"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Robin Williams"}, {"Role", "Employee"}, {"ID", "10971"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Emily Carter"}, {"Role", "Employee"}, {"ID", "47283"}, {"Supervisor", "28809"}
-        },
-        new Dictionary<string, string> {
-            {"Name", "Bruce Wayne"}, {"Role", "Employee"}, {"ID", "34532"}, {"Supervisor", "28809"}
-        },
-    };
+new Dictionary<string, string> {
+{"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Jane Doe"}, {"Role", "Employee"}, {"ID", "69444"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Randy Orton"}, {"Role", "Employee"}, {"ID", "58344"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Robin Williams"}, {"Role", "Employee"}, {"ID", "10971"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
+},
+new Dictionary<string, string> {
+{"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
+},
+new Dictionary<string, string> {
+{"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
+},
+new Dictionary<string, string> {
+{"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
+},
+new Dictionary<string, string> {
+{"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
+},
+new Dictionary<string, string> {
+{"Name", "Emily Carter"}, {"Role", "Employee"}, {"ID", "47283"}, {"Supervisor", "28809"}
+},
+new Dictionary<string, string> {
+{"Name", "Bruce Wayne"}, {"Role", "Employee"}, {"ID", "34532"}, {"Supervisor", "28809"}
+},
+};
 
     var serializedTableData = JsonSerializer.Serialize(tableData);
     var serializedUsers = JsonSerializer.Serialize(users);
@@ -94,16 +94,20 @@
 
 <!-- Buttons to Switch Views -->
 <div id="view-switch-buttons" class="view-switch-buttons" data-testid="view-switch-buttons">
-    <span id="view-toggle" class="expandable" onclick="toggleViewDropdown()" data-testid="toggle-view-dropdown">Change View ▶️</span>
+    <span id="view-toggle" class="expandable" onclick="toggleViewDropdown()" data-testid="toggle-view-dropdown">Change
+        View ▶️</span>
     <div id="view-dropdown" class="view-dropdown" style="display:none;" data-testid="view-dropdown">
         <label class="view-label admin">
-            <button id="switch-admin" class="standard-button" onclick="switchRole('Admin')" data-testid="switch-admin">Switch to Admin</button>
+            <button id="switch-admin" class="standard-button" onclick="switchRole('Admin')"
+                data-testid="switch-admin">Switch to Admin</button>
         </label><br>
         <label class="view-label supervisor">
-            <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')" data-testid="switch-supervisor">Switch to Supervisor</button>
+            <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')"
+                data-testid="switch-supervisor">Switch to Supervisor</button>
         </label><br>
         <label class="view-label employee">
-            <button id="switch-employee" class="standard-button" onclick="switchRole('Employee')" data-testid="switch-employee">Switch to Employee</button>
+            <button id="switch-employee" class="standard-button" onclick="switchRole('Employee')"
+                data-testid="switch-employee">Switch to Employee</button>
         </label><br>
     </div>
 </div>
@@ -126,14 +130,17 @@
             <!-- Search Bar -->
             <div id="search-container" class="search-container">
                 <span id="search-addon" class="input-group-text search-icon" onclick="triggerSearch()">🔍</span>
-                <input type="text" id="search-input" class="form-control search-input" placeholder="Search for assets or employees..."
-                    aria-label="Search" aria-describedby="search-addon">
+                <input type="text" id="search-input" class="form-control search-input"
+                    placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
             </div>
             <!-- View Full List Button -->
-            <button id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">View Full List</button>
+            <div id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">
+                <a class="view-full-list-link" href="@Url.Action("Search", "Home")">View Full List | 📋 | ≡</a>
+            </div>
             <!-- Filter Buttton -->
             <div id="filter-button-container" class="dropdown" data-testid="filter-button" style="position: relative;">
-                <button id="filter-button-toggle" class="standard-button dropdown-toggle" onclick="toggleDropdown()">Filter</button>
+                <button id="filter-button-toggle" class="standard-button dropdown-toggle"
+                    onclick="toggleDropdown()">Filter</button>
                 <div id="filterDropdown" class="dropdown-menu" style="display: none;">
                     <!-- My Assets -->
                     <div id="filter-my-assets-container">
@@ -144,44 +151,55 @@
                     <!-- All My Direct Reports' Assets -->
                     <div id="filter-direct-reports-container" class="filter-section">
                         <input type="checkbox" id="filter-all-reports" onchange="toggleAllReports()">
-                        <span id="toggle-direct-reports" class="expandable" onclick="toggleReportsDropdown()">All My Direct Report's Assets ▶️</span>
+                        <span id="toggle-direct-reports" class="expandable" onclick="toggleReportsDropdown()">All My
+                            Direct Report's Assets ▶️</span>
                         <div id="reports-dropdown" style="display: none; margin-left: 20px;"></div>
                     </div>
                     <!-- Filter by Type -->
                     <div id="filter-type-container" class="filter-section">
                         <input type="checkbox" id="filterByTypeAll" onchange="toggleAllTypes()">
-                        <span id="toggle-type-dropdown" class="expandable" onclick="toggleTypesDropdown()">Filter By Type ▶️</span>
+                        <span id="toggle-type-dropdown" class="expandable" onclick="toggleTypesDropdown()">Filter By
+                            Type ▶️</span>
                         <div id="types-dropdown" style="display: none; margin-left: 20px;">
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Monitors" value = "Monitor" onchange="updateTypes()"> Monitors
+                                <input type="checkbox" class="filter-type" data-type="Monitors" value="Monitor"
+                                    onchange="updateTypes()"> Monitors
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Laptops" value = "Laptop" onchange="updateTypes()"> Laptops
+                                <input type="checkbox" class="filter-type" data-type="Laptops" value="Laptop"
+                                    onchange="updateTypes()"> Laptops
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Desktops" value = "Desktop" onchange="updateTypes()"> Desktops
+                                <input type="checkbox" class="filter-type" data-type="Desktops" value="Desktop"
+                                    onchange="updateTypes()"> Desktops
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Software" value = "Software" onchange="updateTypes()"> Software
+                                <input type="checkbox" class="filter-type" data-type="Software" value="Software"
+                                    onchange="updateTypes()"> Software
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Headsets" value = "Headset" onchange="updateTypes()"> Headsets
+                                <input type="checkbox" class="filter-type" data-type="Headsets" value="Headset"
+                                    onchange="updateTypes()"> Headsets
                             </label><br>
                             <label>
-                                <input type="checkbox" class="filter-type" data-type="Charging Cables" value = "Charging Cable" onchange="updateTypes()"> Charging Cables
+                                <input type="checkbox" class="filter-type" data-type="Charging Cables"
+                                    value="Charging Cable" onchange="updateTypes()"> Charging Cables
                             </label><br>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
-        <button id="assign-asset-button" class="assign-asset-button">Assign Asset</button>
+        <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+            <button id="assign-asset-button" class="assign-asset-button">Assign Asset</button>
+        </div>
     </div>
-</div>
 
     <!-- Include Table Component -->
-    @if (tableHeaders == null || tableData == null) { <p style="color: red;">Table Data is Missing!</p>}
+    @if (tableHeaders == null || tableData == null)
+    {
+        <p style="color: red;">Table Data is Missing!</p>
+    }
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
 </div>
 
@@ -200,11 +218,11 @@
         });
     }
 
-    // Return assets for a supervisor and their direct reports
+    // Return assets for a supervisor and their direct reports 
     function getAssetsForSupervisor(supervisorID) {
         const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
         return tableData.filter(item =>
-        reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
+            reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
     }
 
     // Return assets for a specific employee
@@ -260,13 +278,13 @@
             filterButton.style.display = "block";
             populateDirectReports("28809");
             filterForSupervisor("28809");
-            updateWelcomeMessage({name: "John Smith", id: "28809", role: "Supervisor"});
+            updateWelcomeMessage({ name: "John Smith", id: "28809", role: "Supervisor" });
         } else {
             summaryCardsSection.style.display = "none";
             assignAssetSection.style.display = "none";
             viewFullListButton.style.display = "none";
             filterButton.style.display = "none";
-            updateWelcomeMessage({name: "Jane Doe", id: "69444", role: "Employee"});
+            updateWelcomeMessage({ name: "Jane Doe", id: "69444", role: "Employee" });
             filterTableForUser("69444");
         }
         viewDropdown.style.display = 'none';
@@ -416,7 +434,7 @@
                 }
             });
 
-            // --- Extract Assigned To ID ---
+            // --- Extract Assigned To ID --- 
             const assignedToCell = row.querySelector("td:nth-child(4)");
             const assignedToRaw = assignedToCell?.textContent.trim() || "";
             const assignedToMatch = assignedToRaw.match(/\((\d+)\)/);
@@ -481,18 +499,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search-input');
     const tableRows = document.querySelectorAll('#table-body tr');
-
+    
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.trim().toLowerCase();
-
+        
         tableRows.forEach(row => {
             const rowText = Array.from(row.cells)
                 .map(cell => cell.textContent.toLowerCase())
                 .join(' ');
-
+            
             row.style.display = rowText.includes(searchTerm) ? '' : 'none';
         });
     });
 });
 </script>
-
