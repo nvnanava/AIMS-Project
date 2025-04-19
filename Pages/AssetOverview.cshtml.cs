@@ -7,9 +7,9 @@ namespace AssetTrackingSystem.Pages
 {
     public class AssetOverviewModel : PageModel
     {
-        private readonly AssetDbContext _dbContext;
+        private readonly AimsDbContext _dbContext;
 
-        public AssetOverviewModel(AssetDbContext dbContext)
+        public AssetOverviewModel(AimsDbContext dbContext)
         {
             _dbContext = dbContext;
         }
@@ -24,7 +24,7 @@ namespace AssetTrackingSystem.Pages
         public void OnGet(int id)
         {
             // Retrieve the asset with the specified ID.
-            Asset asset = _dbContext.Assets.Find(id);
+            Asset asset = _dbContext.Hardwares.Find(id);
             if (asset != null)
             {
                 AssetName = asset.Name;

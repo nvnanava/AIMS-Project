@@ -5,10 +5,10 @@ using AssetTrackingSystem.Models;
 
 public class RegisterNewAssetModel : PageModel
 {
-    private readonly AssetDbContext _db;
+    private readonly AimsDbContext _db;
     [BindProperty] public Asset Input { get; set; }
 
-    public RegisterNewAssetModel(AssetDbContext db) => _db = db;
+    public RegisterNewAssetModel(AimsDbContext db) => _db = db;
 
     public IActionResult OnPost()
     {
