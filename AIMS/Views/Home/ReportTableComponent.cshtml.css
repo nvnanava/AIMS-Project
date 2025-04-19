@@ -1,0 +1,47 @@
+/* Table Styles */
+.table-container {
+    max-height: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 0;
+}
+
+.report-table {
+    width: 100%;
+    background-color: #FFFFFF;
+}
+
+.report-table th, .report-table td {
+    padding: 12px;
+    text-align: center;
+}
+
+.report-table th {
+    height: 55px;
+    color: #34495e;
+}
+
+.report-table thead {
+    position: sticky;
+    top: 0;
+    background-color: #CFDCDF;
+    border-radius: 5px;
+    z-index: 2;
+}
+
+.report-table tbody tr {
+    border-bottom: 1px solid #999393;
+}
+
+
+
+/* Header Titles */
+.header-titles {
+    color: #34495e;
+    font-size: 18px;
+    height: 41px;
+    padding: 0px 16px;
+    cursor: pointer;
+}
+

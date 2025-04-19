@@ -1,0 +1,64 @@
+<div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAssetModalLabel">Add New Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+           <div class="modal-body">
+    <form action="/Home/AddAsset" method="post">
+
+        <div class="mb-3">
+            <label for="assets" class="form-label">Select Asset Type:</label>
+            <select id="assets" name="assets" class="form-select">
+                <option value="desktop">Desktop</option>
+                <option value="laptop">Laptop</option>
+                <option value="headset">Headset</option>
+                <option value="software">Software</option>
+                <option value="chargingCable">Charging Cable</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="make" class="form-label">Make:</label>
+            <select id="make" name="make" class="form-select">
+                <option value="dell">Dell</option>
+                <option value="hp">HP</option>
+                <option value="gateway">Gateway</option>
+                <option value="logitech">Logitech</option>
+                <option value="apple">Mac</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="model" class="form-label">Model:</label>
+            <select id="model" name="model" class="form-select">
+                <option value="Inspiron 2050">Inspiron 15</option>
+                <option value="Latitude 2040">Latitude 2040</option>
+                <option value="Logitech H390">Logitech H390</option>
+                <option value="logitech">Logitech</option>
+                <option value="apple">Macbook Pro</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="serialNumber" class="form-label">Serial Number:</label>
+            <input type="text" id="serialNumber" name="serialNumber" class="form-control" placeholder="Enter Serial Number">
+        </div>
+
+        <div class="mb-3">
+            <label for="tagNumber" class="form-label">Tag Number:</label>
+            <input type="text" id="tagNumber" name="tagNumber" class="form-control" placeholder="Enter Tag Number">
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Add Asset</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+
+    </form>
+</div>
+
+        </div>
+    </div>
+</div>
