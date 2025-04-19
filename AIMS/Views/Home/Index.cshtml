@@ -1,9 +1,10 @@
-﻿@{
+@using System.Text.Json;
+@{
     ViewData["Title"] = "Home Page";
 
     // Define Table Headers
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
-    
+
     // Define Table Data
     var tableData = new List<Dictionary<string, string>> {
         new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"}, 
@@ -18,7 +19,7 @@
         new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"}, 
             {"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"}, 
             {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"}, 
+        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
             {"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"}, 
             {"Status", "Assigned"} },
         new Dictionary<string, string> { {"Asset Name", "HP 527SH"}, 
@@ -37,7 +38,7 @@
             {"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"}, 
             {"Status", "Available"} },
         new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"}, 
-            {"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt"}, 
+            {"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"}, 
             {"Status", "Assigned"} },
         new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"}, 
             {"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"}, 
@@ -49,37 +50,449 @@
             {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"}, 
             {"Status", "Assigned"} }
     };
-} 
+
+ // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
+    var users = new List<Dictionary<string, string>> {
+        new Dictionary<string, string> {
+            {"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Jane Doe"}, {"Role", "Employee"}, {"ID", "69444"}, {"Supervisor", "28809"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Randy Orton"}, {"Role", "Employee"}, {"ID", "58344"}, {"Supervisor", "28809"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Robin Williams"}, {"Role", "Employee"}, {"ID", "10971"}, {"Supervisor", "28809"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Emily Carter"}, {"Role", "Employee"}, {"ID", "47283"}, {"Supervisor", "28809"}
+        },
+        new Dictionary<string, string> {
+            {"Name", "Bruce Wayne"}, {"Role", "Employee"}, {"ID", "34532"}, {"Supervisor", "28809"}
+        },
+    };
+
+    var serializedTableData = JsonSerializer.Serialize(tableData);
+    var serializedUsers = JsonSerializer.Serialize(users);
+}
+
+<!-- Buttons to Switch Views -->
+<div id="view-switch-buttons" class="view-switch-buttons" data-testid="view-switch-buttons">
+    <span id="view-toggle" class="expandable" onclick="toggleViewDropdown()" data-testid="toggle-view-dropdown">Change View ▶️</span>
+    <div id="view-dropdown" class="view-dropdown" style="display:none;" data-testid="view-dropdown">
+        <label class="view-label admin">
+            <button id="switch-admin" class="standard-button" onclick="switchRole('Admin')" data-testid="switch-admin">Switch to Admin</button>
+        </label><br>
+        <label class="view-label supervisor">
+            <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')" data-testid="switch-supervisor">Switch to Supervisor</button>
+        </label><br>
+        <label class="view-label employee">
+            <button id="switch-employee" class="standard-button" onclick="switchRole('Employee')" data-testid="switch-employee">Switch to Employee</button>
+        </label><br>
+    </div>
+</div>
 
 <!-- Placeholder for Summary Cards -->
-<div class="summary-cards-placeholder"
+<div id="summary-cards-section" class="summary-cards-placeholder" data-testid="summary-cards-section">
     <p>Summary Cards Placeholder - Replace this with summary cards section</p>
 </div>
 
+<!-- Welcome Message for Supervisors and Employees -->
+<div id="role-message" class="role-message-container" data-testid="role-message">
+    <h1 id="welcome-title" class="welcome-title" data-testid="welcome-title"></h1>
+    <h2 id="welcome-subtitle" class="welcome-subtitle" data-testid="welcome-subtitle"></h2>
+</div>
+
 <!-- Asset Table Section -->
-<div class="asset-management">
-    <div class="asset-header">
-        <div class="left-section">
-            <div class="search-container">
-                <span class="input-group-text search-icon" id="search-addon" onclick="triggerSearch()">🔍</span>
-                <input type="text" class="form-control search-input" placeholder="Search for assets or employees..."
+<div id="asset-management" class="asset-management">
+    <div id="asset-header" class="asset-header">
+        <div id="header-left-section" class="left-section">
+            <!-- Search Bar -->
+            <div id="search-container" class="search-container">
+                <span id="search-addon" class="input-group-text search-icon" onclick="triggerSearch()">🔍</span>
+                <input type="text" id="search-input" class="form-control search-input" placeholder="Search for assets or employees..."
                     aria-label="Search" aria-describedby="search-addon">
             </div>
-            <button class="view-full-list-button">View Full List | 📋 | ≡</button>
+            <!-- View Full List Button -->
+            <button id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">View Full List</button>
+            <!-- Filter Buttton -->
+            <div id="filter-button-container" class="dropdown" data-testid="filter-button" style="position: relative;">
+                <button id="filter-button-toggle" class="standard-button dropdown-toggle" onclick="toggleDropdown()">Filter</button>
+                <div id="filterDropdown" class="dropdown-menu" style="display: none;">
+                    <!-- My Assets -->
+                    <div id="filter-my-assets-container">
+                        <label>
+                            <input type="checkbox" id="filter-my-assets" onchange="filterTable()"> My Assets
+                        </label>
+                    </div>
+                    <!-- All My Direct Reports' Assets -->
+                    <div id="filter-direct-reports-container" class="filter-section">
+                        <input type="checkbox" id="filter-all-reports" onchange="toggleAllReports()">          
+                        <span id="toggle-direct-reports" class="expandable" onclick="toggleReportsDropdown()">All My Direct Report's Assets ▶️</span>
+                        <div id="reports-dropdown" style="display: none; margin-left: 20px;"></div>
+                    </div>
+                    <!-- Filter by Type -->
+                    <div id="filter-type-container" class="filter-section">
+                        <input type="checkbox" id="filterByTypeAll" onchange="toggleAllTypes()">
+                        <span id="toggle-type-dropdown" class="expandable" onclick="toggleTypesDropdown()">Filter By Type ▶️</span>
+                        <div id="types-dropdown" style="display: none; margin-left: 20px;">
+                            <label>
+                                <input type="checkbox" class="filter-type" data-type="Monitors" value = "Monitor" onchange="updateTypes()"> Monitors
+                            </label><br>
+                            <label>
+                                <input type="checkbox" class="filter-type" data-type="Laptops" value = "Laptop" onchange="updateTypes()"> Laptops
+                            </label><br>
+                            <label>
+                                <input type="checkbox" class="filter-type" data-type="Desktops" value = "Desktop" onchange="updateTypes()"> Desktops
+                            </label><br>
+                            <label>
+                                <input type="checkbox" class="filter-type" data-type="Software" value = "Software" onchange="updateTypes()"> Software
+                            </label><br>
+                            <label>
+                                <input type="checkbox" class="filter-type" data-type="Headsets" value = "Headset" onchange="updateTypes()"> Headsets
+                            </label><br>
+                            <label>
+                                <input type="checkbox" class="filter-type" data-type="Charging Cables" value = "Charging Cable" onchange="updateTypes()"> Charging Cables
+                            </label><br>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="right-section">
-            <button class="assign-asset-button">Assign Asset | 🔗</button>
-        </div>
+    <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+        <button id="assign-asset-button" class="assign-asset-button">Assign Asset</button>
     </div>
+</div>
 
     <!-- Include Table Component -->
     @if (tableHeaders == null || tableData == null) { <p style="color: red;">Table Data is Missing!</p>}
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
 </div>
 
-    function triggerSearch() {
-        let searchInput = document.querySelector('.search-input');
-        alert("Searching for: " + searchInput.value);
-        // Later, we can replace this with the actual search function
+<script>
+    // --- State + Initialization ---
+    let currentView = "Admin";
+    const tableData = @Html.Raw(serializedTableData);
+    const users = @Html.Raw(serializedUsers);
+
+    // --- Utility Functions ---
+
+    // Reset table visibility to show all rows
+    function resetTableVisibility() {
+        document.querySelectorAll("#table-body tr").forEach(row => {
+            row.style.display = "";
+        });
+    }
+
+    // Return assets for a supervisor and their direct reports 
+    function getAssetsForSupervisor(supervisorID) {
+        const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
+        return tableData.filter(item =>
+        reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
+    }
+
+    // Return assets for a specific employee
+    function getAssetsForEmployee(employeeID) {
+        return tableData.filter(item => item["Assigned To"].includes(employeeID));
+    }
+
+    // Updates welcome message based on role
+    function updateWelcomeMessage(user) {
+        const messageContainer = document.getElementById("role-message");
+        const title = document.getElementById("welcome-title");
+        const subtitle = document.getElementById("welcome-subtitle");
+
+        if (user.role === "Admin") {
+            messageContainer.style.display = "none";
+        } else {
+            messageContainer.style.display = "block";
+
+            if (user.role === "Supervisor") {
+                title.textContent = `Welcome ${user.name}!`;
+                subtitle.textContent = `Here's an overview of your assets along with those assigned to your team.`;
+            } else if (user.role === "Employee") {
+                title.textContent = `Welcome ${user.name}!`;
+                subtitle.textContent = `Here's a list of assets assigned to you.`;
+            }
+        }
+    }
+
+    // --- Role Switching ---
+
+    // Changes the current view and updates visibility of sections.
+    function switchRole(role) {
+        currentView = role;
+
+        const summaryCardsSection = document.querySelector("[data-testid='summary-cards-section']");
+        const assignAssetSection = document.querySelector("[data-testid='assign-asset-section']");
+        const viewFullListButton = document.querySelector("[data-testid='view-full-list-button']");
+        const filterButton = document.querySelector("[data-testid='filter-button']");
+        const viewDropdown = document.querySelector('#view-dropdown');
+        const messageContainer = document.getElementById("role-message");
+
+        if (role === "Admin") {
+            summaryCardsSection.style.display = "flex";
+            assignAssetSection.style.display = "block";
+            viewFullListButton.style.display = "block";
+            filterButton.style.display = "none";
+            messageContainer.style.display = "none";
+            resetTableVisibility();
+        } else if (role === "Supervisor") {
+            summaryCardsSection.style.display = "none";
+            assignAssetSection.style.display = "none";
+            viewFullListButton.style.display = "none";
+            filterButton.style.display = "block";
+            populateDirectReports("28809");
+            filterForSupervisor("28809");
+            updateWelcomeMessage({name: "John Smith", id: "28809", role: "Supervisor"});
+        } else {
+            summaryCardsSection.style.display = "none";
+            assignAssetSection.style.display = "none";
+            viewFullListButton.style.display = "none";
+            filterButton.style.display = "none";
+            updateWelcomeMessage({name: "Jane Doe", id: "69444", role: "Employee"});
+            filterTableForUser("69444");
+        }
+        viewDropdown.style.display = 'none';
+    }
+    switchRole(currentView);
+
+    // --- Dropdown Toggle Handlers ---
+
+    // Show/hide the view dropdown
+    function toggleViewDropdown() {
+        const viewDropdown = document.querySelector('#view-dropdown');
+        viewDropdown.style.display = (viewDropdown.style.display === 'none') ? 'block' : 'none';
+    }
+
+    // Show/hide the main filter dropdown
+    function toggleDropdown() {
+        const dropdown = document.querySelector("#filterDropdown");
+        dropdown.style.display = (dropdown.style.display === 'none') ? 'block' : 'none';
+    }
+
+    // Show/hide the reports filter dropdown
+    function toggleReportsDropdown() {
+        const reportsDropdown = document.querySelector('#reports-dropdown');
+        const reportsToggle = document.querySelector('span[onclick="toggleReportsDropdown()"]');
+
+        if (reportsDropdown.style.display === 'none') {
+            reportsDropdown.style.display = 'block';
+            reportsToggle.innerHTML = 'All My Direct Reports\' Assets 🔽';
+        } else {
+            reportsDropdown.style.display = 'none';
+            reportsToggle.innerHTML = 'All My Direct Reports\' Assets ▶️'
+        }
+    }
+
+    // Show/hide the type filter dropdown
+    function toggleTypesDropdown() {
+        const typesDropdown = document.querySelector('#types-dropdown');
+        const typesToggle = document.querySelector('span[onclick="toggleTypesDropdown()"]');
+        
+        if (typesDropdown.style.display === 'none') {
+            typesDropdown.style.display = 'block';
+            typesToggle.innerHTML = 'Filter By Type 🔽';
+        } else {
+            typesDropdown.style.display = 'none';
+            typesToggle.innerHTML = 'Filter By Type ▶️'
+        }
+    }
+
+    // --- Filter Checkbox Handlers ---
+
+    // Toggles all direct report checkboxes
+    function toggleAllReports() {
+        const allReportsCheckbox = document.querySelector('#filter-all-reports');
+        const reportsCheckboxes = document.querySelectorAll('.filter-report');
+
+        reportsCheckboxes.forEach(cb => cb.checked = allReportsCheckbox.checked);
+        filterTable();
+    }
+
+    // Toggles all asset type checkboxes
+    function toggleAllTypes() {
+        const allTypesCheckbox = document.querySelector('#filterByTypeAll');
+        const typesCheckboxes = document.querySelectorAll('.filter-type');
+
+        typesCheckboxes.forEach(cb => cb.checked = allTypesCheckbox.checked);
+        filterTable();
+    }
+
+    // Updates "All Reports" checkbox if all children checked
+    function updateReports() {
+        const allReportsCheckbox = document.querySelector('#filter-all-reports');
+        const reportsCheckboxes = document.querySelectorAll('.filter-report');
+        
+        let allChecked = true;
+        reportsCheckboxes.forEach(cb => {
+            if (!cb.checked) {
+                allChecked = false;
+            }
+        });
+        
+        allReportsCheckbox.checked = allChecked;
+        filterTable();
+    }
+
+    // Updates "All Types" checkbox if all children checked
+    function updateTypes() {
+        const allTypesCheckbox = document.querySelector('#filterByTypeAll');
+        const typesCheckboxes = document.querySelectorAll('.filter-type');
+
+        let allChecked = true;
+        typesCheckboxes.forEach(cb => {
+            if (!cb.checked) {
+                allChecked = false;
+            }
+        });
+
+        allTypesCheckbox.checked = allChecked;
+        filterTable();
+    }
+
+    // --- Dynamic Filter Content ---
+    
+    // Populates direct report checkboxes under a supervisor
+    function populateDirectReports(supervisorID) {
+        const reportDropdown = document.querySelector('#reports-dropdown');
+        reportDropdown.innerHTML = '';
+
+        const directReports = users.filter(user => user.Supervisor === supervisorID);
+
+        directReports.forEach(report => {
+            const label = document.createElement('label');
+            label.innerHTML = `<input type="checkbox" class="filter-report" data-report="${report.ID}" value="${report.ID}" onchange="updateReports()"> ${report.Name}`;
+            reportDropdown.appendChild(label);
+            reportDropdown.appendChild(document.createElement('br'));
+        });
+    }
+
+    // --- Filtering Logic ---
+
+    // Combines search, ownership, and type filters
+    function filterTable() {
+        // Get the search input and convert it to lowercase for case-insensitive comparison.
+        const input = document.getElementById("search-input")?.value.toLowerCase() || "";
+
+        // Get all checked type filter checkboxes (e.g., Laptops, Monitors, etc.)
+        const typeCheckboxes = document.querySelectorAll(".filter-type:checked");
+        const selectedTypes = Array.from(typeCheckboxes).map(cb => cb.value.trim());
+
+        // Get all checked direct report checkboxes (visible only to the supervisors)
+        const reportCheckboxes = document.querySelectorAll(".filter-report:checked");
+        const selectedReports = Array.from(reportCheckboxes).map(cb => cb.dataset.report);
+        
+        // For now I'm hardcoding this just for simulation purposes.
+        const supervisorID = "28809";
+
+        // Check if "My Assets is" checked.
+        const showMyAssets = document.querySelector("#filter-my-assets")?.checked;
+        
+        // Lopp through all the table rows in the body.
+        const rows = document.querySelectorAll("#table-body tr");
+        rows.forEach(row => {
+            // --- Search Filter ---
+            let matchesSearch = false;
+            row.querySelectorAll("td").forEach(cell => {
+                if (cell.textContent.toLowerCase().includes(input)) {
+                    matchesSearch = true;
+                }
+            });
+
+            // --- Extract Assigned To ID --- 
+            const assignedToCell = row.querySelector("td:nth-child(4)");
+            const assignedToRaw = assignedToCell?.textContent.trim() || "";
+            const assignedToMatch = assignedToRaw.match(/\((\d+)\)/);
+            const assignedToID = assignedToMatch ? assignedToMatch[1] : null;
+
+            // --- Determine Ownership ---
+            const isSupervisorAsset = assignedToID === supervisorID;
+            const isDirectReportAsset = selectedReports.includes(assignedToID);
+
+            // --- Type Filter ---
+            const typeCell = row.querySelector("td:nth-child(2)");
+            const rowType = typeCell?.textContent.trim() || "";
+            matchesType = (selectedTypes.length === 0 || selectedTypes.includes(rowType));
+
+            // --- Final Visibility Logic ---
+            const visible = matchesSearch && matchesType && (
+                (showMyAssets && isSupervisorAsset) || isDirectReportAsset
+            );
+
+            row.style.display = visible ? "" : "none";
+
+        });
+    }
+
+    // Filters visible rows for supervisor and their team
+    function filterForSupervisor(supervisorID) {
+        const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
+        console.log("REPORTIDS", reportIDs);
+        const rows = document.querySelectorAll("#table-body tr");
+
+        rows.forEach(row => {
+            const assignedToCell = row.querySelector("td:nth-child(4)"); // Assigned to
+            const assignedText = assignedToCell?.textContent || "";
+            const isSupervisorAsset = assignedText.includes(supervisorID);
+            const isDirectReportAsset = reportIDs.some(id => assignedText.includes(id));
+
+            if (isSupervisorAsset || isDirectReportAsset) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+
+    // Filter visible rows for an individual employee
+    function filterTableForUser(userID) {
+        const rows = document.querySelectorAll("#table-body tr");
+
+        rows.forEach(row => {
+            const assignedToCell = row.querySelector("td:nth-child(4)");
+            const assignedToRaw = assignedToCell?.textContent.trim() || "";
+            const match = assignedToRaw.match(/\((\d+)\)/);
+            console.log("MATCH:", match);
+            const assigneToID = match ? match[1] : null;
+
+            row.style.display = assigneToID === userID ? "" : "none";
+        });
     }
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input');
+    const tableRows = document.querySelectorAll('#table-body tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim().toLowerCase();
+        
+        tableRows.forEach(row => {
+            const rowText = Array.from(row.cells)
+                .map(cell => cell.textContent.toLowerCase())
+                .join(' ');
+            
+            row.style.display = rowText.includes(searchTerm) ? '' : 'none';
+        });
+    });
+});
+</script>
+
