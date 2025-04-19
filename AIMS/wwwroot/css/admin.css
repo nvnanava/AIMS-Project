@@ -38,6 +38,17 @@ body {
   font-size: 1rem;
   cursor: pointer;
 }
+ HEAD
+
+.nav-links li a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+}
+
+
 
 .search-profile {
   display: flex;
