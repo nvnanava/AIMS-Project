@@ -1,14 +1,14 @@
 @model Tuple<List<string>, List<Dictionary<string, string>>>
 
-<div class="table-container">
+<div id="table-container" class="table-container">
     <table class="asset-table">
         <thead>
             <tr>
                 @foreach (var header in Model.Item1) {
                     <th scope="col">
-                        <button class="sort-btn" onclick="toggleSort(this)">
-                            <span class="sort-text">@header</span>
-                            <span class="sort-icon">🔼</span>
+                        <button id="sort-button-@header.Replace(" ", "-").ToLower()" class="sort-btn" onclick="toggleSort(this)">
+                            <span id="sort-text-@header.Replace(" ", "-").ToLower()" class="sort-text">@header</span>
+                            <span id="sort-icon-@header.Replace(" ", "-").ToLower()" class="sort-icon">🔼</span>
                         </button>
                     </th>
                 }
@@ -16,12 +16,22 @@
         </thead>
         <tbody id="table-body">
             @if (Model.Item2.Count == 0) {
-                <tr><td colspan="@Model.Item1.Count" style="text-align: center;">No data available</td></tr>
+                <tr><td id="no-data-message" colspan="@Model.Item1.Count" style="text-align: center;">No data available</td></tr>
             } else {
                 @foreach (var row in Model.Item2) {
                     <tr>
                         @foreach (var header in Model.Item1) {
-                            <td>@(row.ContainsKey(header) ? row[header] : "-")</td>
+                            <td>
+                                @if (row.ContainsKey(header)) {
+                                    @if (header == "Status") {
+                                        <span class="status @row[header].ToLower().Replace(" ", "")">@row[header]</span>
+                                    } else {
+                                        @row[header]
+                                    }
+                                } else {
+                                    @("-")
+                                }
+                            </td>
                         }
                     </tr>
                 }
@@ -32,25 +42,42 @@
 
 <script>
     function toggleSort(button) {
-        let icon = button.querySelector(".sort-icon");
-        let column = button.closest("th").cellIndex;
-        let table = document.querySelector("table");
-        let tbody = table.querySelector(" tbody");
-        let rows = Array.from(tbody.querySelectorAll("tr"));
+        const icon = button.querySelector(".sort-icon");
+        const column = button.closest("th").cellIndex;
+        const table = document.querySelector("table");
+        const tbody = table.querySelector(" tbody");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const visibleRows = rows.filter(row => row.style.display !== "none");
 
-        let ascending = icon.textContent === "🔽";
+        const ascending = icon.textContent === "🔽";
         icon.textContent = ascending ? "🔼" : "🔽";
 
-        rows.sort((rowA, rowB) => {
-            let cellA = rowA.cells[column].textContent.trim();
-            let cellB = rowB.cells[column].textContent.trim();
-            
-            return ascending 
-                ? cellA.localeCompare(cellB, undefined, { numeric: true }) 
+        const sortedRows = visibleRows.slice().sort((rowA, rowB) => {
+            const cellA = rowA.cells[column]?.textContent.trim() || "";
+            const cellB = rowB.cells[column]?.textContent.trim() || "";
+           
+            return ascending
+                ? cellA.localeCompare(cellB, undefined, { numeric: true })
                 : cellB.localeCompare(cellA, undefined, { numeric: true });
         });
-        
-        tbody.innerHTML = "";
-        rows.forEach(row => table.appendChild(row));
+
+        const reordered = [];
+        let sortIndex = 0;
+
+        rows.forEach(row => {
+            if (row.style.display === "none") {
+                reordered.push(row);
+            } else {
+                reordered.push(sortedRows[sortIndex++]);
+            }
+        });
+
+        reordered.forEach((row, index) => {
+            tbody.appendChild(row);
+            row.classList.remove("even-row", "odd-row");
+            if (row.style.display !== "none") {
+                row.classList.add(index % 2 === 0 ? "even-row" : "odd-row");
+            }
+        });
     }
 </script>
