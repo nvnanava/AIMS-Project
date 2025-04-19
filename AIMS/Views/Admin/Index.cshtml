@@ -1,0 +1,103 @@
+@{
+  Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="admin-page">
+  <nav class="navbar">
+    <div class="logo">
+      <h2>AIMS</h2>
+      <p>Asset Inventory Management System</p>
+    </div>
+    <ul class="nav-links">
+      <li>🏠 Home</li>
+      <li>📊 Reports</li>
+      <li>⚙️ Admin</li>
+      <li>📝 <a asp-controller="AuditLog" asp-action="Index">Audit Log</a></li>
+
+    </ul>
+    <div class="search-profile">
+      <input type="text" placeholder="Assets Search" />
+      <div class="profile-icon">👤</div>
+    </div>
+  </nav>
+
+  <div class="table-wrapper">
+    <div class="table-controls">
+      <button class="assign-btn">Assign </button>
+      <button class="add-btn">Add User </button>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Actions</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Asset</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @{
+          var random = new Random();
+          var firstNames = new[] { "John", "Jane", "Alice", "Bob", "Eva", "Max", "Zara", "Leo", "Nina", "Omar", "Sophie",
+                "Ethan" };
+          var lastNames = new[] { "Smith", "Johnson", "Brown", "Davis", "Taylor", "Lee", "Wilson", "Clark", "Adams",
+                "Walker", "Young", "Hall" };
+          var assets = new[] { "Laptop", "Monitor", "Printer", "Keyboard", "Mouse", "Headphone" };
+          var roles = new[] { "Admin", "User" };
+        }
+
+        @{
+          var users = new[]
+          {
+                new { Name = "John Smith", Email = "john.smith@email.com", Role = "Admin", Asset = "Laptop", Status = "Active"
+                },
+                new { Name = "Jane Doe", Email = "jane.doe@email.com", Role = "User", Asset = "Monitor", Status = "Inactive" },
+                new { Name = "Max Taylor", Email = "max.taylor@email.com", Role = "Admin", Asset = "Printer", Status = "Active"
+                },
+                new { Name = "Zara Khan", Email = "zara.khan@email.com", Role = "User", Asset = "Laptop", Status = "Inactive" },
+                new { Name = "Leo Clark", Email = "leo.clark@email.com", Role = "Admin", Asset = "Headphone", Status = "Active"
+                },
+                new { Name = "Sophie Lee", Email = "sophie.lee@email.com", Role = "User", Asset = "Keyboard", Status = "Active"
+                },
+                new { Name = "Nina Patel", Email = "nina.patel@email.com", Role = "Admin", Asset = "Laptop", Status = "Active"
+                },
+                new { Name = "Andrew Jackson", Email = "andrew.jackson@email.com", Role = "User", Asset = "Headphone", Status =
+                "Inactive" },
+                new { Name = "Taylor Jackson", Email = "Taylor.jackson@email.com", Role = "Admin", Asset = "Printer", Status =
+                "Active"
+                },
+                new { Name = "Michael Dawson", Email = "michael.dawson@email.com", Role = "User", Asset = "Laptop", Status =
+                "Inactive" },
+                new { Name = "Clint Clark", Email = "clint.clark@email.com", Role = "Admin", Asset = "Keyboard", Status =
+                "Active"
+                },
+                new { Name = "Tobi Brown", Email = "Tobi.brown@email.com", Role = "User", Asset = "Headphone", Status = "Active"
+                }
+                };
+        }
+
+        @foreach (var user in users)
+        {
+          <tr>
+            <td><button class="edit-btn">Edit</button></td>
+            <td>@user.Name</td>
+            <td>@user.Email</td>
+            <td>@user.Role</td>
+            <td>@user.Asset</td>
+            <td>
+              <span class="badge @(user.Status.ToLower())">
+                @user.Status
+              </span>
+            </td>
+          </tr>
+        }
+
+
+
+      </tbody>
+    </table>
+  </div>
+</div>
