@@ -4,9 +4,11 @@
     <table class="asset-table">
         <thead>
             <tr>
-                @foreach (var header in Model.Item1) {
+                @foreach (var header in Model.Item1)
+                {
                     <th scope="col">
-                        <button id="sort-button-@header.Replace(" ", "-").ToLower()" class="sort-btn" onclick="toggleSort(this)">
+                        <button id="sort-button-@header.Replace(" ", "-").ToLower()" class="sort-btn"
+                            onclick="toggleSort(this)">
                             <span id="sort-text-@header.Replace(" ", "-").ToLower()" class="sort-text">@header</span>
                             <span id="sort-icon-@header.Replace(" ", "-").ToLower()" class="sort-icon">🔼</span>
                         </button>
@@ -15,20 +17,33 @@
             </tr>
         </thead>
         <tbody id="table-body">
-            @if (Model.Item2.Count == 0) {
-                <tr><td id="no-data-message" colspan="@Model.Item1.Count" style="text-align: center;">No data available</td></tr>
-            } else {
-                @foreach (var row in Model.Item2) {
+            @if (Model.Item2.Count == 0)
+            {
+                <tr>
+                    <td id="no-data-message" colspan="@Model.Item1.Count" style="text-align: center;">No data available</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var row in Model.Item2)
+                {
                     <tr>
-                        @foreach (var header in Model.Item1) {
+                        @foreach (var header in Model.Item1)
+                        {
                             <td>
-                                @if (row.ContainsKey(header)) {
-                                    @if (header == "Status") {
+                                @if (row.ContainsKey(header))
+                                {
+                                    @if (header == "Status")
+                                    {
                                         <span class="status @row[header].ToLower().Replace(" ", "")">@row[header]</span>
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         @row[header]
                                     }
-                                } else {
+                                }
+                                else
+                                {
                                     @("-")
                                 }
                             </td>
@@ -55,7 +70,7 @@
         const sortedRows = visibleRows.slice().sort((rowA, rowB) => {
             const cellA = rowA.cells[column]?.textContent.trim() || "";
             const cellB = rowB.cells[column]?.textContent.trim() || "";
-           
+
             return ascending
                 ? cellA.localeCompare(cellB, undefined, { numeric: true })
                 : cellB.localeCompare(cellA, undefined, { numeric: true });
@@ -73,11 +88,32 @@
         });
 
         reordered.forEach((row, index) => {
-            tbody.appendChild(row);
             row.classList.remove("even-row", "odd-row");
-            if (row.style.display !== "none") {
-                row.classList.add(index % 2 === 0 ? "even-row" : "odd-row");
-            }
+            tbody.appendChild(row);
+        });
+
+        const visibleSortedRows = reordered.filter(row => row.style.display !== "none");
+        visibleSortedRows.forEach((row, index) => {
+            row.classList.add(index % 2 === 0 ? "even-row" : "odd-row");
+        });
+
+    }
+
+    function applyInitialRowStriping() {
+        const rows = Array.from(document.querySelectorAll("#table-body tr"));
+        let visibleIndex = 0;
+
+        rows.forEach(row => {
+            // Skip hidden rows
+            if (row.style.display === "none") return;
+
+            // Remove old classes
+            row.classList.remove("even-row", "odd-row");
+
+            // Add new class based on visible rows
+            row.classList.add(visibleIndex % 2 === 0 ? "even-row" : "odd-row");
+            visibleIndex++;
         });
     }
+    document.addEventListener("DOMContentLoaded", applyInitialRowStriping);
 </script>
