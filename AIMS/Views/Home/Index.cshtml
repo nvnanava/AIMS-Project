@@ -134,8 +134,10 @@ new Dictionary<string, string> {
                     placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
             </div>
             <!-- View Full List Button -->
-            <button id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">View Full
-                List</button>
+            <a id="view-full-list-button" class="standard-button" data-testid="view-full-list-button"
+                href="@Url.Action("Search", "Home")" style="text-decoration: none;">
+                View Full List
+            </a>
             <!-- Filter Buttton -->
             <div id="filter-button-container" class="dropdown" data-testid="filter-button" style="position: relative;">
                 <button id="filter-button-toggle" class="standard-button dropdown-toggle"
