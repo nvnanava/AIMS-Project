@@ -1,0 +1,863 @@
+@{
+    ViewData["Title"] = "Reports";
+
+
+    // Define Table Headers
+    var tableHeaders = new List<string> { "Name", "Type", "Description", "Date Created"};
+    
+    // Define Table Data
+    var tableData = new List<Dictionary<string, string>> {
+        new Dictionary<string, string> { {"Name", "Monthly Report for Jan"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Check for Daisy"}, 
+            {"Type", "Asset Report"}, {"Description", "Daisy wanted to see what assets we have"}, 
+            {"Date Created", "12 Dec 2024 03:41:04 PT"} },
+        new Dictionary<string, string> { {"Name", "Send to Higher-ups"}, 
+            {"Type", "Custom Report"}, {"Description", "They asked for all the information we have"}, 
+            {"Date Created", "11 Dec 2024 06:32:51 PT"} },
+        new Dictionary<string, string> { {"Name", "Monthly Report for Dec"}, 
+            {"Type", "Asset Assignments to Users"}, {"Description", ""}, 
+            {"Date Created", "02 Dec 2024 11:05:25 PT"} },
+        new Dictionary<string, string> { {"Name", "Report for Dan"}, 
+            {"Type", "Custom Report"}, {"Description", "Dan asked for report will users and office"}, 
+            {"Date Created", "25 Nov 2024 09:38:31 PT"} },
+        new Dictionary<string, string> { {"Name", "Checking something"}, 
+            {"Type", "Assets Assigned to an Office"}, {"Description", "Needed to do some analysis on how many assets per office"}, 
+            {"Date Created", "07 Nov 2024 04:34:11 PT"} },
+        new Dictionary<string, string> { {"Name", "Monthly Report for Nov"}, 
+            {"Type", "Assets Assigned to an Office"}, {"Description", ""}, 
+            {"Date Created", "01 Nov 2024 10:25:57 PT"} },
+        new Dictionary<string, string> { {"Name", "Print for Wall"}, 
+            {"Type", "Asset Report"}, {"Description", "need to put on wall so everyone can see what assets are where"}, 
+            {"Date Created", "26 Sept 2024 01:28:58 PT"} },
+        new Dictionary<string, string> { {"Name", "Send our reminders"}, 
+            {"Type", "Asset Assignments to Users"}, {"Description", "sending out reminders who has what in case missing items"}, 
+            {"Date Created", "15 Sept 2024 07:15:47 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 1"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 2"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 3"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 4"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 5"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+        new Dictionary<string, string> { {"Name", "Do 6"}, 
+            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
+            {"Date Created", "01 Jan 2025 09:19:34 PT"} }
+    };
+
+    // Define User Table Headers
+    var userHeaders = new List<string> { "Name", "Email", "Role", "Asset", "Status"};
+
+    // Define User Table Data
+    var userData = new List<Dictionary<string, string>> {
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Lenovo ThinkPad E16"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Dell S2421NX"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Logitech Zone 300"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Lenovo IdeaCentre 3"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Microsoft 365 Business"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "HP 527SH"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Logitech Zone Vibe 100"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Dell Inspirion 3030"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Name", "John Smith"}, 
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} }
+    };
+
+    // Define Office Table Headers
+    var officeHeaders = new List<string> { "Office", "Asset", "Status"};
+
+    // Define Office Table Data
+    var officeData = new List<Dictionary<string, string>> {
+        new Dictionary<string, string> { {"Office", "10"}, 
+            {"Asset", "Lenovo Thinkpad E16"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "31"}, 
+            {"Asset", "Dell S2421NX"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Office", "14"}, 
+            {"Asset", "Logitech Zone 300"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "28"}, 
+            {"Asset", "Lenovo IdeaCentre 3"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "14"}, 
+            {"Asset", "Microsoft 365 Business"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "26"}, 
+            {"Asset", "HP 527SH"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "13"}, 
+            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Office", "21"}, 
+            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "28"}, 
+            {"Asset", "Logitech Zone Vibe 100"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Office", "29"}, 
+            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "46"}, 
+            {"Asset", "Dell Inspirion 3030"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "51"}, 
+            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
+        new Dictionary<string, string> { {"Office", "38"}, 
+            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Office", "21"}, 
+            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
+        new Dictionary<string, string> { {"Office", "42"}, 
+            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} }
+    };
+    
+    // Define Asset Table Headers
+    var assetHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
+
+    // Define Asset Table Data
+    var assetData = new List<Dictionary<string, string>> {
+        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"}, 
+            {"Type", "Laptop"}, {"Tag #", "LT-0020"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Damaged"} },
+        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"}, 
+            {"Type", "Laptop"}, {"Tag #", "MN-0001"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"}, 
+            {"Type", "Headphone"}, {"Tag #", "HS-0080"}, 
+            {"Assigned To", "Unassigned"}, {"Status", "Available"} },
+        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"}, 
+            {"Type", "Laptop"}, {"Tag #", "DT-0011"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"}, 
+            {"Type", "Laptop"}, {"Tag #", "SW-0100"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "HP 527SH"}, 
+            {"Type", "Laptop"}, {"Tag #", "MN-0023"}, 
+            {"Assigned To", "Unassigned"}, {"Status", "Damaged"} },
+        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"}, 
+            {"Type", "Laptop"}, {"Tag #", "DT-0075"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Due Soon"} },
+        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"}, 
+            {"Type", "Monitor"}, {"Tag #", "HS-0015"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"}, 
+            {"Type", "Keyboard"}, {"Tag #", "CC-0088"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Dell Inspirion 3030"}, 
+            {"Type", "Mouse"}, {"Tag #", "SW-0100"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"}, 
+            {"Type", "Monitor"}, {"Tag #", "MN-0023"}, 
+            {"Assigned To", "Unassigned"}, {"Status", "Available"} },
+        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft  USB-C"}, 
+            {"Type", "Laptop"}, {"Tag #", "DT-0075"}, 
+            {"Assigned To", "John Smith"}, {"Status", "In Repair"} },
+        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"}, 
+            {"Type", "Laptop"}, {"Tag #", "LT-0005"}, 
+            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
+        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"}, 
+            {"Type", "Laptop"}, {"Tag #", "HS-0015"}, 
+            {"Assigned To", "John Smith"}, {"Status", "In Repair"} }
+    };
+
+}
+<body style="background-color:#ECF0F1;">
+
+    <style>
+        body {
+            overflow-y: scroll;
+        }
+
+        .report-page-size {
+            width: 95%;
+            margin: 0 auto 20px auto;
+        }
+
+        /* Report Management Section */
+        .report-management {
+            width: 100%;
+            height: auto;
+            background-color: #FFFFFF;
+            margin: 0 auto 20px auto;
+            overflow: visible;
+        }
+
+        /* Report Header */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            height: 50px;
+            padding: 0px 5px 0px 20px;
+            margin: 0;
+        }
+
+        .report-header .left-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .report-header .right-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Search Bar */
+        .search-container {
+            display: flex;
+            align-items: center;
+            width: 300px;
+            height: 41px;
+            background-color: #ecf0f1;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 5px 12px;
+        }
+
+        .search-input {
+            flex: 1;
+            background-color: transparent;
+            text-align: start;
+            border: none;
+            outline: none;
+            padding: 0px;
+        }
+
+
+        /* View Download CSV and New Report Button */
+        .download-csv-button, .new-report-button {
+            height: 41px;
+            padding: 0px 16px;
+            color: #34495e;
+            line-height: normal;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .new-report-button {
+            margin-left: auto;
+            margin-inline-end: 10px;
+            writing-mode: horizontal-tb;
+        }
+
+
+        /* Table Styles */
+        .table-container {
+            max-height: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            border-radius: 0;
+        }
+
+        .report-table {
+            table-layout: fixed;
+            width: 100%;
+            background-color: #FFFFFF;
+        }
+
+        .report-table th, .report-table td {
+            padding: 12px;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .report-table th:nth-child(1),
+        .report-table td:nth-child(1) {
+            width: 16px;
+        }
+
+        .report-table th:nth-child(2),
+        .report-table td:nth-child(2) {
+            width: 122px;
+        }
+
+        .report-table td:nth-child(2) .cell-text:hover {
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .report-table th:nth-child(3),
+        .report-table td:nth-child(3) {
+            width: 145px;
+        }
+
+        .report-table th:nth-child(4),
+        .report-table td:nth-child(4) {
+            width: 265px;
+        }
+
+        .report-table th:nth-child(5),
+        .report-table td:nth-child(5) {
+            width: 118px;
+        }
+
+        .report-table th {
+            height: 55px;
+            color: #34495e;
+        }
+
+        .report-table thead {
+            position: sticky;
+            top: 0;
+            background-color: #CFDCDF;
+            border-radius: 5px;
+            z-index: 2;
+        }
+
+        .report-table tbody tr {
+            border-bottom: 1px solid #999393;
+        }
+
+        
+
+        .other-table {
+            table-layout: fixed;
+            width: 100%;
+            background-color: #FFFFFF;
+        }
+
+        .other-table th, .other-table td {
+            padding: 12px;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .other-table th {
+            height: 55px;
+            color: #34495e;
+        }
+
+        .other-table thead {
+            position: sticky;
+            top: 0;
+            background-color: #CFDCDF;
+            border-radius: 5px;
+            z-index: 2;
+        }
+
+        .other-table tbody tr {
+            border-bottom: 1px solid #999393;
+        }
+
+        /* Header Titles */
+        .header-titles {
+            color: #34495e;
+            font-size: 18px;
+            height: 41px;
+            padding: 0px 16px;
+            cursor: pointer;
+        }
+
+        .modal-dialog.custom-width {
+            max-width: 75%;
+        }
+
+        .modal-dialog.custom-width-two {
+            max-width: 50%;
+        }
+
+        
+        /* Status Badges */
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        .status.assigned {
+            background-color: #0070ff29;
+        }
+
+        .status.available {
+            background-color: #9df299;
+        }
+
+        .status.damaged {
+            background-color: #ff000029;
+        }
+
+        .status.duesoon {
+            background-color: #fff20029;
+        }
+
+        .status.overdue {
+            background-color: #ff000029;
+        }
+
+        .status.inrepair {
+            background-color: #fff20029;
+        }
+
+        .status.active {
+            background-color: #9df299;
+        }
+
+        .status.inactive {
+            background-color: #6db869;
+        }
+    </style>
+
+
+
+<div class="report-page-size">
+    <h1>Reports</h1>
+    <div class="report-management">
+        <div class="report-header">
+            <div class="left-section">
+                <div class="search-container">
+                    <input type="search" id="reportSearch" class="form-control search-input" placeholder="Search Reports"
+                        aria-label="Search" aria-describedby="search-addon">
+                </div>
+            </div>
+            <div class="right-section">
+
+                <button class="download-csv-button">Download CSV of Selected Files</button>
+                <div class="dropdown">
+                    <button class="btn new-report-button dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                        New Report
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Assignments Users</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Assets Assigned to an Office</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Reports</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom Report (IT Admin Only)</button></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="table-container">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            <span class="sort-text"></span>
+                        </th>
+                        @foreach (var header in tableHeaders) {
+                            <th scope="col">
+                                <span class="sort-text">@header</span>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody id="table-body"> <!--class="table-body"-->
+                    @if (tableData.Count == 0) {
+                        <tr><td colspan="tableHeaders.Count" style="text-align: center;">No data available</td></tr>
+                    } else {
+                        @foreach (var row in tableData) {
+                            <tr>
+                                <td>
+                                    <input class="form-check-input" type="checkbox" id="checkboxNoLabel" value="" aria-label="...">
+                                </td>
+                                @foreach (var header in tableHeaders) {
+                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                }
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+</body>
+
+
+
+<!-- Generate Report Modal -->
+<div class="modal fade" id="generateReport" tabindex="-1" aria-labelledby="generateReportLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateReportLabel">Generate a Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+            <form class="row g-3">
+                <div class="col-md-6">
+                    <label for="dateRange1" class="form-label">Start Date</label>
+                    <input type="text" class="form-control" id="dateRange1">
+                </div>
+                <div class="col-md-6">
+                    <label for="dateRange2" class="form-label">End Date</label>
+                    <input type="text" class="form-control" id="dateRange2">
+                </div>
+                <div class="col-12">
+                    <label for="inputDescription" class="form-label">Description (optional)</label>
+                    <input type="text" class="form-control" id="inputDescription">
+                </div>
+            </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary"data-bs-dismiss="modal">Generate Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generate Custom Report Modal -->
+<div class="modal fade" id="generateCustomReport" tabindex="-1" aria-labelledby="generateCustomReportLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateCustomReportLabel">Generate a Custom Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+            <form class="row g-3">
+                <div class="col-md-6">
+                    <label for="dateRange1" class="form-label">Start Date</label>
+                    <input type="text" class="form-control" id="dateRange1">
+                </div>
+                <div class="col-md-6">
+                    <label for="dateRange2" class="form-label">End Date</label>
+                    <input type="text" class="form-control" id="dateRange2">
+                </div>
+                <div class="col-12">
+                    <label for="inputDescription" class="form-label">Description (optional)</label>
+                    <input type="text" class="form-control" id="inputDescription">
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck">
+                        <label class="form-check-label" for="gridCheck">
+                            See Hardware
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck2">
+                        <label class="form-check-label" for="gridCheck2">
+                            See Software
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck3">
+                        <label class="form-check-label" for="gridCheck3">
+                            See Users
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck4">
+                        <label class="form-check-label" for="gridCheck4">
+                            See Office
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck5">
+                        <label class="form-check-label" for="gridCheck5">
+                            See when software and/or warranty expires
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck6">
+                        <label class="form-check-label" for="gridCheck6">
+                            See what requires maintenance or replacements
+                        </label>
+                    </div>
+                </div>
+            </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary"data-bs-dismiss="modal">Generate Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Asset Report -->
+<div class="modal" id="assetReportModal" tabindex="-1" aria-labelledby="assetReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog custom-width">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assetReportModalLabel">Asset Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content for Asset Report -->
+                    <div class="table-container">
+                        <table class="other-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in assetHeaders) {
+                                        <th scope="col">
+                                            <span class="sort-text">@header</span>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"> <!--class="table-body"-->
+                                @if (assetData.Count == 0) {
+                                    <tr><td colspan="assetHeaders.Count" style="text-align: center;">No data available</td></tr>
+                                } else {
+                                    @foreach (var row in assetData) {
+                                        <tr>
+                                            @foreach (var header in assetHeaders) {
+                                                @if (header == "Status") {
+                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                } else {
+                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                }
+                                            }
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Custom Report -->
+<div class="modal" id="customReportModal" tabindex="-1" aria-labelledby="customReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog custom-width">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customReportModalLabel">Custom Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content for Custom Report -->
+                    <div class="table-container"></div>
+                        <table class="other-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in assetHeaders) {
+                                        <th scope="col">
+                                            <span class="sort-text">@header</span>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"> <!--class="table-body"-->
+                                @if (assetData.Count == 0) {
+                                    <tr><td colspan="assetHeaders.Count" style="text-align: center;">No data available</td></tr>
+                                } else {
+                                    @foreach (var row in assetData) {
+                                        <tr>
+                                            @foreach (var header in assetHeaders) {
+                                                @if (header == "Status") {
+                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                } else {
+                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                }
+                                            }
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Asset Assignments to Users -->
+<div class="modal" id="assetAssignmentsToUsersModal" tabindex="-1" aria-labelledby="assetAssignmentsToUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog custom-width">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assetAssignmentsToUsersModalLabel">Asset Assignments to Users</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content for Asset Assignments to Users -->
+                    <div class="table-container"></div>
+                        <table class="other-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in userHeaders) {
+                                        <th scope="col">
+                                            <span class="sort-text">@header</span>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"> <!--class="table-body"-->
+                                @if (userData.Count == 0) {
+                                    <tr><td colspan="userHeaders.Count" style="text-align: center;">No data available</td></tr>
+                                } else {
+                                    @foreach (var row in userData) {
+                                        <tr>
+                                            @foreach (var header in userHeaders) {
+                                                @if (header == "Status") {
+                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                } else {
+                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                }
+                                            }
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Assets Assigned to an Office -->
+<div class="modal" id="assetsAssignedToOfficeModal" tabindex="-1" aria-labelledby="assetsAssignedToOfficeModalLabel" aria-hidden="true">
+    <div class="modal-dialog custom-width-two">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assetsAssignedToOfficeModalLabel">Assets Assigned to an Office</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Content for Assets Assigned to an Office -->
+                    <div class="table-container"></div>
+                        <table class="other-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var header in officeHeaders) {
+                                        <th scope="col">
+                                            <span class="sort-text">@header</span>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"> <!--class="table-body"-->
+                                @if (officeData.Count == 0) {
+                                    <tr><td colspan="officeHeaders.Count" style="text-align: center;">No data available</td></tr>
+                                } else {
+                                    @foreach (var row in officeData) {
+                                        <tr>
+                                            @foreach (var header in officeHeaders) {
+                                                @if (header == "Status") {
+                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                } else {
+                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                                                }
+                                            }
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        const searchInput = document.getElementById("reportSearch");
+        const tableBody = document.getElementById("table-body");
+        const rows = tableBody.getElementsByTagName("tr");
+
+        searchInput.addEventListener("input", function () {
+            const query = this.value.toLowerCase();
+
+            Array.from(rows).forEach(row => {
+                const cells = row.getElementsByTagName("td");
+                let match = false;
+
+                // Skip checkbox cell
+                for (let i = 1; i < cells.length; i++) {
+                    if (cells[i].textContent.toLowerCase().includes(query)) {
+                        match = true;
+                        break;
+                    }
+                }
+
+                row.style.display = match ? "" : "none";
+            });
+        });
+
+
+
+
+
+
+
+        // Add event listener for each name row
+        document.addEventListener('DOMContentLoaded', function () {
+            const rows = document.querySelectorAll('.report-table tbody tr');
+            
+            rows.forEach(function(row) {
+                const nameCell = row.querySelector('td:nth-child(2)');
+                const typeCell = row.querySelector('td:nth-child(3)');
+                
+                nameCell.addEventListener('click', function() {
+                    const reportType = typeCell.textContent.trim();
+                    let modalId = '';
+
+                    // Determine which modal to show based on the "Type" column
+                    switch (reportType) {
+                        case 'Asset Report':
+                            modalId = '#assetReportModal';
+                            break;
+                        case 'Custom Report':
+                            modalId = '#customReportModal';
+                            break;
+                        case 'Asset Assignments to Users':
+                            modalId = '#assetAssignmentsToUsersModal';
+                            break;
+                        case 'Assets Assigned to an Office':
+                            modalId = '#assetsAssignedToOfficeModal';
+                            break;
+                        default:
+                            break;
+                    }
+
+                    // Show the corresponding modal
+                    if (modalId) {
+                        const modal = new bootstrap.Modal(document.querySelector(modalId));
+                        modal.show();
+                    }
+                });
+            });
+        });
+
+    </script>
+}
