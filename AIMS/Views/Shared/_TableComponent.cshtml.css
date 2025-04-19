@@ -74,7 +74,7 @@
 }
 
 .status.assigned {
-    background-color: #0080ff29 !important;
+    background-color: #0080ff29;
 }
 
 .status.available {
