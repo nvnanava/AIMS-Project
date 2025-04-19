@@ -1,0 +1,27 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+#C# Naming Conventions
+dotnet_naming_rule.methods_and_properties.pascal_case.symbols = method, property
+dotnet_naming_rule.methods_and_properties.pascal_case.style = pascal_case
+dotnet_naming_rule.local_variables.camel_case.symbols = local
+dotnet_naming_rule.local_variables.camel_case.style = camel_case
+
+
+# Enforce "using" directives to be placed at the top of the file
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_require_accessibility_modifiers = always:suggestion
+
+# Force braces around if/else/for/while blocks
+csharp_prefer_braces = true:suggestion
+
+# Place "this." before instance members
+dotnet_style_qualification_for_property = true:suggestion
+dotnet_style_qualification_for_method = false:suggestion

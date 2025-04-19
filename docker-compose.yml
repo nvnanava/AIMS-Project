@@ -28,6 +28,3 @@ services:
 networks:
   new-bridge-net:
     driver: bridge
-# for data persistence
-volumes:
-  sql_data:
