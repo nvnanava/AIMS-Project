@@ -47,6 +47,12 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 {"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assignment", "Kate Rosenberg (93232)"},
 {"Status", "Assigned"} }
 };
+
+  // thank you Norin for this logic
+  tableData = string.IsNullOrEmpty(ViewBag.SearchQuery) ? tableData : tableData
+  .Where(dict => dict.Values.Any(value => value.Contains(ViewBag.SearchQuery)))
+  .ToList();
+
 }
 
 <div class="global-search mb-3">
@@ -64,12 +70,36 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
         }
       </tr>
       <tr class="search-container">
-        @foreach (var header in tableHeaders)
-        {
-          <th>
-            <input class="search-input" type="text" name="@header" placeholder="Filter @header">
-          </th>
-        }
+        <th scope="col">
+          <input class="search-input filter-input" type="text" name="Asset Name" id="Asset Name"
+            placeholder="Filter by Asset Name" />
+        </th>
+        <th scope="col">
+          <select id="Type" name="Type" class="filter-input form-select">
+            <option value="">All Devices</option>
+            <option value="Desktop">Desktop</option>
+            <option value="Laptop">Laptop</option>
+            <option value="Headset">Headset</option>
+            <option value="Software">Software</option>
+            <option value="Charging Cable">Charging Cable</option>
+          </select>
+        </th>
+        <th scope="col">
+          <input class="filter-input search-input" type="text" name="Tag #" id="Tag #" placeholder="Filter by Tag #" />
+        </th>
+        <th scope="col">
+          <input class="filter-input search-input" type="text" name="Assignment" id="Assignment"
+            placeholder="Filter by Assignment" />
+        </th>
+        <th scope="col">
+          <select id="Status" name="Status" class="filter-input form-select">
+            <option value="">All Status</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Available">Available</option>
+            <option value="In Repair">In Repair</option>
+            <option value="Damaged">Damaged</option>
+          </select>
+        </th>
       </tr>
     </thead>
     <tbody id="table-body">
@@ -173,7 +203,7 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     }
   }
 
-  const inputs = document.querySelectorAll(".search-input");
+  const inputs = document.querySelectorAll(".filter-input");
 
   // these bit flags are used to notate which flags apply to any result row n
   const headerFlags = {
@@ -189,8 +219,6 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
   for (const input of inputs) {
     input.addEventListener("input", filter)
   }
-
-
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

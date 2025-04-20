@@ -17,7 +17,7 @@
 
     <div class="container">
         <form method="post" asp-page="/RegisterNewAsset">
-            
+
             <h2>Asset Information</h2>
 
             <label for="AssetName">Asset Name</label>
