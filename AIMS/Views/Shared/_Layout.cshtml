@@ -24,22 +24,18 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                <ul class="navbar-nav flex-grow-1">
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active text-primary fw-bold" : "text-dark")"
-                        asp-controller="Home" asp-action="Index">Home</a>
+                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Reports" ? "active text-primary fw-bold" : "text-dark")"
-                        asp-controller="Home" asp-action="Reports">Reports</a>
+                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Reports">Reports</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" ? "active text-primary fw-bold" : "text-dark")"
-                        asp-controller="Admin" asp-action="Index">Admin</a>
+                        <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">Admin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Privacy" ? "active text-primary fw-bold" : "text-dark")"
-                        asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy">Privacy</a>
                     </li>
                 </ul>
                 </div>
