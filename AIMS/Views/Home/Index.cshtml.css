@@ -264,6 +264,9 @@
     background-color: #4caf4f5f;
   }
 
-  .status.available {
+
+.status.available {
     background-color: blue;
+
   }
+
