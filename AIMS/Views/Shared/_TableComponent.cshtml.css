@@ -1,6 +1,6 @@
 /* Table Styles */
 .table-container {
-    max-height: 100%;
+    max-height: 90%;
     max-width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
@@ -8,12 +8,13 @@
 }
 
 .asset-table {
-     width: 100%;
+    width: 100%;
     border-collapse: collapse;
     background-color: #ecf0f1;
 }
 
-.asset-table th, .asset-table td {
+.asset-table th,
+.asset-table td {
     padding: 12px;
     text-align: center;
 }
@@ -30,23 +31,16 @@
     z-index: 2;
 }
 
-.asset-table thead tr, .asset-table tbody tr {
+.asset-table thead tr,
+.asset-table tbody tr {
     border-bottom: 1px solid #34495e;
 }
 
-.asset-table tbody tr:nth-child(even) {
-    background-color: #0000000a;
-}
-
-.asset-table tbody tr:nth-child(odd) {
-    background-color: transparent;
+.odd-row {
+    background-color: #ecf0f1;
 }
 
 .even-row {
-    background-color: transparent;
-}
-
-.odd-row {
     background-color: #0000000a;
 }
 

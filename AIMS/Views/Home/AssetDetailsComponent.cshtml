@@ -1,4 +1,8 @@
 @await Html.PartialAsync("_AssetAddForm")  <!-- Calls the Add Asset Form-->
+@await Html.PartialAsync("_EditAssetForm")
+@await Html.PartialAsync("_AddCategoryForm")
+
+
 
 @section Styles {
     <link rel="stylesheet" href="~/css/AssetDetailsComponent.css" asp-asp-append-version="true"/>
