@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "Submit your feedback";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Noticing any bugs or issues? Let us know here.</p>
+
+<!-- Feedback Form -->
+<div id="feedback-container">
+    <form id="feedback-form">
+        <label for="feedback-message">Your feedback:</label>
+        <textarea id="feedback-message" name="feedback-message" rows="4" required></textarea>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+</div>
+
+<!-- Feedback Response to user -->
+<div id='feedback-response' class="response-message"></div>
+
+<script>
+// Handle form submission for feedback
+document.getElementById('feedback-form').addEventListener('submit', function(event) {
+  event.preventDefault();
+
+  // Get the feedback message entered by the user
+  const feedbackMessage = document.getElementById('feedback-message').value;
+
+  // Check if feedback is not empty
+  if (!feedbackMessage.trim()) {
+    showResponseMessage('error', 'Please enter your feedback.');
+    return;
+  }
+
+  // Simulate sending feedback to an API
+  sendFeedback(feedbackMessage);
+});
+
+// Simulated feedback submission (API call placeholder)
+function sendFeedback(feedbackMessage) {
+  
+  console.log('Sending feedback:', feedbackMessage);
+
+  // Simulate a successful feedback submission
+  showResponseMessage('success', 'Thank you for your feedback!');
+  // Clear the form
+  document.getElementById('feedback-form').reset();
+}
+
+// Function to display success or error messages
+function showResponseMessage(type, message) {
+  const responseElement = document.getElementById('feedback-response');
+  responseElement.classList.add(type); 
+  responseElement.innerText = message;
+  responseElement.style.display = 'block';
+
+  // Hide the response message after 4 seconds
+  setTimeout(() => {
+    responseElement.style.display = 'none';
+    responseElement.classList.remove(type); 
+  }, 4000);
+}
+
+</script>
