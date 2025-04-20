@@ -1,0 +1,241 @@
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<div class="audit-log-container">
+    <h1 class="audit-log-title">Audit Log</h1>
+
+    <table class="audit-log-table">
+        <thead>
+            <tr>
+                <th>Log ID</th>
+                <th>Timestamp</th>
+                <th>User ID</th>
+                <th>Action</th>
+                <th>Asset ID</th>
+                <th>Previous Value</th>
+                <th>New Value</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>2025-04-16 10:12 AM</td>
+                <td>U001</td>
+                <td>Assign</td>
+                <td>A101</td>
+                <td>Unassigned</td>
+                <td>Laptop-001</td>
+                <td>Assigned Laptop to John Smith</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>2025-04-16 09:50 AM</td>
+                <td>U002</td>
+                <td>Create</td>
+                <td>A102</td>
+                <td>N/A</td>
+                <td>Monitor-003</td>
+                <td>Created new monitor asset</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>2025-04-15 05:30 PM</td>
+                <td>U003</td>
+                <td>Update</td>
+                <td>A103</td>
+                <td>Monitor-001</td>
+                <td>Monitor-003</td>
+                <td>Updated asset name and status</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>2025-04-15 04:17 PM</td>
+                <td>U001</td>
+                <td>Unassign</td>
+                <td>A104</td>
+                <td>Mouse-002</td>
+                <td>Unassigned</td>
+                <td>Removed asset from user Ava</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>2025-04-15 03:42 PM</td>
+                <td>U004</td>
+                <td>Delete</td>
+                <td>A105</td>
+                <td>Keyboard-001</td>
+                <td>Deleted</td>
+                <td>Deleted broken keyboard asset</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>2025-04-15 01:29 PM</td>
+                <td>U005</td>
+                <td>Assign</td>
+                <td>A106</td>
+                <td>Unassigned</td>
+                <td>Headset-004</td>
+                <td>Assigned to user Zara Khan</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>2025-04-15 11:10 AM</td>
+                <td>U002</td>
+                <td>Update</td>
+                <td>A107</td>
+                <td>Inactive</td>
+                <td>Active</td>
+                <td>Reactivated asset due to repair</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>2025-04-15 10:45 AM</td>
+                <td>U003</td>
+                <td>Create</td>
+                <td>A108</td>
+                <td>N/A</td>
+                <td>Webcam-002</td>
+                <td>Added new webcam to inventory</td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td>2025-04-14 04:30 PM</td>
+                <td>U001</td>
+                <td>Assign</td>
+                <td>A109</td>
+                <td>Unassigned</td>
+                <td>Dock-Station</td>
+                <td>Assigned docking station to Max</td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td>2025-04-14 03:20 PM</td>
+                <td>U005</td>
+                <td>Unassign</td>
+                <td>A110</td>
+                <td>Monitor-005</td>
+                <td>Unassigned</td>
+                <td>User returned monitor to IT</td>
+            </tr>
+
+            <tr>
+                <td>1</td>
+                <td>2025-04-16 10:12 AM</td>
+                <td>U001</td>
+                <td>Assign</td>
+                <td>A101</td>
+                <td>Unassigned</td>
+                <td>Laptop-001</td>
+                <td>Assigned Laptop to John Smith</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>2025-04-16 09:50 AM</td>
+                <td>U002</td>
+                <td>Create</td>
+                <td>A102</td>
+                <td>N/A</td>
+                <td>Monitor-003</td>
+                <td>Created new monitor asset</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>2025-04-15 05:30 PM</td>
+                <td>U003</td>
+                <td>Update</td>
+                <td>A103</td>
+                <td>Monitor-001</td>
+                <td>Monitor-003</td>
+                <td>Updated asset name and status</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>2025-04-15 04:17 PM</td>
+                <td>U001</td>
+                <td>Unassign</td>
+                <td>A104</td>
+                <td>Mouse-002</td>
+                <td>Unassigned</td>
+                <td>Removed asset from user Ava</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>2025-04-15 03:42 PM</td>
+                <td>U004</td>
+                <td>Delete</td>
+                <td>A105</td>
+                <td>Keyboard-001</td>
+                <td>Deleted</td>
+                <td>Deleted broken keyboard asset</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>2025-04-15 01:29 PM</td>
+                <td>U005</td>
+                <td>Assign</td>
+                <td>A106</td>
+                <td>Unassigned</td>
+                <td>Headset-004</td>
+                <td>Assigned to user Zara Khan</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>2025-04-15 11:10 AM</td>
+                <td>U002</td>
+                <td>Update</td>
+                <td>A107</td>
+                <td>Inactive</td>
+                <td>Active</td>
+                <td>Reactivated asset due to repair</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>2025-04-15 10:45 AM</td>
+                <td>U003</td>
+                <td>Create</td>
+                <td>A108</td>
+                <td>N/A</td>
+                <td>Webcam-002</td>
+                <td>Added new webcam to inventory</td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td>2025-04-14 04:30 PM</td>
+                <td>U001</td>
+                <td>Assign</td>
+                <td>A109</td>
+                <td>Unassigned</td>
+                <td>Dock-Station</td>
+                <td>Assigned docking station to Max</td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td>2025-04-14 03:20 PM</td>
+                <td>U005</td>
+                <td>Unassign</td>
+                <td>A110</td>
+                <td>Monitor-005</td>
+                <td>Unassigned</td>
+                <td>User returned monitor to IT</td>
+            </tr>
+
+
+            <tr>
+                <td>1</td>
+                <td>2025-04-16 10:12 AM</td>
+                <td>U001</td>
+                <td>Assign</td>
+                <td>A001</td>
+                <td>Unassigned</td>
+                <td>Laptop-001</td>
+                <td>Assigned asset to user John</td>
+            </tr>
+
+        </tbody>
+
+
+    </table>
+</div>

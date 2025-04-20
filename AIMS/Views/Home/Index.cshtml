@@ -57,13 +57,13 @@ new Dictionary<string, string> {
 {"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
 },
 new Dictionary<string, string> {
-{"Name", "Jane Doe"}, {"Role", "Employee"}, {"ID", "69444"}, {"Supervisor", "28809"}
+{"Name", "Jane Doe"}, {"Role", "IT Help Desk"}, {"ID", "69444"}, {"Supervisor", "28809"}
 },
 new Dictionary<string, string> {
-{"Name", "Randy Orton"}, {"Role", "Employee"}, {"ID", "58344"}, {"Supervisor", "28809"}
+{"Name", "Randy Orton"}, {"Role", "IT Help Desk"}, {"ID", "58344"}, {"Supervisor", "28809"}
 },
 new Dictionary<string, string> {
-{"Name", "Robin Williams"}, {"Role", "Employee"}, {"ID", "10971"}, {"Supervisor", "28809"}
+{"Name", "Robin Williams"}, {"Role", "IT Help Desk"}, {"ID", "10971"}, {"Supervisor", "28809"}
 },
 new Dictionary<string, string> {
 {"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
@@ -81,10 +81,10 @@ new Dictionary<string, string> {
 {"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
 },
 new Dictionary<string, string> {
-{"Name", "Emily Carter"}, {"Role", "Employee"}, {"ID", "47283"}, {"Supervisor", "28809"}
+{"Name", "Emily Carter"}, {"Role", "IT Help Desk"}, {"ID", "47283"}, {"Supervisor", "28809"}
 },
 new Dictionary<string, string> {
-{"Name", "Bruce Wayne"}, {"Role", "Employee"}, {"ID", "34532"}, {"Supervisor", "28809"}
+{"Name", "Bruce Wayne"}, {"Role", "IT Help Desk"}, {"ID", "34532"}, {"Supervisor", "28809"}
 },
 };
 
@@ -105,9 +105,9 @@ new Dictionary<string, string> {
             <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')"
                 data-testid="switch-supervisor">Switch to Supervisor</button>
         </label><br>
-        <label class="view-label employee">
-            <button id="switch-employee" class="standard-button" onclick="switchRole('Employee')"
-                data-testid="switch-employee">Switch to Employee</button>
+        <label class="view-label it-help-desk">
+            <button id="switch-it-help-desk" class="standard-button" onclick="switchRole('IT Help Desk')"
+                data-testid="switch-it-help-desk">Switch to IT Help Desk</button>
         </label><br>
     </div>
 </div>
@@ -117,7 +117,7 @@ new Dictionary<string, string> {
     <p>Summary Cards Placeholder - Replace this with summary cards section</p>
 </div>
 
-<!-- Welcome Message for Supervisors and Employees -->
+<!-- Welcome Message for Supervisors -->
 <div id="role-message" class="role-message-container" data-testid="role-message">
     <h1 id="welcome-title" class="welcome-title" data-testid="welcome-title"></h1>
     <h2 id="welcome-subtitle" class="welcome-subtitle" data-testid="welcome-subtitle"></h2>
@@ -134,9 +134,10 @@ new Dictionary<string, string> {
                     placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
             </div>
             <!-- View Full List Button -->
-            <div id="view-full-list-button" class="standard-button" data-testid="view-full-list-button">
-                <a class="view-full-list-link" href="@Url.Action("Search", "Home")">View Full List | 📋 | ≡</a>
-            </div>
+            <a id="view-full-list-button" class="standard-button" data-testid="view-full-list-button"
+                href="@Url.Action("Search", "Home")" style="text-decoration: none;">
+                View Full List
+            </a>
             <!-- Filter Buttton -->
             <div id="filter-button-container" class="dropdown" data-testid="filter-button" style="position: relative;">
                 <button id="filter-button-toggle" class="standard-button dropdown-toggle"
@@ -191,7 +192,8 @@ new Dictionary<string, string> {
             </div>
         </div>
         <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
-            <button id="assign-asset-button" class="assign-asset-button">Assign Asset</button>
+            <button id="assign-asset-button" class="assign-asset-button" data-bs-toggle="modal"
+                data-bs-target="#assignAssetModal">Assign Asset</button>
         </div>
     </div>
 
@@ -201,6 +203,12 @@ new Dictionary<string, string> {
         <p style="color: red;">Table Data is Missing!</p>
     }
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
+
+    <!-- Include Modal HTML -->
+    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml")
+
+    <!-- Include Modal Functionality Script -->
+    <script src="~/js/assignAssetModal.js"></script>
 </div>
 
 <script>
@@ -217,17 +225,12 @@ new Dictionary<string, string> {
             row.style.display = "";
         });
     }
-
-    // Return assets for a supervisor and their direct reports 
+  
+    // Return assets for a supervisor and their direct reports
     function getAssetsForSupervisor(supervisorID) {
         const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
         return tableData.filter(item =>
             reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
-    }
-
-    // Return assets for a specific employee
-    function getAssetsForEmployee(employeeID) {
-        return tableData.filter(item => item["Assigned To"].includes(employeeID));
     }
 
     // Updates welcome message based on role
@@ -236,18 +239,12 @@ new Dictionary<string, string> {
         const title = document.getElementById("welcome-title");
         const subtitle = document.getElementById("welcome-subtitle");
 
-        if (user.role === "Admin") {
+        if (user.role === "Admin" || user.role === "IT Help Desk") {
             messageContainer.style.display = "none";
         } else {
             messageContainer.style.display = "block";
-
-            if (user.role === "Supervisor") {
-                title.textContent = `Welcome ${user.name}!`;
-                subtitle.textContent = `Here's an overview of your assets along with those assigned to your team.`;
-            } else if (user.role === "Employee") {
-                title.textContent = `Welcome ${user.name}!`;
-                subtitle.textContent = `Here's a list of assets assigned to you.`;
-            }
+            title.textContent = `Welcome ${user.name}!`;
+            subtitle.textContent = `Here's an overview of your assets along with those assigned to your team.`;
         }
     }
 
@@ -279,13 +276,14 @@ new Dictionary<string, string> {
             populateDirectReports("28809");
             filterForSupervisor("28809");
             updateWelcomeMessage({ name: "John Smith", id: "28809", role: "Supervisor" });
+            applyRowStriping();
         } else {
-            summaryCardsSection.style.display = "none";
+            summaryCardsSection.style.display = "flex";
             assignAssetSection.style.display = "none";
-            viewFullListButton.style.display = "none";
+            viewFullListButton.style.display = "block";
             filterButton.style.display = "none";
-            updateWelcomeMessage({ name: "Jane Doe", id: "69444", role: "Employee" });
-            filterTableForUser("69444");
+            messageContainer.style.display = "none";
+            resetTableVisibility();
         }
         viewDropdown.style.display = 'none';
     }
@@ -423,46 +421,51 @@ new Dictionary<string, string> {
         // Check if "My Assets is" checked.
         const showMyAssets = document.querySelector("#filter-my-assets")?.checked;
 
-        // Lopp through all the table rows in the body.
+        // Loop through all the table rows in the body.
         const rows = document.querySelectorAll("#table-body tr");
         rows.forEach(row => {
             // --- Search Filter ---
-            let matchesSearch = false;
-            row.querySelectorAll("td").forEach(cell => {
-                if (cell.textContent.toLowerCase().includes(input)) {
-                    matchesSearch = true;
-                }
-            });
+            const cells = row.querySelectorAll("td");
+            const assignedToCell = cells[3];
+            const typeCell = cells[1];
 
-            // --- Extract Assigned To ID --- 
-            const assignedToCell = row.querySelector("td:nth-child(4)");
-            const assignedToRaw = assignedToCell?.textContent.trim() || "";
-            const assignedToMatch = assignedToRaw.match(/\((\d+)\)/);
-            const assignedToID = assignedToMatch ? assignedToMatch[1] : null;
+            const assignedToText = assignedToCell?.textContent || "";
+            const typeText = typeCell?.textContent.trim() || "";
+            const match = assignedToText.match(/\((\d+)\)/);
+            const assignedToID = match ? match[1] : "";
+
+            const matchesSearch = Array.from(cells).some(cell =>
+                cell.textContent.toLowerCase().includes(input)
+            );
 
             // --- Determine Ownership ---
             const isSupervisorAsset = assignedToID === supervisorID;
             const isDirectReportAsset = selectedReports.includes(assignedToID);
+            const isInSupervisorView =
+                isSupervisorAsset ||
+                isDirectReportAsset ||
+                (assignedToID && users.find(u => u.ID === assignedToID)?.Supervisor === supervisorID);
 
             // --- Type Filter ---
-            const typeCell = row.querySelector("td:nth-child(2)");
-            const rowType = typeCell?.textContent.trim() || "";
-            matchesType = (selectedTypes.length === 0 || selectedTypes.includes(rowType));
+            matchesType = selectedTypes.length === 0 || selectedTypes.includes(typeText);
+            const ownershipFilterActive = showMyAssets || selectedReports.length > 0;
 
-            // --- Final Visibility Logic ---
-            const visible = matchesSearch && matchesType && (
-                (showMyAssets && isSupervisorAsset) || isDirectReportAsset
-            );
+            let visible = false;
 
+            if (ownershipFilterActive) {
+                visible = matchesSearch && matchesType && ((showMyAssets && isSupervisorAsset) || isDirectReportAsset);
+            } else {
+                visible = matchesSearch && matchesType && isInSupervisorView;
+            }
             row.style.display = visible ? "" : "none";
-
         });
+
+        applyRowStriping();
     }
 
     // Filters visible rows for supervisor and their team
     function filterForSupervisor(supervisorID) {
         const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
-        console.log("REPORTIDS", reportIDs);
         const rows = document.querySelectorAll("#table-body tr");
 
         rows.forEach(row => {
@@ -487,10 +490,22 @@ new Dictionary<string, string> {
             const assignedToCell = row.querySelector("td:nth-child(4)");
             const assignedToRaw = assignedToCell?.textContent.trim() || "";
             const match = assignedToRaw.match(/\((\d+)\)/);
-            console.log("MATCH:", match);
             const assigneToID = match ? match[1] : null;
 
             row.style.display = assigneToID === userID ? "" : "none";
+        });
+    }
+
+    function applyRowStriping() {
+        const allRows = Array.from(document.querySelectorAll("#table-body tr"));
+
+        //Remove all existing .even/.odd classes first
+        allRows.forEach(row => row.classList.remove("even-row", "odd-row"));
+
+        // Then apple new striping to visible rows only
+        const visibleRows = Array.from(allRows).filter(row => row.style.display !== "none");
+        visibleRows.forEach((row, index) => {
+            row.classList.add(index % 2 === 0 ? "even-row" : "odd-row");
         });
     }
 </script>
