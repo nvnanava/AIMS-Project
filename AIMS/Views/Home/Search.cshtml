@@ -214,12 +214,11 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     ["Status"]: 1 << 4 // 10000
   };
 
-  // assign an event listener for each input (will activate on: keyboard entry,entry from 
+  // assign an event listener for each input (will activate on: keyboard entry,entry from
   // non-keyboard sources).
   for (const input of inputs) {
     input.addEventListener("input", filter)
   }
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('.search-input');
