@@ -7,9 +7,9 @@ namespace AssetTrackingSystem.Pages
 {
     public class AssetListModel : PageModel
     {
-        private readonly AssetDbContext _db;
+        private readonly AimsDbContext _db;
 
-        public AssetListModel(AssetDbContext db) => _db = db;
+        public AssetListModel(AimsDbContext db) => _db = db;
 
         public IList<Asset> Assets { get; set; } = new List<Asset>();
 

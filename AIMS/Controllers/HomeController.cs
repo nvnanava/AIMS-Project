@@ -25,8 +25,16 @@ public class HomeController : Controller
     }
 
 
-    public IActionResult Search()
+    public IActionResult Search(string? searchQuery)
     {
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            ViewBag.SearchQuery = searchQuery;
+        }
+        else
+        {
+            ViewBag.SearchQuery = "";
+        }
         return View();
     }
 
@@ -41,21 +49,23 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 
-    public IActionResult HomePageCardComponent() {
+    public IActionResult HomePageCardComponent()
+    {
         return View();
     }
 
-    public IActionResult CardComponent() {
+    public IActionResult CardComponent()
+    {
         return View();
     }
 
- public IActionResult AssetDetailsComponent(string category)
-{
-    this.ViewData["Category"] = category;
+    public IActionResult AssetDetailsComponent(string category)
+    {
+        this.ViewData["Category"] = category;
 
-    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
+        var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
 
-    var tableData = new List<Dictionary<string, string>> {
+        var tableData = new List<Dictionary<string, string>> {
          new() { {"Asset Name", "Lenovo ThinkPad E16"}, {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "Dell S2421NX"}, {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "HP EliteBook 840 G7"}, {"Type", "Laptop"}, {"Tag #", "DT-0011"}, {"Status", "Surveyed"} },
@@ -128,20 +138,70 @@ public class HomeController : Controller
 
 
     };
+    
+    
+     var specsData = new Dictionary<string, Dictionary<string, string>>
+        {
+            { "LT-1035", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel Iris Xe" }, { "Storage", "512GB SSD" } } },
+            { "LT-1048", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Apple M1 Pro" }, { "Storage", "1TB SSD" } } },
+            { "LT-1059", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel Iris Xe" }, { "Storage", "512GB SSD" } } },
+            { "LT-1104", new Dictionary<string, string> { { "RAM", "32GB" }, { "GPU", "Intel Iris Xe" }, { "Storage", "1TB SSD" } } },
+            { "LT-1111", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel Iris Xe" }, { "Storage", "512GB SSD" } } },
+            { "HS-0080", new Dictionary<string, string> { { "Battery Life", "20 hours" }, { "Noise Cancellation", "Active" }, { "Connectivity", "USB-A" } } },
+            { "CC-0090", new Dictionary<string, string> { { "Length", "1m" }, { "Type", "USB-C to USB-A" }, { "Material", "Nylon Braided" } } },
+            { "SW-0100", new Dictionary<string, string> { { "Version", "2023" }, { "License", "Enterprise" }, { "Expiry Date", "2024-12-31" } } },
+            { "DT-0011", new Dictionary<string, string> { { "RAM", "32GB" }, { "GPU", "NVIDIA GeForce GTX 1650" }, { "Storage", "1TB SSD" } } },
+            { "DT-2020", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "AMD Radeon Pro 5500 XT" }, { "Storage", "1TB SSD" } } },
+            { "CC-6001", new Dictionary<string, string> { { "Length", "1.5m" }, { "Type", "USB-C to USB-C" }, { "Material", "Nylon Braided" } } },
+            { "SW-3001", new Dictionary<string, string> { { "Version", "2023" }, { "License", "Enterprise" }, { "Expiry Date", "2024-12-31" } } },
+            { "MN-0001", new Dictionary<string, string> { { "Resolution", "1920x1080" }, { "Size", "24 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "DT-5001", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel UHD Graphics 630" }, { "Storage", "512GB SSD" } } },
+            { "DT-5002", new Dictionary<string, string> { { "RAM", "32GB" }, { "GPU", "NVIDIA GeForce GTX 1660" }, { "Storage", "1TB SSD" } } },
+            { "DT-5003", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Apple M1" }, { "Storage", "512GB SSD" } } },
+            { "DT-5004", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel UHD Graphics 630" }, { "Storage", "1TB SSD" } } },
+            { "DT-5005", new Dictionary<string, string> { { "RAM", "8GB" }, { "GPU", "Intel UHD Graphics 600" }, { "Storage", "256GB SSD" } } },
+            { "DT-5006", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "NVIDIA GeForce GTX 1650" }, { "Storage", "512GB SSD" } } },
+            { "DT-5007", new Dictionary<string, string> { { "RAM", "8GB" }, { "GPU", "Intel UHD Graphics 600" }, { "Storage", "256GB SSD" } } },
+            { "DT-5008", new Dictionary<string, string> { { "RAM", "32GB" }, { "GPU", "Apple M1 Max" }, { "Storage", "2TB SSD" } } },
+            { "DT-5009", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel UHD Graphics 630" }, { "Storage", "512GB SSD" } } },
+            { "DT-5010", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel Iris Xe Graphics" }, { "Storage", "1TB SSD" } } },
+            { "MN-4001", new Dictionary<string, string> { { "Resolution", "3840x2160" }, { "Size", "27 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "MN-4002", new Dictionary<string, string> { { "Resolution", "1920x1080" }, { "Size", "24 inches" }, { "Refresh Rate", "75Hz" } } },
+            { "MN-4003", new Dictionary<string, string> { { "Resolution", "3840x2160" }, { "Size", "32 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "MN-4004", new Dictionary<string, string> { { "Resolution", "2560x1440" }, { "Size", "27 inches" }, { "Refresh Rate", "75Hz" } } },
+            { "MN-4005", new Dictionary<string, string> { { "Resolution", "3840x2160" }, { "Size", "27 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "MN-4006", new Dictionary<string, string> { { "Resolution", "1920x1080" }, { "Size", "24 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "MN-4007", new Dictionary<string, string> { { "Resolution", "2560x1440" }, { "Size", "27 inches" }, { "Refresh Rate", "75Hz" } } },
+            { "MN-4008", new Dictionary<string, string> { { "Resolution", "1920x1080" }, { "Size", "23.8 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "MN-4009", new Dictionary<string, string> { { "Resolution", "3840x2160" }, { "Size", "28 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "MN-4010", new Dictionary<string, string> { { "Resolution", "1920x1080" }, { "Size", "24 inches" }, { "Refresh Rate", "60Hz" } } },
+            { "HS-2001", new Dictionary<string, string> { { "Battery Life", "20 hours" }, { "Noise Cancellation", "Active" }, { "Connectivity", "USB-A" } } },
+            { "HS-2002", new Dictionary<string, string> { { "Battery Life", "14 hours" }, { "Noise Cancellation", "Passive" }, { "Connectivity", "USB-A" } } },
+            { "HS-2003", new Dictionary<string, string> { { "Battery Life", "15 hours" }, { "Noise Cancellation", "Active" }, { "Connectivity", "USB-A" } } },
+            { "HS-2004", new Dictionary<string, string> { { "Battery Life", "12 hours" }, { "Noise Cancellation", "Passive" }, { "Connectivity", "USB-A" } } },
+            { "HS-2005", new Dictionary<string, string> { { "Battery Life", "20 hours" }, { "Noise Cancellation", "Active" }, { "Connectivity", "USB-C" } } },
+            { "HS-2006", new Dictionary<string, string> { { "Battery Life", "15 hours" }, { "Noise Cancellation", "Passive" }, { "Connectivity", "USB-C" } } },
+            { "HS-2007", new Dictionary<string, string> { { "Battery Life", "10 hours" }, { "Noise Cancellation", "Active" }, { "Connectivity", "USB-C" } } },
+            { "HS-2008", new Dictionary<string, string> { { "Battery Life", "20 hours" }, { "Noise Cancellation", "Passive" }, { "Connectivity", "USB-C" } } },
+            { "HS-2009", new Dictionary<string, string> { { "Battery Life", "15 hours" }, { "Noise Cancellation", "Active" }, { "Connectivity", "USB-C" } } },
+            { "HS-2010", new Dictionary<string, string> { { "Battery Life", "12 hours" }, { "Noise Cancellation", "Passive" }, { "Connectivity", "USB-C" } } }
 
-    // Handle null or invalid categories gracefully
-    if (string.IsNullOrWhiteSpace(category))
-    {
-        category = "Laptop"; // default category
-    }
+            };
 
-    var filteredData = tableData
-        .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))
-        .ToList();
+        // Handle null or invalid categories gracefully
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            category = "Laptop"; // default category
+        }
+
+        var filteredData = tableData
+            .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))
+            .ToList();
 
         this.ViewData["TableHeaders"] = tableHeaders;
-    this.ViewData["FilteredData"] = filteredData;
+        this.ViewData["FilteredData"] = filteredData;
+        this.ViewData["SpecsData"] = specsData; //saves the specs data to the view data
 
-    return View();
-}
+        return View();
+    }
 }

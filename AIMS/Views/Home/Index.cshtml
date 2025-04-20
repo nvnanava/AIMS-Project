@@ -225,7 +225,7 @@ new Dictionary<string, string> {
             row.style.display = "";
         });
     }
-
+  
     // Return assets for a supervisor and their direct reports
     function getAssetsForSupervisor(supervisorID) {
         const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
