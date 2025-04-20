@@ -1,0 +1,51 @@
+.modal-content {
+    border: 3px solid #34495E;
+    border-radius: 8px;
+    background-color: #ECF0F1;
+    color: #34495E;
+    overflow: hidden;
+}
+
+.modal-header {
+    background-color: #2C3E50;
+    border-bottom: 3px solid #34495E;
+    color: #ECF0F1;
+    overflow: hidden;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.btn-close {
+    background-color: red;
+    cursor: pointer;
+    box-shadow: 0px 4px 4px 0px #0000003e;
+    transition: all 0.3s ease-in-out;
+}
+
+.form-select {
+    color: #34495E;
+    cursor: pointer;
+}
+
+.custom-modal-btn {
+    border: 3px solid #2C3E50;
+    border-radius: 20px;
+    width: 200px;
+    text-align: center;
+}
+
+.custom-upload-btn {
+    background-color: transparent;
+    color: #2C3E50;
+}
+
+.custom-submit-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.custom-upload-btn:hover,
+.custom-submit-btn:hover {
+    border: 3px solid #1abc9c;
+    transition: all 150ms ease-out;
+}
