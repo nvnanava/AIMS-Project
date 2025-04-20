@@ -1,0 +1,47 @@
+<!-- Assign Asset Modal -->
+<div class="modal fade" id="assignAssetModal" tabindex="-1" aria-labelledby="assignAssetLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignAssetLabel">Assign an Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignAssetForm">
+                    <div class="mb-3">
+                        <label for="userSelect" class="form-label">Select User</label>
+                        <select class="form-select" id="userSelect" required>
+                            <option selected disabled value="">Choose a user...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assetSelect" class="form-label">Select Asset</label>
+                        <select class="form-select" id="assetSelect" required>
+                            <option selected disabled value="">Choose an asset...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="commentBox" class="form-label">Assignment Comment</label>
+                        <textarea id="commentBox" class="form-control" rows="3" placeholder="Reason for assignment..."
+                            required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-center gap-3">
+                <div>
+                    <label for="userAgreementUpload" class="btn custom-modal-btn custom-upload-btn">Upload Agreement
+                        ✒️</label>
+                    <input type="file" id="userAgreementUpload" style="display: none;" />
+                    <!-- TODO:
+                        - Condider making user agreement upload required before assigning an asset.
+                        - In the future, we may want to auto-generate the agreement using a service like DocuSign,
+                          pre-filled with device details and user info, and have the user sign it digitally before the
+                          assignment is finalized.
+                    -->
+                </div>
+                <button type="submit" form="assignAssetForm" class="btn custom-modal-btn custom-submit-btn">Assign
+                    Asset</button>
+            </div>
+        </div>
+    </div>
+</div>

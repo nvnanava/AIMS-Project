@@ -124,9 +124,7 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
     </tbody>
   </table>
 </div>
-
-
-
+    
 <script type="text/javascript">
 
   /**
@@ -221,4 +219,32 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
   for (const input of inputs) {
     input.addEventListener("input", filter)
   }
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.search-input');
+    const rows = document.querySelectorAll('tbody tr.result');
+    
+    function filter() {
+        const activeFilters = {};
+        inputs.forEach(input => {
+            const value = input.value.trim().toLowerCase();
+            if (value) activeFilters[input.name] = value;
+        });
+        
+        rows.forEach(row => {
+            let showRow = true;
+            for (const [name, value] of Object.entries(activeFilters)) {
+                const cell = row.querySelector(`td[id="${name}"]`);
+                if (!cell?.textContent.toLowerCase().includes(value)) {
+                    showRow = false;
+                    break;
+                }
+            }
+            row.style.display = showRow ? '' : 'none';
+        });
+    }
+    
+    inputs.forEach(input => input.addEventListener('input', filter));
+    filter(); // Initial filter
+});
 </script>
