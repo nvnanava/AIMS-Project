@@ -2,30 +2,16 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #f5f5f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-}
-
-/* Container for all cards */
-#card-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 30px;
-    justify-content: center;
-    padding: 40px 20px;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
 /* Individual card */
 .card {
-    width: 150px;
-    height: 150px;
-    border: 2px solid #2c3e50; /* default border */
-    border-radius: 12px;
+    flex-shrink: 0;
+    width: 212px;
+    height: 200px;
+    border: 3px solid #2c3e50;
+    /* default border */
+    border-radius: 8px;
     padding: 10px;
     text-align: center;
     background-color: #ecf0f1;
@@ -36,6 +22,16 @@ body {
     align-items: center;
     justify-content: space-between;
     position: relative;
+}
+
+
+.card.clone {
+    box-shadow: none;
+    transition: box-shadow 0.3s ease;
+}
+
+.card.clone.visible {
+    box-shadow: 2px 2px 10px #2c3e50 !important;
 }
 
 .status-dot {
@@ -49,17 +45,21 @@ body {
 }
 
 .status-dot.green {
-    background-color: #2ecc71; /* green */
+    background-color: #2ecc71;
+    /* green */
 }
 
 .status-dot.red {
-    background-color: #e74c3c; /* red */
+    background-color: #e74c3c;
+    /* red */
 }
 
 /* Hover effect */
 .card:hover {
-    border: 2px solid #2ecc71; /* green border */
-    box-shadow: 0 0 8px rgba(46, 204, 113, 0.6); /* optional glow */
+    border: 2px solid #2ecc71;
+    /* green border */
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.6);
+    /* optional glow */
 }
 
 /* Card title */
@@ -77,7 +77,7 @@ body {
 
 /* Card text */
 .total,
-.available,
+.available-percentage,
 .runningLow {
     font-size: 18px;
     font-weight: 600;
@@ -86,11 +86,12 @@ body {
 }
 
 /* Different color for availability */
-.available {
+.available-percentage {
     font-size: 13px;
     color: #4caf50;
     margin: 2px 0;
 }
+
 /* Different color for running low */
 .runningLow {
     font-size: 13px;
@@ -102,16 +103,20 @@ body {
     text-decoration: none;
     color: inherit;
 }
+
 .emoji-bg {
-    background-color: #2c3e50; /* dark blue background */
+    background-color: #2c3e50;
+    /* dark blue background */
     width: 80px;
     height: 80px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 36px;
-    color: white; /* ensures emoji pops */
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2); /* subtle inner shadow */
+    font-size: 50px;
+    color: white;
+    /* ensures emoji pops */
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    /* subtle inner shadow */
     margin-bottom: 5px;
 }
