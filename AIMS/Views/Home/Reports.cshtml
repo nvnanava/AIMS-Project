@@ -495,6 +495,10 @@
                                 }
                             </tr>
                         }
+                        <!-- "No results" row (hidden if data in table) -->
+                        <tr id="no-results-row" style="display: none;">
+                            <td colspan="@tableHeaders.Count + 1" class="no-results-cell">No matching results found</td>
+                        </tr>
                     }
                 </tbody>
             </table>
@@ -518,11 +522,11 @@
             <form class="row g-3">
                 <div class="col-md-6">
                     <label for="dateRange1" class="form-label">Start Date</label>
-                    <input type="text" class="form-control" id="dateRange1">
+                    <input type="date" class="form-control" id="dateRange1" name="dateRange1">
                 </div>
                 <div class="col-md-6">
                     <label for="dateRange2" class="form-label">End Date</label>
-                    <input type="text" class="form-control" id="dateRange2">
+                    <input type="date" class="form-control" id="dateRange2" name="dateRange2">
                 </div>
                 <div class="col-12">
                     <label for="inputDescription" class="form-label">Description (optional)</label>
@@ -550,11 +554,11 @@
             <form class="row g-3">
                 <div class="col-md-6">
                     <label for="dateRange1" class="form-label">Start Date</label>
-                    <input type="text" class="form-control" id="dateRange1">
+                    <input type="date" class="form-control" id="dateRange1" name="dateRange1">
                 </div>
                 <div class="col-md-6">
                     <label for="dateRange2" class="form-label">End Date</label>
-                    <input type="text" class="form-control" id="dateRange2">
+                    <input type="date" class="form-control" id="dateRange2" name="dateRange2">
                 </div>
                 <div class="col-12">
                     <label for="inputDescription" class="form-label">Description (optional)</label>
@@ -788,29 +792,46 @@
     </div>
 </div>
 
+<!-- Report Submitted Message -->
+<div class="report-toast-container">
+    <div id="reportToast" class="toast report-toast" role="alert" data-bs-autohide="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                Report generated!
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @section Scripts {
     <script>
         const searchInput = document.getElementById("reportSearch");
         const tableBody = document.getElementById("table-body");
         const rows = tableBody.getElementsByTagName("tr");
+        const noResultsRow = document.getElementById("no-results-row");
+        
 
         searchInput.addEventListener("input", function () {
             const query = this.value.toLowerCase();
+            let shownRows = 0;
 
             Array.from(rows).forEach(row => {
                 const cells = row.getElementsByTagName("td");
+                if (row.id === "no-results-row") return; // Skip the "No results" row
                 let match = false;
 
                 // Skip checkbox cell
                 for (let i = 1; i < cells.length; i++) {
                     if (cells[i].textContent.toLowerCase().includes(query)) {
                         match = true;
+                        shownRows++;
                         break;
                     }
                 }
 
                 row.style.display = match ? "" : "none";
+                noResultsRow.style.display = shownRows === 0 ? "" : "none";
             });
         });
 
@@ -859,6 +880,21 @@
             });
         });
 
+
+        // Toast on generate report
+        document.addEventListener("DOMContentLoaded", function () {
+            const generateBtn = document.querySelector("#generateReport .btn.btn-primary");
+            const reportToast = new bootstrap.Toast(document.getElementById("reportToast"), { delay: 3000 });
+
+            generateBtn.addEventListener("click", function () {
+                reportToast.show();
+            });  
+
+            const customReportBtn = document.querySelector("#generateCustomReport .btn.btn-primary");
+            customReportBtn.addEventListener("click", function () {
+                reportToast.show();
+            });
+        });
     </script>
 }
 

@@ -8,7 +8,7 @@
             </div>
 
             <div class="modal-body">
-                <form action="/Home/EditAsset" method="post">
+                <form id="editAssetForm" action="/Home/EditAsset" method="post">
                     
                     <div class="mb-3">
                         <label for="editTagNumber" class="form-label">Tag Number</label>
@@ -36,3 +36,42 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const editForm = document.querySelector('#editAssetModal form');
+        const editToast = new bootstrap.Toast(document.getElementById("editToast"));
+        const editTagInput = document.getElementById("editTagNumber");
+
+        editForm.addEventListener('submit', function (e) {
+            e.preventDefault(); // Prevent redirect
+
+            //validate inputs here
+            const tagNumber = document.getElementById("editTagNumber").value;
+
+            if (!tagNumber) {
+                editTagInput.placeholder = "Tag Number is required";
+                editTagInput.classList.add("is-invalid");
+                return;
+            } else {
+                document.getElementById("tagNumberError").style.display = "none";
+            }
+            // Show toast
+            editToast.show();
+            // Optional: reset form
+            this.reset();
+
+            // Optional: close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById("editAssetModal"));
+            modal.hide();
+        });
+        editTagInput.addEventListener("input", function () {
+            this.classList.remove("is-invalid");
+            this.style.border = ""; // clears inline border
+            this.placeholder = "Enter Tag Number"; // restore default
+        });
+    });
+    //clears error warnings when new input is entered
+
+    
+</script>

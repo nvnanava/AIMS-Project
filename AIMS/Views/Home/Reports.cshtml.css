@@ -34,6 +34,13 @@
     gap: 10px;
 }
 
+.no-results-cell {
+    text-align: center;
+    padding-left: 0;
+    margin: 0;
+    width: 100%;
+}
+
 /* Search Bar */
 .search-container {
     display: flex;
@@ -71,4 +78,21 @@
     margin-left: auto;
     margin-inline-end: 10px;
     writing-mode: horizontal-tb;
+}
+
+/* alert message */
+.report-toast-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+}
+
+.report-toast {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    font-size: 1rem;
+    min-width: 280px;
 }

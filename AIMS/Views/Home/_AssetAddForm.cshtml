@@ -6,7 +6,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
            <div class="modal-body">
-    <form action="/Home/AddAsset" method="post">
+    <form id="AssetAddForm">
 
         <div class="mb-3">
             <label for="assets" class="form-label">Select Asset Type:</label>
@@ -44,15 +44,17 @@
         <div class="mb-3">
             <label for="serialNumber" class="form-label">Serial Number:</label>
             <input type="text" id="serialNumber" name="serialNumber" class="form-control" placeholder="Enter Serial Number">
+            <div id="serialNumberError" class="text-danger small" style="display: none;"></div>
         </div>
 
         <div class="mb-3">
             <label for="tagNumber" class="form-label">Tag Number:</label>
             <input type="text" id="tagNumber" name="tagNumber" class="form-control" placeholder="Enter Tag Number">
+            <div id="tagNumberError" class="text-danger small" style="display: none;"></div>
         </div>
 
         <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Add Asset</button>
+            <button type="submit" class="btn btn-primary">Add Asset</button>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
 
@@ -62,3 +64,55 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Function to handle the form submission and shows werror message if serial number and tag number are missing.a 
+    document.getElementById('AssetAddForm').addEventListener('submit', function(e){
+        e.preventDefault(); // Stay on page
+        const serialNumber = document.getElementById('serialNumber').value.trim();
+        const tagNumber = document.getElementById('tagNumber').value.trim();
+        const assetType = document.getElementById('assets').value;
+        const make = document.getElementById('make').value;
+        const model = document.getElementById('model').value;
+        const errorMessage = document.getElementById('assetFormError');
+        const serialNumberError = document.getElementById('serialNumberError');
+        const tagNumberError = document.getElementById('tagNumberError');
+
+
+        // if both are empty give a warning message in both fields
+        if (serialNumber === "" && tagNumber === "") {
+            e.preventDefault(); // Prevent form submission
+            serialNumberError.textContent = "Missing a Serial Number";
+            serialNumberError.style.display = "block"; 
+            tagNumberError.textContent = "Missing a Tag Number";
+            tagNumberError.style.display = "block"; 
+            return;
+        }
+        else if (serialNumber === "") {
+            e.preventDefault(); // Prevent form submission
+            serialNumberError.textContent = "Missing a Serial Number";
+            serialNumberError.style.display = "block"; 
+            tagNumberError.style.display = "none"; 
+            return;
+        }
+        else if (tagNumber === "") {
+            e.preventDefault(); // Prevent form submission
+            tagNumberError.textContent = "Missing a Tag Number";
+            tagNumberError.style.display = "block"; 
+            serialNumberError.style.display = "none"; 
+            return;
+        }
+
+        else{
+            // If both fields are filled, submit the form and pop up a success message. We will need to send things to DB in between above and below code
+            const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+            assignToast.show();
+            //close form after submission
+            bootstrap.Modal.getInstance(document.getElementById('addAssetModal')).hide();
+        }
+
+        // If both fields are filled, allow form submission and hide the error message
+        errorMessage.textContent = ""; 
+        errorMessage.style.display = "none"; 
+    });
+</script>
