@@ -45,3 +45,16 @@
         </div>
     </div>
 </div>
+
+
+
+<script>
+     document.addEventListener("DOMContentLoaded", function () {
+            const assignAssetForm = document.querySelector("#assignAssetForm");
+            const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+
+            assignAssetForm.addEventListener("submit", function () {
+                assignToast.show();
+            });  
+        });
+</script>

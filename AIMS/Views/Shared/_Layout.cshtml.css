@@ -99,3 +99,37 @@ button.accept-policy {
   font-weight: bold;
   border-bottom: 2px solid #007bff;
 }
+
+/* alert message */
+.assign-toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+.assign-toast {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  min-width: 280px;
+}
+
+/* alert message */
+.edit-toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+.edit-toast {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  min-width: 280px;
+}

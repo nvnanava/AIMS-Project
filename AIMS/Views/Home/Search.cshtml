@@ -120,6 +120,11 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
             }
           </tr>
         }
+        <tr id="no-results-row" class="no-results-row">
+          <td colspan="@tableHeaders.Count">
+            No matching results found
+          </td>
+        </tr>
       }
     </tbody>
   </table>
@@ -161,6 +166,10 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 
     // get all the rows
     const results = document.querySelectorAll(".result");
+    const noResultsRow = document.getElementById("no-results-row");
+    
+    //intitialize a variable to increment if a row is shown
+    let shownRows = 0;
 
     // validate each row
     for (const result of results) {
@@ -199,8 +208,11 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
       } else {
         // otherwise, enable display
         result.style.display = "";
+        shownRows++;
       }
     }
+    // if no rows are shown, show the no-results-row. otherwise, hide it.
+    noResultsRow.style.display = shownRows === 0 ? "" : "none";
   }
 
   const inputs = document.querySelectorAll(".filter-input");
@@ -219,7 +231,10 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
   for (const input of inputs) {
     input.addEventListener("input", filter)
   }
-<script>
+</script>
+
+
+@* <script>
 document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('.search-input');
     const rows = document.querySelectorAll('tbody tr.result');
@@ -247,4 +262,4 @@ document.addEventListener('DOMContentLoaded', function() {
     inputs.forEach(input => input.addEventListener('input', filter));
     filter(); // Initial filter
 });
-</script>
+</script> *@
