@@ -1,29 +1,99 @@
 /* Summary Card Section */
 .summary-cards-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: auto;
-  min-height: 200px;
-  margin: 0 auto 20px auto;
-  background-color: #ecf0f1;
-  border: 3px dashed #34495e;
-  border-radius: 8px;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: auto;
+    min-height: 200px;
+    margin: 0 auto 20px auto;
+    background-color: #ecf0f1;
+    border: 3px dashed #34495e;
+    border-radius: 8px;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.carousel-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    align-items: center;
+}
+
+.carousel-arrow {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+    padding: 0;
+}
+
+.carousel-arrow.left {
+    display: "none";
+    position: absolute;
+    left: 0px;
+}
+
+.carousel-arrow.right {
+    display: "none";
+    position: absolute;
+    right: 0px;
+}
+
+.carousel-viewport {
+    overflow: hidden;
+    width: 100%;
+    height: auto;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
+
+
+.card-carousel-track {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    transition: transform 0.3s ease-in-out;
+    will-change: transform;
+    padding: 4px 40px 18px 40px;
+    /* set top padding from 4px to something else when deleting view dropdown button for prod */
+}
+
+#card-scroll-container {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    max-width: 100%;
+    padding: 0 48px;
+    box-sizing: border-box;
+}
+
+#card-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+.card {
+    width: 212px;
+    height: 200px;
+    scroll-snap-align: start;
+    box-sizing: border-box;
 }
 
 /* Welcome Message Seciton */
 .role-message-container {
-  background-color: #fff;
-  padding: 10px;
+    background-color: #fff;
+    padding: 10px;
 }
 
 .welcome-title {
-  font-size: 48px;
-  color: #34495e;
-  margin: 0;
-  text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+    font-size: 48px;
+    color: #34495e;
+    margin: 0;
+    text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
 }
 
 .welcome-subtitle {
@@ -146,36 +216,36 @@
 
 /* General Dropdown Styling */
 .dropdown-menu {
-  position: absolute;
-  color: #34495e;
-  border: 3px solid #34495e;
-  border-radius: 8px;
-  background-color: #ecf0f1;
-  padding: 10px;
-  min-width: 308px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-radius: 8px;
+    background-color: #ecf0f1;
+    padding: 10px;
+    min-width: 308px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Individual Filter Sections */
 .filter-section {
-  padding: 5px 0;
+    padding: 5px 0;
 }
 
 /* Collapsible Sections */
 .expandable {
-  background-color: #ecf0f1;
-  color: #34495e;
-  border: 3px solid #34495e;
-  border-color: #2c3e50;
-  border-radius: 20px;
-  padding: 0px 16px;
-  transition: background-color 0.2s;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #ecf0f1;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-color: #2c3e50;
+    border-radius: 20px;
+    padding: 0px 16px;
+    transition: background-color 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .expandable:hover {
-  border: 3px solid #1abc9c;
-  transition: all 150ms ease-out;
+    border: 3px solid #1abc9c;
+    transition: all 150ms ease-out;
 }
 
 /* Nested Dropdowns */
