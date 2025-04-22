@@ -1,24 +1,29 @@
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
-WORKDIR /app
-EXPOSE 5119
-
-ENV ASPNETCORE_URLS=http://+:5119
-
-USER app
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-ARG configuration=Release
+# Stage 1: Base
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS base
 WORKDIR /src
+# Copy and restore dependencies. Adjust the path if your csproj is not in AIMS/
 COPY ["AIMS/AIMS.csproj", "AIMS/"]
 RUN dotnet restore "AIMS/AIMS.csproj"
+# Copy all source code into the image
 COPY . .
-WORKDIR "/src/AIMS"
-RUN dotnet build "AIMS.csproj" -c $configuration -o /app/build
 
-FROM build AS publish
-ARG configuration=Release
-RUN dotnet publish "AIMS.csproj" -c $configuration -o /app/publish /p:UseAppHost=false
+# Stage 2: Development
+FROM base AS dev
+WORKDIR /src/AIMS
+# No publish here; in development we’ll run from source using dotnet watch
+# Remove any inherited entrypoint so that docker-compose can run its command.
+ENTRYPOINT []
 
-FROM base AS final
+# Stage 3: Production Publish
+FROM base AS publish
+WORKDIR /src/AIMS
+RUN dotnet publish "AIMS.csproj" -c Release -o /app/publish
+
+# Stage 4: Production Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
-COPY --from=publish --chown=app:app /app/publish .
+COPY --from=publish /app/publish .
+EXPOSE 5119
+ENV ASPNETCORE_URLS=http://+:5119
+ENV ASPNETCORE_ENVIRONMENT=Production
 ENTRYPOINT ["dotnet", "AIMS.dll"]
