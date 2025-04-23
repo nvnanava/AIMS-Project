@@ -7,7 +7,7 @@ services:
       - "5119:5119"
     volumes:
       # Mount your local AIMS folder into the container so that source file changes are detected
-      - ./AIMS:/src/AIMS
+      - .:/src/
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       DOTNET_USE_POLLING_FILE_WATCHER: "1" # Enable file polling for more reliable change detection
