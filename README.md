@@ -51,10 +51,21 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
     - For **Windows**:
 
         - Run this command in VS Code’s terminal to connect to SQL Server:
+
             ```bash
             sqlcmd -S localhost -U sa -P 'YourSecurePassword!'
             ```
+
             _Note: The password can be found in the `docker-compose.yml` file._
+
+        - **To install `mssql-tools` on Windows**, you need to download and install the SQL Server Command Line Tools. Follow these steps:
+
+        1. Download the **Microsoft ODBC Driver 17 for SQL Server** and **SQLCMD** from the [official Microsoft site](https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server).
+        2. Run the installer and follow the setup instructions.
+        3. After installation, open a new **Command Prompt** or **PowerShell** window and verify the installation by running:
+            ```bash
+            sqlcmd -?
+            ```
 
     - For **Mac**:
 
@@ -72,6 +83,7 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
             ```bash
             docker exec -it sqlserver2017 sqlcmd -S localhost -U sa -P "StrongP@ssword!"
             ```
+            _Note: For the production version, the password will not be in the `docker-compose.yml` file. Instead, it will be stored in a `secrets/.env` file for better security and management._
 
 6. **Verify Database Connection**
 
@@ -94,7 +106,7 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
 7. **Verify ASP.NET Core App**
     - Open a browser window and enter the following URL to verify the ASP.NET Core application is working:
         ```
-        http://localhost:0000
+        http://localhost:5119
         ```
         _Note: The correct port number is specified in the `docker-compose.yml` file._
 
