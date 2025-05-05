@@ -1,6 +1,6 @@
 # AIMS - Asset Inventory Management System
 
-![AIMS Logo](./Images/AIMSLOGO.PNG)
+![AIMS Logo](./Images/AIMSLOGO.png)
 
 ## Project Overview
 
@@ -152,7 +152,7 @@ bash
 
 This is what the home screen will look like:
 
-![AIMS Homepage](./Images/Homepage.PNG)
+![AIMS Homepage](./Images/Homepage.png)
 
 ## Design
 
