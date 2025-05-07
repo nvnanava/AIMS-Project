@@ -52,6 +52,8 @@
             <input type="text" id="tagNumber" name="tagNumber" class="form-control" placeholder="Enter Tag Number">
             <div id="tagNumberError" class="text-danger small" style="display: none;"></div>
         </div>
+        <div id="assetFormError" class="text-danger small" style="display: none;"></div>
+
 
         <div class="modal-footer">
             <button type="submit" class="btn btn-primary">Add Asset</button>
@@ -68,16 +70,29 @@
 <script>
     // Function to handle the form submission and shows werror message if serial number and tag number are missing.a 
     document.getElementById('AssetAddForm').addEventListener('submit', function(e){
+        console.log("Submitting asset form");//debugging line
         e.preventDefault(); // Stay on page
         const serialNumber = document.getElementById('serialNumber').value.trim();
         const tagNumber = document.getElementById('tagNumber').value.trim();
         const assetType = document.getElementById('assets').value;
         const make = document.getElementById('make').value;
         const model = document.getElementById('model').value;
+        const status = "Available"; // Default status
         const errorMessage = document.getElementById('assetFormError');
         const serialNumberError = document.getElementById('serialNumberError');
         const tagNumberError = document.getElementById('tagNumberError');
 
+        const hardwareDto = {
+            AssetTag: parseInt(tagNumber),
+            AssetName: `${make} ${model}`,
+            AssetType: assetType,
+            Status: status,
+            Manufacturer: make,
+            Model: model,
+            SerialNumber: serialNumber,
+            WarrantyExpiration: new Date().toISOString().split("T")[0], //only shows date
+            PurchaseDate: new Date().toISOString().split("T")[0]
+        };
 
         // if both are empty give a warning message in both fields
         if (serialNumber === "" && tagNumber === "") {
@@ -114,5 +129,23 @@
         // If both fields are filled, allow form submission and hide the error message
         errorMessage.textContent = ""; 
         errorMessage.style.display = "none"; 
+
+        fetch("/api/AimsDb/addhardware", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(hardwareDto)
+        }).then(res => {
+            if (res.ok) {
+                console.log("Asset added successfully!");
+                $('#addAssetModal').modal('hide'); // Hide the modal after successful submission
+            } else {
+                console.error("Error adding asset:", res.statusText);
+            }
+        }).catch(err => {
+            console.error("Network error:", err);
+        });
+
     });
 </script>
