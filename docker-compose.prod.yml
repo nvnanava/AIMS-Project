@@ -1,22 +1,18 @@
-# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP.NET Core service.
-
 services:
-  asp-frontend:
-    image: aims
+  web-prod:
     build:
       context: .
-      dockerfile: AIMS/Dockerfile
-    develop:
-      watch:
-        - action: rebuild
-          path: .
+      dockerfile: AIMS/Dockerfile.prod
     ports:
-      - 5119:5119
+      - "5119:5119"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
     networks:
       - new-bridge-net
-  sqlserver:
+
+  sqlserver-prod:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserver2022
+    container_name: sqlserver2022-prod
     ports:
       - "1433:1433"
     environment:
@@ -25,6 +21,7 @@ services:
     restart: unless-stopped
     networks:
       - new-bridge-net
+
 networks:
   new-bridge-net:
     driver: bridge
