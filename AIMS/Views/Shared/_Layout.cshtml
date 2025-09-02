@@ -6,17 +6,26 @@
     <title>@ViewData["Title"] - AIMS</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
+
+    <!-- NOTE:
+     index.overrides.css is loaded last on purpose.
+     Ran into an issue where Index.cshtml.css styles (like filter hover + green checkboxes)
+     weren’t applying correctly due to CSS isolation/scoping.
+     This overrides file forces those styles globally and ensures they stick. -->
+    <link rel="stylesheet" href="~/css/index.overrides.css" asp-append-version="true" />
 </head>
 
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav
+            class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
-                    <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60" class="d-inline-block align-text-top" asp-append-version="true" />
+                    <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
+                        class="d-inline-block align-text-top" asp-append-version="true" />
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -28,31 +37,31 @@
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">
-                                <span class="emoji">🏠 </span> 
+                                <span class="emoji">🏠 </span>
                                 <span class="label">Home</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Reports">
-                                <span class="emoji">📊 </span> 
+                                <span class="emoji">📊 </span>
                                 <span class="label">Reports</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
-                                <span class="emoji">⚙️ </span> 
+                                <span class="emoji">⚙️ </span>
                                 <span class="label">Admin</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
-                                <span class="emoji">📝 </span> 
+                                <span class="emoji">📝 </span>
                                 <span class="label">Audit Log</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Feedback">
-                                <span class="emoji">✉️ </span> 
+                                <span class="emoji">✉️ </span>
                                 <span class="label">Feedback</span>
                             </a>
                         </li>
