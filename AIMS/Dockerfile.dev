@@ -15,4 +15,4 @@ RUN dotnet restore "AIMS.csproj"
 ENTRYPOINT []	
 
 # Set the default command to use dotnet watch (with --verbose for more logging)	
-CMD ["dotnet", "watch", "run", "--project", "AIMS.csproj", "--urls", "http://0.0.0.0:5119", "--verbose"]	
+CMD ["dotnet", "watch", "run", "--project", "AIMS.csproj", "--verbose"]	
