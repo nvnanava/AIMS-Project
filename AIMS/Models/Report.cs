@@ -6,7 +6,7 @@ namespace AIMS.Models;
 
 public class Report
 {
-    public int Id { get; set; }
+    public int ReportID { get; set; }
 
     public required string Name { get; set; }
 
