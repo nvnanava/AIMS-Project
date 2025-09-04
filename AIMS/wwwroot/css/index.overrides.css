@@ -1,0 +1,134 @@
+/* =========================================================
+   index.overrides.css
+   Purpose: Fix styles that Index.cshtml.css couldn’t apply
+   (hover styles, checkbox accent, spacing) due to CSS isolation.
+   Loaded last in _Layout.cshtml to globally override component CSS.
+   ========================================================= */
+
+/* --- Parent rows (My Assets / All Types / All My Reports / All Statuses) --- */
+#filterDropdown .assets-parent,
+#filterDropdown .type-parent,
+#filterDropdown .reports-parent,
+#filterDropdown .status-parent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    line-height: 1.25;
+    margin: 0;
+    white-space: nowrap;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* --- Children containers use a consistent left rail --- */
+#types-list,
+#reports-list,
+#status-list {
+    display: grid;
+    grid-auto-flow: row;
+    grid-auto-rows: minmax(22px, auto);
+    gap: 4px;
+    margin-top: 8px;
+    padding-left: 14px;
+    border-left: 2px solid rgba(52, 73, 94, .25);
+}
+
+/* --- Child rows (Types / Reports / Statuses) --- */
+#types-list label,
+#reports-list label,
+#status-list label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.25;
+    cursor: pointer;
+}
+
+/* --- Hover (and keyboard focus) feedback for all rows --- */
+#filterDropdown .assets-parent:hover,
+#filterDropdown .type-parent:hover,
+#filterDropdown .reports-parent:hover,
+#filterDropdown .status-parent:hover,
+#types-list label:hover,
+#reports-list label:hover,
+#status-list label:hover {
+    background: rgba(0, 0, 0, .035);
+    border-radius: 6px;
+    padding-left: 6px;
+}
+
+#filterDropdown .assets-parent:focus-within,
+#filterDropdown .type-parent:focus-within,
+#filterDropdown .reports-parent:focus-within,
+#filterDropdown .status-parent:focus-within,
+#types-list label:focus-within,
+#reports-list label:focus-within,
+#status-list label:focus-within {
+    outline: 2px solid #1abc9c33;
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* --- Consistent green checkboxes everywhere in the dropdown --- */
+#filterDropdown input[type="checkbox"],
+#types-list input[type="checkbox"],
+#reports-list input[type="checkbox"],
+#status-list input[type="checkbox"],
+#filter-all-types,
+#filter-all-reports,
+#filter-all-status,
+#filter-my-assets {
+    -webkit-appearance: auto;
+    appearance: auto;
+    width: 18px;
+    height: 18px;
+    accent-color: #1abc9c;
+    margin: 0 6px 0 0;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+/* --- Keep the dropdown inside the viewport; scroll if tall --- */
+#filterDropdown {
+    /* width bounds (optional, keep if you want a max) */
+    min-width: 320px;
+    max-width: 380px;
+
+    /* height + scroll behavior */
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+    contain: content;
+}
+
+/* Reset defaults */
+#filterDropdown .filter-section {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+}
+
+/* Only add a separator when the previous section is actually visible */
+#filterDropdown .filter-section:not(.d-none):not([hidden])+.filter-section:not(.d-none):not([hidden]) {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(52, 73, 94, .25);
+}
+
+/* --- Keep the caret arrows consistent on toggles --- */
+#toggle-direct-reports[aria-expanded="false"]::after,
+#toggle-type-dropdown[aria-expanded="false"]::after,
+#toggle-status-dropdown[aria-expanded="false"]::after,
+#view-toggle[aria-expanded="false"]::after {
+    content: " 🔽";
+}
+
+#toggle-direct-reports[aria-expanded="true"]::after,
+#toggle-type-dropdown[aria-expanded="true"]::after,
+#toggle-status-dropdown[aria-expanded="true"]::after,
+#view-toggle[aria-expanded="true"]::after  {
+    content: " 🔼";
+}

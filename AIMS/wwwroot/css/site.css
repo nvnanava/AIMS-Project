@@ -29,3 +29,45 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+.navbar.bg-white {
+  background-color:#2C3E50 !important;
+}
+
+.navbar .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #ECF0F1 !important;
+}
+
+.navbar .nav-link .emoji {
+  flex-shrink: 0;
+  font-size: 1.4rem;
+}
+
+.navbar .nav-link .label {
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.4rem;
+}
+
+.navbar .nav-link:hover {
+  color: #1abc9c !important;
+  text-decoration: none;
+}
+
+.navbar .nav-link.active {
+  color: #e74c3c !important;
+  font-weight: 600;
+}
+
+.custom-navbar .navbar-nav {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+}
