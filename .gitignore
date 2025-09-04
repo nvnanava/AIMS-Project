@@ -400,3 +400,6 @@ FodyWeavers.xsd
 *.sln.iml
 .DS_Store
 .DS_Store
+
+# local backup folder
+tmp_backup_aims/

@@ -1,87 +1,170 @@
-.asset-table {
-    width: 70%; /* Balanced width */
-    margin: 20px auto;
-    border-collapse: collapse;
-    font-family: "Segoe UI", sans-serif;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    table-layout: fixed; /* Fixed layout to minimize extra space */
+
+/* --- Layout container for this view --- */
+.asset-table-wrapper {
+  max-width: 1120px;          /* keeps the table from going too wide */
+  margin: 0 auto;             /* center the block */
+  padding: 0 12px;            /* small horizontal padding */
+  box-sizing: border-box;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Right-aligned toolbar that holds the Manage Asset button */
+.asset-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 8px 0 12px;         /* space above/below the toolbar */
+}
+
+/* --- Table base --- */
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;  /* ensures header/body column widths line up */
+  table-layout: fixed;        /* stable column widths; matches your <colgroup> */
+  border-radius: 12px;
+  overflow: hidden;           /* clip rounded corners */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+  background: #fff;
+}
+
+/* Header */
 .asset-table thead {
-    background-color: #2c3e50;
-    color: #fff;
+  background-color: #2c3e50;
+  color: #fff;
 }
 
 .asset-table th,
 .asset-table td {
-    padding: 12px 15px; /* Standard padding to keep consistency */
-    text-align: left;
-
-    font-size: 16px; /* Better readability */
+  padding: 12px 15px;
+  font-size: 16px;
+  line-height: 1.25;
+  text-align: left;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
+/* Keep the look consistent: header bold, body normal */
 .asset-table th {
-    font-weight: bold;
+  font-weight: 700;
 }
 
+/* Zebra striping + hover */
 .asset-table tbody tr {
-    background-color: #f9f9f9;
-    transition: background-color 0.2s ease;
+  background-color: #f9f9f9;
+  transition: background-color 0.2s ease;
 }
 
 .asset-table tbody tr:nth-child(even) {
-    background-color: #eef2f5;
+  background-color: #eef2f5;
 }
 
 .asset-table tbody tr:hover {
-    background-color: #dcefff;
+  background-color: #dcefff;
 }
 
-/* Status badge styles */
+/* --- Actions column (header + cells) --- */
+.asset-table .actions-col {
+  width: 88px;               /* narrow, consistent column */
+  text-align: center;        /* center both header and cells */
+  white-space: nowrap;       /* keep the pencil from wrapping */
+}
+
+.asset-table td.actions-col {
+  text-align: center;        /* explicit for body cells */
+}
+
+/* Optional: style the action button inside the table a touch tighter */
+.asset-table .js-inline-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  line-height: 1;
+}
+
+/* --- Status badges --- */
 .status-badge {
-    padding: 5px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    display: inline-block;
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
+/* Available */
 .status-available {
-    background-color: #e0f8e9;
-    color: #2ecc71;
+  background-color: #e0f8e9;
+  color: #2ecc71;
 }
 
+/* Assigned */
 .status-assigned {
-    background-color: #fbeaea;
-    color: #e74c3c;
+  background-color: #fbeaea;
+  color: #e74c3c;
 }
 
+/* Marked for Survey */
 .status-marked-for-survey {
-    background-color: #fff4e5;
-    color: #f39c12;
+  background-color: #fff4e5;
+  color: #f39c12;
 }
 
+/* In Repair */
 .status-in-repair {
-    background-color: #f0f0f0;
-    color: #7f8c8d;
+  background-color: #f0f0f0;
+  color: #7f8c8d;
 }
 
-.asset-table th:last-child {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
+/* Surveyed */
+.status-surveyed {
+  background-color: #e8f0fe;
+  color: #3b82f6;
 }
 
-.asset-table th:last-child span {
-    padding-left: 10px; /* Adjust this value as needed */
+/* --- (Optional) header bar helper, if you ever use it inside <th> --- */
+.asset-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.asset-table th span {
-    margin-right: auto;
+/* --- Utility: accessible hide --- */
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
 }
 
-.asset-table th .add-button {
-    margin-left: 10px;
+/* --- Small viewports: make it breathe --- */
+@media (max-width: 900px) {
+  .asset-table th,
+  .asset-table td {
+    padding: 10px 12px;
+    font-size: 15px;
+  }
+
+  .asset-toolbar {
+    margin: 6px 0 10px;
+  }
 }
+
+@media (max-width: 640px) {
+  .asset-table-wrapper {
+    padding: 0 8px;
+  }
+
+  .asset-table th,
+  .asset-table td {
+    padding: 9px 10px;
+    font-size: 14px;
+  }
+
+  .asset-table .actions-col {
+    width: 72px;
+  }
+}
+
