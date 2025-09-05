@@ -254,12 +254,17 @@ new Dictionary<string, string> {
             </div>
         </div>
 
-        <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
-            <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
-                data-bs-target="#assignAssetModal">
-                Assign Asset
-            </button>
-        </div>
+        @* Conditional, Entra-based display code*@
+        @* @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+        { *@
+            <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+                <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
+                    data-bs-target="#assignAssetModal">
+                    Assign Asset
+                </button>
+            </div>
+        @* } *@
+
     </header>
 
     <!-- Include Table Component -->
