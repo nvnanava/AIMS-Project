@@ -6,11 +6,15 @@ services:
     ports:
       - "5119:5119"
     volumes:
-      # Mount your local AIMS folder into the container so that source file changes are detected
       - .:/src/
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      DOTNET_USE_POLLING_FILE_WATCHER: "1" # Enable file polling for more reliable change detection
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      ASPNETCORE_URLS: "http://0.0.0.0:5119"
+      ConnectionStrings__DockerConnection: "Server=sqlserver-dev,1433;Database=AIMS;User Id=sa;Password=StrongP@ssword!;TrustServerCertificate=True;Encrypt=False"
+    depends_on:
+      sqlserver-dev:
+        condition: service_healthy
     networks:
       - new-bridge-net
 
@@ -22,6 +26,14 @@ services:
     environment:
       SA_PASSWORD: "StrongP@ssword!"
       ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${SA_PASSWORD}\" -No -Q \"SELECT 1\" -C" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: unless-stopped
     networks:
       - new-bridge-net
@@ -29,3 +41,6 @@ services:
 networks:
   new-bridge-net:
     driver: bridge
+
+volumes:
+  mssql_data:

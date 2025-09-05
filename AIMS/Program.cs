@@ -10,24 +10,31 @@ builder.Services.AddSwaggerGen(); // take out after development
 
 
 builder.Services.AddDbContext<AimsDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var cs = builder.Configuration.GetConnectionString(
+        builder.Environment.IsDevelopment() &&
+        Environment.OSVersion.Platform == PlatformID.Win32NT
+            ? "DefaultConnection"   // LocalDB on Windows
+            : "DockerConnection"    // Docker SQL on Mac/Linux
+    );
+    options.UseSqlServer(cs);
+});
 
 var app = builder.Build();
 
-
-app.UseSwagger(); // take out after development
-app.UseSwaggerUI(); //used for testing APIs. Swagger UI will be available at /swagger/index.html
-
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger(); // take out after development
+    app.UseSwaggerUI(); //used for testing APIs. Swagger UI will be available at /swagger/index.html
+}
+else
+{ 
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseAuthorization();
@@ -39,7 +46,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-
-app.Run();
-
-
+app.Run(); 

@@ -13,7 +13,14 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- keep legacy scaffolded code out of the build -->
+    <Compile Remove="Legacy\Scaffolded\**\*.cs" />
+    <None Include="Legacy\Scaffolded\**\*.cs" />
   </ItemGroup>
 
 </Project>

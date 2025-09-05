@@ -1,25 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+using System; 
 
 namespace AIMS.Models;
 
-public partial class Hardware
+public class Hardware
 {
-    public int AssetTag { get; set; }
+    // PK
+    public int HardwareID { get; set; }
 
-    public string AssetName { get; set; } = null!;
-
-    public string AssetType { get; set; } = null!;
-
-    public string Status { get; set; } = null!;
-
-    public string Manufacturer { get; set; } = null!;
-
-    public string Model { get; set; } = null!;
-
-    public string SerialNumber { get; set; } = null!;
-
+    // Columns
+    public string AssetName { get; set; } = string.Empty;
+    public string AssetType { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Manufacturer { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
+    public string SerialNumber { get; set; } = string.Empty; // unique
     public DateOnly WarrantyExpiration { get; set; }
-
     public DateOnly PurchaseDate { get; set; }
 }
