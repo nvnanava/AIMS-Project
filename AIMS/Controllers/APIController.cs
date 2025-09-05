@@ -44,6 +44,10 @@ public class ApiController : ControllerBase
             return BadRequest("Please specify a valid SoftwareID");
         }
 
+        // make sure that an assignnment does not already exist (no double assign)
+        var assignmentExists = await _db.Assignments.AnyAsync(a => a.SoftwareID == req.SoftwareID || a.AssetTag == req.AssetTag);
+
+        // See comment above the DTO class; this can be automated using AutoMapper
         Assignment newAssignment = new Assignment
         {
             SoftwareID = req.SoftwareID,
