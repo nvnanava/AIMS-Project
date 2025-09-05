@@ -1,11 +1,14 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
 
 namespace AIMS.Controllers;
 
+// Commented out for now, enable when we have entraID
+// [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/")]
 public class ApiController : ControllerBase
