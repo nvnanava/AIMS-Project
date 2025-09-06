@@ -9,10 +9,11 @@
             <div class="modal-body">
                 <form id="assignAssetForm">
                     <div class="mb-3">
-                        <label for="userSelect" class="form-label">Select User</label>
-                        <select class="form-select" id="userSelect" required>
-                            <option selected disabled value="">Choose a user...</option>
-                        </select>
+                        <label for="user-select" class="form-label">Select User</label>
+                        <input type="text" id="user-select" list="users" class="form-control mb-2">
+
+                        <datalist id="users">
+                        </datalist>
                     </div>
                     <div class="mb-3">
                         <label for="assetSelect" class="form-label">Select Asset</label>
@@ -47,14 +48,14 @@
 </div>
 
 
-
+<script src="~/js/assignAssetModal.js" defer></script>
 <script>
-     document.addEventListener("DOMContentLoaded", function () {
-            const assignAssetForm = document.querySelector("#assignAssetForm");
-            const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+    document.addEventListener("DOMContentLoaded", function () {
+        const assignAssetForm = document.querySelector("#assignAssetForm");
+        const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
 
-            assignAssetForm.addEventListener("submit", function () {
-                assignToast.show();
-            });  
+        assignAssetForm.addEventListener("submit", function () {
+            assignToast.show();
         });
+    });
 </script>

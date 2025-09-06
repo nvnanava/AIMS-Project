@@ -11,7 +11,8 @@ public class UserQuery
     {
         // Example query, adjust as needed
         return await _db.Users
-            .Select(u => new GetUserDto {
+            .Select(u => new GetUserDto
+            {
                 UserID = u.UserID,
                 FullName = u.FullName,
                 Email = u.Email,
@@ -20,6 +21,31 @@ public class UserQuery
                 SupervisorID = u.SupervisorID
             })
             .ToListAsync();
+    }
+    public async Task<List<GetUserDto>> GetFirstNUsers(int n)
+    {
+        return await _db.Users.Select(u => new GetUserDto
+        {
+            UserID = u.UserID,
+            FullName = u.FullName,
+            EmployeeNumber = u.EmployeeNumber,
+        }).Take(n).ToListAsync();
+    }
+    public async Task<List<GetUserDto>> SearchUserByName(string searchString)
+    {
+        var users = await _db.Users
+            .Where(u => u.FullName.Contains(searchString))
+            .Select(u => new GetUserDto
+            {
+                UserID = u.UserID,
+                FullName = u.FullName,
+                EmployeeNumber = u.EmployeeNumber,
+            })
+            // limit to to the top 20 rseluts
+            .Take(20)
+            .ToListAsync();
+
+        return users;
     }
 }
 
@@ -31,11 +57,11 @@ public class GetUserDto
 
     // Columns
     public string FullName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; } = string.Empty;
     public string EmployeeNumber { get; set; } = string.Empty; // e.g. "28809"
 
     public int? SupervisorID { get; set; }
 
-    public String Role { get; set; } = string.Empty;
+    public String? Role { get; set; } = string.Empty;
 
 }
