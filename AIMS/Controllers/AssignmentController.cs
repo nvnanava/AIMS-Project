@@ -10,14 +10,14 @@ namespace AIMS.Controllers;
 // Commented out for now, enable when we have entraID
 // [Authorize(Roles = "Admin")]
 [ApiController]
-[Route("api/")]
+[Route("api/assign/")]
 public class AssignmentController : ControllerBase
 {
     private readonly AimsDbContext _db;
     public AssignmentController(AimsDbContext db) => _db = db;
 
     // Quick sanity: table counts
-    [HttpPost]
+    [HttpPost("create")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,13 +80,14 @@ public class AssignmentController : ControllerBase
         };
 
         // finally, create assignment
-            _db.Assignments.Add(newAssignment);
+        _db.Assignments.Add(newAssignment);
         await _db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetAssignment), new {AssignmentID = newAssignment.AssignmentID}, req);
     }
 
     [HttpGet]
+    [Route("get")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
 
