@@ -1,21 +1,39 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using AIMS.Models;
+using System.Threading.Tasks;
 
 namespace AIMS.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly UserQuery _userQuery;
+    private readonly HardwareQuery _hardwareQuery;
+    private readonly SoftwareQuery _softwareQuery;
+    private readonly AssignmentsQuery _assignQuery;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, UserQuery userQuery, HardwareQuery hardwareQuery, SoftwareQuery softwareQuery, AssignmentsQuery assignQuery)
     {
         _logger = logger;
+        _userQuery = userQuery;
+        _hardwareQuery = hardwareQuery;
+        _softwareQuery = softwareQuery;
+        _assignQuery = assignQuery;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var hardware = await _hardwareQuery.GetAllHardwareAsync();
+        var software = await _softwareQuery.GetAllSoftwareAsync();
+        var users = await _userQuery.GetAllUsersAsync();
+
+        var model = new HomeIndexViewModel
+        {
+            Hardware = hardware,
+            Software = software,
+        };
+        return View(model);
     }
 
 
@@ -42,8 +60,8 @@ public class HomeController : Controller
     {
         return View();
     }
-    
-        public IActionResult Feedback()
+
+    public IActionResult Feedback()
     {
         return View();
     }
@@ -143,9 +161,9 @@ public class HomeController : Controller
 
 
     };
-    
-    
-     var specsData = new Dictionary<string, Dictionary<string, string>>
+
+
+        var specsData = new Dictionary<string, Dictionary<string, string>>
         {
             { "LT-1035", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Intel Iris Xe" }, { "Storage", "512GB SSD" } } },
             { "LT-1048", new Dictionary<string, string> { { "RAM", "16GB" }, { "GPU", "Apple M1 Pro" }, { "Storage", "1TB SSD" } } },
@@ -209,4 +227,10 @@ public class HomeController : Controller
 
         return View();
     }
+}
+
+public class HomeIndexViewModel
+{
+    public List<GetHardwareDto> Hardware { get; set; } = new();
+    public List<GetSoftwareDto> Software { get; set; } = new();
 }
