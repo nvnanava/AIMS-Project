@@ -50,6 +50,18 @@ builder.Services.AddScoped<AssignmentsQuery>();
 builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 
+// TODO: Take out when development is over
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("http://localhost:5119") // Add your frontend's origin
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 // Log detected OS
