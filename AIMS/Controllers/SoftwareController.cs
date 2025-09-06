@@ -14,23 +14,19 @@ namespace AIMS.Controllers;
 public class SoftwareController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    public SoftwareController(AimsDbContext db) => _db = db;
+    private readonly SoftwareQuery _softwareQuery;
+    public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery)
+    {
+        _db = db;
+        _softwareQuery = softwareQuery;
+    }
 
     [HttpGet("get-all")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAllSoftware()
     {
-         var users = await _db.SoftwareAssets
-            .AsNoTracking()
-            .Select(s => new
-            {
-                s.SoftwareID,
-                s.SoftwareName,
-                s.SoftwareType,
-                s.SoftwareVersion
-            })
-            .ToListAsync();
+        var users = await _softwareQuery.GetAllSoftwareAsync();
         return Ok(users);
     }
    
