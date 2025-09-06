@@ -14,7 +14,13 @@ namespace AIMS.Controllers;
 public class AssignmentController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    public AssignmentController(AimsDbContext db) => _db = db;
+    private readonly AssignmentsQuery _assignQuery;
+    public AssignmentController(AimsDbContext db, AssignmentsQuery assignQuery)
+    {
+        _db = db;
+        _assignQuery = assignQuery;
+        
+    }
 
     // Quick sanity: table counts
     [HttpPost("create")]
@@ -95,25 +101,7 @@ public class AssignmentController : ControllerBase
 
     public async Task<IActionResult> GetAssignment([FromQuery] int AssignmentID)
     {
-        var assignment = await _db.Assignments.
-        AsNoTracking()
-        .Where(a => a.AssignmentID == AssignmentID).
-        Select(a => new
-        {
-            a.AssignmentID,
-                a.AssetKind,
-                a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
-                SoftwareID = a.SoftwareID,
-                a.AssignedAtUtc
-        }).
-        FirstOrDefaultAsync();
-
-        if (assignment == null)
-        {
-            return NotFound("Please specify a valid AssignmentID");
-        }
+        var assignment = await _assignQuery.GetAssignmentAsync(AssignmentID);
 
         return Ok(assignment);
     }
@@ -122,21 +110,7 @@ public class AssignmentController : ControllerBase
 
     public async Task<IActionResult> GetAllAssignments()
     {
-        var rows = await _db.Assignments
-            .AsNoTracking()
-            .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new
-            {
-                a.AssignmentID,
-                a.AssetKind,
-                a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
-                SoftwareID = a.SoftwareID,
-                a.AssignedAtUtc
-            })
-            .ToListAsync();
-
+        var rows = await _assignQuery.GetAllAssignmentsAsync();
         return Ok(rows);
     }
 
