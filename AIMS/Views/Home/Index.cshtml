@@ -1,4 +1,5 @@
 ﻿@using System.Text.Json;
+@model AIMS.Controllers.HomeIndexViewModel
 
 @{
     ViewData["Title"] = "Home Page";
@@ -275,7 +276,7 @@ new Dictionary<string, string> {
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
 
     <!-- Include Modal HTML -->
-    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
 
 </section>
 
