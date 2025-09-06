@@ -10,7 +10,7 @@ namespace AIMS.Controllers;
 // Commented out for now, enable when we have entraID
 // [Authorize(Roles = "Admin")]
 [ApiController]
-[Route("api/assign/")]
+[Route("api/assign")]
 public class AssignmentController : ControllerBase
 {
     private readonly AimsDbContext _db;
@@ -31,7 +31,7 @@ public class AssignmentController : ControllerBase
         {
             // for correct methods corresponding to request messages, see the Methods section under https://learn.microsoft.com/en-us/dotnet/api/system.web.http.apicontroller?view=aspnetcore-2.2
             return BadRequest("You must specify either AssetTag (HardwareID) or SoftwareID.");
-        } 
+        }
 
         // validate that AssetTag exists if specified
         var assetTagExists = await _db.HardwareAssets.AnyAsync(hw => hw.HardwareID == req.AssetTag);
@@ -47,7 +47,8 @@ public class AssignmentController : ControllerBase
             return BadRequest("Please specify a valid SoftwareID");
         }
         // it does not make sense to specify both a Hardware and Software ID in one assignment request
-        if (assetTagExists && softwareIDExists) {
+        if (assetTagExists && softwareIDExists)
+        {
             return BadRequest("Please specify only one of either AssetTag(HardwareID) or SoftwareID");
         }
 
@@ -83,12 +84,11 @@ public class AssignmentController : ControllerBase
         _db.Assignments.Add(newAssignment);
         await _db.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetAssignment), new {AssignmentID = newAssignment.AssignmentID}, req);
+        return CreatedAtAction(nameof(GetAssignment), new { AssignmentID = newAssignment.AssignmentID }, req);
     }
 
-    [HttpGet]
-    [Route("get")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [HttpGet("get")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
 
     public async Task<IActionResult> GetAssignment(int AssignmentID)
@@ -101,6 +101,49 @@ public class AssignmentController : ControllerBase
 
         return Ok(assignment);
     }
+    [HttpGet("list")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+
+    public async Task<IActionResult> GetAllAssignments()
+    {
+        var rows = await _db.Assignments
+            .AsNoTracking()
+            .Where(a => a.UnassignedAtUtc == null)
+            .Select(a => new
+            {
+                a.AssignmentID,
+                a.AssetKind,
+                a.UserID,
+                User = a.User.FullName,
+                HardwareID = a.AssetTag,
+                SoftwareID = a.SoftwareID,
+                a.AssignedAtUtc
+            })
+            .ToListAsync();
+
+        return Ok(rows);
+    }
+
+    [HttpGet("close")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CloseAssignment(int AssignmentID)
+    {
+        // find assignment by primary key
+        var assignment = await _db.Assignments.FindAsync(AssignmentID);
+
+        // if not found, error
+        if (assignment == null)
+        {
+            return NotFound("Please specify a valid AssignmentID");
+        }
+
+        // delete the record
+        _db.Assignments.Remove(assignment);
+        await _db.SaveChangesAsync();
+        return Ok();
+
+    } 
 
 }
 
