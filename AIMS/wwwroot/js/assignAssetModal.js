@@ -2,97 +2,58 @@ document.addEventListener("DOMContentLoaded", function () {
     // --- Modal and DOM Elements ---
     const assignBtn = document.getElementById("assign-asset-button");
     const modal = new bootstrap.Modal(document.getElementById("assignAssetModal"));
-    const userSelect = document.getElementById("userSelect");
+    const userSelect = document.getElementById("users");
     const assetSelect = document.getElementById("assetSelect");
-    let previousOptionLength = userSelect.options.length;
 
-    // --- Create Dynamic Search Box Above Dropdown ---
-    const searchInput = document.createElement("input");
-    searchInput.type = "text";
-    searchInput.placeholder = "Search users...";
-    searchInput.className = "form-control mb-2";
-    userSelect.parentElement.insertBefore(searchInput, userSelect);
+    const searchInput = document.querySelector("#user-select")
 
-    // --- Open Dropdown on Focus ---
-    searchInput.addEventListener("focus", () => {
-        populateUserDropdown();
-        previousOptionLength = userSelect.options.length;
-        userSelect.size = Math.min(userSelect.options.length, 11);
-        userSelect.style.display = "block";
-    });
 
-    // --- Select First Matching Option on Enter ---
-    searchInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            const firstSelectable = Array.from(userSelect.options).find(opt => !opt.disabled);
-            if (firstSelectable) {
-                firstSelectable.selected = true;
-                searchInput.value = "";
-                userSelect.size = 1;
-            }
-        }
-    });
-
-    // --- Collapse Dropdown on Selection ---
-    userSelect.addEventListener("change", function () {
-        userSelect.size = 1;
-        searchInput.value = "";
-    });
-
-    // --- Repopulate on Focus if Filtered Previously ---
-    userSelect.addEventListener("focus", function () {
-        if (userSelect.options.length < previousOptionLength) {
-            populateUserDropdown();
-        }
-    });
-
-    // --- Close Dropdown if Clicking Outside ---
-    document.addEventListener("click", (e) => {
-        if (!searchInput.contains(e.target) && !userSelect.contains(e.target)) {
-            userSelect.size = 1;
-        }
-    });
-
-    // --- User Dropdown Logic ---
-    function populateUserDropdown(searchTerm = "") {
-        userSelect.innerHTML = '<option disabled selected value="">Choose a user...</option>';
-        users
-            .filter(u => `${u.Name} (${u.ID})`.toLowerCase().includes(searchTerm.toLowerCase()))
-            .slice(0, 20)
-            .forEach(user => {
-                const option = document.createElement("option");
-                option.value = user.ID;
-                option.textContent = `${user.Name} (${user.ID})`;
-                userSelect.appendChild(option);
-            });
-    }
-
-    // --- Asset Dropdown Logic (Filter for Available Only) ---
-    function populateAssetDropdown() {
-        assetSelect.innerHTML = '<option disabled selected value="">Choose an asset...</option>';
-        tableData
-            .filter(a => a.Status === "Available")
-            .forEach(asset => {
-                const option = document.createElement("option");
-                option.value = asset["Tag #"];
-                option.textContent = `${asset["Asset Name"]} - ${asset["Tag #"]}`;
-                assetSelect.appendChild(option);
-            });
-    }
+    searchInput.addEventListener('input', (e) => {
+        populateUserDropdown(e.target.value);
+    })
+    function populateUserDropdown(searchTerm ="") {
+        //clear out the old children
+        userSelect.replaceChildren();
+        // fetch data
+        fetch(`/api/user/search?searchString=${encodeURIComponent(searchTerm)}`)
+                .then((response) => {
+                    return response.json();
+                })
+                .then((results) => {
+                    const seen = {}; // Object to track unique userIDs
+                    // make sure we're not duplicating data
+                    
+                    results.forEach(user => {
+                        if (!seen[user.userID]) { // Check if userID is already added
+                    seen[user.userID] = true; // Mark userID as seen
+                    }
+                    const option = document.createElement("option");
+                    option.value = user.fullName;
+                    userSelect.appendChild(option);
+                });
+    })
+}
+    // // --- Asset Dropdown Logic (Filter for Available Only) ---
+    // function populateAssetDropdown() {
+    //     assetSelect.innerHTML = '<option disabled selected value="">Choose an asset...</option>';
+    //     tableData
+    //         .filter(a => a.Status === "Available")
+    //         .forEach(asset => {
+    //             const option = document.createElement("option");
+    //             option.value = asset["Tag #"];
+    //             option.textContent = `${asset["Asset Name"]} - ${asset["Tag #"]}`;
+    //             assetSelect.appendChild(option);
+    //         });
+    // }
 
     // --- Open Modal & PRepare Fields ---
     assignBtn.addEventListener("click", function () {
         populateUserDropdown();
-        populateAssetDropdown();
+        // populateAssetDropdown();
         document.getElementById("commentBox").value = "";
         modal.show();
     });
 
-    // --- Filter Users on Typing ---
-    searchInput.addEventListener("input", function () {
-        populateUserDropdown(this.value);
-    });
 
 
     // --- Submit Assignment Logic ---
