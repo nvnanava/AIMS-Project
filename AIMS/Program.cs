@@ -43,6 +43,12 @@ builder.Services.AddCors(options =>
 });
 // Optional feature flag for prod seeding (defaults false)
 var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
+// See https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes
+// for dependency injection scopes
+builder.Services.AddScoped<UserQuery>();
+builder.Services.AddScoped<AssignmentsQuery>();
+builder.Services.AddScoped<HardwareQuery>();
+builder.Services.AddScoped<SoftwareQuery>();
 
 var app = builder.Build();
 
