@@ -27,7 +27,9 @@ public class AssignmentController : ControllerBase
         // short-circuit: reject if user not authenticated
 
         // make sure we get one of the indentifiers for an asset
-        if (req.AssetTag == null && req.SoftwareID == null)
+        bool bothNull = req.AssetTag == null && req.SoftwareID == null;
+        bool bothValues = req.SoftwareID != null && req.AssetTag != null;
+        if (bothNull || bothValues)
         {
             // for correct methods corresponding to request messages, see the Methods section under https://learn.microsoft.com/en-us/dotnet/api/system.web.http.apicontroller?view=aspnetcore-2.2
             return BadRequest("You must specify either AssetTag (HardwareID) or SoftwareID.");
@@ -35,14 +37,14 @@ public class AssignmentController : ControllerBase
 
         // validate that AssetTag exists if specified
         var assetTagExists = await _db.HardwareAssets.AnyAsync(hw => hw.HardwareID == req.AssetTag);
-        if (req.AssetTag != null && !assetTagExists)
+        if (req.AssetKind == AssetKind.Hardware && !assetTagExists)
         {
             return BadRequest("Please specify a valid AssetTag");
         }
 
         // validate that SoftwareID exists if specified
         var softwareIDExists = await _db.SoftwareAssets.AnyAsync(sw => sw.SoftwareID == req.SoftwareID);
-        if (req.SoftwareID != null && !softwareIDExists)
+        if (req.AssetKind == AssetKind.Software && !softwareIDExists)
         {
             return BadRequest("Please specify a valid SoftwareID");
         }
@@ -58,15 +60,15 @@ public class AssignmentController : ControllerBase
         if (assignmentExists)
         {
             // hardware error message (409)
-            if (assetTagExists)
+            if (req.AssetKind == AssetKind.Hardware && assetTagExists)
             {
-                return Conflict("An assignment for this hardware device with ID {assetTag}");
+                return Conflict($"An assignment for hardware device with ID {req.AssetTag} already exists!");
 
             }
             // software error message (409)
-            else if (softwareIDExists)
+            else if (req.AssetKind == AssetKind.Software && softwareIDExists)
             {
-                return Conflict("An assignment for this software with ID {softwareID}");
+                return Conflict($"An assignment for software with ID {req.SoftwareID} already exists!");
 
             }
         }
@@ -91,9 +93,23 @@ public class AssignmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-    public async Task<IActionResult> GetAssignment(int AssignmentID)
+    public async Task<IActionResult> GetAssignment([FromQuery] int AssignmentID)
     {
-        var assignment = await _db.Assignments.Where(a => a.AssignmentID == AssignmentID).FirstOrDefaultAsync();
+        var assignment = await _db.Assignments.
+        AsNoTracking()
+        .Where(a => a.AssignmentID == AssignmentID).
+        Select(a => new
+        {
+            a.AssignmentID,
+                a.AssetKind,
+                a.UserID,
+                User = a.User.FullName,
+                HardwareID = a.AssetTag,
+                SoftwareID = a.SoftwareID,
+                a.AssignedAtUtc
+        }).
+        FirstOrDefaultAsync();
+
         if (assignment == null)
         {
             return NotFound("Please specify a valid AssignmentID");
@@ -124,10 +140,10 @@ public class AssignmentController : ControllerBase
         return Ok(rows);
     }
 
-    [HttpGet("close")]
+    [HttpPost("close")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CloseAssignment(int AssignmentID)
+    public async Task<IActionResult> CloseAssignment([FromQuery] int AssignmentID)
     {
         // find assignment by primary key
         var assignment = await _db.Assignments.FindAsync(AssignmentID);
@@ -143,7 +159,7 @@ public class AssignmentController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok();
 
-    } 
+    }
 
 }
 
@@ -165,4 +181,9 @@ public class CreateAssignmentDto
     public int? AssetTag { get; set; }      // when Hardware
     public int? SoftwareID { get; set; }    // when Software
 
+}
+
+public class CloseAssignmentDto
+{
+    public int AssignmentID { get; set; }
 }
