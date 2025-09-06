@@ -11,10 +11,10 @@ namespace AIMS.Controllers;
 // [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/")]
-public class ApiController : ControllerBase
+public class AssignmentController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    public ApiController(AimsDbContext db) => _db = db;
+    public AssignmentController(AimsDbContext db) => _db = db;
 
     // Quick sanity: table counts
     [HttpPost]
