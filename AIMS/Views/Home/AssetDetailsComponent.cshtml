@@ -12,7 +12,7 @@
 
 @{
     var category = ViewData["Category"]?.ToString() ?? "Unknown";
-    var tableHeaders = ViewData["TableHeaders"] as List<string>;
+    var tableHeaders = (ViewData["TableHeaders"] as List<string>) ?? new List<string>();
     var filteredData = ViewData["FilteredData"] as List<Dictionary<string, string>>;
     var specsData = ViewData["SpecsData"] as Dictionary<string, Dictionary<string, string>>;
 
@@ -34,12 +34,11 @@
                     if (header == "Status")
                     {
                         <th class="d-flex justify-content-between align-items-center" style="gap: 10px;">
-    <span>Status</span>
-    <div style="margin-left: auto;">
-        @await Html.PartialAsync("_AssetButton")
-
-    </div>
-</th>
+                            <span>Status</span>
+                            <div style="margin-left: auto;">
+                                @await Html.PartialAsync("_AssetButton")
+                            </div>
+                        </th>
 
                     }
                     else
