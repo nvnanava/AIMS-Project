@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -6,8 +11,8 @@ namespace AIMS.Data;
 
 public static class DbSeeder
 {
-    // Seeds Roles, Users (with supervisor chain), Hardware, Software, and one sample Assignment.
-    // Idempotent: safe to run multiple times. Guarded from Prod unless explicitly enabled.
+    // Seeds Roles, Users (with supervisor chain), Hardware, Software, and assignments.
+    // Idempotent & deterministic (ExternalId from EmployeeNumber). Skips in Prod unless allowed.
     public static async Task SeedAsync(
         AimsDbContext db,
         bool allowProdSeed,
@@ -26,7 +31,7 @@ public static class DbSeeder
             return;
         }
 
-        // 1) Roles
+        // 1) Roles (natural key = RoleName)
         var rolesWanted = new[]
         {
             new Role { RoleName = "Admin",        Description = "Full access" },
@@ -43,163 +48,235 @@ public static class DbSeeder
 
         // 2) Users — compute deterministic ExternalId from EmployeeNumber (preferred) or Email
         Guid UId(string emp, string email) => FromString(string.IsNullOrWhiteSpace(emp) ? $"email:{email}" : $"emp:{emp}");
+        string EmailFromName(string name) => $"{Slug(name)}@aims.local";
 
-        var usersWanted = new[]
-        {
-            new User {
-                FullName = "Alice Admin",
-                Email = "alice.admin@aims.local",
-                EmployeeNumber = "E1001",
-                IsActive = true,
-                RoleID = roleByName["Admin"].RoleID,
-                ExternalId = UId("E1001","alice.admin@aims.local")
-            },
-            new User {
-                FullName = "Ian IT",
-                Email = "ian.it@aims.local",
-                EmployeeNumber = "E1002",
-                IsActive = true,
-                RoleID = roleByName["IT Help Desk"].RoleID,
-                ExternalId = UId("E1002","ian.it@aims.local")
-            },
-            new User {
-                FullName = "Sam Supervisor",
-                Email = "sam.supervisor@aims.local",
-                EmployeeNumber = "E2001",
-                IsActive = true,
-                RoleID = roleByName["Supervisor"].RoleID,
-                ExternalId = UId("E2001","sam.supervisor@aims.local")
-            },
-            new User {
-                FullName = "Erin Employee",
-                Email = "erin.employee@aims.local",
-                EmployeeNumber = "E3001",
-                IsActive = true,
-                RoleID = roleByName["Employee"].RoleID,
-                ExternalId = UId("E3001","erin.employee@aims.local")
-            },
-            new User {
-                FullName = "Devon DirectReport",
-                Email = "devon.report@aims.local",
-                EmployeeNumber = "E3002",
-                IsActive = true,
-                RoleID = roleByName["Employee"].RoleID,
-                ExternalId = UId("E3002","devon.report@aims.local")
-            }
+        // --- Dummy users (Supervisor tree + Admin/IT) ---
+        var dummyUsers = new List<Dictionary<string, string>> {
+            new() {{"Name","John Smith"},{"Role","Supervisor"},{"ID","28809"}},
+            new() {{"Name","Jane Doe"},{"Role","IT Help Desk"},{"ID","69444"},{"Supervisor","28809"}},
+            new() {{"Name","Randy Orton"},{"Role","IT Help Desk"},{"ID","58344"},{"Supervisor","28809"}},
+            new() {{"Name","Robin Williams"},{"Role","IT Help Desk"},{"ID","10971"},{"Supervisor","28809"}},
+            new() {{"Name","Sarah Johnson"},{"Role","Supervisor"},{"ID","62241"}},
+            new() {{"Name","Caitlin Clark"},{"Role","Supervisor"},{"ID","90334"}},
+            new() {{"Name","Brian Regan"},{"Role","Supervisor"},{"ID","27094"}},
+            new() {{"Name","Maximillian Brandt"},{"Role","Admin"},{"ID","20983"}},
+            new() {{"Name","Kate Rosenberg"},{"Role","Admin"},{"ID","93232"}},
+            new() {{"Name","Emily Carter"},{"Role","IT Help Desk"},{"ID","47283"},{"Supervisor","28809"}},
+            new() {{"Name","Bruce Wayne"},{"Role","IT Help Desk"},{"ID","34532"},{"Supervisor","28809"}},
         };
 
-
-        // Pass 1: create/update without SupervisorID (we need IDs first)
-        foreach (var u in usersWanted)
-            await UpsertUserAsync(db, u, ct);
-
-        await db.SaveChangesAsync(ct);
-
-        var usersByEmail = await db.Users.ToDictionaryAsync(u => u.Email, ct);
-
-        // Pass 2: set supervisor (Sam supervises Erin + Devon)
-        var sam = usersByEmail["sam.supervisor@aims.local"];
-        await EnsureSupervisorAsync(db, usersByEmail["erin.employee@aims.local"], sam.UserID, ct);
-        await EnsureSupervisorAsync(db, usersByEmail["devon.report@aims.local"],  sam.UserID, ct);
-        await db.SaveChangesAsync(ct);
-
-        // ---- 3) Hardware (natural key = SerialNumber) ----
-        var hardwareWanted = new[]
+        foreach (var u in dummyUsers)
         {
-            new Hardware
-            {
-                AssetName = "MacBook Pro 14",
-                AssetType = "Laptop",
-                Status = "InUse",
-                Manufacturer = "Apple",
-                Model = "A2779",
-                SerialNumber = "MBP14-AAA111",
-                PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1)),
-                WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(2))
-            },
-            new Hardware
-            {
-                AssetName = "Dell Latitude",
-                AssetType = "Laptop",
-                Status = "Available",
-                Manufacturer = "Dell",
-                Model = "Latitude 7440",
-                SerialNumber = "LAT7440-BBB222",
-                PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)),
-                WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(2))
-            },
-            new Hardware
-            {
-                AssetName = "Logitech MX",
-                AssetType = "Mouse",
-                Status = "Available",
-                Manufacturer = "Logitech",
-                Model = "MX Master 3S",
-                SerialNumber = "MOUSE-CCC333",
-                PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-2)),
-                WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
-            }
-        };
-        foreach (var h in hardwareWanted)
-            await UpsertHardwareAsync(db, h, ct);
+            var name  = u["Name"];
+            var emp   = u["ID"];
+            var role  = u["Role"];
+            var email = EmailFromName(name);
 
+            await UpsertUserAsync(db, new User
+            {
+                FullName       = name,
+                Email          = email,
+                EmployeeNumber = emp,
+                IsActive       = true,
+                RoleID         = roleByName[role].RoleID,
+                ExternalId     = UId(emp, email)
+            }, ct);
+        }
         await db.SaveChangesAsync(ct);
-        var hardwareBySerial = await db.HardwareAssets
-            .AsNoTracking()
+
+        // supervisors
+        var usersByEmp = await db.Users.ToDictionaryAsync(x => x.EmployeeNumber, ct);
+        foreach (var u in dummyUsers.Where(x => x.ContainsKey("Supervisor")))
+        {
+            var emp = u["ID"];
+            var sup = u["Supervisor"];
+            if (usersByEmp.TryGetValue(emp, out var child) && usersByEmp.TryGetValue(sup, out var boss))
+            {
+                await EnsureSupervisorAsync(db, child, boss.UserID, ct);
+            }
+        }
+        await db.SaveChangesAsync(ct);
+
+        // --- Dummy assets table (hardware/software mix) ---
+        var tableData = new List<Dictionary<string, string>> {
+            new() { {"Asset Name","Lenovo ThinkPad E16"},{"Type","Laptop"},{"Tag #","LT-0020"},{"Assigned To","John Smith (28809)"},{"Status","Assigned"} },
+            new() { {"Asset Name","Dell S2421NX"},{"Type","Monitor"},{"Tag #","MN-0001"},{"Assigned To","Jane Doe (69444)"},{"Status","Assigned"} },
+            new() { {"Asset Name","Logitech Zone 300"},{"Type","Headset"},{"Tag #","HS-0080"},{"Assigned To","Unassigned"},{"Status","Available"} },
+            new() { {"Asset Name","Lenovo IdeaCentre 3"},{"Type","Desktop"},{"Tag #","DT-0011"},{"Assigned To","Randy Orton (58344)"},{"Status","Damaged"} },
+            new() { {"Asset Name","Microsoft 365 Business"},{"Type","Software"},{"Tag #","SW-0100"},{"Assigned To","Robin Williams (10971)"},{"Status","Assigned"} },
+            new() { {"Asset Name","HP 527SH"},{"Type","Monitor"},{"Tag #","MN-0023"},{"Assigned To","Sarah Johnson (62241)"},{"Status","In Repair"} },
+            new() { {"Asset Name","HP Pavillion TP01-2234"},{"Type","Desktop"},{"Tag #","DT-0075"},{"Assigned To","Unassigned"},{"Status","Available"} },
+            new() { {"Asset Name","Samsung Galaxy Book4"},{"Type","Laptop"},{"Tag #","LT-0005"},{"Assigned To","Caitlin Clark (90334)"},{"Status","Damaged"} },
+            new() { {"Asset Name","Logitech Zone Vibe 100"},{"Type","Headset"},{"Tag #","HS-0015"},{"Assigned To","Brian Regan (27094)"},{"Status","In Repair"} },
+            new() { {"Asset Name","Belkin BoostCharge 3.3ft USB-C"},{"Type","Charging Cable"},{"Tag #","CC-0088"},{"Assigned To","Unassigned"},{"Status","Available"} },
+            new() { {"Asset Name","Dell Inspiron 3030"},{"Type","Desktop"},{"Tag #","DT-0100"},{"Assigned To","Maximillian Brandt (20983)"},{"Status","Assigned"} },
+            new() { {"Asset Name","Poly Voyager 4320"},{"Type","Headset"},{"Tag #","HS-0001"},{"Assigned To","Emily Carter (47283)"},{"Status","In Repair"} },
+            new() { {"Asset Name","j5create 100W Super Charger"},{"Type","Charging Cable"},{"Tag #","CC-0019"},{"Assigned To","Bruce Wayne (34532)"},{"Status","Damaged"} },
+            new() { {"Asset Name","Dell Inspiron 15"},{"Type","Laptop"},{"Tag #","LT-0115"},{"Assigned To","Kate Rosenberg (93232)"},{"Status","Assigned"} },
+        };
+
+        var hardwareTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var softwareTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        DateOnly defPurchase = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-3));
+        DateOnly defWarranty = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1));
+
+        foreach (var row in tableData)
+        {
+            var name   = row["Asset Name"];
+            var type   = row["Type"];
+            var tag    = row["Tag #"];
+            var status = row["Status"];
+
+            if (string.Equals(type, "Software", StringComparison.OrdinalIgnoreCase))
+            {
+                // Treat Tag# as license key; default version "1.0"
+                var sw = new Software
+                {
+                    SoftwareName              = name,
+                    SoftwareType              = type,
+                    SoftwareVersion           = "1.0",
+                    SoftwareLicenseKey        = tag,
+                    SoftwareLicenseExpiration = null,
+                    SoftwareUsageData         = 0,
+                    SoftwareCost              = 0m
+                };
+                await UpsertSoftwareAsync(db, sw, ct);
+                softwareTags.Add(tag);
+            }
+            else
+            {
+                // Map hardware: use Tag# as SerialNumber (unique by our index)
+                var hw = new Hardware
+                {
+                    AssetName          = name,
+                    AssetType          = type,
+                    Status             = status,
+                    Manufacturer       = "",
+                    Model              = "",
+                    SerialNumber       = tag,
+                    PurchaseDate       = defPurchase,
+                    WarrantyExpiration = defWarranty
+                };
+                await UpsertHardwareAsync(db, hw, ct);
+                hardwareTags.Add(tag);
+            }
+        }
+        // Persist upserts so we can safely query for IDs
+        await db.SaveChangesAsync(ct);
+
+        // Build lookup maps AFTER save (so First/Single queries actually find rows)
+        var hardwareByTag = await db.HardwareAssets
+            .Where(h => hardwareTags.Contains(h.SerialNumber))
             .ToDictionaryAsync(h => h.SerialNumber, ct);
 
-        // ---- 4) Software (natural key = SoftwareName + SoftwareVersion) ----
-        var softwareWanted = new[]
+        var softwareByTag = await db.SoftwareAssets
+            .Where(s => softwareTags.Contains(s.SoftwareLicenseKey))
+            .ToDictionaryAsync(s => s.SoftwareLicenseKey, ct);
+
+        // --- Assignments (active + historical) ---
+        var today = DateTime.UtcNow.Date;
+        foreach (var row in tableData)
         {
-            new Software
+            var type = row["Type"];
+            var tag = row["Tag #"];
+            var assignedTo = row["Assigned To"];
+
+            var (_, empId) = ParseAssignee(assignedTo);
+            if (empId == null) continue;
+            if (!usersByEmp.TryGetValue(empId, out var user)) continue;
+
+            if (string.Equals(type, "Software", StringComparison.OrdinalIgnoreCase))
             {
-                SoftwareName = "Office 365",
-                SoftwareType = "Productivity",
-                SoftwareVersion = "2408",
-                SoftwareLicenseKey = "O365-XXXX-YYYY",
-                SoftwareLicenseExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)),
-                SoftwareUsageData = 0,
-                SoftwareCost = 12.99m
-            },
-            new Software
-            {
-                SoftwareName = "Visual Studio",
-                SoftwareType = "IDE",
-                SoftwareVersion = "2022",
-                SoftwareLicenseKey = "VS22-ABCD-EFGH",
-                SoftwareLicenseExpiration = null,
-                SoftwareUsageData = 0,
-                SoftwareCost = 0.00m
+                if (!softwareByTag.TryGetValue(tag, out var sw)) continue;
+
+                // active software assignment (7 days ago)
+                await EnsureAssignmentAsync(
+                    db,
+                    userId: user.UserID,
+                    assetKind: AssetKind.Software,
+                    hardwareId: null,
+                    softwareId: sw.SoftwareID,
+                    assignedAtUtc: today.AddDays(-7),
+                    ct: ct
+                );
+
+                // one software historical (30–15 days ago)
+                var start = today.AddDays(-30);
+                var end   = today.AddDays(-15);
+                var hasHist = await db.Assignments.AnyAsync(a =>
+                    a.UserID == user.UserID &&
+                    a.AssetKind == AssetKind.Software &&
+                    a.SoftwareID == sw.SoftwareID &&
+                    a.AssignedAtUtc.Date == start, ct);
+
+                if (!hasHist)
+                {
+                    db.Assignments.Add(new Assignment
+                    {
+                        UserID = user.UserID,
+                        AssetKind = AssetKind.Software,
+                        SoftwareID = sw.SoftwareID,
+                        AssetTag = null,
+                        AssignedAtUtc = start,
+                        UnassignedAtUtc = end
+                    });
+                }
             }
-        };
-        foreach (var s in softwareWanted)
-            await UpsertSoftwareAsync(db, s, ct);
+            else
+            {
+                if (!hardwareByTag.TryGetValue(tag, out var hw)) continue;
 
+                // active hardware assignment (10 days ago)
+                var activeStart = today.AddDays(-10);
+                await EnsureAssignmentAsync(
+                    db,
+                    userId: user.UserID,
+                    assetKind: AssetKind.Hardware,
+                    hardwareId: hw.HardwareID,
+                    softwareId: null,
+                    assignedAtUtc: activeStart,
+                    ct: ct
+                );
+
+                // one hardware historical (40–20 days ago) to supervisor if exists
+                if (user.SupervisorID is int supId)
+                {
+                    var histStart = today.AddDays(-40);
+                    var histEnd   = today.AddDays(-20);
+                    var hasHist = await db.Assignments.AnyAsync(a =>
+                        a.UserID == supId &&
+                        a.AssetKind == AssetKind.Hardware &&
+                        a.AssetTag == hw.HardwareID &&
+                        a.AssignedAtUtc.Date == histStart, ct);
+
+                    if (!hasHist)
+                    {
+                        db.Assignments.Add(new Assignment
+                        {
+                            UserID = supId,
+                            AssetKind = AssetKind.Hardware,
+                            AssetTag = hw.HardwareID,
+                            SoftwareID = null,
+                            AssignedAtUtc = histStart,
+                            UnassignedAtUtc = histEnd
+                        });
+                    }
+                }
+            }
+        }
         await db.SaveChangesAsync(ct);
-        var softwareByKey = await db.SoftwareAssets
-            .AsNoTracking()
-            .ToDictionaryAsync(s => (s.SoftwareName, s.SoftwareVersion), ct);
-
-        // ---- 5) Sample assignment (idempotent) ----
-        var now = DateTime.UtcNow;
-        await EnsureAssignmentAsync(
-            db,
-            userId: usersByEmail["erin.employee@aims.local"].UserID,
-            assetKind: AssetKind.Hardware,                       // <-- add this
-            hardwareId: hardwareBySerial["MBP14-AAA111"].HardwareID,
-            softwareId: null,
-            assignedAtUtc: now.Date.AddDays(-10),
-            ct: ct);
-        
-        await db.SaveChangesAsync(ct);
-
-        logger?.LogInformation("[DBSeeder] Done. Roles:{Roles}, Users:{Users}, HW:{HW}, SW:{SW}",
+        logger?.LogInformation("[DBSeeder] 4.5 done. Roles:{Roles}, Users:{Users}, HW:{HW}, SW:{SW}, Assignments:{Asg}",
             await db.Roles.CountAsync(ct),
             await db.Users.CountAsync(ct),
             await db.HardwareAssets.CountAsync(ct),
-            await db.SoftwareAssets.CountAsync(ct));
+            await db.SoftwareAssets.CountAsync(ct),
+            await db.Assignments.CountAsync(ct));
     }
 
+    // ========================
+    // Deterministic GUID helper
+    // ========================
     private static Guid FromString(string input)
     {
         using var sha1 = System.Security.Cryptography.SHA1.Create();
@@ -209,8 +286,9 @@ public static class DbSeeder
         return new Guid(bytes);
     }
 
-    // ---------- helpers ----------
-
+    // ========================
+    // Upsert helpers
+    // ========================
     private static async Task UpsertRoleAsync(AimsDbContext db, Role incoming, CancellationToken ct)
     {
         var existing = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == incoming.RoleName, ct);
@@ -226,7 +304,6 @@ public static class DbSeeder
 
     private static async Task UpsertUserAsync(AimsDbContext db, User incoming, CancellationToken ct)
     {
-        // ensure incoming.ExternalId is set deterministically
         if (incoming.ExternalId == Guid.Empty)
         {
             var key = !string.IsNullOrWhiteSpace(incoming.EmployeeNumber)
@@ -242,11 +319,8 @@ public static class DbSeeder
         }
         else
         {
-            // Backfill/repair ExternalId if missing or incorrect
             if (existing.ExternalId == Guid.Empty)
-            {
                 existing.ExternalId = incoming.ExternalId;
-            }
 
             existing.FullName       = incoming.FullName;
             existing.EmployeeNumber = incoming.EmployeeNumber;
@@ -302,22 +376,21 @@ public static class DbSeeder
     }
 
     private static async Task EnsureAssignmentAsync(
-    AimsDbContext db,
-    int userId,
-    AssetKind assetKind,          // Hardware or Software
-    int? hardwareId,              // when Hardware, set; when Software, null
-    int? softwareId,              // when Software, set; when Hardware, null
-    DateTime assignedAtUtc,
-    CancellationToken ct)
+        AimsDbContext db,
+        int userId,
+        AssetKind assetKind,
+        int? hardwareId,
+        int? softwareId,
+        DateTime assignedAtUtc,
+        CancellationToken ct)
     {
-        // Normalize: enforce exactly one side is set
         int? assetTag = null;
         int? softId   = null;
 
         if (assetKind == AssetKind.Hardware)
         {
             assetTag = hardwareId ?? throw new ArgumentNullException(nameof(hardwareId));
-            softId   = null; // force NULL
+            softId   = null;
         }
         else if (assetKind == AssetKind.Software)
         {
@@ -329,7 +402,6 @@ public static class DbSeeder
             throw new InvalidOperationException("Unknown AssetKind for assignment seeding.");
         }
 
-        // Idempotency: same user + same concrete asset + same assigned date
         var exists = await db.Assignments.AnyAsync(a =>
             a.UserID == userId &&
             a.AssetKind == assetKind &&
@@ -350,4 +422,25 @@ public static class DbSeeder
             });
         }
     }
+
+    // ========================
+    // Small utilities
+    // ========================
+    private static (string name, string? empId) ParseAssignee(string s)
+    {
+        s = s?.Trim() ?? "";
+        if (string.Equals(s, "Unassigned", StringComparison.OrdinalIgnoreCase)) return (s, null);
+        var open = s.LastIndexOf('(');
+        var close = s.LastIndexOf(')');
+        if (open > 0 && close > open)
+        {
+            var name = s.Substring(0, open).Trim();
+            var id   = s.Substring(open + 1, close - open - 1).Trim();
+            return (name, id);
+        }
+        return (s, null);
+    }
+
+    private static string Slug(string s) =>
+        new string((s ?? "").ToLowerInvariant().Where(ch => char.IsLetterOrDigit(ch) || ch == '-' ).ToArray());
 }
