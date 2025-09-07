@@ -4,23 +4,25 @@ namespace AIMS.Models;
 
 public class AuditLog
 {
-    // PK
+    // PK / identifiers
     public int AuditLogID { get; set; }
+    public Guid ExternalId { get; set; } // for deterministic references/upserts
 
-    // Columns
-    public DateTime Timestamp { get; set; }
-    public string Action { get; set; } = string.Empty;     // e.g., Create/Edit/Assign/Archive
-    public string Description { get; set; } = string.Empty;
-    public string? PreviousValue { get; set; }             // JSON/plain text
-    public string? NewValue { get; set; }                  // JSON/plain text
-
-    // FKs (all optional except UserID)
+    // When / Who / What
+    public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
     public int UserID { get; set; }
     public User User { get; set; } = null!;
 
-    public int? AssetTag { get; set; }
-    public Hardware? HardwareAsset { get; set; }
+    // Action metadata
+    public string Action { get; set; } = string.Empty; // e.g., Create/Edit/Assign/Archive
+    public string Description { get; set; } = string.Empty;
+    public string? PreviousValue { get; set; }
+    public string? NewValue { get; set; }
 
-    public int? SoftwareID { get; set; }
+    // Target asset (XOR with check constraint; must match AssetKind)
+    public AssetKind AssetKind { get; set; } // 1 = Hardware, 2 = Software
+    public int? AssetTag { get; set; } // FK -> Hardware.HardwareID when AssetKind = Hardware
+    public Hardware? HardwareAsset { get; set; }
+    public int? SoftwareID { get; set; } // FK -> Software.SoftwareID when AssetKind = Software
     public Software? SoftwareAsset { get; set; }
 }

@@ -6,6 +6,7 @@ public class User
 {
     // PK
     public int UserID { get; set; }
+    public Guid ExternalId { get; set; }
 
     // Columns
     public string FullName { get; set; } = string.Empty;

@@ -32,6 +32,23 @@ namespace AIMS.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Reports",
+                columns: table => new
+                {
+                    ReportID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ExternalId = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DateCreated = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reports", x => x.ReportID);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
                 {
@@ -70,6 +87,7 @@ namespace AIMS.Migrations
                 {
                     UserID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    ExternalId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     GraphObjectID = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -138,18 +156,21 @@ namespace AIMS.Migrations
                 {
                     AuditLogID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ExternalId = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
+                    TimestampUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UserID = table.Column<int>(type: "int", nullable: false),
                     Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PreviousValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     NewValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserID = table.Column<int>(type: "int", nullable: false),
+                    AssetKind = table.Column<int>(type: "int", nullable: false),
                     AssetTag = table.Column<int>(type: "int", nullable: true),
                     SoftwareID = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AuditLogs", x => x.AuditLogID);
+                    table.CheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
                     table.ForeignKey(
                         name: "FK_AuditLogs_HardwareAssets_AssetTag",
                         column: x => x.AssetTag,
@@ -216,6 +237,12 @@ namespace AIMS.Migrations
                 column: "AssetTag");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuditLogs_ExternalId",
+                table: "AuditLogs",
+                column: "ExternalId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_SoftwareID",
                 table: "AuditLogs",
                 column: "SoftwareID");
@@ -237,9 +264,21 @@ namespace AIMS.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Reports_ExternalId",
+                table: "Reports",
+                column: "ExternalId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SoftwareAssets_SoftwareLicenseKey",
                 table: "SoftwareAssets",
                 column: "SoftwareLicenseKey",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ExternalId",
+                table: "Users",
+                column: "ExternalId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -264,6 +303,9 @@ namespace AIMS.Migrations
 
             migrationBuilder.DropTable(
                 name: "FeedbackEntries");
+
+            migrationBuilder.DropTable(
+                name: "Reports");
 
             migrationBuilder.DropTable(
                 name: "HardwareAssets");

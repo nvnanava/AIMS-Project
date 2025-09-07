@@ -20,7 +20,25 @@ builder.Services.AddDbContext<AimsDbContext>(options =>
     options.UseSqlServer(cs);
 });
 
+// Optional feature flag for prod seeding (defaults false)
+var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
+
 var app = builder.Build();
+
+// Log detected OS
+Console.WriteLine($"[Startup] Detected OS Platform: {Environment.OSVersion.Platform}");
+
+if (app.Environment.IsDevelopment())
+{
+    // Seed on startup (idempotent)
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
+
+    Console.WriteLine("[Startup] Running database seeder...");
+    await DbSeeder.SeedAsync(db, allowProdSeed: allowProdSeed, logger: logger);
+    Console.WriteLine("[Startup] Seeding complete.");
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -46,4 +64,4 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.Run(); 
+app.Run();

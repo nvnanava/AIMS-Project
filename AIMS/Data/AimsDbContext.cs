@@ -14,8 +14,8 @@ namespace AIMS.Data
         public DbSet<Software> SoftwareAssets { get; set; }
         public DbSet<Feedback> FeedbackEntries { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
-
         public DbSet<Assignment> Assignments { get; set; }
+        public DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -105,10 +105,21 @@ namespace AIMS.Data
                 // NoAction: same reasoning as hardware: prevents deleting a software row while logs still point at it.
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // XOR constraint for AuditLog target asset (match AssetKind)
+            modelBuilder.Entity<AuditLog>()
+                .ToTable(tb => tb.HasCheckConstraint(
+                    "CK_AuditLog_ExactlyOneAsset",
+                    @"
+                    (
+                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)
+                        OR
+                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)
+                    )"
+                ));
+
             // -------------------------
             // ASSIGNMENTS
             // -------------------------
-
 
             // Assignment → User
             modelBuilder.Entity<Assignment>()
@@ -155,6 +166,15 @@ namespace AIMS.Data
                         ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)
                     )"
                 ));
+
+            // -------------------------
+            // deterministic IDs / uniqueness helpers
+            // -------------------------
+            modelBuilder.Entity<User>().HasIndex(u => u.ExternalId).IsUnique();
+            modelBuilder.Entity<AuditLog>().HasIndex(a => a.ExternalId).IsUnique();
+            modelBuilder.Entity<Report>().HasIndex(r => r.ExternalId).IsUnique();
+            modelBuilder.Entity<AuditLog>().Property(a => a.ExternalId).HasDefaultValueSql("NEWID()");
+            modelBuilder.Entity<Report>().Property(r => r.ExternalId).HasDefaultValueSql("NEWID()");
         }
     }
 }
