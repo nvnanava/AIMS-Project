@@ -226,10 +226,7 @@ public static class DbSeeder
 
     private static async Task UpsertUserAsync(AimsDbContext db, User incoming, CancellationToken ct)
     {
-<<<<<<< HEAD
-=======
         // ensure incoming.ExternalId is set deterministically
->>>>>>> 9f60bd2 (SCRUM-126 Task 4.4: runtime seeder with deterministic IDs)
         if (incoming.ExternalId == Guid.Empty)
         {
             var key = !string.IsNullOrWhiteSpace(incoming.EmployeeNumber)
