@@ -1,16 +1,23 @@
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
+using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace AIMS.Controllers;
 
+// One controller for both the page and the edit API.
 public class AssetsController : Controller
 {
+    private readonly AimsDbContext _db;
+    public AssetsController(AimsDbContext db) => _db = db;
+
+    // ---------- UI: renders the asset list ----------
     public IActionResult AssetDetails(string category)
     {
-        this.ViewData["Category"] = category;
+        ViewData["Category"] = category;
 
-        // You can move this to a service or JSON/database later
         var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
 
         var tableData = new List<Dictionary<string, string>> {
@@ -51,19 +58,55 @@ public class AssetsController : Controller
             new() { {"Asset Name", "Notion Team Plan"}, {"Type", "Software"}, {"Tag #", "SW-3008"}, {"Status", "Available"} },
             new() { {"Asset Name", "IntelliJ IDEA Ultimate"}, {"Type", "Software"}, {"Tag #", "SW-3009"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "Jira Software Cloud"}, {"Type", "Software"}, {"Tag #", "SW-3010"}, {"Status", "In Repair"} },
-
-
-            
         };
 
-        // Filter by category
         var filteredData = tableData
             .Where(row => row["Type"].Equals(category, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        this.ViewData["TableHeaders"] = tableHeaders;
-        this.ViewData["FilteredData"] = filteredData;
+        ViewData["TableHeaders"] = tableHeaders;
+        ViewData["FilteredData"] = filteredData;
 
         return View("AssetDetailsComponent");
     }
+
+    // ---------- API: saves edits from the Edit Asset modal ----------
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(EditAssetViewModel vm)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(new { message = "Validation failed", errors = ModelState });
+
+        // vm.Id contains the ORIGINAL Tag # (PK) as string.
+        if (!int.TryParse(vm.Id, out var originalTag))
+            return BadRequest(new { message = "Bad Id (expected numeric AssetTag)" });
+
+        // Fetch by PK
+        var entity = await _db.Hardwares.FirstOrDefaultAsync(h => h.AssetTag == originalTag);
+        if (entity == null)
+            return NotFound(new { message = "Asset not found" });
+
+        // Update editable fields (do not change PK unless you truly intend to)
+        entity.AssetName = vm.Name?.Trim()  ?? entity.AssetName;
+        entity.AssetType = vm.Type?.Trim()  ?? entity.AssetType;
+        entity.Status    = vm.Status?.Trim()?? entity.Status;
+
+        // Optional: allow changing Tag # safely (checks duplicate + numeric)
+        if (!string.IsNullOrWhiteSpace(vm.TagNumber) && vm.TagNumber != vm.Id)
+        {
+            if (!int.TryParse(vm.TagNumber, out var newTag))
+                return BadRequest(new { message = "Tag Number must be numeric." });
+
+            var exists = await _db.Hardwares.AnyAsync(h => h.AssetTag == newTag);
+            if (exists)
+                return BadRequest(new { message = "Tag Number already exists." });
+
+            entity.AssetTag = newTag;
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Updated", id = entity.AssetTag });
+    }
 }
+
