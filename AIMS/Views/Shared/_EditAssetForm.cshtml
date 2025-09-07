@@ -1,0 +1,71 @@
+@* ================================================================
+   Edit Asset Modal
+   - Opens when you click the pencil button in the table.
+   - Prefills with the row’s data (Name, Type, Tag, Status, Comments).
+   - Lets you change anything before saving.
+   ================================================================ *@
+
+<div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="editAssetTitle">Edit Asset</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body with form -->
+      <div class="modal-body">
+        <form id="editAssetForm" method="post">
+          @* Hidden field: the unique ID / Tag # used by backend *@
+          <input type="hidden" id="editId" name="Id" />
+
+          <!-- Asset Name -->
+          <div class="mb-3">
+            <label for="editName" class="form-label">Asset Name</label>
+            <input type="text" id="editName" name="Name" class="form-control" required />
+          </div>
+
+          <!-- Asset Type -->
+          <div class="mb-3">
+            <label for="editType" class="form-label">Type</label>
+            <input type="text" id="editType" name="Type" class="form-control" required />
+          </div>
+
+          <!-- Tag Number -->
+          <div class="mb-3">
+            <label for="editTag" class="form-label">Tag Number</label>
+            <input type="text" id="editTag" name="TagNumber" class="form-control" required />
+          </div>
+
+          <!-- Status (Dropdown with 4 fixed options) -->
+          <div class="mb-3">
+            <label for="editStatus" class="form-label">Status</label>
+            <select id="editStatus" name="Status" class="form-select" required>
+              <option value="">Select…</option>
+              <option>Assigned</option>
+              <option>Surveyed</option>
+              <option>Available</option>
+              <option>In Repair</option>
+            </select>
+          </div>
+
+          <!-- Comments (optional free text) -->
+          <div class="mb-3">
+            <label for="editComments" class="form-label">Comments</label>
+            <textarea id="editComments" name="Comments" class="form-control" rows="3"></textarea>
+          </div>
+
+          <!-- Footer Buttons -->
+          <div class="text-end">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+

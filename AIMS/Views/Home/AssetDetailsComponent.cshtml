@@ -1,78 +1,81 @@
 @using System.Text.Json
 
-@* ---------- Top-level partials (modals/forms) ---------- *@
+@* ================================================================
+   1) Load the modals once so any button on the page can open them.
+      - Add modal is used by the “Manage Asset” toolbar button.
+      - Edit modal is opened by each row’s pencil button.
+   ================================================================ *@
 @await Html.PartialAsync("_AssetAddForm")
-@await Html.PartialAsync("_EditAssetForm")
+@await Html.PartialAsync("~/Views/Shared/_EditAssetForm.cshtml")
+@* If you also use categories, you can keep this:
 @await Html.PartialAsync("_AddCategoryForm")
+*@
 
-@* ---------- Per-view styles (make sure _Layout.cshtml has @RenderSection("Styles", required: false) inside <head>) ---------- *@
+@* ================================================================
+   2) Page-only CSS.  Make sure _Layout.cshtml has:
+      @RenderSection("Styles", required: false) inside <head>
+   ================================================================ *@
 @section Styles {
   <link rel="stylesheet" href="~/css/AssetDetailsComponent.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/_AssetButton.css"          asp-append-version="true" />
-  <link rel="stylesheet" href="~/css/_AddAssetForm.css"         asp-append-version="true" />
-  <style>
-    /* Small toolbar for the Manage Asset button */
-    .asset-toolbar{
-      display:flex;
-      justify-content:flex-end;
-      margin: 8px 0 6px;
-    }
-
-    /* Keep status header tidy if you ever add content back in */
-    .asset-header-bar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      white-space:nowrap;
-    }
-
-    /* Center actions column */
-    .asset-table th.actions-col,
-    .asset-table td.actions-col{
-      text-align:center;
-      width:10%;
-    }
-  </style>
+  <link rel="stylesheet" href="~/css/_EditAssetForm.css"        asp-append-version="true" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  @* Keep last so it can override colors (sets the blue pencil, toolbar spacing, etc.) *@
+  <link rel="stylesheet" href="~/css/AssetToolbar.css"          asp-append-version="true" />
 }
 
 @{
-  // --------- View data with safe fallbacks ----------
-  var category     = ViewData["Category"]?.ToString() ?? "Unknown";
-
-  // If you still receive these from the controller, that's fine; we won't rely on their order for headers.
-  var tableHeaders = ViewData["TableHeaders"] as List<string> ?? new List<string>();
-
+  // ===============================================================
+  // 3) Pull data from ViewData with safe fallbacks so we never crash
+  // ===============================================================
+  var category     = ViewData["Category"]?.ToString() ?? "Assets";
   var filteredData = ViewData["FilteredData"] as List<Dictionary<string, string>> ?? new();
   var specsData    = ViewData["SpecsData"] as Dictionary<string, Dictionary<string, string>>
                      ?? new Dictionary<string, Dictionary<string, string>>();
-
   ViewData["Title"] = $"{category} Asset Details";
 }
 
+@* Tiny helper: used by the little Tag popup (optional nice-to-have) *@
 <script>
-  // Expose specsData to JS (never null)
   const specsData = @Html.Raw(JsonSerializer.Serialize(specsData));
 </script>
 
 <h2 class="text-center my-4">@ViewData["Title"]</h2>
 
-@if (filteredData.Any())
+@* ================================================================
+   4) Friendly “no data” messages instead of a blank table
+   ================================================================ *@
+@if (filteredData == null)
+{
+  <div class="alert alert-danger" role="alert">
+    We couldn’t load assets right now. Please try again.
+  </div>
+}
+else if (!filteredData.Any())
+{
+  <div class="alert alert-info" role="alert">
+    No assets found for <strong>@category</strong>.
+  </div>
+}
+else
 {
   <div class="asset-table-wrapper">
-    <!-- Right-aligned toolbar that shares the table width -->
+
+    @* =============================================================
+       5) Toolbar above the table — this is where “Manage Asset” lives.
+          It renders a green button that opens the ADD modal.
+       ============================================================= *@
     <div class="asset-toolbar">
       @await Html.PartialAsync("_AssetButton")
-      @* or your own button *@
-      @* <button type="button" class="btn btn-sm btn-primary">Manage Asset</button> *@
     </div>
 
     <table class="asset-table">
+      @* Fixed widths so the layout doesn’t jump as content changes *@
       <colgroup>
         <col style="width:30%" />
         <col style="width:15%" />
-        <col style="width:12%" />
-        <col style="width:18%" />  @* Status *@
+        <col style="width:14%" />
+        <col style="width:18%" />
         <col style="width:10%" />  @* Actions *@
       </colgroup>
 
@@ -81,76 +84,89 @@
           <th>Asset Name</th>
           <th>Type</th>
           <th>Tag #</th>
-          <th>
-            <div class="asset-header-bar">
-              <span>Status</span>
-            </div>
-          </th>
-          <th class="actions-col">Actions</th>
+          <th>Status</th>
+          <th class="actions-col text-end">Actions</th>
         </tr>
       </thead>
 
       <tbody>
-        @foreach (var row in filteredData)
-        {
-            var assetName = row.TryGetValue("Asset Name", out var _n) ? _n : "";
-            var type      = row.TryGetValue("Type", out var _tY) ? _tY : "";
-            var tag       = row.TryGetValue("Tag #", out var _t) ? _t : "";
-            var status    = row.TryGetValue("Status", out var _s) ? _s : "";
+      @foreach (var row in filteredData)
+      {
+        // Pull the values we care about. If a field is missing, we show a small “Missing” badge.
+        var nameVal     = row.GetValueOrDefault("Asset Name");
+        var typeVal     = row.GetValueOrDefault("Type");
+        var tagVal      = row.GetValueOrDefault("Tag #");       // <- we use this as the row key in the UI
+        var statusVal   = row.GetValueOrDefault("Status");
+        var commentsVal = row.GetValueOrDefault("Comments");    // optional
 
-            var statusKey = (status ?? "").Trim().ToLowerInvariant();
-            var statusClass = statusKey switch
-            {
-              "available"         => "status-available",
-              "assigned"          => "status-assigned",
-              "marked for survey" => "status-marked-for-survey",
-              "in repair"         => "status-in-repair",
-              "surveyed"          => "status-surveyed",
-              _                   => ""
-            };
+        <tr>
+          <td>
+            @if (!string.IsNullOrWhiteSpace(nameVal)) { @nameVal; }
+            else { <span class="badge bg-warning text-dark">Missing</span>; }
+          </td>
 
-            <tr onclick='showPopup(@Html.Raw(JsonSerializer.Serialize(assetName)),
-                                   @Html.Raw(JsonSerializer.Serialize(tag)), event)'>
-              <td>@assetName</td>
-              <td>@type</td>
-              <td>@tag</td>
-              <td><span class="status-badge @statusClass">@status</span></td>
-              <td class="actions-col">
-                <button type="button"
-                        class="btn btn-sm btn-outline-secondary js-inline-edit"
-                        aria-label="Edit @assetName"
-                        title="Edit"
-                        onclick="event.stopPropagation()">
-                  ✏️ <span class="visually-hidden">Edit</span>
-                </button>
-              </td>
-            </tr>
-        }
+          <td>
+            @if (!string.IsNullOrWhiteSpace(typeVal)) { @typeVal; }
+            else { <span class="badge bg-warning text-dark">Missing</span>; }
+          </td>
+
+          <td>
+            @* Clicking the tag shows a little info popup near your cursor (optional) *@
+            @if (!string.IsNullOrWhiteSpace(tagVal)) {
+              <span onclick="showPopup('@(nameVal ?? "")', '@(tagVal ?? "")', event)" style="cursor:pointer;">
+                @tagVal
+              </span>
+            } else {
+              <span class="badge bg-warning text-dark">Missing</span>
+            }
+          </td>
+
+          <td>
+            @if (!string.IsNullOrWhiteSpace(statusVal)) { @statusVal; }
+            else { <span class="badge bg-warning text-dark">Missing</span>; }
+          </td>
+
+          @* ------------------------------------------------------------
+             6) Your request: ONE action per row → a single Edit pencil.
+                - No dropdown.
+                - Opens the EDIT modal (not Add).
+                - We pass all values via data-* so the modal can prefill.
+             ------------------------------------------------------------ *@
+          <td class="text-end">
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    aria-label="Edit @(string.IsNullOrWhiteSpace(nameVal) ? "asset" : nameVal)"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editAssetModal"     @* IMPORTANT: open the EDIT modal *@
+                    data-id="@(tagVal ?? "")"            @* original key the server can use (Tag #) *@
+                    data-name="@(nameVal ?? "")"
+                    data-type="@(typeVal ?? "")"
+                    data-tag="@(tagVal  ?? "")"
+                    data-status="@(statusVal ?? "")"
+                    data-comments="@(commentsVal ?? "")">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   fill="currentColor" class="bi bi-pencil-fill pencil-icon"
+                   viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
+                <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
+              </svg>
+            </button>
+          </td>
+        </tr>
+      }
       </tbody>
     </table>
   </div>
 }
-else
-{
-  <p class="text-center">No assets found for <strong>@category</strong>.</p>
-}
 
-<!-- Small info popup used by row click -->
+@* ================================================================
+   7) Tiny helper: Tag popup (optional quality-of-life)
+   ================================================================ *@
 <div id="popup" style="
-  display:none;
-  position:fixed;
-  background:#fff;
-  padding:12px 16px;
-  border:1.5px solid #ccc;
-  border-radius:10px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.15);
-  font-size:0.85rem;
-  max-width:220px;
-  width:max-content;
-  word-wrap:break-word;
-  line-height:1.4;
-  z-index:1000;">
-  <!-- filled by JS -->
+  display:none; position:fixed; background:#fff;
+  padding:12px 16px; border:1.5px solid #ccc; border-radius:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15); font-size:0.85rem;
+  max-width:240px; width:max-content; line-height:1.4; z-index:1000;">
 </div>
 
 <script>
@@ -161,8 +177,8 @@ else
     popup.style.left = (rect.left + window.scrollX) + "px";
 
     popup.innerHTML =
-      "<strong>Asset Name:</strong> " + assetName +
-      "<br><strong>Tag Number:</strong> " + tagNumber + "<br>";
+      "<strong>Asset Name:</strong> " + (assetName ?? "") +
+      "<br><strong>Tag Number:</strong> " + (tagNumber ?? "") + "<br>";
 
     if (specsData[tagNumber]) {
       for (const spec in specsData[tagNumber]) {
@@ -171,15 +187,44 @@ else
     }
 
     popup.style.display = "block";
-    event.stopPropagation(); // prevent auto-close from document listener
+    event.stopPropagation();
   }
-
-  // Close popup when clicking elsewhere
   document.addEventListener("click", function (event) {
     const popup = document.getElementById("popup");
     if (popup.style.display === "block" && !popup.contains(event.target)) {
       popup.style.display = "none";
     }
   });
+</script>
+
+@* ================================================================
+   8) The key piece: prefill the EDIT modal just before it opens.
+      We read the button’s data-* attributes and copy into inputs.
+      IDs here must match /Views/Shared/_EditAssetForm.cshtml
+      (#editId, #editName, #editType, #editTag, #editStatus, #editComments)
+   ================================================================ *@
+<script>
+  const editModalEl = document.getElementById('editAssetModal');
+  if (editModalEl) {
+    editModalEl.addEventListener('show.bs.modal', function (event) {
+      const btn = event.relatedTarget; // the pencil button you clicked
+      if (!btn) return;
+
+      const id       = btn.getAttribute('data-id')       || '';
+      const name     = btn.getAttribute('data-name')     || '';
+      const type     = btn.getAttribute('data-type')     || '';
+      const tag      = btn.getAttribute('data-tag')      || '';
+      const status   = btn.getAttribute('data-status')   || '';
+      const comments = btn.getAttribute('data-comments') || '';
+
+      const $ = (sel) => editModalEl.querySelector(sel);
+      $('#editId').value       = id;
+      $('#editName').value     = name;
+      $('#editType').value     = type;
+      $('#editTag').value      = tag;
+      $('#editStatus').value   = status;     // must match one of: Assigned / Surveyed / Available / In Repair
+      $('#editComments').value = comments;
+    });
+  }
 </script>
 
