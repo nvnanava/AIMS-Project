@@ -41,27 +41,6 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-// Optional feature flag for prod seeding (defaults false)
-var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
-// See https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes
-// for dependency injection scopes
-builder.Services.AddScoped<UserQuery>();
-builder.Services.AddScoped<AssignmentsQuery>();
-builder.Services.AddScoped<HardwareQuery>();
-builder.Services.AddScoped<SoftwareQuery>();
-
-// TODO: Take out when development is over
-// Add CORS services
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost", policy =>
-    {
-        policy.WithOrigins("http://localhost:5119") // Add your frontend's origin
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
 var app = builder.Build();
 
 // Log detected OS
