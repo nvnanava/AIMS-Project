@@ -24,7 +24,22 @@ public class DiagnosticsController : ControllerBase
             Software = await _db.SoftwareAssets.CountAsync(),
             Assignments = await _db.Assignments.CountAsync(),
             Feedback = await _db.FeedbackEntries.CountAsync(),
-            AuditLogs = await _db.AuditLogs.CountAsync()
+            AuditLogs = await _db.AuditLogs.CountAsync(),
+            LatestAssignment = await _db.Assignments
+                .AsNoTracking()
+                .OrderByDescending(a => a.AssignedAtUtc)
+                .Select(a => new
+                {
+                    a.AssignmentID,
+                    a.UserID,
+                    User = a.User.FullName,
+                    a.AssetKind,
+                    a.AssetTag,
+                    a.SoftwareID,
+                    a.AssignedAtUtc,
+                    a.UnassignedAtUtc
+                })
+                .FirstOrDefaultAsync()
         };
         return Ok(summary);
     }

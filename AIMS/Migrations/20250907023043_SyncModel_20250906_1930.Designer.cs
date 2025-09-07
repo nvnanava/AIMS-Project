@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AIMS.Migrations
 {
     [DbContext(typeof(AimsDbContext))]
-    [Migration("20250904031631_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250907023043_SyncModel_20250906_1930")]
+    partial class SyncModel_20250906_1930
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -81,12 +81,20 @@ namespace AIMS.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("AssetKind")
+                        .HasColumnType("int");
+
                     b.Property<int?>("AssetTag")
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ExternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
 
                     b.Property<string>("NewValue")
                         .HasColumnType("nvarchar(max)");
@@ -97,7 +105,7 @@ namespace AIMS.Migrations
                     b.Property<int?>("SoftwareID")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("Timestamp")
+                    b.Property<DateTime>("TimestampUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("UserID")
@@ -107,11 +115,17 @@ namespace AIMS.Migrations
 
                     b.HasIndex("AssetTag");
 
+                    b.HasIndex("ExternalId")
+                        .IsUnique();
+
                     b.HasIndex("SoftwareID");
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", t =>
+                        {
+                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
+                        });
                 });
 
             modelBuilder.Entity("AIMS.Models.Feedback", b =>
@@ -193,6 +207,41 @@ namespace AIMS.Migrations
                     b.ToTable("HardwareAssets");
                 });
 
+            modelBuilder.Entity("AIMS.Models.Report", b =>
+                {
+                    b.Property<int>("ReportID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
+
+                    b.Property<DateTime>("DateCreated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ExternalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ReportID");
+
+                    b.HasIndex("ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("Reports");
+                });
+
             modelBuilder.Entity("AIMS.Models.Role", b =>
                 {
                     b.Property<int>("RoleID")
@@ -271,6 +320,9 @@ namespace AIMS.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("ExternalId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -288,6 +340,9 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("UserID");
+
+                    b.HasIndex("ExternalId")
+                        .IsUnique();
 
                     b.HasIndex("RoleID");
 
