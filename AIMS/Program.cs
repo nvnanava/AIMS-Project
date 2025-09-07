@@ -41,6 +41,8 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+// Optional feature flag for prod seeding (defaults false)
+var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
 
 var app = builder.Build();
 
