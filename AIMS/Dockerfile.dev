@@ -1,18 +1,24 @@
-# Use the .NET 9.0 SDK image	
-FROM mcr.microsoft.com/dotnet/sdk:9.0	
+# .NET SDK for dev + hot-reload
+FROM mcr.microsoft.com/dotnet/sdk:9.0
 
-# Set the working directory to your project folder	
-WORKDIR /src/AIMS	
+# Install dotnet-ef globally so scripts can run migrations inside the container
+RUN dotnet tool install --global dotnet-ef --version 9.* \
+    && echo 'export PATH="$PATH:/root/.dotnet/tools"' >> /root/.bashrc
+ENV PATH="$PATH:/root/.dotnet/tools"
 
-# Copy your project source from the AIMS folder into the container	
-COPY AIMS/ ./	
+# Work in /src (we’ll bind-mount the repo there)
+WORKDIR /src
 
-# (Optional) Restore dependencies now so that you see the output during build; 	
-# this speeds up subsequent rebuilds even though dotnet watch will run restore as needed.	
-RUN dotnet restore "AIMS.csproj"	
+# (Optional) prime NuGet cache so first run is faster
+# Copy only the csproj to leverage Docker layer caching
+COPY AIMS/*.csproj AIMS/
+RUN dotnet restore AIMS/AIMS.csproj
 
-# Clear any default ENTRYPOINT to let our command (dotnet watch) run properly.	
-ENTRYPOINT []	
+# We won’t copy the rest of the source here — in dev we use the bind mount.
+# The container will see your live files from the host.
 
-# Set the default command to use dotnet watch (with --verbose for more logging)	
-CMD ["dotnet", "watch", "run", "--project", "AIMS.csproj", "--urls", "http://0.0.0.0:5119", "--verbose"]	
+# Clear default ENTRYPOINT so our CMD runs as-is
+ENTRYPOINT []
+
+# Run with hot reload and bind to all interfaces for port mapping
+CMD ["dotnet", "watch", "run", "--project", "AIMS/AIMS.csproj", "--urls", "http://0.0.0.0:5119", "--non-interactive"]
