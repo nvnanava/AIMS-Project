@@ -60,7 +60,7 @@ public class AssignmentsQuery
                 SoftwareID = a.SoftwareID,
                 AssignedAtUtc = a.AssignedAtUtc
         }).
-        FirstOrDefaultAsync();   
+        FirstOrDefaultAsync() ?? new GetAssignmentDto();   
     }
 }
 
