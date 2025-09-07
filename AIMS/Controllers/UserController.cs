@@ -30,8 +30,8 @@ public class UserController : ControllerBase
         return Ok(users);
     }
     
-    [HttpGet("{searchString?}")]
-    public async Task<IActionResult> SearchUsersByName([FromQuery] string? searchString)
+    [HttpGet]
+    public async Task<IActionResult> SearchUsersByName(string? searchString)
     {
         if (searchString == null)
         {

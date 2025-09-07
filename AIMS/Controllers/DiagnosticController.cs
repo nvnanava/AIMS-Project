@@ -13,11 +13,13 @@ public class DiagnosticsController : ControllerBase
     private readonly AimsDbContext _db;
     private readonly UserQuery _userQuery;
     private readonly AssignmentsQuery _assignQuery;
-    public DiagnosticsController(AimsDbContext db, UserQuery userQuery, AssignmentsQuery assignQuery)
+    private readonly AssetQuery _assetQuery;
+    public DiagnosticsController(AimsDbContext db, UserQuery userQuery, AssignmentsQuery assignQuery, AssetQuery assetQuery)
     {
         _db = db;
         _userQuery = userQuery;
         _assignQuery = assignQuery;
+        _assetQuery = assetQuery;
     }
 
     // ---------- 1) Quick sanity: table counts ----------
@@ -155,5 +157,15 @@ public class DiagnosticsController : ControllerBase
             Headers = new[] { "Asset Name", "Type", "Tag #", "Assigned To", "Status" },
             Rows = rows
         });
+    }
+    [HttpGet("assets/")]
+    public async Task<IActionResult> SearchAssetsByName(string? searchString)
+    {
+        if (searchString == null)
+        {
+            return Ok(await _assetQuery.GetFirstNAssets(20));
+        }
+        var users = await _assetQuery.SearchAssetByName(searchString);
+        return Ok(users);
     }
 }
