@@ -113,6 +113,7 @@ else
     // TODO: Take out when development is over
     // Use CORS middleware
     app.UseCors("AllowLocalhost");
+    app.UseRouting();
 }
 
 
