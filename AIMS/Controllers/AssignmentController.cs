@@ -19,7 +19,7 @@ public class AssignmentController : ControllerBase
     {
         _db = db;
         _assignQuery = assignQuery;
-        
+
     }
 
     // Quick sanity: table counts
@@ -61,7 +61,11 @@ public class AssignmentController : ControllerBase
         }
 
         // make sure that an assignnment does not already exist (no double assign)
-        var assignmentExists = await _db.Assignments.AnyAsync(a => a.SoftwareID == req.SoftwareID || a.AssetTag == req.AssetTag);
+        var assignmentExists = await _db.Assignments.AnyAsync(a =>
+            (req.SoftwareID != null && a.SoftwareID == req.SoftwareID) ||
+            (req.AssetTag != null && a.AssetTag == req.AssetTag)
+        );
+
 
         if (assignmentExists)
         {

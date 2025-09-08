@@ -17,7 +17,7 @@ public class AssetQuery
         .Where(h => h.AssetName.Contains(query))
         .Select(h => new GetAssetDto
         {
-            AssetKind = AssetKind.Hardware,
+            AssetKind = 1,
             AssetName = h.AssetName,
             AssetID = h.HardwareID
         });
@@ -27,7 +27,7 @@ public class AssetQuery
                 .Where(s => s.SoftwareName.Contains(query))
                 .Select(s => new GetAssetDto
                 {
-                    AssetKind = AssetKind.Software,
+                    AssetKind = 2,
                     AssetName = s.SoftwareName,
                     AssetID = s.SoftwareID
                 });
@@ -44,7 +44,7 @@ public class AssetQuery
         var hardware = _db.HardwareAssets
         .Select(h => new GetAssetDto
         {
-            AssetKind = AssetKind.Hardware,
+            AssetKind = 1,
             AssetName = h.AssetName,
             AssetID = h.HardwareID
         }).Take(n);
@@ -53,7 +53,7 @@ public class AssetQuery
         var software = _db.SoftwareAssets
                 .Select(s => new GetAssetDto
                 {
-                    AssetKind = AssetKind.Software,
+                    AssetKind = 2,
                     AssetName = s.SoftwareName,
                     AssetID = s.SoftwareID
                 }).Take(n);
@@ -67,7 +67,7 @@ public class AssetQuery
 
 public class GetAssetDto
 {
-    public AssetKind AssetKind;
+    public int AssetKind { get; set; }
     public string AssetName { get; set; } = string.Empty;
 
     public int AssetID { get; set; }
