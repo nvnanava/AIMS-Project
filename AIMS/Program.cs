@@ -1,6 +1,10 @@
 using AIMS.Data;
 using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,28 +25,62 @@ builder.Services.AddDbContext<AimsDbContext>(options =>
     options.UseSqlServer(cs);
 });
 
+
 // Optional feature flag for prod seeding (defaults false)
 var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
-// See https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes
-// for dependency injection scopes
-builder.Services.AddScoped<UserQuery>();
-builder.Services.AddScoped<AssignmentsQuery>();
-builder.Services.AddScoped<HardwareQuery>();
-builder.Services.AddScoped<SoftwareQuery>();
-builder.Services.AddScoped<AssetQuery>();
-builder.Services.AddScoped<AuditLogQuery>();
 
-// TODO: Take out when development is over
-// Add CORS services
-builder.Services.AddCors(options =>
+builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme) // Configure the app to use OpenID Connect authentication with Azure AD
+//.AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd")); // Bind the Azure AD settings from configuration to the authentication options
+.AddMicrosoftIdentityWebApp(options =>
 {
-    options.AddPolicy("AllowLocalhost", policy =>
-    {
-        policy.WithOrigins("http://localhost:5119") // Add your frontend's origin
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    builder.Configuration.Bind("AzureAd", options);
+    options.AccessDeniedPath = "/Home/Error"; // Redirects users to a custom error page if they are denied access
+    options.TokenValidationParameters.RoleClaimType = "roles"; // This  maps the "roles" claim from the token to the user's roles in the application
 });
+
+builder.Services.AddAuthorizationBuilder()
+  .AddPolicy("mbcAdmin", policy => // Only users with the "Admin" role can access any action methods in this controller
+    policy.RequireAssertion(context =>
+        context.User.HasClaim(c =>
+            c.Type == "preferred_username" &&
+            new[] {
+                // our test accounts for now, you should be able to login with your csus accounts.
+                "niyant397@gmail.com",
+                "nvnanavati@csus.edu",
+                "akalustatsingh@csus.edu",
+                "tburguillos@csus.edu",
+                "keeratkhandpur@csus.edu",
+                "suhailnajimudeen@csus.edu",
+                "hkaur@csus.edu",
+                "cameronlanzaro@csus.edu",
+                "norinphlong@csus.edu"
+
+
+            }.Contains(c.Value))))
+
+  .AddPolicy("mbcHelpDesk", policy => //Help Desk Users, dummy names for now but you can add your email here to test.
+    policy.RequireAssertion(context =>
+        context.User.HasClaim(c =>
+            c.Type == "preferred_username" &&
+            new[] {
+                "barryAllen@centralcity.edu"
+
+            }.Contains(c.Value))))
+
+  .AddPolicy("mbcSupervisor", policy =>
+    policy.RequireAssertion(context =>
+        context.User.HasClaim(c =>
+            c.Type == "preferred_username" &&
+            new[] {
+                "richardGrayson@gotham.edu"
+            }.Contains(c.Value))));
+
+
+
+builder.Services.AddRazorPages() // Add support for Razor Pages and integrate Microsoft Identity UI components
+    .AddMicrosoftIdentityUI(); // Adds Razor UI pages for authentication and user management
+
+
 var app = builder.Build();
 
 // Log detected OS
@@ -77,8 +115,8 @@ else
     app.UseCors("AllowLocalhost");
 }
 
-app.UseRouting();
 
+app.UseAuthentication(); // Enable Azure authentication middleware
 app.UseAuthorization();
 
 app.MapStaticAssets();
