@@ -1,5 +1,4 @@
 using AIMS.Data;
-using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
