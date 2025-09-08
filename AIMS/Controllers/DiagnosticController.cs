@@ -159,7 +159,7 @@ public class DiagnosticsController : ControllerBase
         });
     }
     [HttpGet("assets/")]
-    public async Task<IActionResult> SearchAssetsByName(string? searchString)
+    public async Task<IActionResult> SearchAssetsByName([FromQuery] string? searchString)
     {
         if (searchString == null)
         {
