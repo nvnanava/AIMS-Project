@@ -1,140 +1,233 @@
-@await Html.PartialAsync("_AssetAddForm")  <!-- Calls the Add Asset Form-->
+@* --- Modals included once at the top --- *@
+@await Html.PartialAsync("_AssetAddForm")
 @await Html.PartialAsync("_EditAssetForm")
 @await Html.PartialAsync("_AddCategoryForm")
 
-
-
 @section Styles {
-    <link rel="stylesheet" href="~/css/AssetDetailsComponent.css" asp-asp-append-version="true"/>
-    <link rel="stylesheet" href="~/css/_AssetButton.css" asp-asp-append-version="true"/>
-    <link rel="stylesheet" href="~/css/_AddAssetForm.css" asp-asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/_AssetButton.css"          asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/_AddAssetForm.css"         asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/AssetDetailsComponent.css" asp-append-version="true" />
 }
 
 @{
-    var category = ViewData["Category"]?.ToString() ?? "Unknown";
+    var category     = ViewData["Category"]?.ToString() ?? "Unknown";
     var tableHeaders = (ViewData["TableHeaders"] as List<string>) ?? new List<string>();
-    var filteredData = ViewData["FilteredData"] as List<Dictionary<string, string>>;
-    var specsData = ViewData["SpecsData"] as Dictionary<string, Dictionary<string, string>>;
+    var filteredData = ViewData["FilteredData"] as List<Dictionary<string, string>> ?? new();
+    var specsData    = ViewData["SpecsData"] as Dictionary<string, Dictionary<string, string>> 
+                       ?? new Dictionary<string, Dictionary<string, string>>();
+
+    // Check if headers already include “Actions”
+    var hasActions   = tableHeaders.Any(h => string.Equals(h, "Actions", StringComparison.OrdinalIgnoreCase));
 
     ViewData["Title"] = $"{category} Asset Details";
 }
+
 <script>
-    const specsData = @Html.Raw(Json.Serialize(ViewData["SpecsData"])); //gives access top specsData in JavaScript
+  // Share specs with JS for the popup
+  const specsData = @Html.Raw(Json.Serialize(ViewData["SpecsData"]));
 </script>
 
 <h2 class="text-center my-4">@ViewData["Title"]</h2>
 
-@if (filteredData != null && filteredData.Any())
+	@if (!filteredData.Any())
 {
-    <table class="asset-table">
-        <thead>
-            <tr>
-                @foreach (var header in tableHeaders)
-                {
-                    if (header == "Status")
-                    {
-                        <th class="d-flex justify-content-between align-items-center" style="gap: 10px;">
-                            <span>Status</span>
-                            <div style="margin-left: auto;">
-                                @await Html.PartialAsync("_AssetButton")
-                            </div>
-                        </th>
-
-                    }
-                    else
-                    {
-                        <th>@header</th>
-                    }
-                }
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var row in filteredData)
-            {
-                @* <tr onclick="showPopup('@row["Asset Name"]', '@row["Tag #"]')"> *@
-                <tr onclick="showPopup('@row["Asset Name"]', '@row["Tag #"]', event)">
-
-
-                    @foreach (var header in tableHeaders)
-                    {
-                        if (header == "Status")
-                        {
-                            var status = row[header];
-                            var statusClass = status.ToLower() switch
-                            {
-                                "available" => "status-available",
-                                "assigned" => "status-assigned",
-                                "marked for survey" => "status-marked-for-survey",
-                                "in repair" => "status-in-repair",
-
-                                _ => ""
-                            };
-                            <td><span class="status-badge @statusClass">@status</span></td>
-                        }
-                        else
-                        {
-                            <td>@row[header]</td>
-                        }
-                    }
-                </tr>
-            }
-        </tbody>
-    </table>
+  <div class="alert alert-info text-center" role="alert">
+      No assets found for <strong>@category</strong>.
+  </div>
 }
 else
 {
-    <p class="text-center">No assets found for <strong>@category</strong>.</p>
-}
-<div id="popup" style="
-    display: none;
-    position: fixed;
-    background: white;
-    padding: 12px 16px;
-    border: 1.5px solid #ccc;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-size: 0.85rem;
-    max-width: 220px;
-    width: max-content;
-    word-wrap: break-word;
-    line-height: 1.4;
-    z-index: 1000;
-">
-    <!-- content will be filled by JavaScript -->
-</div>
-
-<script>
-function showPopup(assetName, tagNumber, event) {
-
-
-
-    var popup = document.getElementById("popup");
-
-    var rect = event.target.getBoundingClientRect(); //get position of the clicked element
-    popup.style.top = (rect.top + window.scrollY) + "px"; //set the top position of the popup
-    popup.style.left = (rect.left + window.scrollX) + "px"; //set the left position of the popup"
-
-
-    popup.innerHTML = "<strong>Asset Name:</strong> " + assetName + "<br><strong>Tag Number:</strong> " + tagNumber + "<br>";
-
-    if (specsData[tagNumber]) {
-        for (var spec in specsData[tagNumber]) {
-            popup.innerHTML += "<strong>" + spec + ":</strong> " + specsData[tagNumber][spec] + "<br>";
+  <div class="asset-table-wrapper">
+    <table class="asset-table">
+	<thead>
+  <tr>
+    @foreach (var header in tableHeaders)
+    {
+        if (string.Equals(header, "Status", StringComparison.OrdinalIgnoreCase))
+        {
+            <th>Status</th>
+        }
+        else if (string.Equals(header, "Actions", StringComparison.OrdinalIgnoreCase))
+        {
+            <th class="actions-header">
+              <div class="asset-toolbar-top">
+                @await Html.PartialAsync("_AssetButton")
+              </div>
+              <span class="actions-title">Actions</span>
+            </th>
+        }
+        else
+        {
+            <th>@header</th>
         }
     }
 
-    popup.style.display = "block";
-    event.stopPropagation(); // ⛔ Prevent auto-close from doc listener
-}
-    document.addEventListener("click", function (event) {
-    var popup = document.getElementById("popup");
-
-    // Only close if popup is visible and the click target is NOT the popup
-    if (popup.style.display === "block" && !popup.contains(event.target)) {
-        popup.style.display = "none";
+    @* If Actions is missing, append it with the toolbar *@
+    @if (!hasActions)
+    {
+        <th class="actions-header">
+          <div class="asset-toolbar-top">
+            @await Html.PartialAsync("_AssetButton")
+          </div>
+          <span class="actions-title">Actions</span>
+        </th>
     }
+  </tr>
+</thead>
+
+
+      <tbody>
+        @foreach (var row in filteredData)
+        {
+            var nameVal     = row.ContainsKey("Asset Name") ? row["Asset Name"] : "";
+            var typeVal     = row.ContainsKey("Type")       ? row["Type"]       : "";
+            var tagVal      = row.ContainsKey("Tag #")      ? row["Tag #"]      : "";
+            var statusVal   = row.ContainsKey("Status")     ? row["Status"]     : "";
+            var commentsVal = row.ContainsKey("Comments")   ? row["Comments"]   : "";
+
+            <tr>
+              @foreach (var header in tableHeaders)
+              {
+                  if (string.Equals(header, "Status", StringComparison.OrdinalIgnoreCase))
+                  {
+                      var status = statusVal;
+                      var statusClass = (status ?? "").ToLower() switch
+                      {
+                          "available"         => "status-available",
+                          "assigned"          => "status-assigned",
+                          "marked for survey" => "status-marked-for-survey",
+                          "surveyed"          => "status-surveyed",
+                          "in repair"         => "status-in-repair",
+                          _                   => ""
+                      };
+                      <td><span class="status-badge @statusClass">@status</span></td>
+                  }
+                  else if (string.Equals(header, "Tag #", StringComparison.OrdinalIgnoreCase))
+                  {
+                      @* Clicking tag shows popup with details *@
+                      <td>
+                        <span onclick="showPopup('@(nameVal ?? "")', '@(tagVal ?? "")', event)" style="cursor:pointer;">
+                          @row[header]
+                        </span>
+                      </td>
+                  }
+                  else if (string.Equals(header, "Actions", StringComparison.OrdinalIgnoreCase))
+                  {
+                      @* Pencil button for editing asset *@
+                      <td class="actions-cell" onclick="event.stopPropagation()">
+                        <button type="button"
+                                class="action-btn blue-pencil"
+                                aria-label="Edit @nameVal"
+                                title="Edit asset"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editAssetModal"
+                                data-name="@(nameVal ?? "")"
+                                data-type="@(typeVal ?? "")"
+                                data-tag="@(tagVal  ?? "")"
+                                data-status="@(statusVal ?? "")"
+                                data-comments="@(commentsVal ?? "")">
+                          <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
+                            <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
+                          </svg>
+                        </button>
+                      </td>
+                  }
+                  else
+                  {
+                      <td>@row[header]</td>
+                  }
+              }
+
+              @* Add pencil if Actions header was missing *@
+              @if (!hasActions)
+              {
+                  <td class="actions-cell" onclick="event.stopPropagation()">
+                    <button type="button"
+                            class="action-btn blue-pencil"
+                            aria-label="Edit @nameVal"
+                            title="Edit asset"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editAssetModal"
+                            data-name="@(nameVal ?? "")"
+                            data-type="@(typeVal ?? "")"
+                            data-tag="@(tagVal  ?? "")"
+                            data-status="@(statusVal ?? "")"
+                            data-comments="@(commentsVal ?? "")">
+                      <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+                        <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
+                        <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
+                      </svg>
+                    </button>
+                  </td>
+              }
+            </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@* Popup for quick specs (styled in CSS) *@
+<div id="asset-specs-popup" class="asset-specs-popup" role="dialog" aria-live="polite" aria-hidden="true"></div>
+
+<script>
+// Fill Edit modal with the right data when pencil is clicked
+(function () {
+  const modalEl = document.getElementById('editAssetModal');
+  if (!modalEl) return;
+
+  modalEl.addEventListener('show.bs.modal', function (e) {
+    const btn = e.relatedTarget;
+    if (!btn) return;
+
+    const name     = btn.getAttribute('data-name')     || '';
+    const type     = btn.getAttribute('data-type')     || '';
+    const tag      = btn.getAttribute('data-tag')      || '';
+    const status   = btn.getAttribute('data-status')   || '';
+    const comments = btn.getAttribute('data-comments') || '';
+    const $ = (sel) => modalEl.querySelector(sel);
+
+    if ($('#editName'))     $('#editName').value     = name;
+    if ($('#editType'))     $('#editType').value     = type;
+    if ($('#editTag'))      $('#editTag').value      = tag;
+    if ($('#editStatus'))   $('#editStatus').value   = status;
+    if ($('#editComments')) $('#editComments').value = comments;
+
+    if ($('#editTagNumber')) $('#editTagNumber').value = tag;
+    if ($('#editNotes'))     $('#editNotes').value     = comments;
+    const mfs = $('#markForSurvey');
+    if (mfs) mfs.checked = /marked for survey|surveyed/i.test(status);
+  });
+})();
+
+// Handle popup for showing specs near clicked tag #
+function showPopup(assetName, tagNumber, event) {
+  const popup = document.getElementById("asset-specs-popup");
+  const rect = event.target.getBoundingClientRect();
+  popup.style.top  = (rect.top  + window.scrollY) + "px";
+  popup.style.left = (rect.left + window.scrollX) + "px";
+
+  popup.innerHTML = "<strong>Asset Name:</strong> " + (assetName ?? "") +
+                    "<br><strong>Tag Number:</strong> " + (tagNumber ?? "") + "<br>";
+
+  if (specsData && specsData[tagNumber]) {
+    for (const spec in specsData[tagNumber]) {
+      popup.innerHTML += "<strong>" + spec + ":</strong> " + specsData[tagNumber][spec] + "<br>";
+    }
+  }
+
+  popup.style.display = "block";
+  popup.setAttribute('aria-hidden', 'false');
+  event.stopPropagation();
+}
+
+document.addEventListener("click", function (event) {
+  const popup = document.getElementById("asset-specs-popup");
+  if (popup && popup.style.display === "block" && !popup.contains(event.target)) {
+    popup.style.display = "none";
+    popup.setAttribute('aria-hidden', 'true');
+  }
 });
-
-
-
 </script>
+

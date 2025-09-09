@@ -36,7 +36,7 @@ if (app.Environment.IsDevelopment())
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
     Console.WriteLine("[Startup] Running database seeder...");
-    await DbSeeder.SeedAsync(db, allowProdSeed: allowProdSeed, logger: logger);
+//    await DbSeeder.SeedAsync(db, allowProdSeed: allowProdSeed, logger: logger);
     Console.WriteLine("[Startup] Seeding complete.");
 }
 
