@@ -1,4 +1,5 @@
 using AIMS.Data;
+using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +23,25 @@ builder.Services.AddDbContext<AimsDbContext>(options =>
 
 // Optional feature flag for prod seeding (defaults false)
 var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
+// See https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes
+// for dependency injection scopes
+builder.Services.AddScoped<UserQuery>();
+builder.Services.AddScoped<AssignmentsQuery>();
+builder.Services.AddScoped<HardwareQuery>();
+builder.Services.AddScoped<SoftwareQuery>();
+builder.Services.AddScoped<AssetQuery>();
 
+// TODO: Take out when development is over
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("http://localhost:5119") // Add your frontend's origin
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 // Log detected OS
@@ -46,11 +65,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(); //used for testing APIs. Swagger UI will be available at /swagger/index.html
 }
 else
-{ 
+{
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
     app.UseHttpsRedirection();
+
+    // TODO: Take out when development is over
+    // Use CORS middleware
+    app.UseCors("AllowLocalhost");
 }
 
 app.UseRouting();
