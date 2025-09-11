@@ -136,18 +136,32 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function populateAssetDropdown(searchTerm = "") {
-        // fetch data
-        fetch(`/api/diag/assets?searchString=${encodeURIComponent(searchTerm)}`)
-            .then((response) => {
-                return response.json();
+        const url = `/api/diag/assets?q=${encodeURIComponent(searchTerm)}&onlyAvailable=true&take=30`;
+
+        fetch(url)
+            .then(async (response) => {
+                // Handle empty responses gracefully
+                if (response.status === 204) return [];
+
+                const contentType = response.headers.get('content-type') || '';
+                const bodyText = await response.text();
+
+                if (!response.ok) {
+                    // Show real server error details in our toast
+                    throw new Error(`HTTP ${response.status} ${response.statusText} — ${bodyText}`);
+                }
+                if (!contentType.includes('application/json')) {
+                    throw new Error(`Expected JSON but got ${contentType}. Body: ${bodyText}`);
+                }
+                // It’s JSON, parse it ourselves because we already consumed text:
+                return JSON.parse(bodyText);
             })
             .then((results) => {
-                //clear out the old children
                 assetSelect.replaceChildren();
                 results.forEach(asset => {
                     const option = document.createElement("option");
-                    option.value = "(" + asset.assetID + ") " + asset.assetName;
-                    option.text = "(" + asset.assetID + ") " + asset.assetName;
+                    option.value = `(${asset.assetID}) ${asset.assetName}`;
+                    option.text = `(${asset.assetID}) ${asset.assetName}`;
                     option.dataset.asset_id = asset.assetID;
                     option.dataset.asset_kind = asset.assetKind;
                     assetSelect.appendChild(option);

@@ -7,91 +7,10 @@
     // Define Table Headers
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
-    // Define Table Data
-    var tableData = new List<Dictionary<string, string>> {
-new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
-{"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
-{"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
-{"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"},
-{"Status", "Available"} },
-new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
-{"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"},
-{"Status", "Damaged"} },
-new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
-{"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
-{"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"},
-{"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"},
-{"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"},
-{"Status", "Available"} },
-new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
-{"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"},
-{"Status", "Damaged"} },
-new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
-{"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"},
-{"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
-{"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"},
-{"Status", "Available"} },
-new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
-{"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
-{"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"},
-{"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"},
-{"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"},
-{"Status", "Damaged"} },
-new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
-{"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"},
-{"Status", "Assigned"} }
-};
+    // Empty placeholders; the JS will fetch real data from /api/assets
+    var tableData = new List<Dictionary<string, string>>();
+    var users = new List<Dictionary<string, string>>();
 
-    // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
-    var users = new List<Dictionary<string, string>> {
-new Dictionary<string, string> {
-{"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Jane Doe"}, {"Role", "IT Help Desk"}, {"ID", "69444"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Randy Orton"}, {"Role", "IT Help Desk"}, {"ID", "58344"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Robin Williams"}, {"Role", "IT Help Desk"}, {"ID", "10971"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
-},
-new Dictionary<string, string> {
-{"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
-},
-new Dictionary<string, string> {
-{"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
-},
-new Dictionary<string, string> {
-{"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
-},
-new Dictionary<string, string> {
-{"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
-},
-new Dictionary<string, string> {
-{"Name", "Emily Carter"}, {"Role", "IT Help Desk"}, {"ID", "47283"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Bruce Wayne"}, {"Role", "IT Help Desk"}, {"ID", "34532"}, {"Supervisor", "28809"}
-},
-};
-
-    var serializedTableData = JsonSerializer.Serialize(tableData);
-    var serializedUsers = JsonSerializer.Serialize(users);
 }
 
 @section Styles {
@@ -274,17 +193,13 @@ new Dictionary<string, string> {
         <p style="color: red;">Table Data is Missing!</p>
     }
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
-
     <!-- Include Modal HTML -->
     @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
 
 </section>
 
 @section Scripts {
-    <script>
-        window.__TABLE_DATA__ = @Html.Raw(JsonSerializer.Serialize(tableData));
-        window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));
-    </script>
+    <script> window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));</script>
 
     <script src="~/js/assignAssetModal.js" defer></script>
     <script src="~/js/home.index.js" asp-append-version="true" defer></script>

@@ -7,10 +7,10 @@ public class SoftwareQuery
     private readonly AimsDbContext _db;
     public SoftwareQuery(AimsDbContext db) => _db = db;
 
-    public async Task<List<GetSoftwareDto>> GetAllSoftwareAsync()
+    public async Task<List<GetSoftwareDto>> GetAllSoftwareAsync(CancellationToken ct = default)
     {
-        // Example query, adjust as needed
         return await _db.SoftwareAssets
+            .AsNoTracking()
             .Select(s => new GetSoftwareDto
             {
                 SoftwareID = s.SoftwareID,
@@ -22,15 +22,12 @@ public class SoftwareQuery
                 SoftwareUsageData = s.SoftwareUsageData,
                 SoftwareCost = s.SoftwareCost
             })
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 }
 
-
-
 public class GetSoftwareDto
 {
-
     public int SoftwareID { get; set; }
 
     // Columns
