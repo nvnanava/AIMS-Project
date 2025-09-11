@@ -49,7 +49,7 @@ public sealed class DbTestHarness : IAsyncLifetime
         await con.OpenAsync();
         using var tx = con.BeginTransaction();
 
-        // Delete in FK-safe order (children → parents)
+        // Delete in FK-safe order (children -> parents)
         await con.ExecuteAsync(@"
             DELETE FROM Assignments;
             DELETE FROM FeedbackEntries;

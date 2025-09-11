@@ -9,7 +9,6 @@ public class HardwareQuery
 
     public async Task<List<GetHardwareDto>> GetAllHardwareAsync()
     {
-        // Example query, adjust as needed
         return await _db.HardwareAssets
             .Select(h => new GetHardwareDto
             {
@@ -21,7 +20,13 @@ public class HardwareQuery
                 Model = h.Model,
                 SerialNumber = h.SerialNumber,
                 WarrantyExpiration = h.WarrantyExpiration,
-                PurchaseDate = h.PurchaseDate
+                PurchaseDate = h.PurchaseDate,
+
+                // Is there an OPEN assignment?
+                IsAssigned = _db.Assignments.Any(a =>
+                    a.AssetKind == AssetKind.Hardware &&
+                    a.AssetTag == h.HardwareID &&
+                    a.UnassignedAtUtc == null)
             })
             .ToListAsync();
     }
@@ -43,4 +48,9 @@ public class GetHardwareDto
     public string SerialNumber { get; set; } = string.Empty; // unique
     public DateOnly WarrantyExpiration { get; set; }
     public DateOnly PurchaseDate { get; set; }
+    public bool IsAssigned { get; set; }
+    public string EffectiveStatus =>
+        string.IsNullOrWhiteSpace(Status)
+            ? (IsAssigned ? "Assigned" : "Available")
+            : Status;
 }

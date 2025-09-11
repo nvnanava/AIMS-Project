@@ -21,6 +21,16 @@ namespace AIMS.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.HasDefaultSchema("dbo");
+            modelBuilder.Entity<Role>().ToTable("Roles");
+            modelBuilder.Entity<User>().ToTable("Users");
+            modelBuilder.Entity<Hardware>().ToTable("HardwareAssets");
+            modelBuilder.Entity<Software>().ToTable("SoftwareAssets");
+            modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
+            modelBuilder.Entity<Feedback>().ToTable("FeedbackEntries");
+            modelBuilder.Entity<Assignment>().ToTable("Assignments");
+            modelBuilder.Entity<Report>().ToTable("Reports");
+
             // -------------------------
             // USER RELATIONSHIPS
             // -------------------------
@@ -121,21 +131,21 @@ namespace AIMS.Data
             // ASSIGNMENTS
             // -------------------------
 
-            // Assignment → User
+            // Assignment -> User
             modelBuilder.Entity<Assignment>()
                 .HasOne(a => a.User)
                 .WithMany(u => u.Assignments)
                 .HasForeignKey(a => a.UserID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Assignment → Hardware (optional)
+            // Assignment -> Hardware (optional)
             modelBuilder.Entity<Assignment>()
                 .HasOne(a => a.Hardware)
                 .WithMany()
                 .HasForeignKey(a => a.AssetTag)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Assignment → Software (optional)
+            // Assignment -> Software (optional)
             modelBuilder.Entity<Assignment>()
                 .HasOne(a => a.Software)
                 .WithMany()

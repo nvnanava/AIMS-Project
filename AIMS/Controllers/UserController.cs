@@ -1,9 +1,9 @@
 using System.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers;
 
@@ -29,7 +29,7 @@ public class UserController : ControllerBase
         var users = await _userQuery.GetAllUsersAsync();
         return Ok(users);
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> SearchUsersByName([FromQuery] string? searchString)
     {
@@ -40,6 +40,6 @@ public class UserController : ControllerBase
         var users = await _userQuery.SearchUserByName(searchString);
         return Ok(users);
     }
-   
+
 
 }
