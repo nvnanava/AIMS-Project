@@ -1,108 +1,115 @@
+
+
+
+
+
+
 @{
     ViewData["Title"] = "Reports";
 
 
     // Define Table Headers
-    var tableHeaders = new List<string> { "Name", "Type", "Description", "Date Created"};
-    
+    var tableHeaders = new List<string> { "Name", "Type", "Description","Office", "Date Created"};
+
     // Define Table Data
-    var tableData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Name", "Monthly Report for Jan"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-        new Dictionary<string, string> { {"Name", "Check for Daisy"}, 
-            {"Type", "Asset Report"}, {"Description", "Daisy wanted to see what assets we have"}, 
-            {"Date Created", "12 Dec 2024 03:41:04 PT"} },
-        new Dictionary<string, string> { {"Name", "Send to Higher-ups"}, 
-            {"Type", "Custom Report"}, {"Description", "They asked for all the information we have"}, 
-            {"Date Created", "11 Dec 2024 06:32:51 PT"} },
-        new Dictionary<string, string> { {"Name", "Monthly Report for Dec"}, 
-            {"Type", "Asset Assignments to Users"}, {"Description", ""}, 
-            {"Date Created", "02 Dec 2024 11:05:25 PT"} },
-        new Dictionary<string, string> { {"Name", "Report for Dan"}, 
-            {"Type", "Custom Report"}, {"Description", "Dan asked for report will users and office"}, 
-            {"Date Created", "25 Nov 2024 09:38:31 PT"} },
-        new Dictionary<string, string> { {"Name", "Checking something"}, 
-            {"Type", "Assets Assigned to an Office"}, {"Description", "Needed to do some analysis on how many assets per office"}, 
-            {"Date Created", "07 Nov 2024 04:34:11 PT"} },
-        new Dictionary<string, string> { {"Name", "Monthly Report for Nov"}, 
-            {"Type", "Assets Assigned to an Office"}, {"Description", ""}, 
-            {"Date Created", "01 Nov 2024 10:25:57 PT"} },
-        new Dictionary<string, string> { {"Name", "Print for Wall"}, 
-            {"Type", "Asset Report"}, {"Description", "need to put on wall so everyone can see what assets are where"}, 
-            {"Date Created", "26 Sept 2024 01:28:58 PT"} },
-        new Dictionary<string, string> { {"Name", "Send our reminders"}, 
-            {"Type", "Asset Assignments to Users"}, {"Description", "sending out reminders who has what in case missing items"}, 
-            {"Date Created", "15 Sept 2024 07:15:47 PT"} },
-        new Dictionary<string, string> { {"Name", "Do 1"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-        new Dictionary<string, string> { {"Name", "Do 2"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-        new Dictionary<string, string> { {"Name", "Do 3"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-        new Dictionary<string, string> { {"Name", "Do 4"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-        new Dictionary<string, string> { {"Name", "Do 5"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-        new Dictionary<string, string> { {"Name", "Do 6"}, 
-            {"Type", "Asset Report"}, {"Description", "Also yearly report"}, 
-            {"Date Created", "01 Jan 2025 09:19:34 PT"} }
-    };
+  var tableData = new List<Dictionary<string, string>> {
+    new Dictionary<string, string> { {"Name", "Monthly Report for Jan"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "231ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+    new Dictionary<string, string> { {"Name", "Check for Daisy"},
+        {"Type", "Asset Report"}, {"Description", "Daisy wanted to see what assets we have"},
+        {"Office", "214ISB"}, {"Date Created", "12 Dec 2024 03:41:04 PT"} },
+    new Dictionary<string, string> { {"Name", "Send to Higher-ups"},
+        {"Type", "Custom Report"}, {"Description", "They asked for all the information we have"},
+        {"Office", "3A-17"}, {"Date Created", "11 Dec 2024 06:32:51 PT"} },
+    new Dictionary<string, string> { {"Name", "Monthly Report for Dec"},
+        {"Type", "Asset Assignments to Users"}, {"Description", ""},
+        {"Office", "2B-05"}, {"Date Created", "02 Dec 2024 11:05:25 PT"} },
+    new Dictionary<string, string> { {"Name", "Report for Dan"},
+        {"Type", "Custom Report"}, {"Description", "Dan asked for report will users and office"},
+        {"Office", "231ISB"}, {"Date Created", "25 Nov 2024 09:38:31 PT"} },
+    new Dictionary<string, string> { {"Name", "Checking something"},
+        {"Type", "Assets Assigned to an Office"}, {"Description", "Needed to do some analysis on how many assets per office"},
+        {"Office", "1C-28"}, {"Date Created", "07 Nov 2024 04:34:11 PT"} },
+    new Dictionary<string, string> { {"Name", "Monthly Report for Nov"},
+        {"Type", "Assets Assigned to an Office"}, {"Description", ""},
+        {"Office", "214ISB"}, {"Date Created", "01 Nov 2024 10:25:57 PT"} },
+    new Dictionary<string, string> { {"Name", "Print for Wall"},
+        {"Type", "Asset Report"}, {"Description", "need to put on wall so everyone can see what assets are where"},
+        {"Office", "3A-02"}, {"Date Created", "26 Sept 2024 01:28:58 PT"} },
+    new Dictionary<string, string> { {"Name", "Send our reminders"},
+        {"Type", "Asset Assignments to Users"}, {"Description", "sending out reminders who has what in case missing items"},
+        {"Office", "2B-12"}, {"Date Created", "15 Sept 2024 07:15:47 PT"} },
+    new Dictionary<string, string> { {"Name", "Do 1"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "231ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+    new Dictionary<string, string> { {"Name", "Do 2"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "214ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+    new Dictionary<string, string> { {"Name", "Do 3"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "1C-28"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+    new Dictionary<string, string> { {"Name", "Do 4"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "3A-17"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+    new Dictionary<string, string> { {"Name", "Do 5"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "2B-05"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
+    new Dictionary<string, string> { {"Name", "Do 6"},
+        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
+        {"Office", "3A-02"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} }
+};
+
 
     // Define User Table Headers
     var userHeaders = new List<string> { "Name", "Email", "Role", "Asset", "Status"};
 
     // Define User Table Data
     var userData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Lenovo ThinkPad E16"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Dell S2421NX"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Logitech Zone 300"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Lenovo IdeaCentre 3"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Microsoft 365 Business"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "HP 527SH"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Logitech Zone Vibe 100"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Dell Inspirion 3030"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"}, 
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"}, 
+        new Dictionary<string, string> { {"Name", "John Smith"},
+            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
             {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} }
     };
 
@@ -111,84 +118,84 @@
 
     // Define Office Table Data
     var officeData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Office", "10"}, 
+        new Dictionary<string, string> { {"Office", "10"},
             {"Asset", "Lenovo Thinkpad E16"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "31"}, 
+        new Dictionary<string, string> { {"Office", "31"},
             {"Asset", "Dell S2421NX"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "14"}, 
+        new Dictionary<string, string> { {"Office", "14"},
             {"Asset", "Logitech Zone 300"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "28"}, 
+        new Dictionary<string, string> { {"Office", "28"},
             {"Asset", "Lenovo IdeaCentre 3"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "14"}, 
+        new Dictionary<string, string> { {"Office", "14"},
             {"Asset", "Microsoft 365 Business"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "26"}, 
+        new Dictionary<string, string> { {"Office", "26"},
             {"Asset", "HP 527SH"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "13"}, 
+        new Dictionary<string, string> { {"Office", "13"},
             {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "21"}, 
+        new Dictionary<string, string> { {"Office", "21"},
             {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "28"}, 
+        new Dictionary<string, string> { {"Office", "28"},
             {"Asset", "Logitech Zone Vibe 100"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "29"}, 
+        new Dictionary<string, string> { {"Office", "29"},
             {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "46"}, 
+        new Dictionary<string, string> { {"Office", "46"},
             {"Asset", "Dell Inspirion 3030"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "51"}, 
+        new Dictionary<string, string> { {"Office", "51"},
             {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "38"}, 
+        new Dictionary<string, string> { {"Office", "38"},
             {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "21"}, 
+        new Dictionary<string, string> { {"Office", "21"},
             {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "42"}, 
+        new Dictionary<string, string> { {"Office", "42"},
             {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} }
     };
-    
+
     // Define Asset Table Headers
     var assetHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
 
     // Define Asset Table Data
     var assetData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0020"}, 
+        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
+            {"Type", "Laptop"}, {"Tag #", "LT-0020"},
             {"Assigned To", "John Smith"}, {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"}, 
-            {"Type", "Laptop"}, {"Tag #", "MN-0001"}, 
+        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
+            {"Type", "Laptop"}, {"Tag #", "MN-0001"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"}, 
-            {"Type", "Headphone"}, {"Tag #", "HS-0080"}, 
+        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
+            {"Type", "Headphone"}, {"Tag #", "HS-0080"},
             {"Assigned To", "Unassigned"}, {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"}, 
-            {"Type", "Laptop"}, {"Tag #", "DT-0011"}, 
+        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
+            {"Type", "Laptop"}, {"Tag #", "DT-0011"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"}, 
-            {"Type", "Laptop"}, {"Tag #", "SW-0100"}, 
+        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
+            {"Type", "Laptop"}, {"Tag #", "SW-0100"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP 527SH"}, 
-            {"Type", "Laptop"}, {"Tag #", "MN-0023"}, 
+        new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
+            {"Type", "Laptop"}, {"Tag #", "MN-0023"},
             {"Assigned To", "Unassigned"}, {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"}, 
-            {"Type", "Laptop"}, {"Tag #", "DT-0075"}, 
+        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"},
+            {"Type", "Laptop"}, {"Tag #", "DT-0075"},
             {"Assigned To", "John Smith"}, {"Status", "Due Soon"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"}, 
-            {"Type", "Monitor"}, {"Tag #", "HS-0015"}, 
+        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
+            {"Type", "Monitor"}, {"Tag #", "HS-0015"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"}, 
-            {"Type", "Keyboard"}, {"Tag #", "CC-0088"}, 
+        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
+            {"Type", "Keyboard"}, {"Tag #", "CC-0088"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspirion 3030"}, 
-            {"Type", "Mouse"}, {"Tag #", "SW-0100"}, 
+        new Dictionary<string, string> { {"Asset Name", "Dell Inspirion 3030"},
+            {"Type", "Mouse"}, {"Tag #", "SW-0100"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"}, 
-            {"Type", "Monitor"}, {"Tag #", "MN-0023"}, 
+        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
+            {"Type", "Monitor"}, {"Tag #", "MN-0023"},
             {"Assigned To", "Unassigned"}, {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft  USB-C"}, 
-            {"Type", "Laptop"}, {"Tag #", "DT-0075"}, 
+        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft  USB-C"},
+            {"Type", "Laptop"}, {"Tag #", "DT-0075"},
             {"Assigned To", "John Smith"}, {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"}, 
-            {"Type", "Laptop"}, {"Tag #", "LT-0005"}, 
+        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"},
+            {"Type", "Laptop"}, {"Tag #", "LT-0005"},
             {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"}, 
-            {"Type", "Laptop"}, {"Tag #", "HS-0015"}, 
+        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"},
+            {"Type", "Laptop"}, {"Tag #", "HS-0015"},
             {"Assigned To", "John Smith"}, {"Status", "In Repair"} }
     };
 
@@ -298,36 +305,31 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
-        .report-table th:nth-child(1),
-        .report-table td:nth-child(1) {
-            width: 16px;
-        }
 
-        .report-table th:nth-child(2),
-        .report-table td:nth-child(2) {
-            width: 122px;
-        }
+/*Updated column widths to account for Office*/
+.report-table th:nth-child(1),
+.report-table td:nth-child(1) { width: 16px; }
 
-        .report-table td:nth-child(2) .cell-text:hover {
-            text-decoration: underline;
-            cursor: pointer;
-        }
 
-        .report-table th:nth-child(3),
-        .report-table td:nth-child(3) {
-            width: 145px;
-        }
+.report-table th:nth-child(2),
+.report-table td:nth-child(2) { width: 122px; }
 
-        .report-table th:nth-child(4),
-        .report-table td:nth-child(4) {
-            width: 265px;
-        }
 
-        .report-table th:nth-child(5),
-        .report-table td:nth-child(5) {
-            width: 118px;
-        }
+.report-table th:nth-child(3),
+.report-table td:nth-child(3) { width: 145px; }
+
+
+.report-table th:nth-child(4),
+.report-table td:nth-child(4) { width: 265px; }
+
+
+.report-table th:nth-child(5),
+.report-table td:nth-child(5) { width: 120px; }
+
+
+.report-table th:nth-child(6),
+.report-table td:nth-child(6) { width: 118px; }
+
 
         .report-table th {
             height: 55px;
@@ -346,7 +348,7 @@
             border-bottom: 1px solid #999393;
         }
 
-        
+
 
         .other-table {
             table-layout: fixed;
@@ -396,7 +398,7 @@
             max-width: 50%;
         }
 
-        
+
         /* Status Badges */
         .status {
             padding: 5px 10px;
@@ -465,7 +467,7 @@
                 </div>
             </div>
         </div>
-        
+
 
         <div class="table-container">
             <table class="report-table">
@@ -810,7 +812,7 @@
         const tableBody = document.getElementById("table-body");
         const rows = tableBody.getElementsByTagName("tr");
         const noResultsRow = document.getElementById("no-results-row");
-        
+
 
         searchInput.addEventListener("input", function () {
             const query = this.value.toLowerCase();
@@ -844,11 +846,11 @@
         // Add event listener for each name row
         document.addEventListener('DOMContentLoaded', function () {
             const rows = document.querySelectorAll('.report-table tbody tr');
-            
+
             rows.forEach(function(row) {
                 const nameCell = row.querySelector('td:nth-child(2)');
                 const typeCell = row.querySelector('td:nth-child(3)');
-                
+
                 nameCell.addEventListener('click', function() {
                     const reportType = typeCell.textContent.trim();
                     let modalId = '';
@@ -888,7 +890,7 @@
 
             generateBtn.addEventListener("click", function () {
                 reportToast.show();
-            });  
+            });
 
             const customReportBtn = document.querySelector("#generateCustomReport .btn.btn-primary");
             customReportBtn.addEventListener("click", function () {
