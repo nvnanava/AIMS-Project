@@ -11,7 +11,16 @@ namespace AIMS.Controllers;
 public class DiagnosticsController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    public DiagnosticsController(AimsDbContext db) => _db = db;
+    private readonly UserQuery _userQuery;
+    private readonly AssignmentsQuery _assignQuery;
+    private readonly AssetQuery _assetQuery;
+    public DiagnosticsController(AimsDbContext db, UserQuery userQuery, AssignmentsQuery assignQuery, AssetQuery assetQuery)
+    {
+        _db = db;
+        _userQuery = userQuery;
+        _assignQuery = assignQuery;
+        _assetQuery = assetQuery;
+    }
 
     // ---------- 1) Quick sanity: table counts ----------
     [HttpGet("db-summary")]
@@ -49,20 +58,7 @@ public class DiagnosticsController : ControllerBase
     [HttpGet("active-assignments")]
     public async Task<IActionResult> GetActiveAssignments()
     {
-        var rows = await _db.Assignments
-            .AsNoTracking()
-            .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new
-            {
-                a.AssignmentID,
-                a.AssetKind,
-                a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
-                SoftwareID = a.SoftwareID,
-                a.AssignedAtUtc
-            })
-            .ToListAsync();
+        var rows = await _assignQuery.GetAllAssignmentsAsync();
 
         return Ok(rows);
     }
@@ -71,18 +67,7 @@ public class DiagnosticsController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await _db.Users
-            .AsNoTracking()
-            .Select(u => new
-            {
-                u.UserID,
-                u.FullName,
-                u.Email,
-                u.EmployeeNumber,
-                Role = u.Role.RoleName,
-                u.SupervisorID
-            })
-            .ToListAsync();
+        var users = await _userQuery.GetAllUsersAsync();
         return Ok(users);
     }
 
@@ -172,5 +157,15 @@ public class DiagnosticsController : ControllerBase
             Headers = new[] { "Asset Name", "Type", "Tag #", "Assigned To", "Status" },
             Rows = rows
         });
+    }
+    [HttpGet("assets/")]
+    public async Task<IActionResult> SearchAssetsByName([FromQuery] string? searchString)
+    {
+        if (searchString == null)
+        {
+            return Ok(await _assetQuery.GetFirstNAssets(20));
+        }
+        var users = await _assetQuery.SearchAssetByName(searchString);
+        return Ok(users);
     }
 }
