@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace AIMS.Data
 {
-    
+
     /*
         Lets 'dotnet ef' create AimsDbContext without booting the whole app.
         We choose the right connection string based on environment and whether

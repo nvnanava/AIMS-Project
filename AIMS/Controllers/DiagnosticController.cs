@@ -1,8 +1,10 @@
+#if DEBUG
 using System.Linq;
 using System.Threading.Tasks;
+using AIMS.Data;
+using AIMS.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Data;
 
 namespace AIMS.Controllers;
 
@@ -14,7 +16,12 @@ public class DiagnosticsController : ControllerBase
     private readonly UserQuery _userQuery;
     private readonly AssignmentsQuery _assignQuery;
     private readonly AssetQuery _assetQuery;
-    public DiagnosticsController(AimsDbContext db, UserQuery userQuery, AssignmentsQuery assignQuery, AssetQuery assetQuery)
+
+    public DiagnosticsController(
+        AimsDbContext db,
+        UserQuery userQuery,
+        AssignmentsQuery assignQuery,
+        AssetQuery assetQuery)
     {
         _db = db;
         _userQuery = userQuery;
@@ -59,11 +66,10 @@ public class DiagnosticsController : ControllerBase
     public async Task<IActionResult> GetActiveAssignments()
     {
         var rows = await _assignQuery.GetAllAssignmentsAsync();
-
         return Ok(rows);
     }
 
-    // ---------- 3) Inspect supervisors/direct reports ----------
+    // ---------- 3) Inspect users (incl. role + supervisor id) ----------
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers()
     {
@@ -72,100 +78,70 @@ public class DiagnosticsController : ControllerBase
     }
 
     // ---------- 4) Full consolidated asset table (Hardware + Software) ----------
-    // GET api/diag/asset-table
     [HttpGet("asset-table")]
     public async Task<IActionResult> GetAssetTable()
     {
         const int HardwareKind = 1;
         const int SoftwareKind = 2;
 
-        var activeAssignments = _db.Assignments
-            .AsNoTracking()
+        var active = _db.Assignments.AsNoTracking()
             .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new
-            {
-                AssetKind = (int)a.AssetKind, // normalize enum -> int
-                a.AssetTag,
-                a.SoftwareID,
-                a.UserID
-            });
+            .Select(a => new { AssetKind = (int)a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID });
 
-        // Hardware side — identical anonymous shape as software
-        var hardwareBase =
+        var hardware =
             from h in _db.HardwareAssets.AsNoTracking()
-            join aa in activeAssignments.Where(x => x.AssetKind == HardwareKind)
+            join aa in active.Where(x => x.AssetKind == HardwareKind)
                 on h.HardwareID equals aa.AssetTag into ha
             from aa in ha.DefaultIfEmpty()
             select new
             {
-                AssetName = h.AssetName,
-                TypeRaw = h.AssetType, // may be null/empty; format later
+                h.AssetName,
+                TypeRaw = h.AssetType,
                 Tag = h.SerialNumber,
                 AssignedUserId = (int?)aa.UserID,
-                StatusRaw = h.Status // keep DB value; format later if needed
+                StatusRaw = h.Status
             };
 
-        // Software side — identical anonymous shape
-        var softwareBase =
+        var software =
             from s in _db.SoftwareAssets.AsNoTracking()
-            join aa in activeAssignments.Where(x => x.AssetKind == SoftwareKind)
+            join aa in active.Where(x => x.AssetKind == SoftwareKind)
                 on s.SoftwareID equals aa.SoftwareID into sa
             from aa in sa.DefaultIfEmpty()
             select new
             {
                 AssetName = s.SoftwareName,
-                TypeRaw = s.SoftwareType,     // don't coalesce here
+                TypeRaw = s.SoftwareType,
                 Tag = s.SoftwareLicenseKey,
                 AssignedUserId = (int?)aa.UserID,
-                StatusRaw = (string)null      // compute later (Assigned/Available)
+                StatusRaw = ""
             };
 
-        // Set operation BEFORE any client formatting
-        var unionedOrdered = hardwareBase
-            .Concat(softwareBase)
+        var raw = await hardware.Concat(software)
             .OrderBy(x => x.TypeRaw)
-            .ThenBy(x => x.AssetName);
+            .ThenBy(x => x.AssetName)
+            .ToListAsync();
 
-        // Materialize now
-        var raw = await unionedOrdered.ToListAsync();
-
-        // Resolve names in a separate query (post-materialization)
-        var userIds = raw.Where(r => r.AssignedUserId.HasValue)
-                         .Select(r => r.AssignedUserId!.Value)
-                         .Distinct()
-                         .ToList();
-
-        var userMap = await _db.Users.AsNoTracking()
-            .Where(u => userIds.Contains(u.UserID))
-            .Select(u => new { u.UserID, u.FullName })
-            .ToDictionaryAsync(u => u.UserID, u => u.FullName);
-
-        // Client-side formatting only now
-        var rows = raw.Select(x => new
+        return Ok(raw.Select(x => new
         {
-            AssetName = x.AssetName,
-            Type = string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw,
-            Tag = x.Tag,
-            AssignedTo = x.AssignedUserId.HasValue
-                ? $"{(userMap.TryGetValue(x.AssignedUserId.Value, out var name) ? name : "Unknown")} ({x.AssignedUserId.Value})"
-                : "Unassigned",
-            Status = x.StatusRaw ?? (x.AssignedUserId.HasValue ? "Assigned" : "Available")
-        }).ToList();
-
-        return Ok(new
-        {
-            Headers = new[] { "Asset Name", "Type", "Tag #", "Assigned To", "Status" },
-            Rows = rows
-        });
+            x.AssetName,
+            Type = string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw!,
+            x.Tag,
+            Assigned = x.AssignedUserId.HasValue,
+            Status = !string.IsNullOrWhiteSpace(x.StatusRaw)
+                ? x.StatusRaw
+                : (x.AssignedUserId.HasValue ? "Assigned" : "Available")
+        }));
     }
-    [HttpGet("assets/")]
+
+    // ---------- 5) Search assets by name (legacy path kept) ----------
+    [HttpGet("assets")]
     public async Task<IActionResult> SearchAssetsByName([FromQuery] string? searchString)
     {
-        if (searchString == null)
-        {
+        if (string.IsNullOrWhiteSpace(searchString))
             return Ok(await _assetQuery.GetFirstNAssets(20));
-        }
-        var users = await _assetQuery.SearchAssetByName(searchString);
-        return Ok(users);
+
+        var results = await _assetQuery.SearchAssetByName(searchString);
+        return Ok(results);
     }
 }
+#endif
