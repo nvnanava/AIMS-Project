@@ -1,74 +1,105 @@
-// Combined Hardware and Software Query
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using AIMS.Data;
-using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 
-public class AssetQuery
+namespace AIMS.Queries
 {
-    private readonly AimsDbContext _db;
-    public AssetQuery(AimsDbContext db) => _db = db;
-
-    public async Task<List<GetAssetDto>> SearchAssetByName(String query)
+    public class AssetQuery
     {
+        private readonly AimsDbContext _db;
+        public AssetQuery(AimsDbContext db) => _db = db;
 
-        // search the hardware table
-        var hardware = _db.HardwareAssets
-        .Where(h => h.AssetName.Contains(query))
-        .Select(h => new GetAssetDto
+        public async Task<List<GetAssetDto>> SearchAssetByName(string query)
         {
-            AssetKind = 1,
-            AssetName = h.AssetName,
-            AssetID = h.HardwareID
-        });
+            query = (query ?? "").Trim();
+            if (query.Length == 0)
+            {
+                return await GetFirstNAssets(20);
+            }
 
-        // search the software table
-        var software = _db.SoftwareAssets
-                .Where(s => s.SoftwareName.Contains(query))
-                .Select(s => new GetAssetDto
+            var q = query.ToLower();
+
+            // Build base projections we can score
+            var hardware = _db.HardwareAssets.AsNoTracking()
+                .Select(h => new
                 {
-                    AssetKind = 2,
-                    AssetName = s.SoftwareName,
-                    AssetID = s.SoftwareID
+                    Name = h.AssetName ?? "",
+                    Kind = "Hardware",
+                    Tag = h.SerialNumber ?? ""
                 });
 
-        // use LINQ to concat 
-        var combined = hardware.Union(software);
+            var software = _db.SoftwareAssets.AsNoTracking()
+                .Select(s => new
+                {
+                    Name = s.SoftwareName ?? "",
+                    Kind = "Software",
+                    Tag = s.SoftwareLicenseKey ?? ""
+                });
 
-        return await combined.ToListAsync();
+            // Combine, compute a relevance score, then sort
+            // Scoring:
+            //  +100 exact tag, +90 exact name
+            //  +70 prefix tag, +60 prefix name
+            //  +40 contains tag, +30 contains name
+            var ranked = hardware.Concat(software)
+                .Select(x => new
+                {
+                    x.Name,
+                    x.Kind,
+                    x.Tag,
+                    Score =
+                        (x.Tag.ToLower() == q ? 100 : 0) +
+                        (x.Name.ToLower() == q ? 90 : 0) +
+                        (x.Tag.ToLower().StartsWith(q) ? 70 : 0) +
+                        (x.Name.ToLower().StartsWith(q) ? 60 : 0) +
+                        (x.Tag.ToLower().Contains(q) ? 40 : 0) +
+                        (x.Name.ToLower().Contains(q) ? 30 : 0)
+                })
+                // Filter out true non-matches (Score == 0) so we don’t return unrelated items
+                .Where(r => r.Score > 0)
+                .OrderByDescending(r => r.Score)
+                .ThenBy(r => r.Name)
+                .Take(50);
 
-    }
-    public async Task<List<GetAssetDto>> GetFirstNAssets(int n)
-    {
-        // search the hardware table
-        var hardware = _db.HardwareAssets
-        .Select(h => new GetAssetDto
+            var results = await ranked
+                .Select(r => new GetAssetDto
+                {
+                    Name = r.Name,
+                    Kind = r.Kind,
+                    Tag = r.Tag
+                })
+                .ToListAsync();
+
+            return results;
+        }
+
+        public async Task<List<GetAssetDto>> GetFirstNAssets(int n)
         {
-            AssetKind = 1,
-            AssetName = h.AssetName,
-            AssetID = h.HardwareID
-        }).Take(n);
+            // Keep this simple: quick union for a generic “browse” experience
+            var hardware = _db.HardwareAssets.AsNoTracking()
+                .Select(h => new GetAssetDto
+                {
+                    Name = h.AssetName ?? "",
+                    Kind = "Hardware",
+                    Tag = h.SerialNumber ?? ""
+                });
 
-        // search the software table
-        var software = _db.SoftwareAssets
+            var software = _db.SoftwareAssets.AsNoTracking()
                 .Select(s => new GetAssetDto
                 {
-                    AssetKind = 2,
-                    AssetName = s.SoftwareName,
-                    AssetID = s.SoftwareID
-                }).Take(n);
+                    Name = s.SoftwareName ?? "",
+                    Kind = "Software",
+                    Tag = s.SoftwareLicenseKey ?? ""
+                });
 
-        // use LINQ to concat 
-        var combined = hardware.Union(software);
-
-        return await combined.ToListAsync();
+            return await hardware
+                .Concat(software)
+                .OrderBy(x => x.Name)
+                .Take(n)
+                .ToListAsync();
+        }
     }
-}
-
-public class GetAssetDto
-{
-    public int AssetKind { get; set; }
-    public string AssetName { get; set; } = string.Empty;
-
-    public int AssetID { get; set; }
 }

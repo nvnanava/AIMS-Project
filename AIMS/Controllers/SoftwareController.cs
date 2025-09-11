@@ -7,14 +7,17 @@ using AIMS.Models;
 
 namespace AIMS.Controllers;
 
-// Commented out for now, enable when we have entraID
+// Commented out for now, enable when we have EntraID
 // [Authorize(Roles = "Admin")]
+// With EntraID wired, we gate via policy configured in Program.cs:
+[Authorize(Policy = "mbcAdmin")]
 [ApiController]
 [Route("api/software")]
 public class SoftwareController : ControllerBase
 {
     private readonly AimsDbContext _db;
     private readonly SoftwareQuery _softwareQuery;
+
     public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery)
     {
         _db = db;
@@ -24,16 +27,16 @@ public class SoftwareController : ControllerBase
     [HttpGet("get-all")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAllSoftware()
+    public async Task<IActionResult> GetAllSoftware(CancellationToken ct = default)
     {
-        var users = await _softwareQuery.GetAllSoftwareAsync();
-        return Ok(users);
+        var rows = await _softwareQuery.GetAllSoftwareAsync(ct);
+        return Ok(rows);
     }
 
     [HttpPost("add")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AddSoftware([FromBody] CreateSoftwareDto dto)
+    public async Task<IActionResult> AddSoftware([FromBody] CreateSoftwareDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -51,7 +54,7 @@ public class SoftwareController : ControllerBase
         };
 
         _db.SoftwareAssets.Add(software);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
 
         return CreatedAtAction(
             nameof(GetAllSoftware),   // could also make a GetById and reference it here
@@ -64,12 +67,16 @@ public class SoftwareController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> EditSoftware(int id, [FromBody] UpdateSoftwareDto dto)
+    public async Task<IActionResult> EditSoftware(int id, [FromBody] UpdateSoftwareDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var software = await _db.SoftwareAssets.FindAsync(id);
+        // LINQ-forward (avoid FindAsync for consistent style)
+        var software = await _db.SoftwareAssets
+            .Where(s => s.SoftwareID == id)
+            .SingleOrDefaultAsync(ct);
+
         if (software == null)
             return NotFound();
 
@@ -82,9 +89,8 @@ public class SoftwareController : ControllerBase
         software.SoftwareUsageData = dto.SoftwareUsageData;
         software.SoftwareCost = dto.SoftwareCost;
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
 
         return Ok(software);
     }
-
 }

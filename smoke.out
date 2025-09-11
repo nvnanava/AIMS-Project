@@ -1,0 +1,176 @@
+== AIMS SQL Smoke ==
+Database: AIMS
+Started at: 2025-09-11T16:18:49.9037916
+--------------------------------------------
+Changed database context to 'AIMS'.
+ 
+--- (1) Databases ---
+name
+----
+AIMS
+master
+model
+msdb
+tempdb
+ 
+--- (2) Tables ---
+schema table
+------ -----
+dbo __EFMigrationsHistory
+dbo Assignments
+dbo AuditLogs
+dbo FeedbackEntries
+dbo HardwareAssets
+dbo Reports
+dbo Roles
+dbo SoftwareAssets
+dbo Users
+ 
+--- (3) Row counts ---
+Table Cnt
+----- ---
+Roles 4
+Users 11
+HardwareAssets 13
+SoftwareAssets 6
+Assignments 11
+ 
+--- (4) Users by Role ---
+RoleName Users
+-------- -----
+Admin 2
+IT Help Desk 5
+Supervisor 4
+ 
+--- (5) Example Users ---
+UserID FullName Email EmployeeNumber RoleID
+------ -------- ----- -------------- ------
+1 John Smith john.smith@aims.local 28809 3
+2 Jane Doe jane.doe@aims.local 69444 2
+3 Randy Orton randy.orton@aims.local 58344 2
+4 Robin Williams robin.williams@aims.local 10971 2
+5 Sarah Johnson sarah.johnson@aims.local 62241 3
+6 Caitlin Clark caitlin.clark@aims.local 90334 3
+7 Brian Regan brian.regan@aims.local 27094 3
+8 Maximillian Brandt max.brandt@aims.local 20983 1
+9 Kate Rosenberg kate.rosenberg@aims.local 93232 1
+10 Emily Carter emily.carter@aims.local 47283 2
+ 
+--- (6) Supervisor ? Direct Reports ---
+Supervisor Report EmployeeNumber
+---------- ------ --------------
+John Smith Bruce Wayne 34532
+John Smith Emily Carter 47283
+John Smith Jane Doe 69444
+John Smith Randy Orton 58344
+John Smith Robin Williams 10971
+ 
+--- (7) Hardware w/ Assigned User (open only) ---
+HardwareID AssetName AssetType SerialNumber Status AssignedTo
+---------- --------- --------- ------------ ------ ----------
+1 Lenovo ThinkPad E16 Laptop LT-0020 Assigned John Smith
+2 Samsung Galaxy Book4 Laptop LT-0005 Damaged Caitlin Clark
+3 Dell Inspiron 15 Laptop LT-0115 Assigned Kate Rosenberg
+4 Dell S2421NX Monitor MN-0001 Assigned Jane Doe
+5 HP 527SH Monitor MN-0023 In Repair Sarah Johnson
+6 Lenovo IdeaCentre 3 Desktop DT-0011 Damaged Randy Orton
+7 HP Pavillion TP01-2234 Desktop DT-0075 Available NULL
+8 Dell Inspiron 3030 Desktop DT-0100 Assigned Maximillian Brandt
+9 Logitech Zone 300 Headset HS-0080 Available NULL
+10 Logitech Zone Vibe 100 Headset HS-0015 In Repair Brian Regan
+11 Poly Voyager 4320 Headset HS-0001 In Repair Emily Carter
+12 Belkin BoostCharge 3.3ft USB-C Charging Cable CC-0088 Available NULL
+13 j5create 100W Super Charger Charging Cable CC-0019 Damaged Bruce Wayne
+ 
+--- (8) Software w/ Assigned User (open only) ---
+SoftwareID SoftwareName SoftwareVersion SoftwareLicenseKey AssignedTo
+---------- ------------ --------------- ------------------ ----------
+1 Microsoft 365 Business 1.0 SW-0100 Robin Williams
+2 Adobe Photoshop 2024 SW-0200 NULL
+3 Slack 5.3 SW-0300 NULL
+4 Zoom Pro 7.1 SW-0400 NULL
+5 IntelliJ IDEA 2024.2 SW-0500 NULL
+6 QuickBooks Online 2024 SW-0600 NULL
+ 
+--- (9) Active Assignments ---
+AssignmentID AssetKind AssetTag SoftwareID UserID FullName AssignedAtUtc
+------------ --------- -------- ---------- ------ -------- -------------
+4 2 NULL 1 4 Robin Williams 2025-09-09 16:09:55.2363977
+11 1 3 NULL 9 Kate Rosenberg 2025-09-08 16:09:55.2977774
+10 1 13 NULL 11 Bruce Wayne 2025-09-08 16:09:55.2928011
+9 1 11 NULL 10 Emily Carter 2025-09-08 16:09:55.2882236
+8 1 8 NULL 8 Maximillian Brandt 2025-09-08 16:09:55.2835990
+7 1 10 NULL 7 Brian Regan 2025-09-08 16:09:55.2779424
+6 1 2 NULL 6 Caitlin Clark 2025-09-08 16:09:55.2716892
+5 1 5 NULL 5 Sarah Johnson 2025-09-08 16:09:55.2631019
+3 1 6 NULL 3 Randy Orton 2025-09-08 16:09:55.2312128
+2 1 4 NULL 2 Jane Doe 2025-09-08 16:09:55.2231083
+1 1 1 NULL 1 John Smith 2025-09-08 16:09:55.1082627
+ 
+--- (10) Closed Assignments ---
+AssignmentID AssetKind AssetTag SoftwareID UserID FullName AssignedAtUtc UnassignedAtUtc
+------------ --------- -------- ---------- ------ -------- ------------- ---------------
+ 
+--- (11) Available (Unassigned) Hardware ---
+HardwareID AssetName SerialNumber Status
+---------- --------- ------------ ------
+7 HP Pavillion TP01-2234 DT-0075 Available
+9 Logitech Zone 300 HS-0080 Available
+12 Belkin BoostCharge 3.3ft USB-C CC-0088 Available
+ 
+--- (12) Idempotency Checks (duplicates should be zero rows) ---
+Users by Email (dupes)
+Email Cnt
+----- ---
+Hardware by SerialNumber (dupes)
+SerialNumber Cnt
+------------ ---
+Software by Name+Version (dupes)
+SoftwareName SoftwareVersion Cnt
+------------ --------------- ---
+ 
+--- (13) Indexes ---
+TableName IndexName is_unique type_desc
+--------- --------- --------- ---------
+Assignments IX_Assignments_AssetTag_UnassignedAtUtc 1 NONCLUSTERED
+Assignments IX_Assignments_SoftwareID_UnassignedAtUtc 1 NONCLUSTERED
+Assignments PK_Assignments 1 CLUSTERED
+Assignments IX_Assignments_UserID 0 NONCLUSTERED
+HardwareAssets IX_HardwareAssets_SerialNumber 1 NONCLUSTERED
+HardwareAssets PK_HardwareAssets 1 CLUSTERED
+SoftwareAssets IX_SoftwareAssets_SoftwareLicenseKey 1 NONCLUSTERED
+SoftwareAssets PK_SoftwareAssets 1 CLUSTERED
+Users IX_Users_ExternalId 1 NONCLUSTERED
+Users PK_Users 1 CLUSTERED
+Users IX_Users_RoleID 0 NONCLUSTERED
+Users IX_Users_SupervisorID 0 NONCLUSTERED
+ 
+--- (14) Foreign Keys ---
+FKName ChildTable ChildColumn ParentTable ParentColumn
+------ ---------- ----------- ----------- ------------
+FK_Assignments_HardwareAssets_AssetTag Assignments AssetTag HardwareAssets HardwareID
+FK_Assignments_SoftwareAssets_SoftwareID Assignments SoftwareID SoftwareAssets SoftwareID
+FK_Assignments_Users_UserID Assignments UserID Users UserID
+FK_AuditLogs_HardwareAssets_AssetTag AuditLogs AssetTag HardwareAssets HardwareID
+FK_AuditLogs_SoftwareAssets_SoftwareID AuditLogs SoftwareID SoftwareAssets SoftwareID
+FK_AuditLogs_Users_UserID AuditLogs UserID Users UserID
+FK_FeedbackEntries_Users_SubmittedByUserID FeedbackEntries SubmittedByUserID Users UserID
+FK_Users_Roles_RoleID Users RoleID Roles RoleID
+FK_Users_Users_SupervisorID Users SupervisorID Users UserID
+ 
+--- (15) Transactional No-Persist Assignment Test (robust) ---
+Before insert (open count):
+OpenCount
+---------
+0
+After insert (open count):
+OpenCount
+---------
+1
+After close (open count):
+OpenCount
+---------
+0
+Rolled back; no changes persisted.
+--------------------------------------------
+Completed at: 2025-09-11T16:18:50.0340697

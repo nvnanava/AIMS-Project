@@ -1,166 +1,21 @@
- feat/asset-table-toolbar
- feat/asset-table-toolbar
 using AIMS.Data;
-using Microsoft.EntityFrameworkCore;
-
-using AIMS.Data;
+using AIMS.Queries;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-using Microsoft.Extensions.Options;
- main
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// -------------------- Services --------------------
 builder.Services.AddControllersWithViews();
-builder.Services.AddEndpointsApiExplorer(); // take out after development
-builder.Services.AddSwaggerGen(); // take out after development
+builder.Services.AddEndpointsApiExplorer();   // dev/test
+builder.Services.AddSwaggerGen();             // dev/test
+builder.Services.AddMemoryCache();
+builder.Services.AddResponseCaching();
 
-
-builder.Services.AddDbContext<AimsDbContext>(options =>
-{
-    var cs = builder.Configuration.GetConnectionString(
-        builder.Environment.IsDevelopment() &&
-        Environment.OSVersion.Platform == PlatformID.Win32NT
-            ? "DefaultConnection"   // LocalDB on Windows
-            : "DockerConnection"    // Docker SQL on Mac/Linux
-    );
-    options.UseSqlServer(cs);
-});
-
- feat/asset-table-toolbar
-// Optional feature flag for prod seeding (defaults false)
-var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
-
-var app = builder.Build();
-
-// Log detected OS
-Console.WriteLine($"[Startup] Detected OS Platform: {Environment.OSVersion.Platform}");
-
-if (app.Environment.IsDevelopment())
-{
-    // Seed on startup (idempotent)
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
-
-    Console.WriteLine("[Startup] Running database seeder...");
-    await DbSeeder.SeedAsync(db, allowProdSeed: allowProdSeed, logger: logger);
-    Console.WriteLine("[Startup] Seeding complete.");
-}
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger(); // take out after development
-    app.UseSwaggerUI(); //used for testing APIs. Swagger UI will be available at /swagger/index.html
-}
-else
-{ 
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-    app.UseHttpsRedirection();
-}
-
-app.UseRouting();
-
-app.UseAuthorization();
-
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
-app.Run();
-
-using AIMS.Data;
-using AIMS.Models;
-using Microsoft.EntityFrameworkCore;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-builder.Services.AddEndpointsApiExplorer(); // take out after development
-builder.Services.AddSwaggerGen(); // take out after development
-
-
-builder.Services.AddDbContext<AimsDbContext>(options =>
-{
-    var cs = builder.Configuration.GetConnectionString(
-        builder.Environment.IsDevelopment() &&
-        Environment.OSVersion.Platform == PlatformID.Win32NT
-            ? "DefaultConnection"   // LocalDB on Windows
-            : "DockerConnection"    // Docker SQL on Mac/Linux
-    );
-    options.UseSqlServer(cs);
-});
-
-// Optional feature flag for prod seeding (defaults false)
-var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
-
-
-// Optional feature flag for prod seeding (defaults false)
-var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
-
-builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme) // Configure the app to use OpenID Connect authentication with Azure AD
-//.AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd")); // Bind the Azure AD settings from configuration to the authentication options
-.AddMicrosoftIdentityWebApp(options =>
-{
-    builder.Configuration.Bind("AzureAd", options);
-    options.AccessDeniedPath = "/Home/Error"; // Redirects users to a custom error page if they are denied access
-    options.TokenValidationParameters.RoleClaimType = "roles"; // This  maps the "roles" claim from the token to the user's roles in the application
-});
-
-builder.Services.AddAuthorizationBuilder()
-  .AddPolicy("mbcAdmin", policy => // Only users with the "Admin" role can access any action methods in this controller
-    policy.RequireAssertion(context =>
-        context.User.HasClaim(c =>
-            c.Type == "preferred_username" &&
-            new[] {
-                // our test accounts for now, you should be able to login with your csus accounts.
-                "niyant397@gmail.com",
-                "nvnanavati@csus.edu",
-                "akalustatsingh@csus.edu",
-                "tburguillos@csus.edu",
-                "keeratkhandpur@csus.edu",
-                "suhailnajimudeen@csus.edu",
-                "hkaur20@csus.edu",
-                "cameronlanzaro@csus.edu",
-                "norinphlong@csus.edu"
-
-
-            }.Contains(c.Value))))
-
-  .AddPolicy("mbcHelpDesk", policy => //Help Desk Users, dummy names for now but you can add your email here to test.
-    policy.RequireAssertion(context =>
-        context.User.HasClaim(c =>
-            c.Type == "preferred_username" &&
-            new[] {
-                "barryAllen@centralcity.edu"
-
-            }.Contains(c.Value))))
-
-  .AddPolicy("mbcSupervisor", policy =>
-    policy.RequireAssertion(context =>
-        context.User.HasClaim(c =>
-            c.Type == "preferred_username" &&
-            new[] {
-                "richardGrayson@gotham.edu"
-            }.Contains(c.Value))));
-
-
-
-builder.Services.AddRazorPages() // Add support for Razor Pages and integrate Microsoft Identity UI components
-    .AddMicrosoftIdentityUI(); // Adds Razor UI pages for authentication and user management
-
- main
-// See https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes
-// for dependency injection scopes
+// Query/DAO services
 builder.Services.AddScoped<UserQuery>();
 builder.Services.AddScoped<AssignmentsQuery>();
 builder.Services.AddScoped<HardwareQuery>();
@@ -169,72 +24,159 @@ builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
 builder.Services.AddScoped<FeedbackQuery>();
 
-// TODO: Take out when development is over
-// Add CORS services
+// ---- Connection string selection (env-aware, robust) ----
+string? GetConn(string name)
+{
+    // Prefer env var "ConnectionStrings__{Name}" (Docker/k8s friendly)
+    var env = Environment.GetEnvironmentVariable($"ConnectionStrings__{name}");
+    return string.IsNullOrWhiteSpace(env)
+        ? builder.Configuration.GetConnectionString(name)
+        : env;
+}
+
+// Prefer LocalDB on Windows Dev; otherwise Docker SQL
+var preferName =
+    builder.Environment.IsDevelopment() &&
+    Environment.OSVersion.Platform == PlatformID.Win32NT
+        ? "DefaultConnection"
+        : "DockerConnection";
+
+var cs =
+    GetConn(preferName) ??
+    GetConn("DefaultConnection") ??
+    GetConn("DockerConnection") ??
+    GetConn("CliConnection");
+
+if (string.IsNullOrWhiteSpace(cs))
+{
+    throw new InvalidOperationException(
+        "No usable connection string found. Tried DefaultConnection, DockerConnection, CliConnection (env or appsettings).");
+}
+
+var csb = new SqlConnectionStringBuilder(cs);
+Console.WriteLine($"[Startup] Using SQL host: {csb.DataSource}, DB: {csb.InitialCatalog}");
+
+builder.Services.AddDbContext<AimsDbContext>(opt =>
+    opt.UseSqlServer(cs, sql =>
+        sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(2), errorNumbersToAdd: null))
+);
+
+var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
+
+// -------------------- Azure AD AuthN/AuthZ --------------------
+builder.Services
+    .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(options =>
+    {
+        builder.Configuration.Bind("AzureAd", options);
+        options.AccessDeniedPath = "/Home/Error";
+        options.TokenValidationParameters.RoleClaimType = "roles";
+    });
+
+builder.Services.AddAuthorizationBuilder()
+  .AddPolicy("mbcAdmin", policy =>
+      policy.RequireAssertion(context =>
+          context.User.HasClaim(c =>
+              c.Type == "preferred_username" &&
+              new[] {
+                  // test accounts for now
+                  "niyant397@gmail.com",
+                  "nvnanavati@csus.edu",
+                  "akalustatsingh@csus.edu",
+                  "tburguillos@csus.edu",
+                  "keeratkhandpur@csus.edu",
+                  "suhailnajimudeen@csus.edu",
+                  "hkaur20@csus.edu",
+                  "cameronlanzaro@csus.edu",
+                  "norinphlong@csus.edu"
+              }.Contains(c.Value))))
+  .AddPolicy("mbcHelpDesk", policy =>
+      policy.RequireAssertion(context =>
+          context.User.HasClaim(c =>
+              c.Type == "preferred_username" &&
+              new[] {
+                  "barryAllen@centralcity.edu"
+              }.Contains(c.Value))))
+  .AddPolicy("mbcSupervisor", policy =>
+      policy.RequireAssertion(context =>
+          context.User.HasClaim(c =>
+              c.Type == "preferred_username" &&
+              new[] {
+                  "richardGrayson@gotham.edu"
+              }.Contains(c.Value))));
+
+builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
+
+// -------------------- (Dev) CORS helper --------------------
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.AllowAnyOrigin() // Add your frontend's origin
+        policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
+
+// -------------------- App pipeline --------------------
 var app = builder.Build();
 
-// Log detected OS
+app.UseResponseCaching();
+
 Console.WriteLine($"[Startup] Detected OS Platform: {Environment.OSVersion.Platform}");
 
 if (app.Environment.IsDevelopment())
 {
-    // Seed on startup (idempotent)
+    // Auto-migrate + seed in dev
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
-    Console.WriteLine("[Startup] Running database seeder...");
-    await DbSeeder.SeedAsync(db, allowProdSeed: allowProdSeed, logger: logger);
-    Console.WriteLine("[Startup] Seeding complete.");
-}
+    Console.WriteLine("[Startup] Applying migrations (dev)...");
+    await db.Database.MigrateAsync();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger(); // take out after development
-    app.UseSwaggerUI(); //used for testing APIs. Swagger UI will be available at /swagger/index.html
+    Console.WriteLine("[Startup] Running database seeder...");
+    try
+    {
+        await DbSeeder.SeedAsync(db, allowProdSeed: allowProdSeed, logger: logger);
+        Console.WriteLine("[Startup] Seeding complete.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Seeder failed (continuing in dev).");
+        Console.WriteLine("[Startup] Seeder failed, continuing in dev.");
+    }
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    // CORS only in dev (handy for local frontend)
+    app.UseCors("AllowLocalhost");
 }
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
     app.UseHttpsRedirection();
-
-    // TODO: Take out when development is over
-    // Use CORS middleware
-    app.UseCors("AllowLocalhost");
- feat/asset-table-toolbar
 }
 
+// Order matters: Routing -> AuthN -> AuthZ -> endpoints
 app.UseRouting();
-
-
-    app.UseRouting();
-}
-
-
-app.UseAuthentication(); // Enable Azure authentication middleware
- main
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
 
+// MVC conventional route (views)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.Run();
- feat/asset-table-toolbar
- main
+// Attribute-routed APIs (e.g., /api/assets)
+app.MapControllers();
 
- main
+// Identity UI pages
+app.MapRazorPages();
+
+app.Run();
