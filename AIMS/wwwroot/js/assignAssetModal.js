@@ -1,10 +1,23 @@
+function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+        clearTimeout(timeoutId); // Clear any existing timeout
+        timeoutId = setTimeout(() => {
+            func.apply(this, args); // Execute the original function after the delay
+        }, delay);
+    };
+}
+
+
+
 document.addEventListener("DOMContentLoaded", function () {
     // --- Modal and DOM Elements ---
     const assignBtn = document.getElementById("assign-asset-button");
     const modal = new bootstrap.Modal(document.getElementById("assignAssetModal"));
     const userSelect = document.getElementById("userSelect");
     const assetSelect = document.getElementById("assetSelect");
-    let previousOptionLength = userSelect.options.length;
+    let userPreviousOptionLength = userSelect.options.length;
+    let assetPreviousOptionLength = assetSelect.options.length;
 
     // --- Create Dynamic Search Box Above Dropdown ---
     const searchInput = document.createElement("input");
@@ -13,10 +26,18 @@ document.addEventListener("DOMContentLoaded", function () {
     searchInput.className = "form-control mb-2";
     userSelect.parentElement.insertBefore(searchInput, userSelect);
 
+
+    const assetInput = document.createElement("input");
+    assetInput.type = "text";
+    assetInput.placeholder = "Search assets...";
+    assetInput.className = "form-control mb-2";
+    assetSelect.parentElement.insertBefore(assetInput, assetSelect);
+
+
     // --- Open Dropdown on Focus ---
     searchInput.addEventListener("focus", () => {
         populateUserDropdown();
-        previousOptionLength = userSelect.options.length;
+        userPreviousOptionLength = userSelect.options.length;
         userSelect.size = Math.min(userSelect.options.length, 11);
         userSelect.style.display = "block";
     });
@@ -42,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // --- Repopulate on Focus if Filtered Previously ---
     userSelect.addEventListener("focus", function () {
-        if (userSelect.options.length < previousOptionLength) {
+        if (searchInput.value === "" && userSelect.options.length < userPreviousOptionLength) {
             populateUserDropdown();
         }
     });
@@ -52,33 +73,86 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!searchInput.contains(e.target) && !userSelect.contains(e.target)) {
             userSelect.size = 1;
         }
+
+        if (!assetInput.contains(e.target) && !assetSelect.contains(e.target)) {
+            assetSelect.size = 1;
+        }
     });
 
-    // --- User Dropdown Logic ---
     function populateUserDropdown(searchTerm = "") {
-        userSelect.innerHTML = '<option disabled selected value="">Choose a user...</option>';
-        users
-            .filter(u => `${u.Name} (${u.ID})`.toLowerCase().includes(searchTerm.toLowerCase()))
-            .slice(0, 20)
-            .forEach(user => {
-                const option = document.createElement("option");
-                option.value = user.ID;
-                option.textContent = `${user.Name} (${user.ID})`;
-                userSelect.appendChild(option);
-            });
+
+        // fetch data
+        fetch(`/api/user?searchString=${encodeURIComponent(searchTerm)}`)
+            .then((response) => {
+                return response.json();
+            })
+            .then((results) => {
+
+                //clear out the old children
+                userSelect.replaceChildren();
+
+                results.forEach(user => {
+                    const option = document.createElement("option");
+                    option.value = user.fullName;
+                    option.text = user.fullName;
+                    option.dataset.user_id = user.userID;
+                    userSelect.appendChild(option);
+                });
+            })
     }
 
-    // --- Asset Dropdown Logic (Filter for Available Only) ---
-    function populateAssetDropdown() {
-        assetSelect.innerHTML = '<option disabled selected value="">Choose an asset...</option>';
-        tableData
-            .filter(a => a.Status === "Available")
-            .forEach(asset => {
-                const option = document.createElement("option");
-                option.value = asset["Tag #"];
-                option.textContent = `${asset["Asset Name"]} - ${asset["Tag #"]}`;
-                assetSelect.appendChild(option);
-            });
+    // --- Open Dropdown on Focus ---
+    assetInput.addEventListener("focus", () => {
+        populateAssetDropdown();
+        assetPreviousOptionLength = assetSelect.options.length;
+        assetSelect.size = Math.min(assetSelect.options.length, 11);
+        assetSelect.style.display = "block";
+    });
+
+    // --- Select First Matching Option on Enter ---
+    assetInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            const firstSelectable = Array.from(assetSelect.options).find(opt => !opt.disabled);
+            if (firstSelectable) {
+                firstSelectable.selected = true;
+                assetInput.value = "";
+                assetSelect.size = 1;
+            }
+        }
+    });
+
+    // --- Collapse Dropdown on Selection ---
+    assetSelect.addEventListener("change", function () {
+        assetSelect.size = 1;
+        assetInput.value = "";
+    });
+
+    // --- Repopulate on Focus if Filtered Previously ---
+    assetSelect.addEventListener("focus", function () {
+        if (assetInput.value === "" && assetSelect.options.length < assetPreviousOptionLength) {
+            populateAssetDropdown();
+        }
+    });
+
+    function populateAssetDropdown(searchTerm = "") {
+        // fetch data
+        fetch(`/api/diag/assets?searchString=${encodeURIComponent(searchTerm)}`)
+            .then((response) => {
+                return response.json();
+            })
+            .then((results) => {
+                //clear out the old children
+                assetSelect.replaceChildren();
+                results.forEach(asset => {
+                    const option = document.createElement("option");
+                    option.value = "(" + asset.assetID + ") " + asset.assetName;
+                    option.text = "(" + asset.assetID + ") " + asset.assetName;
+                    option.dataset.asset_id = asset.assetID;
+                    option.dataset.asset_kind = asset.assetKind;
+                    assetSelect.appendChild(option);
+                });
+            })
     }
 
     // --- Open Modal & PRepare Fields ---
@@ -93,45 +167,69 @@ document.addEventListener("DOMContentLoaded", function () {
     searchInput.addEventListener("input", function () {
         populateUserDropdown(this.value);
     });
+    // --- Filter Users on Typing ---
+    assetInput.addEventListener("input", function () {
+        populateAssetDropdown(this.value);
+    });
 
 
     // --- Submit Assignment Logic ---
     document.getElementById("assignAssetForm")?.addEventListener("submit", function (e) {
         e.preventDefault();
 
-        const selectedUserID = userSelect.value;
-        const selectedAssetTag = assetSelect.value;
 
-        const selectedUser = users.find(u => u.ID === selectedUserID);
-        const selectedAsset = tableData.find(a => a["Tag #"] === selectedAssetTag);
+        const selectedUserOption = userSelect.options[userSelect.selectedIndex];
+        const selectedAssetOption = assetSelect.options[assetSelect.selectedIndex];
 
-        const comment = document.getElementById("commentBox").value.trim();
+        const selectedUserID = selectedUserOption.dataset.user_id;
+        const selectedAssetID = selectedAssetOption.dataset.asset_id;
+        const selectedAssetKind = selectedAssetOption.dataset.asset_kind;
 
-        if (selectedUser && selectedAsset) {
+        const url = '/api/assign/create'; // Replace with your API endpoint
+        let data;
 
-            // Update dummy dataset
-            selectedAsset["Assigned To"] = `${selectedUser.Name} (${selectedUserID})`;
-            selectedAsset["Status"] = "Assigned";
-
-            // Update visible UI
-            const rows = document.querySelectorAll("#table-body tr");
-            rows.forEach(row => {
-                const tagCell = row.querySelector("td:nth-child(3)");
-                if (tagCell && tagCell.textContent.trim() === selectedAssetTag) {
-                    const assignedToCell = row.querySelector("td:nth-child(4)");
-                    const statusCell = row.querySelector("td:nth-child(5)");
-                    const existingSpan = statusCell.querySelector("span");
-
-                    if (assignedToCell) assignedToCell.textContent = `${selectedUser.Name} (${selectedUser.ID})`;
-                    if (existingSpan) {
-                        existingSpan.className = "status assigned";
-                        existingSpan.textContent = "Assigned";
-                    }
-                }
-            });
-            // TODO: Store comment in audit log table (future database integration)
-            // TODO: When backend is connected, send assignment + comment to database.
+        // hardware
+        if (selectedAssetKind == 1) {
+            data = {
+                "userID": selectedUserID,
+                "assetKind": 1,
+                "assetTag": selectedAssetID,
+            }
+            // software
+        } else if (selectedAssetKind == 2) {
+            data = {
+                "userID": selectedUserID,
+                "assetKind": 2,
+                "softwareID": selectedAssetID,
+            }
         }
+        fetch(url, {
+            method: 'POST', // Specify the HTTP method as POST
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text()
+                        .then(errorBody => {
+                           throw `Assignment Failed: ${errorBody}`;
+                        })
+                }
+                return response.json(); // Parse the JSON response
+            })
+            .then(result => {
+                const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+                assignToast.show();
+            })
+            .catch(error => {
+                const toastElement = document.getElementById("errorToast");
+                const errorToast = new bootstrap.Toast(toastElement, { delay: 3000 });
+                const messageBody = toastElement.querySelector('.toast-body');
+                messageBody.innerHTML = error
+                errorToast.show();
+            });
         modal.hide();
     });
 
