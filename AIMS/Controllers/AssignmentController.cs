@@ -102,8 +102,6 @@ public class AssignmentController : ControllerBase
         try
         {
 
-            Console.WriteLine($"{req.AssetKind == AssetKind.Software}, {req.AssetTag}, {req.SoftwareID}");
-
             string userName = user.FullName;
 
             string assetName;
