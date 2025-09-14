@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace AIMS.Controllers;
 
@@ -15,10 +16,12 @@ public class AssignmentController : ControllerBase
 {
     private readonly AimsDbContext _db;
     private readonly AssignmentsQuery _assignQuery;
-    public AssignmentController(AimsDbContext db, AssignmentsQuery assignQuery)
+    private readonly AuditLogQuery _auditQuery;
+    public AssignmentController(AimsDbContext db, AssignmentsQuery assignQuery, AuditLogQuery auditQuery)
     {
         _db = db;
         _assignQuery = assignQuery;
+        _auditQuery = auditQuery;
 
     }
 
@@ -32,7 +35,7 @@ public class AssignmentController : ControllerBase
 
         // short-circuit: reject if user not authenticated
 
-        // make sure we get one of the indentifiers for an asset
+        // make sure we get one of the identifiers for an asset
         bool bothNull = req.AssetTag == null && req.SoftwareID == null;
         bool bothValues = req.SoftwareID != null && req.AssetTag != null;
         if (bothNull || bothValues)
@@ -41,21 +44,28 @@ public class AssignmentController : ControllerBase
             return BadRequest("You must specify either AssetTag (HardwareID) or SoftwareID.");
         }
 
+        // validate that the user exists
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.UserID == req.UserID);
+
+        if (user is null) {
+            return BadRequest($"No user with UserID {req.UserID} exists!");
+        }
+
         // validate that AssetTag exists if specified
-        var assetTagExists = await _db.HardwareAssets.AnyAsync(hw => hw.HardwareID == req.AssetTag);
-        if (req.AssetKind == AssetKind.Hardware && !assetTagExists)
+        var gotHardware = await _db.HardwareAssets.FirstOrDefaultAsync(hw => hw.HardwareID == req.AssetTag);
+        if (req.AssetKind == AssetKind.Hardware && (gotHardware is null))
         {
             return BadRequest("Please specify a valid AssetTag");
         }
 
         // validate that SoftwareID exists if specified
-        var softwareIDExists = await _db.SoftwareAssets.AnyAsync(sw => sw.SoftwareID == req.SoftwareID);
-        if (req.AssetKind == AssetKind.Software && !softwareIDExists)
+        var gotSoftware = await _db.SoftwareAssets.FirstOrDefaultAsync(sw => sw.SoftwareID == req.SoftwareID);
+        if (req.AssetKind == AssetKind.Software && (gotSoftware is null))
         {
             return BadRequest("Please specify a valid SoftwareID");
         }
         // it does not make sense to specify both a Hardware and Software ID in one assignment request
-        if (assetTagExists && softwareIDExists)
+        if ((gotHardware is not null) && (gotSoftware is not null))
         {
             return BadRequest("Please specify only one of either AssetTag(HardwareID) or SoftwareID");
         }
@@ -70,16 +80,9 @@ public class AssignmentController : ControllerBase
         if (assignmentExists)
         {
             // hardware error message (409)
-            if (req.AssetKind == AssetKind.Hardware && assetTagExists)
+            if (req.AssetKind == AssetKind.Hardware && (gotHardware is not null))
             {
                 return Conflict($"An assignment for hardware device with ID {req.AssetTag} already exists!");
-
-            }
-            // software error message (409)
-            else if (req.AssetKind == AssetKind.Software && softwareIDExists)
-            {
-                return Conflict($"An assignment for software with ID {req.SoftwareID} already exists!");
-
             }
         }
 
@@ -96,6 +99,34 @@ public class AssignmentController : ControllerBase
         _db.Assignments.Add(newAssignment);
         await _db.SaveChangesAsync();
 
+        try
+        {
+
+        
+            string userName = user.FullName;
+
+            string assetName;
+            string description;
+            if (req.AssetKind == AssetKind.Hardware) {
+                assetName = gotHardware.AssetName ?? "";
+                description = $"Assigned Hardware Asset {assetName} ({req.AssetTag}) to {userName} ({req.UserID}).";
+            } else {
+                assetName = gotSoftware.SoftwareName ?? "";
+                description = $"Assigned Software {assetName} ({req.SoftwareID}) to {userName} ({req.UserID}).";
+            }
+            await _auditQuery.createAuditRecordAsync(new CreateAuditRecordDto
+            {
+                UserID = req.UserID,
+                Description = description,
+                AssetKind = req.AssetKind,
+                AssetTag = req.AssetKind == AssetKind.Hardware ? req.AssetTag : null,
+                SoftwareID = req.AssetKind == AssetKind.Software ? req.SoftwareID : null
+            });
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500, e.Message);
+        }
         return CreatedAtAction(nameof(GetAssignment), new { AssignmentID = newAssignment.AssignmentID }, req);
     }
 
