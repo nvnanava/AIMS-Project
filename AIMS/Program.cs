@@ -86,6 +86,7 @@ builder.Services.AddScoped<AssignmentsQuery>();
 builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 builder.Services.AddScoped<AssetQuery>();
+builder.Services.AddScoped<AuditLogQuery>();
 
 // TODO: Take out when development is over
 // Add CORS services
