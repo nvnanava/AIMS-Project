@@ -25,7 +25,12 @@ public class AuditLogQuery
                 Action = a.Action,
                 Description = a.Description,
                 PreviousValue = a.PreviousValue,
-                NewValue = a.NewValue
+                NewValue = a.NewValue,
+                AssetKind = a.AssetKind,
+                AssetTag = a.AssetTag,
+                HardwareAsset = a.HardwareAsset,
+                SoftwareID = a.SoftwareID,
+                SoftwareAsset = a.SoftwareAsset
             })
             .ToListAsync();
     }
@@ -104,19 +109,19 @@ public class AuditLogQuery
             .Where(a => a.AuditLogID == auditRecID)
             .Select(a => new GetAuditRecordDto
             {
-            AuditLogID = a.AuditLogID,
-            ExternalId = a.ExternalId,
-            TimestampUtc = a.TimestampUtc,
-            UserID = a.UserID,
-            Action = a.Action,
-            Description = a.Description,
-            PreviousValue = a.PreviousValue,
-            NewValue = a.NewValue,
-            AssetKind = a.AssetKind,
-            AssetTag = a.AssetTag,
-            HardwareAsset = a.HardwareAsset,
-            SoftwareID = a.SoftwareID,
-            SoftwareAsset = a.SoftwareAsset
+                AuditLogID = a.AuditLogID,
+                ExternalId = a.ExternalId,
+                TimestampUtc = a.TimestampUtc,
+                UserID = a.UserID,
+                Action = a.Action,
+                Description = a.Description,
+                PreviousValue = a.PreviousValue,
+                NewValue = a.NewValue,
+                AssetKind = a.AssetKind,
+                AssetTag = a.AssetTag,
+                HardwareAsset = a.HardwareAsset,
+                SoftwareID = a.SoftwareID,
+                SoftwareAsset = a.SoftwareAsset
             })
             .FirstOrDefaultAsync();
     }
