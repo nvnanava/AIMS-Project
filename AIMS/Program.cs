@@ -79,7 +79,25 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddRazorPages() // Add support for Razor Pages and integrate Microsoft Identity UI components
     .AddMicrosoftIdentityUI(); // Adds Razor UI pages for authentication and user management
 
+// See https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection#service-lifetimes
+// for dependency injection scopes
+builder.Services.AddScoped<UserQuery>();
+builder.Services.AddScoped<AssignmentsQuery>();
+builder.Services.AddScoped<HardwareQuery>();
+builder.Services.AddScoped<SoftwareQuery>();
+builder.Services.AddScoped<AssetQuery>();
 
+// TODO: Take out when development is over
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("http://localhost:5119") // Add your frontend's origin
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 
 // Log detected OS
