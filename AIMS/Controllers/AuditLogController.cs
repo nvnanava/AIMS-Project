@@ -50,7 +50,7 @@ public class AuditLogController : Controller
         return Ok(record);
     }
     
-    [HttpGet("get-all")]
+    [HttpGet("list")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllRecords()
     {
