@@ -66,7 +66,12 @@ body {
 }
 
 .table-wrapper {
-    padding: 2rem;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+
 }
 
 .table-controls {
@@ -80,9 +85,9 @@ body {
 .assign-btn,
 .edit-btn {
     background-color: #46b29d;
-    border: none;
+    border: 1px solid #333;
     color: white;
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
@@ -109,9 +114,10 @@ body {
 }
 
 .badge {
-    padding: 0.3rem 0.8rem;
-    border-radius: 1rem;
-    font-size: 0.85rem;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+
     color: white;
     font-weight: bold;
 }
@@ -121,27 +127,29 @@ body {
 }
 
 .badge.inactive {
-    background-color: olive;
+    background-color: red;
+
+ 
 }
 
-/* Generic button hover effect */
+
 .edit-btn:hover,
 .add-btn:hover,
 .assign-btn:hover {
-    background-color: #379b85; /* slightly darker green */
+    background-color: #379b85;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease-in-out;
     transform: translateY(-1px);
 }
 
-/* Optional: Change cursor */
+
 .edit-btn,
 .add-btn,
 .assign-btn {
     cursor: pointer;
 }
 
-/* Badge hover effect for fun (optional) */
+
 .badge:hover {
     filter: brightness(1.1);
     transition: filter 0.2s ease-in-out;
