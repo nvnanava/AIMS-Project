@@ -4,7 +4,6 @@ using AIMS.Data;
 using Microsoft.EntityFrameworkCore;
 
 using AIMS.Data;
-using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
@@ -167,6 +166,7 @@ builder.Services.AddScoped<AssignmentsQuery>();
 builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 builder.Services.AddScoped<AssetQuery>();
+builder.Services.AddScoped<AuditLogQuery>();
 builder.Services.AddScoped<FeedbackQuery>();
 
 // TODO: Take out when development is over
