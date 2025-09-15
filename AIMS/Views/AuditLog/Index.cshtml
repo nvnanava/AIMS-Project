@@ -2,8 +2,27 @@
     ViewData["Title"] = "Audit Log";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/AuditLog.css" asp-append-version="true" />
+}
+
 <div class="audit-log-container">
     <h1 class="audit-log-title">Audit Log</h1>
+
+   <div id="filter-button-container" class="dropdown">
+        <button id="filter-button-toggle" class="standard-button" type="button">
+            Filter
+        </button>
+        <div id="filterDropdown" class="dropdown-menu">
+            <input type="text" id="filterSearchInput" placeholder="Search logs..." class="dropdown-search"/>
+            <a href="#" class="dropdown-item" data-action="All">All</a>
+            <a href="#" class="dropdown-item" data-action="Assign">Assign</a>
+            <a href="#" class="dropdown-item" data-action="Create">Create</a>
+            <a href="#" class="dropdown-item" data-action="Update">Update</a>
+            <a href="#" class="dropdown-item" data-action="Delete">Delete</a>
+            <a href="#" class="dropdown-item" data-action="Unassign">Unassign</a>
+        </div>
+    </div>
 
     <table class="audit-log-table">
         <thead>
@@ -239,3 +258,46 @@
 
     </table>
 </div>
+
+@section Scripts {
+    <script>
+// Toggle dropdown visibility
+document.getElementById("filter-button-toggle").addEventListener("click", function () {
+    document.getElementById("filterDropdown").classList.toggle("show");
+});
+
+document.getElementById("filterSearchInput").addEventListener("keyup", function () {
+    const term = this.value.toLowerCase();
+    const rows = document.querySelectorAll(".audit-log-table tbody tr");
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(term) ? "" : "none";
+    });
+});
+
+// Filter rows when clicking an option
+document.querySelectorAll(".dropdown-item").forEach(item => {
+    item.addEventListener("click", function (e) {
+        e.preventDefault();
+        const filter = this.getAttribute("data-action");
+        filterTable(filter);
+        document.getElementById("filterDropdown").classList.remove("show");
+    });
+});
+
+
+function filterTable(filter) {
+    const rows = document.querySelectorAll(".audit-log-table tbody tr");
+    rows.forEach(row => {
+        const action = row.cells[3].innerText.trim();
+        if (filter === "All" || action === filter) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
+}
+
