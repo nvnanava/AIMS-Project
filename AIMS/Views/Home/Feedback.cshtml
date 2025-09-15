@@ -8,6 +8,14 @@
 <!-- Feedback Form -->
 <div id="feedback-container">
     <form id="feedback-form">
+        <label for="feedback-type">Feedback type:</label>
+        <select id="feedback-type" name="feedback-type" required>
+            <option value="">Select one</option>
+            <option value="Feature Request">Feature Request</option>
+            <option value="Bug Report">Bug Report</option>
+            <option value="General Feedback">General</option>
+        </select>
+        <br><br>
         <label for="feedback-message">Your feedback:</label>
         <textarea id="feedback-message" name="feedback-message" rows="4" required></textarea>
         <br>
@@ -38,7 +46,7 @@ document.getElementById('feedback-form').addEventListener('submit', function(eve
 
 // Simulated feedback submission (API call placeholder)
 function sendFeedback(feedbackMessage) {
-  
+
   console.log('Sending feedback:', feedbackMessage);
 
   // Simulate a successful feedback submission
@@ -50,14 +58,14 @@ function sendFeedback(feedbackMessage) {
 // Function to display success or error messages
 function showResponseMessage(type, message) {
   const responseElement = document.getElementById('feedback-response');
-  responseElement.classList.add(type); 
+  responseElement.classList.add(type);
   responseElement.innerText = message;
   responseElement.style.display = 'block';
 
   // Hide the response message after 4 seconds
   setTimeout(() => {
     responseElement.style.display = 'none';
-    responseElement.classList.remove(type); 
+    responseElement.classList.remove(type);
   }, 4000);
 }
 
