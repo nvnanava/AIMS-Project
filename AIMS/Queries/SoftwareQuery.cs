@@ -42,3 +42,25 @@ public class GetSoftwareDto
     public long SoftwareUsageData { get; set; }
     public decimal SoftwareCost { get; set; }
 }
+
+public class CreateSoftwareDto
+{
+    public string SoftwareName { get; set; } = string.Empty;
+    public string SoftwareType { get; set; } = string.Empty;
+    public string SoftwareVersion { get; set; } = string.Empty;
+    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
+    public DateOnly? SoftwareLicenseExpiration { get; set; }
+    public long SoftwareUsageData { get; set; }
+    public decimal SoftwareCost { get; set; }
+}
+
+public class UpdateSoftwareDto
+{
+    public string SoftwareName { get; set; } = string.Empty;
+    public string SoftwareType { get; set; } = string.Empty;
+    public string SoftwareVersion { get; set; } = string.Empty;
+    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
+    public DateOnly? SoftwareLicenseExpiration { get; set; }
+    public long SoftwareUsageData { get; set; }
+    public decimal SoftwareCost { get; set; }
+}

@@ -87,6 +87,7 @@ builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
+builder.Services.AddScoped<FeedbackQuery>();
 
 // TODO: Take out when development is over
 // Add CORS services
@@ -94,7 +95,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins("http://localhost:5119") // Add your frontend's origin
+        policy.AllowAnyOrigin() // Add your frontend's origin
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
