@@ -70,6 +70,8 @@ body {
     background: white;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+
 }
 
 .table-controls {
@@ -115,6 +117,7 @@ body {
     padding: 5px 10px;
     border-radius: 12px;
     font-size: 12px;
+
     color: white;
     font-weight: bold;
 }
@@ -125,6 +128,8 @@ body {
 
 .badge.inactive {
     background-color: red;
+
+ 
 }
 
 

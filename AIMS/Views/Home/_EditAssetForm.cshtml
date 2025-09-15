@@ -1,5 +1,6 @@
+@* Views/Home/_EditAssetForm.cshtml *@
 <div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -8,31 +9,98 @@
             </div>
 
             <div class="modal-body">
-                <form action="/Home/EditAsset" method="post">
-                    
+                <form id="editAssetForm" action="/Home/EditAsset" method="post">
+                    <!-- Hidden primary key (if you use one) -->
+                    <input type="hidden" id="editId" name="id" />
+
                     <div class="mb-3">
-                        <label for="editTagNumber" class="form-label">Tag Number</label>
-                        <input type="text" id="editTagNumber" name="tagNumber" class="form-control" placeholder="Enter Tag Number">
+                        <label for="editName" class="form-label">Asset Name</label>
+                        <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name">
                     </div>
 
+                    <div class="mb-3">
+                        <label for="editType" class="form-label">Type</label>
+                        <input type="text" id="editType" name="type" class="form-control" placeholder="Enter type (e.g., Laptop)">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editTag" class="form-label">Tag Number</label>
+                        <input type="text" id="editTag" name="tagNumber" class="form-control" placeholder="Enter tag number" required>
+                        <div class="invalid-feedback">Tag Number is required.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">Status</label>
+                        <select id="editStatus" name="status" class="form-select">
+                            <option value="">-- Select status --</option>
+                            <option>Available</option>
+                            <option>Assigned</option>
+                            <option>Surveyed</option>
+                            <option>Marked for Survey</option>
+                            <option>In Repair</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editComments" class="form-label">Comments</label>
+                        <textarea id="editComments" name="comments" class="form-control" rows="4" placeholder="Add any remarks..."></textarea>
+                    </div>
+
+                    <!-- Back-compat for your older workflow -->
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="markForSurvey" name="markForSurvey">
                         <label class="form-check-label" for="markForSurvey">Mark for Survey</label>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="editNotes" class="form-label">Notes</label>
-                        <textarea id="editNotes" name="notes" class="form-control" rows="3" placeholder="Enter remarks..."></textarea>
-                    </div>
-
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
                     </div>
-
                 </form>
             </div>
 
         </div>
     </div>
 </div>
+
+<script>
+  // Light client-side UX:
+  // 1) show required error for Tag when empty
+  // 2) keep "Mark for Survey" checkbox in sync with Status
+  (function () {
+    const modalEl = document.getElementById('editAssetModal');
+    if (!modalEl) return;
+
+    const form = modalEl.querySelector('#editAssetForm');
+    const tagInput = modalEl.querySelector('#editTag');
+    const statusSel = modalEl.querySelector('#editStatus');
+    const mfs = modalEl.querySelector('#markForSurvey');
+
+    // Validate Tag on submit (HTML5 required already helps; this adds nicer styling)
+    form.addEventListener('submit', function () {
+      if (!tagInput.value.trim()) {
+        tagInput.classList.add('is-invalid');
+        // Let the browser block the submit because of "required"
+      }
+    });
+
+    tagInput.addEventListener('input', function () {
+      if (this.value.trim()) this.classList.remove('is-invalid');
+    });
+
+    // Sync checkbox <-> status
+    if (statusSel && mfs) {
+      statusSel.addEventListener('change', function () {
+        const v = (this.value || '').toLowerCase();
+        mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
+      });
+      mfs.addEventListener('change', function () {
+        if (this.checked) {
+          // Prefer "Marked for Survey" when the box is checked
+          statusSel.value = 'Marked for Survey';
+        }
+      });
+    }
+  })();
+</script>
+

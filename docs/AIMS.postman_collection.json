@@ -1,0 +1,487 @@
+{
+	"info": {
+		"_postman_id": "5bc00a6d-4b67-463a-a36e-ad4482cf5acf",
+		"name": "AIMS API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40554298"
+	},
+	"item": [
+		{
+			"name": "Assignment",
+			"item": [
+				{
+					"name": "create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userID\": 2,\n  \"assetKind\": 1,\n  \"assetTag\": 3,\n  \"softwareID\": null\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/assign/create",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"assign",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/assign/get?AssignmentID=1",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"assign",
+								"get"
+							],
+							"query": [
+								{
+									"key": "AssignmentID",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "list",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/assign/list",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"assign",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "close",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/assign/close?AssignmentID=2",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"assign",
+								"close"
+							],
+							"query": [
+								{
+									"key": "AssignmentID",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Diagnostics",
+			"item": [
+				{
+					"name": "db-summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/diag/db-summary",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"diag",
+								"db-summary"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "active-assignments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/diag/active-assignments",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"diag",
+								"active-assignments"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/diag/users",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"diag",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "asset-table",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/diag/asset-table",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"diag",
+								"asset-table"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "assets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/diag/assets?searchString=macbook",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"diag",
+								"assets"
+							],
+							"query": [
+								{
+									"key": "searchString",
+									"value": "macbook"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Feedback",
+			"item": [
+				{
+					"name": "get-all",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/feedback/get-all",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"feedback",
+								"get-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"category\": \"UI/UX Suggestion\",\n    \"description\": \"The buttons on the settings page are misaligned on mobile devices.\",\n    \"submittedByUserID\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/feedback/create",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"feedback",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Hardware",
+			"item": [
+				{
+					"name": "get-all",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/hardware/get-all",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"hardware",
+								"get-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"assetName\": \"Epson EcoTank\",\n    \"assetType\": \"Printer\",\n    \"status\": \"Available\",\n    \"manufacturer\": \"Epson\",\n    \"model\": \"ET-4850\",\n    \"serialNumber\": \"PRN-101JJJ\",\n    \"warrantyExpiration\": \"2026-11-30\",\n    \"purchaseDate\": \"2025-01-12\"\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/hardware/add",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"hardware",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"assetName\": \"MacBook Pro 14\",\n    \"assetType\": \"Laptop\",\n    \"status\": \"InUse\",\n    \"manufacturer\": \"Apple\",\n    \"model\": \"A2779\",\n    \"serialNumber\": \"MBP14-AAA111\",\n    \"warrantyExpiration\": \"2027-09-14\",\n    \"purchaseDate\": \"2024-09-14\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/hardware/edit/1",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"hardware",
+								"edit",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Software",
+			"item": [
+				{
+					"name": "get-all",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/software/get-all",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"software",
+								"get-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"softwareName\": \"Slack\",\n    \"softwareType\": \"Collaboration\",\n    \"softwareVersion\": \"4.38\",\n    \"softwareLicenseKey\": \"PS25-1234-5678\",\n    \"softwareLicenseExpiration\": null,\n    \"softwareUsageData\": 0,\n    \"softwareCost\": 8.25\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/software/add",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"software",
+								"add"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "edit",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"softwareName\": \"Office 365\",\n    \"softwareType\": \"Productivity\",\n    \"softwareVersion\": \"2408\",\n    \"softwareLicenseKey\": \"O365-XXXX-YYYY\",\n    \"softwareLicenseExpiration\": \"2026-09-14\",\n    \"softwareUsageData\": 0,\n    \"softwareCost\": 13.99\n  },",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/software/edit/1",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"software",
+								"edit",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "get-all",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/user/get-all",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"get-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "search",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/user?searchString=sam",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"user"
+							],
+							"query": [
+								{
+									"key": "searchString",
+									"value": "sam"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
