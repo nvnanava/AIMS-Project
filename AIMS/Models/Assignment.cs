@@ -5,7 +5,6 @@ public enum AssetKind { Hardware = 1, Software = 2 }
 public class Assignment
 {
     public int AssignmentID { get; set; }
-
     // Who
     public int UserID { get; set; }
     public User User { get; set; } = null!;

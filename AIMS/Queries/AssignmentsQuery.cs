@@ -1,86 +1,62 @@
-using System.Security.Cryptography.X509Certificates;
+// File: AIMS/Queries/AssignmentsQuery.cs
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
+
+namespace AIMS.Queries;
 
 public class AssignmentsQuery
 {
     private readonly AimsDbContext _db;
     public AssignmentsQuery(AimsDbContext db) => _db = db;
 
-    public async Task<List<GetAssignmentDto>> GetAllAssignmentsAsync()
+    // status: "active" (default), "closed", or "all"
+    public async Task<List<GetAssignmentDto>> GetAllAssignmentsAsync(string status = "active", CancellationToken ct = default)
     {
-        // Example query, adjust as needed
-        return await _db.Assignments
-            .Select(a => new GetAssignmentDto
-            {
-                AssignmentID = a.AssignmentID,
-                AssetKind = a.AssetKind,
-                UserID = a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
-                SoftwareID = a.SoftwareID,
-                AssignedAtUtc = a.AssignedAtUtc
-            })
-            .ToListAsync();
-    }
+        var norm = (status ?? "active").Trim().ToLowerInvariant();
+        var q = _db.Assignments.AsNoTracking();
 
-    public async Task<List<GetAssignmentDto>> GetActiveAssignments()
-    {
-        var rows = await _db.Assignments
-            .AsNoTracking()
-            .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new GetAssignmentDto
-            {
-                AssignmentID = a.AssignmentID,
-                AssetKind = a.AssetKind,
-                UserID = a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
-                SoftwareID = a.SoftwareID,
-                AssignedAtUtc = a.AssignedAtUtc
-            })
-            .ToListAsync();
-
-        return rows;
-    }
-
-    public async Task<GetAssignmentDto> GetAssignmentAsync(int AssignmentID)
-    {
-     return await _db.Assignments.
-        AsNoTracking()
-        .Where(a => a.AssignmentID == AssignmentID).
-        Select(a => new GetAssignmentDto
+        q = norm switch
         {
-            AssignmentID = a.AssignmentID,
+            "active" => q.Where(a => a.UnassignedAtUtc == null),
+            "closed" => q.Where(a => a.UnassignedAtUtc != null),
+            "all" => q,
+            _ => q.Where(a => a.UnassignedAtUtc == null) // fallback
+        };
+
+        return await q
+            .OrderByDescending(a => a.AssignedAtUtc)
+            .Select(a => new GetAssignmentDto
+            {
+                AssignmentID = a.AssignmentID,
                 AssetKind = a.AssetKind,
                 UserID = a.UserID,
                 User = a.User.FullName,
                 HardwareID = a.AssetTag,
                 SoftwareID = a.SoftwareID,
-                AssignedAtUtc = a.AssignedAtUtc
-        }).
-        FirstOrDefaultAsync() ?? new GetAssignmentDto();   
+                AssignedAtUtc = a.AssignedAtUtc,
+                UnassignedAtUtc = a.UnassignedAtUtc
+            })
+            .ToListAsync(ct);
     }
-}
 
-
-
-
-public class GetAssignmentDto {
-    
-     public int AssignmentID { get; set; }
-
-    // Who
-    public int UserID { get; set; }
-    public string User { get; set; } = string.Empty;
-
-    // What (one of these must be set, enforced in code/migration)
-    public AssetKind AssetKind { get; set; }
-    public int? HardwareID { get; set; }      // when Hardware
-    public int? SoftwareID { get; set; }    // when Software
-
-    // When
-    public DateTime AssignedAtUtc { get; set; } = DateTime.UtcNow;
-
+    public async Task<GetAssignmentDto?> GetAssignmentAsync(int assignmentId, CancellationToken ct = default)
+    {
+        return await _db.Assignments
+            .AsNoTracking()
+            .Where(a => a.AssignmentID == assignmentId)
+            .Select(a => new GetAssignmentDto
+            {
+                AssignmentID = a.AssignmentID,
+                AssetKind = a.AssetKind,
+                UserID = a.UserID,
+                User = a.User.FullName,
+                HardwareID = a.AssetTag,
+                SoftwareID = a.SoftwareID,
+                AssignedAtUtc = a.AssignedAtUtc,
+                UnassignedAtUtc = a.UnassignedAtUtc
+            })
+            .FirstOrDefaultAsync(ct);
+    }
 }

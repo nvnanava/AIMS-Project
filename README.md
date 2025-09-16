@@ -13,6 +13,25 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
 ### Prerequisites
 
 -   **Docker**: Ensure that Docker is installed on your machine.
+
+  > **Apple Silicon Macs (M1/M2/M3):**  
+  > SQL Server only publishes `amd64` images, so Docker must emulate x86 using **Rosetta 2**.  
+  >  
+  > 1. Install Rosetta if you don’t already have it:  
+  >    ```bash
+  >    softwareupdate --install-rosetta
+  >    ```
+  >    (If it’s already installed, this command will say so.)
+  >
+  > 2. In **Docker Desktop**, go to **Settings → Features in development** and enable  
+  >    **“Use Rosetta for x86/amd64 emulation on Apple Silicon”**.  
+  >
+  > 3. Our `docker-compose.dev.yml` already includes:  
+  >    ```yaml
+  >    platform: linux/amd64
+  >    ```  
+  >    so Docker will automatically use Rosetta when starting the SQL Server container.
+
 -   **Visual Studio Code (VS Code)**: Clone the GitHub AIMS project onto your IDE (VS Code).
 
 **Video Tutorial for Cloning**:
@@ -31,12 +50,26 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
         docker --version
         ```
 
-3. **Run Docker Compose Script**
+3. **Start Containers**
 
-    - Run the following command in the terminal to build and start the project with the required Docker containers:
-        ```bash
-        ./scripts/docker_compose.sh
-        ```
+   - Preferred (new scripts with better cross-platform support):  
+     ```bash
+     ./scripts/up_stack.sh dev
+     ./scripts/db_ready.sh dev ensure
+     ```
+     These scripts:
+     - Wait for SQL Server to be healthy.
+     - Run EF Core migrations in the container automatically.
+     - Support Mac, Windows, and Linux.
+
+   - Legacy (old script, still available):  
+     ```bash
+     ./scripts/build_containers.sh dev
+     ```
+     Differences:
+     - Uses a simpler wait loop.
+     - Sometimes skips EF migrations if the container name doesn’t match.
+     - Kept for reference but we recommend **up_stack.sh + db_ready.sh**.
 
 4. **Check Running Containers**
 
@@ -53,7 +86,7 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
         - Run this command in VS Code’s terminal to connect to SQL Server:
 
             ```bash
-            sqlcmd -S localhost -U sa -P 'YourSecurePassword!'
+            sqlcmd -S localhost -U sa -P 'StrongP@ssword!'
             ```
 
             _Note: The password can be found in the `docker-compose.yml` file._
@@ -75,7 +108,7 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
             ```
         - Then, run the following command to connect to SQL Server:
             ```bash
-            sqlcmd -S localhost -U sa -P 'YourSecurePassword!'
+            sqlcmd -S localhost -U sa -P 'StrongP@ssword!' -C
             ```
 
     - **Alternative (Without Installing mssql-tools)**:
@@ -100,7 +133,8 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
         tempdb
         model
         msdb
-        (4 rows affected)
+        AIMS
+        (5 rows affected)
         ```
 
 7. **Verify ASP.NET Core App**
@@ -109,46 +143,120 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
         http://localhost:5119
         ```
         _Note: The correct port number is specified in the `docker-compose.yml` file._
+    
+    - Swagger UI will be available at:
+     ```
+     http://localhost:5119/swagger/index.html
+     ```
 
 ### Final Check
 
 If all the above steps are successful, you have successfully set up your development environment and the AIMS project is ready to use!
 
+---
+
+## Database Setup & Smoke Tests
+
+For EF Core migrations, reseeding, and API verification with curl smoke tests, see [DatabaseSetup.md](DatabaseSetup.md).
+
+---
+
 ## Usage
 
 To interact with the AIMS (Asset Inventory Management System) Docker containers, use the following commands.
 
-### 1. **Create and Start the Container**
+### 1. **Create and Start the Containers**
 
--   Run the following command to create and start the container initially:
+-   Run the following command to build and start the containers:
 
     ```bash
-    ./scripts/docker_compose.sh
-
+    ./scripts/up_stack.sh dev
     ```
 
--   This script contains three commands:
-    -   **Starts the container in detached mode** (in the background).
-    -   **Prints a list of containers** running in the project.
-    -   **Shows the logs** in real time.
+-   This script:
+    -   Builds the **web** and **SQL Server** containers.
+    -   Waits for SQL Server to become **healthy**.
+    -   Leaves them running in the background.
 
-### 2. **Stop the Container**
+⚠️ **Note on old script**:  
+Previously, we used `./scripts/build_containers.sh dev`. That script bundled *both* container startup **and** EF migrations in one step. The new approach **splits concerns**:  
+- `up_stack.sh` → brings the stack up, waits for SQL to be healthy.  
+- `db_ready.sh` → ensures the `AIMS` database exists, applies migrations, and can reseed when needed.  
+This separation makes failures easier to debug and improves cross-platform reliability.
 
--   To stop the container without deleting it, run:
+---
 
-bash
-./scripts/stop_docker.sh
+### 2. **Prepare the Database**
 
--   This script contains one command that stops the container while retaining all data.
+-   To ensure the database exists and apply EF migrations:
 
-### 3. **Restart the Container**
+    ```bash
+    ./scripts/db_ready.sh dev ensure
+    ```
 
--   To restart the container and retain information from the last session, use:
+-   To **reseed** (drop and recreate the DB):
 
-bash
-./scripts/start_docker.sh
+    ```bash
+    ./scripts/db_ready.sh dev reseed
+    ```
 
--   This script contains one command that restarts the container without losing previous session data.
+⚠️ Use `reseed` carefully — it wipes all data.  
+The script runs inside the `web-dev` container, so EF migrations/seeding use the **same environment** as the app.
+
+---
+
+### 3. **Stop the Container**
+
+-   To stop all running dev containers without deleting them:
+
+    ```bash
+    docker compose -f docker-compose.dev.yml stop
+    ```
+
+---
+
+### 4. **Restart the Container**
+
+-   To restart containers while keeping all data:
+
+    ```bash
+    docker compose -f docker-compose.dev.yml start
+    ```
+
+---
+
+## Git Hooks / Code Formatting
+
+To enforce consistent formatting via `.editorconfig`, we use a **pre-commit hook** that runs `dotnet-format`.
+
+Run these commands once after cloning:
+
+### macOS/Linux
+```bash
+dotnet tool restore
+git config core.hooksPath .githooks
+chmod +x .githooks/pre-commit
+```
+
+### Windows (PowerShell)
+```powershell
+dotnet tool restore
+git config core.hooksPath .githooks
+# Make sure the hook script is executable for PowerShell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+From then on, every commit will be blocked if formatting issues are detected.
+
+---
+
+### 5. **Special Note for Apple Silicon (M1/M2/M3)**
+
+SQL Server is **x86_64 only**. On Apple Silicon, Docker must emulate it using **Rosetta**.  
+
+Make sure Docker Desktop → **Settings** → **Features in Development** → ✅ **Use Rosetta for x86/amd64 emulation** is enabled.  
+Without this, the SQL Server container will fail to start.
+
+---
 
 This is what the home screen will look like:
 

@@ -136,6 +136,34 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function populateAssetDropdown(searchTerm = "") {
+<<<<<<< HEAD
+        const url = `/api/diag/assets?q=${encodeURIComponent(searchTerm)}&onlyAvailable=true&take=30`;
+
+        fetch(url)
+            .then(async (response) => {
+                // Handle empty responses gracefully
+                if (response.status === 204) return [];
+
+                const contentType = response.headers.get('content-type') || '';
+                const bodyText = await response.text();
+
+                if (!response.ok) {
+                    // Show real server error details in our toast
+                    throw new Error(`HTTP ${response.status} ${response.statusText} — ${bodyText}`);
+                }
+                if (!contentType.includes('application/json')) {
+                    throw new Error(`Expected JSON but got ${contentType}. Body: ${bodyText}`);
+                }
+                // It’s JSON, parse it ourselves because we already consumed text:
+                return JSON.parse(bodyText);
+            })
+            .then((results) => {
+                assetSelect.replaceChildren();
+                results.forEach(asset => {
+                    const option = document.createElement("option");
+                    option.value = `(${asset.assetID}) ${asset.assetName}`;
+                    option.text = `(${asset.assetID}) ${asset.assetName}`;
+=======
         // fetch data
         fetch(`/api/diag/assets?searchString=${encodeURIComponent(searchTerm)}`)
             .then((response) => {
@@ -148,6 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     const option = document.createElement("option");
                     option.value = "(" + asset.assetID + ") " + asset.assetName;
                     option.text = "(" + asset.assetID + ") " + asset.assetName;
+>>>>>>> a04e937a1f5e2d8a1f1e270ef00b5d9785e46f07
                     option.dataset.asset_id = asset.assetID;
                     option.dataset.asset_kind = asset.assetKind;
                     assetSelect.appendChild(option);
@@ -177,6 +206,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("assignAssetForm")?.addEventListener("submit", function (e) {
         e.preventDefault();
 
+<<<<<<< HEAD
 
         const selectedUserOption = userSelect.options[userSelect.selectedIndex];
         const selectedAssetOption = assetSelect.options[assetSelect.selectedIndex];
@@ -188,6 +218,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const url = '/api/assign/create'; // Replace with your API endpoint
         let data;
 
+=======
+
+        const selectedUserOption = userSelect.options[userSelect.selectedIndex];
+        const selectedAssetOption = assetSelect.options[assetSelect.selectedIndex];
+
+        const selectedUserID = selectedUserOption.dataset.user_id;
+        const selectedAssetID = selectedAssetOption.dataset.asset_id;
+        const selectedAssetKind = selectedAssetOption.dataset.asset_kind;
+
+        const url = '/api/assign/create'; // Replace with your API endpoint
+        let data;
+
+>>>>>>> a04e937a1f5e2d8a1f1e270ef00b5d9785e46f07
         // hardware
         if (selectedAssetKind == 1) {
             data = {

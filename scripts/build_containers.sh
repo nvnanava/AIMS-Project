@@ -1,71 +1,105 @@
 #!/bin/bash
 # Builds & starts containers (dev/prod), waits for SQL health,
 # ensures AIMS DB exists, then (in dev) runs EF migrations inside the web container.
-# Usage: ./scripts/build_containers.sh [environment]
-#   environment: "dev" (default) or "prod"
+# Usage: ./scripts/build_containers.sh [dev|prod]
 
 set -euo pipefail
 
-ENV=${1:-dev}
-
-if [ "$ENV" == "prod" ]; then
-  echo "Starting production containers..."
-  docker compose -f docker-compose.prod.yml up --build -d
-  DB_SVC="sqlserver2022-prod"
-  COMPOSE_FILE="docker-compose.prod.yml"
-  DOTNET_ENV="Production"
-  WEB_IMAGE_MATCH="aims-project-web-prod"
-else
-  echo "Starting development containers..."
-  docker compose -f docker-compose.dev.yml up --build -d
-  DB_SVC="sqlserver2022-dev"
-  COMPOSE_FILE="docker-compose.dev.yml"
-  DOTNET_ENV="Development"
-  WEB_IMAGE_MATCH="aims-project-web-dev"
+# --- Keep host VS Code in sync with container's .NET SDK ---
+SDK_VER="9.0.304"
+if [ ! -f ./global.json ] || ! grep -q "\"version\":\s*\"$SDK_VER\"" ./global.json; then
+  echo "Writing global.json (SDK $SDK_VER) so host VS Code uses the same SDK..."
+  cat > ./global.json <<EOF
+{
+  "sdk": {
+    "version": "$SDK_VER",
+    "rollForward": "latestFeature",
+    "allowPrerelease": false
+  }
+}
+EOF
 fi
 
-# --- SQL credentials (must match docker-compose) ---
-SA_USER="sa"
-SA_PASS='StrongP@ssword!'   # keep single quotes; "!" breaks double-quoted args
+# Clean host build artifacts that can confuse analyzers
+rm -rf ./AIMS/bin ./AIMS/obj 2>/dev/null || true
+
+ENV=${1:-dev}
+
+# Choose compose file + service names
+if [ "$ENV" = "prod" ]; then
+  echo "Starting production containers..."
+  COMPOSE_FILE="docker-compose.prod.yml"
+  DB_SVC="sqlserver-prod"
+  WEB_SVC="web-prod"
+  DOTNET_ENV="Production"
+else
+  echo "Starting development containers..."
+  COMPOSE_FILE="docker-compose.dev.yml"
+  DB_SVC="sqlserver-dev"
+  WEB_SVC="web-dev"
+  DOTNET_ENV="Development"
+fi
+
+# Helper to run compose with the chosen file
+compose() { docker compose -f "$COMPOSE_FILE" "$@"; }
+
+# Bring services up
+compose up --build -d
+
+# --- Resolve container id for SQL (DON'T rely on service name directly) ---
+SQL_CID="$(compose ps -q "$DB_SVC" || true)"
+if [ -z "$SQL_CID" ]; then
+  echo "ERROR: Could not resolve container id for service '$DB_SVC'."
+  compose ps
+  exit 1
+fi
 
 # --- Wait for SQL to be healthy ---
-echo "Waiting for SQL Server container ($DB_SVC) to be healthy..."
-until [[ "$(docker inspect -f '{{.State.Health.Status}}' "${DB_SVC}" 2>/dev/null || echo starting)" == "healthy" ]]; do
-  STATUS="$(docker inspect -f '{{.State.Health.Status}}' "${DB_SVC}" 2>/dev/null || echo starting)"
-  echo "  status: ${STATUS} ..."
-  sleep 3
+echo "Waiting for SQL Server container ($DB_SVC → $SQL_CID) to be healthy..."
+for i in {1..80}; do
+  status="$(docker inspect -f '{{.State.Health.Status}}' "$SQL_CID" 2>/dev/null || echo starting)"
+  echo "  status: $status ..."
+  [ "$status" = "healthy" ] && { echo "SQL Server is healthy."; break; }
+  sleep 2
+  if [ $i -eq 80 ]; then
+    echo "ERROR: SQL container never became healthy."
+    compose logs "$DB_SVC"
+    exit 1
+  fi
 done
-echo "SQL Server is healthy."
 
 # --- Ensure AIMS DB exists ---
+SA_USER="sa"
+SA_PASS='StrongP@ssword!'   # keep single quotes; "!" breaks double-quoted args
 echo "Ensuring 'AIMS' database exists..."
-docker exec -i "${DB_SVC}" /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U "${SA_USER}" -P "${SA_PASS}" -No -C \
-  -Q "IF DB_ID('AIMS') IS NULL CREATE DATABASE AIMS;"
+docker exec -i "$SQL_CID" /opt/mssql-tools18/bin/sqlcmd \
+  -S localhost -U "$SA_USER" -P "$SA_PASS" -No -C \
+  -Q "IF DB_ID('AIMS') IS NULL CREATE DATABASE [AIMS];"
 echo "Confirmed 'AIMS' database is present."
 
-# --- DEV ONLY: run EF migrations inside the web container ---
+# --- DEV ONLY: run EF migrations inside the web container (use compose exec) ---
 if [ "$ENV" != "prod" ]; then
-  echo "Locating web container for EF migrations..."
-  # Try to find the dev web container by image/name pattern
-  WEB_CNAME="$(docker ps --format '{{.Names}} {{.Image}}' | awk -v pat="$WEB_IMAGE_MATCH" '$0 ~ pat {print $1; exit}')"
-
-  if [ -z "${WEB_CNAME:-}" ]; then
-    echo "WARNING: Could not find a running web container matching '$WEB_IMAGE_MATCH'."
-    echo "Skipping inline EF migration. The app will try to migrate on startup."
+  echo "Running EF migrations in '$WEB_SVC'…"
+  # Ensure the web service is actually running
+  WEB_CID="$(compose ps -q "$WEB_SVC" || true)"
+  if [ -z "$WEB_CID" ]; then
+    echo "WARNING: '$WEB_SVC' not running; skipping EF migration."
   else
-    echo "Running EF migrations inside '${WEB_CNAME}'..."
-    # Path inside container where the solution is mounted (based on our images/logs)
-    docker exec -i "${WEB_CNAME}" bash -lc "
+    compose exec -T "$WEB_SVC" bash -lc "
       set -e
       cd /src/AIMS
-      DOTNET_ENVIRONMENT=${DOTNET_ENV} dotnet ef database update
+      # First-run guard so dotnet-ef has deps
+      if [ ! -f bin/Debug/net9.0/AIMS.deps.json ]; then
+        echo '[ef] deps.json missing — building once...'
+        dotnet build -c Debug /p:UseSharedCompilation=false
+      fi
+      export DOTNET_ENVIRONMENT='${DOTNET_ENV}'
+      dotnet ef database update -c AimsDbContext --no-build
     "
     echo "EF migrations completed."
   fi
 else
   echo "Production: skipping inline EF migrations."
-  echo "Ensure your deployment strategy runs migrations out-of-band or via app startup policy."
 fi
 
 echo "All set. Containers are up, DB exists, and (dev) migrations have been applied."
