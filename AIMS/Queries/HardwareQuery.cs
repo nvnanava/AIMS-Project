@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using AIMS.Data;
 using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
@@ -59,11 +60,14 @@ public class GetHardwareDto
 
 public class CreateHardwareDto
 {
+    [Required]
+    public string AssetTag { get; set; } = string.Empty;
     public string AssetName { get; set; } = string.Empty;
     public string AssetType { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string Manufacturer { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
+    [Required]
     public string SerialNumber { get; set; } = string.Empty; // unique
     public DateOnly WarrantyExpiration { get; set; }
     public DateOnly PurchaseDate { get; set; }
@@ -71,12 +75,11 @@ public class CreateHardwareDto
 
 public class UpdateHardwareDto
 {
-    public string AssetName { get; set; } = string.Empty;
-    public string AssetType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Manufacturer { get; set; } = string.Empty;
-    public string Model { get; set; } = string.Empty;
-    public string SerialNumber { get; set; } = string.Empty;
-    public DateOnly WarrantyExpiration { get; set; }
-    public DateOnly PurchaseDate { get; set; }
+    public string? AssetTag { get; set; }
+    public string? AssetName { get; set; }
+    public string? AssetType { get; set; }
+    public string? Status { get; set; }
+    public string? Manufacturer { get; set; }
+    public string? Model { get; set; }
+
 }
