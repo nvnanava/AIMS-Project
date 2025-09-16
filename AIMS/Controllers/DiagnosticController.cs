@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using AIMS.Data;
+using AIMS.Models;
 using AIMS.Queries;
 using AIMS.ViewModels;
-using AIMS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -135,17 +135,7 @@ public class DiagnosticsController : ControllerBase
         }));
     }
 
-    // ---------- 5) Search assets by name (legacy path kept) ----------
-    // [HttpGet("assets")]
-    // public async Task<IActionResult> SearchAssetsByName([FromQuery] string? searchString)
-    // {
-    //     if (string.IsNullOrWhiteSpace(searchString))
-    //         return Ok(await _assetQuery.GetFirstNAssets(20));
-
-    //     var results = await _assetQuery.SearchAssetByName(searchString);
-    //     return Ok(results);
-    // }
-
+    // ---------- 5) Search assets ----------
 
     // GET /api/diag/assets?searchString=foo
     [HttpGet("assets")]

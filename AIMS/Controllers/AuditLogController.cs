@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AIMS.Controllers;
 
@@ -49,7 +49,7 @@ public class AuditLogController : Controller
         if (record is null) return NotFound();
         return Ok(record);
     }
-    
+
     [HttpGet("list")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllRecords()

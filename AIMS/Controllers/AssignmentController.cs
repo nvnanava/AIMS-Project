@@ -1,12 +1,12 @@
 using System.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;   // CacheStamp
 using AIMS.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers;
 
@@ -180,6 +180,7 @@ public class AssignmentController : ControllerBase
         return Ok(assignment);
     }
 
+    // GET /api/assign/list?status=active|closed|all
     [HttpGet("list")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllAssignments([FromQuery] string status = "active", CancellationToken ct = default)

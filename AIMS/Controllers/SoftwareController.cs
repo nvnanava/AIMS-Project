@@ -1,9 +1,9 @@
 using System.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers;
 
@@ -17,7 +17,6 @@ public class SoftwareController : ControllerBase
 {
     private readonly AimsDbContext _db;
     private readonly SoftwareQuery _softwareQuery;
-
     public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery)
     {
         _db = db;

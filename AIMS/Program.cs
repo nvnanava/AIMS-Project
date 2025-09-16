@@ -1,8 +1,8 @@
 using AIMS.Data;
 using AIMS.Queries;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
@@ -27,7 +27,6 @@ builder.Services.AddScoped<FeedbackQuery>();
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
 {
-    // Prefer env var "ConnectionStrings__{Name}" (Docker/k8s friendly)
     var env = Environment.GetEnvironmentVariable($"ConnectionStrings__{name}");
     return string.IsNullOrWhiteSpace(env)
         ? builder.Configuration.GetConnectionString(name)
