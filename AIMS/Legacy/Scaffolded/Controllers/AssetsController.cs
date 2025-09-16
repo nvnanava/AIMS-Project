@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using AIMS.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AIMS.Controllers;
 
@@ -10,7 +10,7 @@ public class AssetsController : Controller
     {
         this.ViewData["Category"] = category;
 
-        // You can move this to a service or JSON/database later
+        // Move this to a service or JSON/database later
         var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Status" };
 
         var tableData = new List<Dictionary<string, string>> {

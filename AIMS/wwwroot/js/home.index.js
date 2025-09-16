@@ -51,8 +51,7 @@
     const searchInput = document.getElementById("asset-search-input") || document.getElementById("search-input");
     const searchBtn = document.getElementById("asset-search-addon") || document.getElementById("search-addon");
 
-    // Data from Razor
-    const tableData = window.__TABLE_DATA__ ?? [];
+    // Old stub (kept for compatibility in a few helpers)
     const users = window.__USERS__ ?? [];
 
     // ==============================
@@ -68,15 +67,35 @@
     };
 
     function applyRowStriping() {
-      const allRows = $all("#table-body tr");
-      allRows.forEach(r => r.classList.remove("even-row", "odd-row"));
-      const visible = allRows.filter(r => r.style.display !== "none");
-      visible.forEach((r, i) => r.classList.add(i % 2 === 0 ? "even-row" : "odd-row"));
+      const rows = Array.from(document.querySelectorAll("#table-body tr"));
+      let visibleIndex = 0;
+
+      rows.forEach(row => {
+        row.classList.remove("even-row", "odd-row");
+        if (row.style.display === "none") return;
+        row.classList.add(visibleIndex % 2 === 0 ? "even-row" : "odd-row");
+        visibleIndex++;
+      });
     }
 
     function resetTableVisibility() {
       $all("#table-body tr").forEach(r => { r.style.display = ""; });
       applyRowStriping();
+    }
+
+    // Find Razor CSS isolation attr on table container (e.g., "b-xyz")
+    const TABLE_SCOPE_ATTR = (() => {
+      const host = document.getElementById("table-container");
+      if (!host) return null;
+      return host.getAttributeNames().find(n => n.startsWith("b-")) || null;
+    })();
+
+    function scopedEl(tag, className, text) {
+      const el = document.createElement(tag);
+      if (TABLE_SCOPE_ATTR) el.setAttribute(TABLE_SCOPE_ATTR, "");
+      if (className) el.className = className;
+      if (text != null) el.textContent = text;
+      return el;
     }
 
     // ==============================
@@ -86,27 +105,74 @@
       if (!reportsList) return;
       reportsList.innerHTML = "";
 
-      const reports = users.filter(u => u.Supervisor === supervisorID);
+      const sid = String(supervisorID);
+      const list = Array.isArray(users) ? users : [];
+
+      const reports = list.filter(u => {
+        const sup = u.Supervisor ?? u.supervisorId ?? u.ManagerId ?? u.managerId ?? u.Manager ?? u.manager;
+        return String(sup) === sid;
+      });
+
+      if (!reports.length) return;
+
+      const frag = document.createDocumentFragment();
       for (const rep of reports) {
+        const id = String(
+          rep.ID ?? rep.Id ?? rep.EmployeeID ?? rep.employeeId ?? rep.EmployeeNumber ?? rep.employeeNumber ?? ""
+        );
+        const name =
+          rep.Name ?? rep.name ?? rep.DisplayName ?? rep.FullName ?? rep.fullName ??
+          ((rep.GivenName || rep.Surname) ? `${rep.GivenName ?? ""} ${rep.Surname ?? ""}`.trim() : id);
+
         const label = document.createElement("label");
-        label.classList.add("report-child");
+        label.className = "report-child";
         label.innerHTML = `
-          <input type="checkbox" class="filter-report" data-report="${rep.ID}" value="${rep.ID}">
-          <span>${rep.Name}</span>
+          <input type="checkbox" class="filter-report" data-report="${id}" value="${id}">
+          <span>${name}</span>
         `;
-        reportsList.appendChild(label);
+        frag.appendChild(label);
       }
+      reportsList.appendChild(frag);
+      syncAllReportsCheckbox();
+    }
+
+    // --- FIX: robust to camelCase/PascalCase from the API ---
+    function renderReportsDropdown(reports) {
+      if (!reportsList) return;
+      reportsList.innerHTML = "";
+
+      if (!Array.isArray(reports) || reports.length === 0) {
+        syncAllReportsCheckbox();
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      for (const r of reports) {
+        const emp = String(
+          r.employeeNumber ?? r.EmployeeNumber ?? r.id ?? r.Id ?? r.employeeID ?? r.EmployeeID ?? ""
+        );
+        const name =
+          r.name ?? r.Name ?? r.fullName ?? r.FullName ??
+          ((r.givenName || r.surname) ? `${r.givenName ?? ""} ${r.surname ?? ""}`.trim() : emp);
+
+        const label = document.createElement("label");
+        label.className = "report-child";
+        label.innerHTML = `
+          <input type="checkbox" class="filter-report" data-report="${emp}" value="${emp}">
+          <span>${name || emp}</span>
+        `;
+        frag.appendChild(label);
+      }
+      reportsList.appendChild(frag);
       syncAllReportsCheckbox();
     }
 
     function reportChildren() {
       return Array.from(reportsList?.querySelectorAll(".filter-report") ?? []);
     }
-
     function typeChildren() {
       return Array.from(typesList?.querySelectorAll(".filter-type") ?? []);
     }
-
     function statusChildren() {
       return Array.from(statusList?.querySelectorAll(".filter-status") ?? []);
     }
@@ -123,7 +189,6 @@
         allReportsCB.checked = false; allReportsCB.indeterminate = true;
       }
     }
-
     function syncAllTypesCheckbox() {
       if (!allTypesCB) return;
       const kids = typeChildren();
@@ -136,7 +201,6 @@
         allTypesCB.checked = false; allTypesCB.indeterminate = true;
       }
     }
-
     function syncAllStatusCheckbox() {
       if (!allStatusCB) return;
       const kids = statusChildren();
@@ -153,13 +217,12 @@
     // ==============================
     // Role switching
     // ==============================
-    function applyRole(role) {
+    function applyRoleInternal(role) {
       currentRole = role;
 
       const showCards = role === "Admin" || role === "IT Help Desk";
       const showAssignBtn = role === "Admin";
       const showFiltersButton = true;
-      const showWelcome = role === "Supervisor";
 
       document.querySelector("[data-testid='summary-cards-section']")?.style && (
         document.querySelector("[data-testid='summary-cards-section']").style.display = showCards ? "flex" : "none"
@@ -174,9 +237,7 @@
         document.querySelector("[data-testid='filter-button']").style.display = showFiltersButton ? "block" : "none"
       );
 
-      // Role-specific visibility inside the dropdown
       if (role === "Supervisor") {
-        // Supervisor sees My Assets + Direct Reports + Type + Status
         filterMyAssetsContainer?.classList.remove("d-none");
         filterDirectReportsContainer?.classList.remove("d-none");
         filterTypeContainer?.classList.remove("d-none");
@@ -186,10 +247,9 @@
         if (welcomeTitle) welcomeTitle.textContent = "Welcome John Smith!";
         if (welcomeSubtitle) welcomeSubtitle.textContent = "Here's an overview of your assets along with those assigned to your team.";
 
-        populateDirectReports("28809"); // simulated until Graph wired
+        populateDirectReports("28809"); // local stub
         filterForSupervisor("28809");
       } else {
-        // Admin / IT Help Desk: only Type + Status
         filterMyAssetsContainer?.classList.add("d-none");
         filterDirectReportsContainer?.classList.add("d-none");
         filterTypeContainer?.classList.remove("d-none");
@@ -230,43 +290,45 @@
         return matchesSearch && matchesType && matchesStatus;
       };
 
-      const supervisorID = "28809";
       const selectedReports = $all(".filter-report:checked").map(cb => cb.dataset.report);
       const showMy = !!(filterMyAssets?.checked);
-      const directIDs = users.filter(u => u.Supervisor === supervisorID).map(u => u.ID);
 
       $all("#table-body tr").forEach(row => {
         const cells = row.querySelectorAll("td");
 
         if (currentRole !== "Supervisor") {
-          // Admin / IT Help Desk, no supervisor scoping
           row.style.display = matchesRow(cells) ? "" : "none";
           return;
         }
 
-        // Supervisor view with ownership scoping
         const assignedToText = cells[3]?.textContent ?? "";
         const idMatch = assignedToText.match(/\((\d+)\)/);
         const assignedId = idMatch ? idMatch[1] : "";
+
+        const supervisorID = "28809";
+        const allReportsOn = !!(allReportsCB?.checked);
+
+        const ownershipActive = showMy || allReportsOn || selectedReports.length > 0;
+
         const isSupervisorAsset = assignedId === supervisorID;
-        const isDirectReportAsset = selectedReports.includes(assignedId);
-        const isInSupervisorView = isSupervisorAsset || directIDs.includes(assignedId);
-        const ownershipActive = showMy || selectedReports.length > 0;
+        const isDirectReportAsset = allReportsOn ? !isSupervisorAsset : selectedReports.includes(assignedId);
+
+        const matches = matchesRow(cells);
 
         let visible;
         if (ownershipActive) {
-          visible = matchesRow(cells) && ((showMy && isSupervisorAsset) || isDirectReportAsset);
+          visible = matches && ((showMy && isSupervisorAsset) || isDirectReportAsset);
         } else {
-          visible = matchesRow(cells) && isInSupervisorView;
+          visible = matches;
         }
+
         row.style.display = visible ? "" : "none";
       });
-
       applyRowStriping();
     }
 
     // ==============================
-    // Listeners (Dropdown show/hide)
+    // UI listeners
     // ==============================
     filterToggleBtn?.addEventListener("click", () => {
       if (!filterDropdown) return;
@@ -281,7 +343,6 @@
       filterToggleBtn.setAttribute("aria-expanded", String(isOpen));
     });
 
-    // Click outside to close the dropdown
     document.addEventListener("click", (e) => {
       if (!filterDropdown || !filterToggleBtn) return;
       const clickedInside = filterDropdown.contains(e.target) || filterToggleBtn.contains(e.target);
@@ -292,38 +353,30 @@
       }
     });
 
-    // Types expand/collapse
     toggleTypesBtn?.addEventListener("click", () => {
       const opening = typesDropdown?.hidden;
       setHidden(typesDropdown, !opening);
       toggleTypesBtn.setAttribute("aria-expanded", String(opening));
     });
 
-    // Status expand/collapse
     toggleStatusBtn?.addEventListener("click", () => {
       const opening = statusDropdown?.hidden;
       setHidden(statusDropdown, !opening);
       toggleStatusBtn.setAttribute("aria-expanded", String(opening));
     });
 
-    // Reports expand/collapse
     toggleReportsBtn?.addEventListener("click", () => {
       const opening = reportsPanel?.hidden;
       setHidden(reportsPanel, !opening);
       toggleReportsBtn.setAttribute("aria-expanded", String(opening));
     });
 
-    // ==============================
-    // Listeners (parent/children sync)
-    // ==============================
-    // Types: parent “All Types” controls children
     allTypesCB?.addEventListener("change", (e) => {
       const checked = e.target.checked;
       typeChildren().forEach(cb => cb.checked = checked);
       filterTable();
     });
 
-    // Status: parent “All Statuses” controls children
     allStatusCB?.addEventListener("change", (e) => {
       const checked = e.target.checked;
       allStatusCB.indeterminate = false;
@@ -331,7 +384,6 @@
       filterTable();
     });
 
-    // Reports: parent “All My Reports” controls children
     allReportsCB?.addEventListener("change", (e) => {
       const checked = e.target.checked;
       allReportsCB.indeterminate = false;
@@ -339,10 +391,10 @@
       filterTable();
     });
 
-    // Children sync back to parent
     typesList?.addEventListener("change", (e) => {
-      if (e.target?.classList.contains("filter-type")) {
+      if (e.target?.classList.contains("filter-status") || e.target?.classList.contains("filter-type")) {
         syncAllTypesCheckbox();
+        syncAllStatusCheckbox();
         filterTable();
       }
     });
@@ -361,37 +413,31 @@
       }
     });
 
-    // My Assets checkbox
     filterMyAssets?.addEventListener("change", filterTable);
-
-    // Search
     searchBtn?.addEventListener("click", filterTable);
     searchInput?.addEventListener("input", filterTable);
 
-    // ==============================
-    // View switch wiring
-    // ==============================
     viewToggleBtn?.addEventListener("click", () => setHidden(viewDropdown, !viewDropdown.hidden));
     switchButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        applyRole(btn.dataset.role);
+      btn.addEventListener("click", async () => {
+        applyRoleInternal(btn.dataset.role);
+
+        if (btn.dataset.role === "Supervisor") {
+          populateDirectReports("28809");
+          syncAllReportsCheckbox();
+          filterTable();
+        }
+
+        state.scope = (btn.dataset.role === "Supervisor" ? "reports" : "all");
+        await fetchAssets();
+        if (btn.dataset.role === "Supervisor") {
+          // re-wire with server data too
+          syncAllReportsCheckbox();
+          filterTable();
+        }
         setHidden(viewDropdown, true);
       });
     });
-
-    // Set initial role view
-    applyRole("Admin");
-
-    // ==============================
-    // Initial sync of “All” parents (Types/Status/Reports)
-    // ==============================
-    syncAllTypesCheckbox();
-    syncAllStatusCheckbox();
-    // If we eventully pre-populate reports on load, we can call:
-    // syncAllReportsCheckbox();
-
-    // Run an initial table filter to respect any pre-checked boxes or search text
-    filterTable();
 
     // ==============================
     // Carousel (clone-less)
@@ -500,7 +546,6 @@
         track.addEventListener("transitionend", onEnd);
       }
 
-      // Init carousel
       track.style.display = "flex";
       track.style.transform = "translateX(0)";
       measure();
@@ -510,11 +555,126 @@
       leftArrow.addEventListener("click", () => scroll("left"));
       rightArrow.addEventListener("click", () => scroll("right"));
 
-      // Responsiveness
       const ro = new ResizeObserver(relayout);
       ro.observe(viewport);
       window.addEventListener("resize", relayout);
       window.addEventListener("load", relayout);
+    }
+
+    // ---- DEBUG
+    window.addEventListener("error", (e) => {
+      console.error("JS error:", e.message, "at", e.filename, e.lineno + ":" + e.colno);
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      console.error("Unhandled promise rejection:", e.reason);
+    });
+
+    // ==============================
+    // DATA
+    // ==============================
+    const state = {
+      page: 1,
+      pageSize: 200,
+      total: 0,
+      items: [],
+      scope: "all",
+      loading: false
+    };
+
+    async function fetchAssets() {
+      if (state.loading) return;
+      state.loading = true;
+      try {
+        const params = new URLSearchParams({
+          page: String(state.page),
+          pageSize: String(state.pageSize),
+          sort: "AssetName",
+          dir: "asc",
+          scope: state.scope
+        });
+
+        let res = await fetch(`/api/assets?${params.toString()}`, {
+          headers: { "Accept": "application/json, text/json" },
+          cache: "no-store"
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          state.total = data.total ?? data.Total ?? 0;
+
+          const items = data.items ?? data.Items ?? [];
+          state.items = Array.isArray(items) ? items : [];
+          renderTable(state.items);
+
+          // <- server-provided reports (camelCase or PascalCase)
+          const reports = data.reports ?? data.Reports ?? [];
+          renderReportsDropdown(Array.isArray(reports) ? reports : []);
+          return;
+        }
+
+        // Fallback
+        res = await fetch("/api/diag/asset-table", { headers: { "Accept": "application/json, text/json" }, cache: "no-store" });
+        if (!res.ok) throw new Error(`Fallback HTTP ${res.status}`);
+        const diag = await res.json();
+        const rows = Array.isArray(diag) ? diag : (diag.rows ?? diag.Rows ?? []);
+        state.items = rows;
+        renderTable(state.items);
+      } catch (err) {
+        console.error("fetchAssets failed:", err);
+        renderTable([]);
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    applyRoleInternal?.("Admin");
+    state.scope = "all";
+    fetchAssets();
+
+    const COLS = Array.from(document.querySelectorAll("thead th")).length;
+
+    function renderTable(items) {
+      const tbody = document.getElementById("table-body");
+      if (!tbody) return;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        const tr = scopedEl("tr");
+        const td = scopedEl("td");
+        td.id = "no-data-message";
+        td.colSpan = Array.from(document.querySelectorAll("thead th")).length;
+        td.style.textAlign = "center";
+        td.textContent = "No data available";
+        tr.appendChild(td);
+        tbody.replaceChildren(tr);
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+
+      for (const r of items) {
+        const assetName = r.assetName ?? r.AssetName ?? "";
+        const type = r.type ?? r.Type ?? "";
+        const tag = r.tag ?? r.Tag ?? "";
+        const assigned = r.assignedTo ?? r.AssignedTo ?? "";
+        const status = r.status ?? r.Status ?? "";
+
+        const tr = scopedEl("tr");
+        tr.appendChild(scopedEl("td", "col-asset-name", assetName));
+        tr.appendChild(scopedEl("td", "col-type", type));
+        tr.appendChild(scopedEl("td", "col-tag", tag));
+        tr.appendChild(scopedEl("td", "col-assigned-to", assigned));
+
+        const tdStatus = scopedEl("td", "col-status");
+        const badge = scopedEl("span", "status " + String(status).toLowerCase().replace(/\s+/g, ""));
+        badge.textContent = status;
+        tdStatus.appendChild(badge);
+        tr.appendChild(tdStatus);
+
+        frag.appendChild(tr);
+      }
+
+      tbody.replaceChildren(frag);
+      applyRowStriping();
     }
   });
 })();

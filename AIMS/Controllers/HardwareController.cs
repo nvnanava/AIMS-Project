@@ -1,14 +1,16 @@
 using System.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers;
 
-// Commented out for now, enable when we have entraID
+// Commented out for now, enable when we have EntraID
 // [Authorize(Roles = "Admin")]
+// With EntraID wired, we gate via policy configured in Program.cs:
+[Authorize(Policy = "mbcAdmin")]
 [ApiController]
 [Route("api/hardware")]
 public class HardwareController : ControllerBase
@@ -24,16 +26,16 @@ public class HardwareController : ControllerBase
     [HttpGet("get-all")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAllHardware()
+    public async Task<IActionResult> GetAllHardware(CancellationToken ct = default)
     {
-        var users = await _hardwareQuery.GetAllHardwareAsync();
-        return Ok(users);
+        var rows = await _hardwareQuery.GetAllHardwareAsync(ct);
+        return Ok(rows);
     }
-   
+
     [HttpPost("add")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AddHardware([FromBody] CreateHardwareDto dto)
+    public async Task<IActionResult> AddHardware([FromBody] CreateHardwareDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -52,7 +54,7 @@ public class HardwareController : ControllerBase
         };
 
         _db.HardwareAssets.Add(hardware);
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
 
         return CreatedAtAction(
             nameof(GetAllHardware),   // could also make a GetById and reference it here
@@ -65,12 +67,16 @@ public class HardwareController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> EditHardware(int id, [FromBody] UpdateHardwareDto dto)
+    public async Task<IActionResult> EditHardware(int id, [FromBody] UpdateHardwareDto dto, CancellationToken ct = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var hardware = await _db.HardwareAssets.FindAsync(id);
+        // LINQ-forward (avoid FindAsync for consistent style)
+        var hardware = await _db.HardwareAssets
+            .Where(h => h.HardwareID == id)
+            .SingleOrDefaultAsync(ct);
+
         if (hardware == null)
             return NotFound();
 
@@ -84,11 +90,8 @@ public class HardwareController : ControllerBase
         hardware.WarrantyExpiration = dto.WarrantyExpiration;
         hardware.PurchaseDate = dto.PurchaseDate;
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
 
         return Ok(hardware);
     }
-
-
-
 }

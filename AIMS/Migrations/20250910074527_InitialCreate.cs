@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,8 +11,12 @@ namespace AIMS.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "dbo");
+
             migrationBuilder.CreateTable(
                 name: "HardwareAssets",
+                schema: "dbo",
                 columns: table => new
                 {
                     HardwareID = table.Column<int>(type: "int", nullable: false)
@@ -33,6 +37,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Reports",
+                schema: "dbo",
                 columns: table => new
                 {
                     ReportID = table.Column<int>(type: "int", nullable: false)
@@ -50,6 +55,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Roles",
+                schema: "dbo",
                 columns: table => new
                 {
                     RoleID = table.Column<int>(type: "int", nullable: false)
@@ -64,6 +70,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "SoftwareAssets",
+                schema: "dbo",
                 columns: table => new
                 {
                     SoftwareID = table.Column<int>(type: "int", nullable: false)
@@ -83,6 +90,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Users",
+                schema: "dbo",
                 columns: table => new
                 {
                     UserID = table.Column<int>(type: "int", nullable: false)
@@ -102,12 +110,14 @@ namespace AIMS.Migrations
                     table.ForeignKey(
                         name: "FK_Users_Roles_RoleID",
                         column: x => x.RoleID,
+                        principalSchema: "dbo",
                         principalTable: "Roles",
                         principalColumn: "RoleID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Users_Users_SupervisorID",
                         column: x => x.SupervisorID,
+                        principalSchema: "dbo",
                         principalTable: "Users",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Restrict);
@@ -115,6 +125,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Assignments",
+                schema: "dbo",
                 columns: table => new
                 {
                     AssignmentID = table.Column<int>(type: "int", nullable: false)
@@ -133,18 +144,21 @@ namespace AIMS.Migrations
                     table.ForeignKey(
                         name: "FK_Assignments_HardwareAssets_AssetTag",
                         column: x => x.AssetTag,
+                        principalSchema: "dbo",
                         principalTable: "HardwareAssets",
                         principalColumn: "HardwareID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Assignments_SoftwareAssets_SoftwareID",
                         column: x => x.SoftwareID,
+                        principalSchema: "dbo",
                         principalTable: "SoftwareAssets",
                         principalColumn: "SoftwareID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Assignments_Users_UserID",
                         column: x => x.UserID,
+                        principalSchema: "dbo",
                         principalTable: "Users",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Restrict);
@@ -152,6 +166,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "AuditLogs",
+                schema: "dbo",
                 columns: table => new
                 {
                     AuditLogID = table.Column<int>(type: "int", nullable: false)
@@ -174,16 +189,19 @@ namespace AIMS.Migrations
                     table.ForeignKey(
                         name: "FK_AuditLogs_HardwareAssets_AssetTag",
                         column: x => x.AssetTag,
+                        principalSchema: "dbo",
                         principalTable: "HardwareAssets",
                         principalColumn: "HardwareID");
                     table.ForeignKey(
                         name: "FK_AuditLogs_SoftwareAssets_SoftwareID",
                         column: x => x.SoftwareID,
+                        principalSchema: "dbo",
                         principalTable: "SoftwareAssets",
                         principalColumn: "SoftwareID");
                     table.ForeignKey(
                         name: "FK_AuditLogs_Users_UserID",
                         column: x => x.UserID,
+                        principalSchema: "dbo",
                         principalTable: "Users",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Restrict);
@@ -191,6 +209,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateTable(
                 name: "FeedbackEntries",
+                schema: "dbo",
                 columns: table => new
                 {
                     FeedbackID = table.Column<int>(type: "int", nullable: false)
@@ -207,6 +226,7 @@ namespace AIMS.Migrations
                     table.ForeignKey(
                         name: "FK_FeedbackEntries_Users_SubmittedByUserID",
                         column: x => x.SubmittedByUserID,
+                        principalSchema: "dbo",
                         principalTable: "Users",
                         principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
@@ -214,6 +234,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assignments_AssetTag_UnassignedAtUtc",
+                schema: "dbo",
                 table: "Assignments",
                 columns: new[] { "AssetTag", "UnassignedAtUtc" },
                 unique: true,
@@ -221,6 +242,7 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assignments_SoftwareID_UnassignedAtUtc",
+                schema: "dbo",
                 table: "Assignments",
                 columns: new[] { "SoftwareID", "UnassignedAtUtc" },
                 unique: true,
@@ -228,66 +250,78 @@ namespace AIMS.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_Assignments_UserID",
+                schema: "dbo",
                 table: "Assignments",
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_AssetTag",
+                schema: "dbo",
                 table: "AuditLogs",
                 column: "AssetTag");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_ExternalId",
+                schema: "dbo",
                 table: "AuditLogs",
                 column: "ExternalId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_SoftwareID",
+                schema: "dbo",
                 table: "AuditLogs",
                 column: "SoftwareID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_UserID",
+                schema: "dbo",
                 table: "AuditLogs",
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FeedbackEntries_SubmittedByUserID",
+                schema: "dbo",
                 table: "FeedbackEntries",
                 column: "SubmittedByUserID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_HardwareAssets_SerialNumber",
+                schema: "dbo",
                 table: "HardwareAssets",
                 column: "SerialNumber",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reports_ExternalId",
+                schema: "dbo",
                 table: "Reports",
                 column: "ExternalId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_SoftwareAssets_SoftwareLicenseKey",
+                schema: "dbo",
                 table: "SoftwareAssets",
                 column: "SoftwareLicenseKey",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_ExternalId",
+                schema: "dbo",
                 table: "Users",
                 column: "ExternalId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleID",
+                schema: "dbo",
                 table: "Users",
                 column: "RoleID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_SupervisorID",
+                schema: "dbo",
                 table: "Users",
                 column: "SupervisorID");
         }
@@ -296,28 +330,36 @@ namespace AIMS.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Assignments");
+                name: "Assignments",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "AuditLogs");
+                name: "AuditLogs",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "FeedbackEntries");
+                name: "FeedbackEntries",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "Reports");
+                name: "Reports",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "HardwareAssets");
+                name: "HardwareAssets",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "SoftwareAssets");
+                name: "SoftwareAssets",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "Users",
+                schema: "dbo");
 
             migrationBuilder.DropTable(
-                name: "Roles");
+                name: "Roles",
+                schema: "dbo");
         }
     }
 }

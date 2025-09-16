@@ -17,6 +17,7 @@ namespace AIMS.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("dbo")
                 .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -60,7 +61,7 @@ namespace AIMS.Migrations
                         .IsUnique()
                         .HasFilter("[SoftwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
 
-                    b.ToTable("Assignments", t =>
+                    b.ToTable("Assignments", "dbo", t =>
                         {
                             t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
                         });
@@ -119,7 +120,7 @@ namespace AIMS.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("AuditLogs", t =>
+                    b.ToTable("AuditLogs", "dbo", t =>
                         {
                             t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
                         });
@@ -155,7 +156,7 @@ namespace AIMS.Migrations
 
                     b.HasIndex("SubmittedByUserID");
 
-                    b.ToTable("FeedbackEntries");
+                    b.ToTable("FeedbackEntries", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Hardware", b =>
@@ -201,7 +202,7 @@ namespace AIMS.Migrations
                     b.HasIndex("SerialNumber")
                         .IsUnique();
 
-                    b.ToTable("HardwareAssets");
+                    b.ToTable("HardwareAssets", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Report", b =>
@@ -236,7 +237,7 @@ namespace AIMS.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
-                    b.ToTable("Reports");
+                    b.ToTable("Reports", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Role", b =>
@@ -257,7 +258,7 @@ namespace AIMS.Migrations
 
                     b.HasKey("RoleID");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Software", b =>
@@ -298,7 +299,7 @@ namespace AIMS.Migrations
                     b.HasIndex("SoftwareLicenseKey")
                         .IsUnique();
 
-                    b.ToTable("SoftwareAssets");
+                    b.ToTable("SoftwareAssets", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.User", b =>
@@ -345,7 +346,7 @@ namespace AIMS.Migrations
 
                     b.HasIndex("SupervisorID");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Assignment", b =>
