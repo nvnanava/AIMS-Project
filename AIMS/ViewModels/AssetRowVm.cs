@@ -2,6 +2,8 @@ namespace AIMS.ViewModels;
 
 public sealed class AssetRowVm
 {
+    public int? HardwareID { get; init; }
+    public int? SoftwareID { get; init; }
     public string AssetName { get; init; } = "";
     public string Type { get; init; } = "";
     public string Tag { get; init; } = "";

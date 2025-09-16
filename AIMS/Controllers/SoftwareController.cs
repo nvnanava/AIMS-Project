@@ -4,13 +4,16 @@ using AIMS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AIMS.Utilities;
 
 namespace AIMS.Controllers;
 
 // Commented out for now, enable when we have EntraID
 // [Authorize(Roles = "Admin")]
 // With EntraID wired, we gate via policy configured in Program.cs:
-[Authorize(Policy = "mbcAdmin")]
+
+//[Authorize(Policy = "mbcAdmin")] Enable/uncomment in Sprint 6 for role based authorization
+
 [ApiController]
 [Route("api/software")]
 public class SoftwareController : ControllerBase
@@ -40,6 +43,27 @@ public class SoftwareController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        //validate unique SoftwareLicenseKey
+        if (await _db.SoftwareAssets.AnyAsync(s => s.SoftwareLicenseKey == dto.SoftwareLicenseKey, ct))
+        {
+            ModelState.AddModelError("SoftwareLicenseKey", "A software asset with this license key already exists.");
+            return BadRequest(ModelState);
+        }
+
+        //validate SoftwareCost is non-negative
+        if (dto.SoftwareCost < 0)
+        {
+            ModelState.AddModelError("SoftwareCost", "Software cost cannot be negative.");
+            return BadRequest(ModelState);
+        }
+
+        //validate license expiration is not in the past
+        if (dto.SoftwareLicenseExpiration.HasValue && dto.SoftwareLicenseExpiration < DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            ModelState.AddModelError("SoftwareLicenseExpiration", "License expiration cannot be in the past.");
+            return BadRequest(ModelState);
+        }
+
         // Map DTO → Entity
         var software = new Software
         {
@@ -54,6 +78,7 @@ public class SoftwareController : ControllerBase
 
         _db.SoftwareAssets.Add(software);
         await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets(); // signal clients to refresh cache
 
         return CreatedAtAction(
             nameof(GetAllSoftware),   // could also make a GetById and reference it here

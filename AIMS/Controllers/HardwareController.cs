@@ -4,13 +4,15 @@ using AIMS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AIMS.Utilities;
 
 namespace AIMS.Controllers;
 
 // Commented out for now, enable when we have EntraID
 // [Authorize(Roles = "Admin")]
 // With EntraID wired, we gate via policy configured in Program.cs:
-[Authorize(Policy = "mbcAdmin")]
+
+//[Authorize(Policy = "mbcAdmin")] enable in Sprint 6 for role based authorization
 [ApiController]
 [Route("api/hardware")]
 public class HardwareController : ControllerBase
@@ -39,10 +41,34 @@ public class HardwareController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
+        // check for unique SerialNumber
+        if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber == dto.SerialNumber, ct))
+        {
+            ModelState.AddModelError("SerialNumber", "A hardware asset with this serial number already exists.");
+            return BadRequest(ModelState);
+        }
+        // check for unique AssetTag
+        if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag == dto.AssetTag, ct))
+        {
+            ModelState.AddModelError("AssetTag", "A hardware asset with this asset tag already exists.");
+            return BadRequest(ModelState);
+        }
+        // validate dates
+        if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            ModelState.AddModelError("PurchaseDate", "Purchase date cannot be in the future.");
+            return BadRequest(ModelState);
+        }
+        if (dto.WarrantyExpiration < dto.PurchaseDate)
+        {
+            ModelState.AddModelError("WarrantyExpiration", "Warranty expiration cannot be before purchase date.");
+            return BadRequest(ModelState);
+        }
 
         // Map DTO → Entity
         var hardware = new Hardware
         {
+            AssetTag = dto.AssetTag,
             AssetName = dto.AssetName,
             AssetType = dto.AssetType,
             Status = dto.Status,
@@ -55,6 +81,8 @@ public class HardwareController : ControllerBase
 
         _db.HardwareAssets.Add(hardware);
         await _db.SaveChangesAsync(ct);
+
+        CacheStamp.BumpAssets(); // signal clients to refresh cache
 
         return CreatedAtAction(
             nameof(GetAllHardware),   // could also make a GetById and reference it here
@@ -80,17 +108,16 @@ public class HardwareController : ControllerBase
         if (hardware == null)
             return NotFound();
 
-        // Update fields
-        hardware.AssetName = dto.AssetName;
-        hardware.AssetType = dto.AssetType;
-        hardware.Status = dto.Status;
-        hardware.Manufacturer = dto.Manufacturer;
-        hardware.Model = dto.Model;
-        hardware.SerialNumber = dto.SerialNumber;
-        hardware.WarrantyExpiration = dto.WarrantyExpiration;
-        hardware.PurchaseDate = dto.PurchaseDate;
+        // Update fields with coalescence to avoid nulls
+        hardware.AssetTag = dto.AssetTag ?? hardware.AssetTag;
+        hardware.AssetName = dto.AssetName ?? hardware.AssetName;
+        hardware.AssetType = dto.AssetType ?? hardware.AssetType;
+        hardware.Status = dto.Status ?? hardware.Status;
+
 
         await _db.SaveChangesAsync(ct);
+
+        CacheStamp.BumpAssets(); // signal clients to refresh cache
 
         return Ok(hardware);
     }
