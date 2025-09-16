@@ -23,6 +23,7 @@ public class HardwareQuery
                 WarrantyExpiration = h.WarrantyExpiration,
                 PurchaseDate = h.PurchaseDate,
 
+                // Is there an OPEN assignment?
                 IsAssigned = _db.Assignments.Any(a =>
                     a.AssetKind == AssetKind.Hardware &&
                     a.AssetTag == h.HardwareID &&
