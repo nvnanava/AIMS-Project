@@ -5,114 +5,192 @@
                 <h5 class="modal-title" id="addAssetModalLabel">Add New Asset</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-           <div class="modal-body">
-    <form id="AssetAddForm">
+            <div class="modal-body">
+                <div id="serverErrorMessage" class="alert alert-danger" style="display: none;"></div>
+                <form id="AssetAddForm">
+                    <div class="mb-3">
+                        <label for="assetType" class="form-label">Select Asset Type:</label>
+                        <select id="assetType" name="assetType" class="form-select">
+                            <option value="@ViewData["Category"]" selected>@ViewData["Category"]</option>
+                        </select>
+                    </div>
 
-        <div class="mb-3">
-            <label for="assets" class="form-label">Select Asset Type:</label>
-            <select id="assets" name="assets" class="form-select">
-                <option value="desktop">Desktop</option>
-                <option value="laptop">Laptop</option>
-                <option value="headset">Headset</option>
-                <option value="software">Software</option>
-                <option value="chargingCable">Charging Cable</option>
-            </select>
-        </div>
 
-        <div class="mb-3">
-            <label for="make" class="form-label">Make:</label>
-            <select id="make" name="make" class="form-select">
-                <option value="dell">Dell</option>
-                <option value="hp">HP</option>
-                <option value="gateway">Gateway</option>
-                <option value="logitech">Logitech</option>
-                <option value="apple">Mac</option>
-            </select>
-        </div>
+                    <div class="mb-3">
+                        <label for="manufacturer" class="form-label">Manufacturer:</label>
+                        <input type="text" id="manufacturer" name="manufacturer" class="form-control"
+                            placeholder="Enter Manufacturer">
+                    </div>
 
-        <div class="mb-3">
-            <label for="model" class="form-label">Model:</label>
-            <select id="model" name="model" class="form-select">
-                <option value="Inspiron 2050">Inspiron 15</option>
-                <option value="Latitude 2040">Latitude 2040</option>
-                <option value="Logitech H390">Logitech H390</option>
-                <option value="logitech">Logitech</option>
-                <option value="apple">Macbook Pro</option>
-            </select>
-        </div>
 
-        <div class="mb-3">
-            <label for="serialNumber" class="form-label">Serial Number:</label>
-            <input type="text" id="serialNumber" name="serialNumber" class="form-control" placeholder="Enter Serial Number">
-            <div id="serialNumberError" class="text-danger small" style="display: none;"></div>
-        </div>
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Model:</label>
+                        <input type="text" id="model" name="model" class="form-control" placeholder="Enter Model">
+                    </div>
 
-        <div class="mb-3">
-            <label for="tagNumber" class="form-label">Tag Number:</label>
-            <input type="text" id="tagNumber" name="tagNumber" class="form-control" placeholder="Enter Tag Number">
-            <div id="tagNumberError" class="text-danger small" style="display: none;"></div>
-        </div>
+                    <div class="mb-3">
+                        <label for="serialNumber" class="form-label">Serial Number:</label>
+                        <input type="text" id="serialNumber" name="serialNumber" class="form-control"
+                            placeholder="Enter Serial Number">
+                    </div>
 
-        <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">Add Asset</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
+                    <div class="mb-3">
+                        <label for="tagNumber" class="form-label">Tag Number:</label>
+                        <input type="text" id="tagNumber" name="tagNumber" class="form-control"
+                            placeholder="Enter Tag Number">
+                    </div>
+                    <div id="assetFormError" class="text-danger small" style="display:none;"></div>
 
-    </form>
-</div>
+                    <div class="mb-3">
+                        <label for="addPurchaseDate" class="form-label">Purchase Date</label>
+                        <input type="date" id="addPurchaseDate" name="purchaseDate" class="form-control">
+                        <div id="purchaseDateError" class="invalid-feedback">Purchase date is required.</div>
+                    </div>
+
+                    <div class="mb-3"></div>
+                    <label for="warrantyExpiration" class="form-label">Warranty Expiration Date:</label>
+                    <input type="date" id="warrantyExpiration" name="warrantyExpiration" class="form-control"
+                        value="@DateTime.Now.ToString("yyyy-MM-dd")" min="@DateTime.Now.ToString("yyyy-MM-dd")">
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Add Asset</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+
+                </form>
+            </div>
 
         </div>
     </div>
 </div>
 
 <script>
-    // Function to handle the form submission and shows werror message if serial number and tag number are missing.a 
-    document.getElementById('AssetAddForm').addEventListener('submit', function(e){
-        e.preventDefault(); // Stay on page
-        const serialNumber = document.getElementById('serialNumber').value.trim();
-        const tagNumber = document.getElementById('tagNumber').value.trim();
-        const assetType = document.getElementById('assets').value;
-        const make = document.getElementById('make').value;
-        const model = document.getElementById('model').value;
-        const errorMessage = document.getElementById('assetFormError');
-        const serialNumberError = document.getElementById('serialNumberError');
-        const tagNumberError = document.getElementById('tagNumberError');
+    // Function to handle the form submission and shows werror message if any fields are missing.a 
+    document.addEventListener('DOMContentLoaded', function () {
+        const assetForm = document.getElementById('AssetAddForm');
+        const addAssetModal = document.getElementById('addAssetModal');
+        const assetFormError = document.getElementById('assetFormError');
+        const errorBox = document.getElementById('serverErrorMessage');
+
+        //reset the modal when closed    
+        addAssetModal.addEventListener('hidden.bs.modal', function () {
+            assetForm.reset();
+            assetFormError.style.display = "none";
+            assetFormError.textContent = "";
+            errorBox.style.display = "none";
+            errorBox.textContent = "";
+
+            assetForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        });
+
+        document.getElementById('AssetAddForm').addEventListener('submit', function (e) {
+            console.log("Submitting asset form"); // debugging line
+            e.preventDefault(); // Stay on page
+            const assetFormError = document.getElementById('assetFormError');
+            assetFormError.style.display = "none";
+            assetFormError.textContent = "";
 
 
-        // if both are empty give a warning message in both fields
-        if (serialNumber === "" && tagNumber === "") {
-            e.preventDefault(); // Prevent form submission
-            serialNumberError.textContent = "Missing a Serial Number";
-            serialNumberError.style.display = "block"; 
-            tagNumberError.textContent = "Missing a Tag Number";
-            tagNumberError.style.display = "block"; 
-            return;
-        }
-        else if (serialNumber === "") {
-            e.preventDefault(); // Prevent form submission
-            serialNumberError.textContent = "Missing a Serial Number";
-            serialNumberError.style.display = "block"; 
-            tagNumberError.style.display = "none"; 
-            return;
-        }
-        else if (tagNumber === "") {
-            e.preventDefault(); // Prevent form submission
-            tagNumberError.textContent = "Missing a Tag Number";
-            tagNumberError.style.display = "block"; 
-            serialNumberError.style.display = "none"; 
-            return;
-        }
+            // Validate required fields
+            const requiredFields = [
+                { id: "assetType", message: "Asset Type is required" },
+                { id: "manufacturer", message: "Manufacturer is required", errorId: "manufacturerError" },
+                { id: "model", message: "Model is required", errorId: "modelError" },
+                { id: "serialNumber", message: "Serial Number is required", errorId: "serialNumberError" },
+                { id: "tagNumber", message: "Tag Number is required", errorId: "tagNumberError" },
+                { id: "addPurchaseDate", message: "Purchase Date is required", errorId: "purchaseDateError" },
+                { id: "warrantyExpiration", message: "Warranty Expiration is required", errorId: "warrantyExpirationError" }
+            ];
 
-        else{
-            // If both fields are filled, submit the form and pop up a success message. We will need to send things to DB in between above and below code
-            const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
-            assignToast.show();
-            //close form after submission
-            bootstrap.Modal.getInstance(document.getElementById('addAssetModal')).hide();
-        }
+            let valid = true;
 
-        // If both fields are filled, allow form submission and hide the error message
-        errorMessage.textContent = ""; 
-        errorMessage.style.display = "none"; 
+            //loop through required fields and show error if any are missing.
+            requiredFields.forEach(field => {
+                const input = document.getElementById(field.id);
+                const errorElem = document.getElementById(field.errorId);
+                if (!input.value.trim()) {
+                    input.classList.add("is-invalid");
+                    input.value = "";
+                    input.placeholder = field.message;
+                    valid = false;
+                } else {
+                    input.classList.remove("is-invalid");
+                    input.placeholder = "";
+                }
+            });
+
+            if (!valid) return;
+
+            //build the dto object to send to the server.
+            const CreateHardwareDto = {
+                AssetTag: document.getElementById('tagNumber').value.trim(),
+                AssetName: document.getElementById('manufacturer').value + " " + document.getElementById('model').value,
+                AssetType: document.getElementById('assetType').value,
+                Status: "Available", // Default status
+                Manufacturer: document.getElementById('manufacturer').value,
+                Model: document.getElementById('model').value,
+                SerialNumber: document.getElementById('serialNumber').value.trim(),
+                WarrantyExpiration: document.getElementById('warrantyExpiration').value,
+                PurchaseDate: document.getElementById('addPurchaseDate').value
+            };
+
+            //send data if all required fields are filled.
+
+            fetch("/api/hardware/add", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(CreateHardwareDto)
+            }).then(async res => {
+                const errorBox = document.getElementById('serverErrorMessage');
+                try {
+                    if (res.ok) {
+                        console.log("Asset added successfully!");
+                        errorBox.style.display = 'none';
+                        const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+                        assignToast.show();
+
+                        $('#addAssetModal').modal('hide');
+
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const category = urlParams.get("category") || "@ViewData["Category"]";
+
+                        await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
+                        await loadAssets(category); //optimistically reload assets. Hardware controller now bumps cache stamp.
+                        return;
+                    }
+                    const data = await res.json();
+                    showErrorMessages(data, errorBox);
+                } catch (err) {
+                    showErrorMessages({ error: "Server response error: " + err.message }, errorBox);
+                }
+            });
+        });
     });
+
+
+    function showErrorMessages(data, container) {
+        let message = "";
+        if (data?.errors) {
+            for (const key in data.errors) {
+                if (data.errors.hasOwnProperty(key)) {
+                    message += data.errors[key].join(" ") + " ";
+                }
+            }
+        } else if (typeof data === "object") { //for mismatched/unexpected data errors. Need to refine or keep.
+            for (const key in data) {
+                if (Array.isArray(data[key])) {
+                    message += data[key].join(" ") + " ";
+                }
+            }
+        } else if (data?.error) {
+            message = data.error;
+        } else {
+            message = "An unknown error occurred.";
+        }
+        container.innerText = message.trim();
+        container.style.display = "block";
+    }
 </script>
