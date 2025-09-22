@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AIMS.Data;
+using AIMS.Queries;
 using AIMS.Utilities;
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +14,14 @@ namespace AIMS.Controllers;
 public class AssetsApiController : ControllerBase
 {
     private readonly AimsDbContext _db;
+    private readonly AssetQuery _assetQuery;
     private readonly IMemoryCache _cache;
 
-    public AssetsApiController(AimsDbContext db, IMemoryCache cache)
+    public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery)
     {
         _db = db;
         _cache = cache;
+        _assetQuery = assetQuery;
     }
 
     // GET /api/assets?page=1&pageSize=50&sort=AssetName&dir=asc&q=thinkpad&types=Laptop&statuses=Assigned&scope=my
@@ -291,5 +294,12 @@ public class AssetsApiController : ControllerBase
         Response.Headers.ETag = pageEtag;
 
         return Ok(payload);
+    }
+
+    [HttpGet("unique")]
+    public async Task<IActionResult> unique()
+    {
+        var res = await _assetQuery.unique();
+        return Ok(res);
     }
 }
