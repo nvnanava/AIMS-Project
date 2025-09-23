@@ -5,6 +5,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+// ★ NEW usings (for route constraint + policies)
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +17,19 @@ builder.Services.AddEndpointsApiExplorer();   // dev/test
 builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
+
+// ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
+builder.Services.Configure<RouteOptions>(o =>
+{
+    o.ConstraintMap["allowedAssetType"] = typeof(AIMS.Routing.AllowedAssetTypeConstraint);
+});
+
+// ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanBulkUpload", policy =>
+        policy.RequireRole("Admin", "Manager"));
+});
 
 // Query/DAO services
 builder.Services.AddScoped<UserQuery>();
@@ -72,6 +88,7 @@ builder.Services
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 
+// keep your existing custom policies
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
       policy.RequireAssertion(context =>
@@ -159,10 +176,35 @@ else
     app.UseHttpsRedirection();
 }
 
-// Order matters: Routing -> AuthN -> AuthZ -> endpoints
+// Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ★ Re-execute to /error/{code} for 403/404/etc.
+app.UseStatusCodePagesWithReExecute("/error/{0}");
+
+// ★ Force themed error pages even when the browser tries “friendly” errors
+app.Use(async (context, next) =>
+{
+    await next();
+
+    if (!context.Response.HasStarted)
+    {
+        if (context.Response.StatusCode == 404)
+        {
+            context.Request.Path = "/error/not-found";
+            context.Response.StatusCode = 200; // render the view
+            await next();
+        }
+        else if (context.Response.StatusCode == 403)
+        {
+            context.Request.Path = "/error/not-authorized";
+            context.Response.StatusCode = 200; // render the view
+            await next();
+        }
+    }
+});
 
 app.MapStaticAssets();
 
@@ -178,4 +220,8 @@ app.MapControllers();
 // Identity UI pages
 app.MapRazorPages();
 
+app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
+    string.Join("\n", eds.Endpoints.Select(e => e.DisplayName)));
+
 app.Run();
+
