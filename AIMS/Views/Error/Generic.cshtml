@@ -1,0 +1,7 @@
+@model int
+@{ ViewData["Title"]="Error"; Layout="_Layout"; }
+<link rel="stylesheet" href="~/css/error.css" asp-append-version="true" />
+<section class="error-shell"><div class="error-card">
+<h1 class="error-title">@Model</h1><p class="error-subtitle">Something went wrong.</p>
+<a class="btn-primary" asp-controller="Home" asp-action="Index">Go to Dashboard</a>
+</div></section>
