@@ -17,7 +17,8 @@
 
           <div class="mb-3">
             <label for="editName" class="form-label">Asset Name</label>
-            <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name">
+            <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name" required>
+            <div class="invalid-feedback">Asset Name is required.</div>
           </div>
 
           <div class="mb-3">
@@ -68,53 +69,11 @@
   </div>
 </div>
 
-@*<script>
-  // Light client-side UX:
-  // 1) show required error for Tag when empty
-  // 2) keep "Mark for Survey" checkbox in sync with Status
-  (function () {
-    const modalEl = document.getElementById('editAssetModal');
-    if (!modalEl) return;
-
-    const form = modalEl.querySelector('#editAssetForm');
-    const tagInput = modalEl.querySelector('#editTag');
-    const statusSel = modalEl.querySelector('#editStatus');
-    const mfs = modalEl.querySelector('#markForSurvey');
-
-    // Validate Tag on submit (HTML5 required already helps; this adds nicer styling)
-    form.addEventListener('submit', function () {
-      if (!tagInput.value.trim()) {
-        tagInput.classList.add('is-invalid');
-        // Let the browser block the submit because of "required"
-      }
-    });
-
-    tagInput.addEventListener('input', function () {
-      if (this.value.trim()) this.classList.remove('is-invalid');
-    });
-
-    // Sync checkbox <-> status
-    if (statusSel && mfs) {
-      statusSel.addEventListener('change', function () {
-        const v = (this.value || '').toLowerCase();
-        mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
-      });
-      mfs.addEventListener('change', function () {
-        if (this.checked) {
-          // Prefer "Marked for Survey" when the box is checked
-          statusSel.value = 'Marked for Survey';
-        }
-      });
-    }
-  })();
-</script>*@
-
-
 <script>
   //second script to mirror above with ajax submission
 
   function fetchUniqueAssetTypes() {
-    return fetch('/api/assets/unique', {
+    return fetch('/api/assets/types/unique', {
           headers: { "Accept": "application/json, text/json" },
           cache: "no-store"
         }).then(res => res.json())
@@ -129,6 +88,7 @@
 
     const form = modalEl.querySelector('#editAssetForm');
     const errorBox = modalEl.querySelector('#editAssetErrorMessage');
+    const nameInput = modalEl.querySelector("#editName");
     const tagInput = modalEl.querySelector('#editTag');
     const typeInput = modalEl.querySelector('#editType');
     const statusSel = modalEl.querySelector('#editStatus');
@@ -155,7 +115,7 @@
       if (!button) return;
 
       await populateAssetTypes();
-      this.querySelector('#editId').value = button.getAttribute('data-id') || '';
+      this.querySelector('#editId').value = button.getAttribute('data-hardware-id') || button.getAttribute('data-software-id');
       this.querySelector('#editName').value = button.getAttribute('data-name') || '';
       this.querySelector('#editType').value = button.getAttribute('data-type') || '';
       this.querySelector('#editTag').value = button.getAttribute('data-tag') || '';
@@ -179,6 +139,43 @@
         tagInput.classList.remove('is-invalid');
       }
 
+
+      if (!nameInput.value.trim()) {
+        nameInput.classList.add('is-invalid');
+        errorBox.innerText = 'Asset Name is required.';
+        errorBox.style.display = 'block';
+        return;
+      } else {
+        nameInput.classList.remove('is-invalid');
+      }
+
+      const AssetType = this.querySelector('#editType').value.trim()
+      let dto;
+      let url;
+
+      switch (AssetType) {
+        case "Software":
+          url = "/api/software/edit"
+          dto = {
+
+            SoftwareID: parseInt(this.querySelector('#editId').value, 10),
+            SoftwareName: this.querySelector('#editName').value.trim(),
+            SoftwareType: this.querySelector('#editType').value.trim(),
+          }
+          break;
+        // for now, the rest are hardware
+        default:
+          url = "/api/hardware/edit"
+          dto = {
+            HardwareID: parseInt(this.querySelector('#editId').value, 10),
+            AssetName: this.querySelector('#editName').value.trim(),
+            AssetType: this.querySelector('#editType').value.trim(),
+            AssetTag: this.querySelector('#editTag').value.trim(),
+            Status: this.querySelector('#editStatus').value,
+            Comments: this.querySelector('#editComments').value.trim(),
+            MarkForSurvey: this.querySelector('#markForSurvey').checked
+          }
+      } 
       // Building the DTO. UpdateHardwareDto is in the HardwareQuery.cs file right now.
       const UpdateHardwareDto = {
         HardwareID: parseInt(this.querySelector('#editId').value, 10),
@@ -189,13 +186,12 @@
         Comments: this.querySelector('#editComments').value.trim(),
         MarkForSurvey: this.querySelector('#markForSurvey').checked
       };
-      console.log('Submitting edit:', UpdateHardwareDto); // Debugging line
       try {
-        const id = UpdateHardwareDto.HardwareID;
-        const res = await fetch(`/api/hardware/edit/${id}`, {
+        const id = dto.HardwareID || dto.SoftwareID;
+        const res = await fetch(`${url}/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(UpdateHardwareDto)
+          body: JSON.stringify(dto)
         });
         if (!res.ok) {
           const err = await res.json();

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AIMS.Utilities;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace AIMS.Controllers;
 
@@ -105,13 +106,19 @@ public class SoftwareController : ControllerBase
             return NotFound();
 
         // Update fields
-        software.SoftwareName = dto.SoftwareName;
-        software.SoftwareType = dto.SoftwareType;
-        software.SoftwareVersion = dto.SoftwareVersion;
-        software.SoftwareLicenseKey = dto.SoftwareLicenseKey;
-        software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration;
+        software.SoftwareName = dto.SoftwareName ?? software.SoftwareName;
+        software.SoftwareType = dto.SoftwareType ?? software.SoftwareType;
+        software.SoftwareVersion = dto.SoftwareVersion ?? software.SoftwareVersion;
+        software.SoftwareLicenseKey = dto.SoftwareLicenseKey ?? software.SoftwareLicenseKey;
+        software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration ?? software.SoftwareLicenseExpiration;
         software.SoftwareUsageData = dto.SoftwareUsageData;
         software.SoftwareCost = dto.SoftwareCost;
+
+        if (string.IsNullOrEmpty(software.SoftwareName))
+        {
+            ModelState.AddModelError("SoftwareName", "SoftwareName cannot be empty");
+            return BadRequest(ModelState);
+        }
 
         await _db.SaveChangesAsync(ct);
 

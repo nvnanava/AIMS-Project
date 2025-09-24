@@ -108,12 +108,18 @@ public class HardwareController : ControllerBase
         if (hardware == null)
             return NotFound();
 
+
         // Update fields with coalescence to avoid nulls
         hardware.AssetTag = dto.AssetTag ?? hardware.AssetTag;
         hardware.AssetName = dto.AssetName ?? hardware.AssetName;
         hardware.AssetType = dto.AssetType ?? hardware.AssetType;
         hardware.Status = dto.Status ?? hardware.Status;
 
+        if (string.IsNullOrEmpty(hardware.AssetName))
+        {
+            ModelState.AddModelError("AssetName", "AssetName cannot be empty");
+            return BadRequest(ModelState);
+        }
 
         await _db.SaveChangesAsync(ct);
 
