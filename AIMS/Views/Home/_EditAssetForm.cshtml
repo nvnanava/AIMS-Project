@@ -195,7 +195,7 @@
         });
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.message || 'Failed to update asset.');
+          throw new Error(`Failed to update asset: ${Object.values(err).flat().join(' ')}`);
         }
         // Success = close modal and refrehs list
         const modal = bootstrap.Modal.getInstance(modalEl);

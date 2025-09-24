@@ -105,6 +105,16 @@ public class SoftwareController : ControllerBase
         if (software == null)
             return NotFound();
 
+        // check for duplicate License Key:
+        var existsKey = await _db.SoftwareAssets
+        .Where(s => s.SoftwareID != id && s.SoftwareLicenseKey == dto.SoftwareLicenseKey)
+        .AnyAsync();
+
+        if (existsKey)
+        {
+            ModelState.AddModelError("SoftwareLicenseKey", "A software asset with this license key already exists.");
+            return BadRequest(ModelState);
+        }
         // Update fields
         software.SoftwareName = dto.SoftwareName ?? software.SoftwareName;
         software.SoftwareType = dto.SoftwareType ?? software.SoftwareType;

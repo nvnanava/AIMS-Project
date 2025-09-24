@@ -108,6 +108,16 @@ public class HardwareController : ControllerBase
         if (hardware == null)
             return NotFound();
 
+        // check for duplicate Tag:
+        var existsTag = await _db.HardwareAssets
+        .Where(h => h.HardwareID != id && h.AssetTag == dto.AssetTag)
+        .AnyAsync();
+
+        if (existsTag)
+        {
+            ModelState.AddModelError("AssetTag", "A hardware asset with this asset tag already exists.");
+            return BadRequest(ModelState);
+        }
 
         // Update fields with coalescence to avoid nulls
         hardware.AssetTag = dto.AssetTag ?? hardware.AssetTag;
