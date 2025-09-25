@@ -1,10 +1,10 @@
 using System.Linq;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Utilities;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace AIMS.Controllers;

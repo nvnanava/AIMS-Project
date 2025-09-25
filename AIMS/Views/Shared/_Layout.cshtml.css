@@ -155,3 +155,13 @@ button.accept-policy {
   font-size: 1rem;
   min-width: 280px;
 }
+
+/* Override navbar bottom margin */
+.custom-navbar.box-shadow.mb-3 {
+  margin-bottom: 0 !important;
+}
+
+/* Override main padding */
+main.pb-3 {
+  padding-bottom: 0 !important;
+}

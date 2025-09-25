@@ -126,39 +126,6 @@ namespace AIMS.Migrations
                         });
                 });
 
-            modelBuilder.Entity("AIMS.Models.Feedback", b =>
-                {
-                    b.Property<int>("FeedbackID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FeedbackID"));
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("SubmissionDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SubmittedByUserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("FeedbackID");
-
-                    b.HasIndex("SubmittedByUserID");
-
-                    b.ToTable("FeedbackEntries", "dbo");
-                });
-
             modelBuilder.Entity("AIMS.Models.Hardware", b =>
                 {
                     b.Property<int>("HardwareID")
@@ -176,10 +143,6 @@ namespace AIMS.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("AssetType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Comment")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -276,10 +239,6 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SoftwareID"));
-
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("SoftwareCost")
                         .HasColumnType("decimal(10,2)");
@@ -411,17 +370,6 @@ namespace AIMS.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AIMS.Models.Feedback", b =>
-                {
-                    b.HasOne("AIMS.Models.User", "SubmittedByUser")
-                        .WithMany("FeedbackSubmissions")
-                        .HasForeignKey("SubmittedByUserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("SubmittedByUser");
-                });
-
             modelBuilder.Entity("AIMS.Models.User", b =>
                 {
                     b.HasOne("AIMS.Models.Role", "Role")
@@ -452,8 +400,6 @@ namespace AIMS.Migrations
                     b.Navigation("AuditActions");
 
                     b.Navigation("DirectReports");
-
-                    b.Navigation("FeedbackSubmissions");
                 });
 #pragma warning restore 612, 618
         }
