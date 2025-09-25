@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Queries;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
