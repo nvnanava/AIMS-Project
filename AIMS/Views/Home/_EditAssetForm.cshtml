@@ -82,16 +82,26 @@
         })
 
   }
+
+  function valueToSend(el) {
+    if(el == null) {
+      throw new Error("Incorrect element specified");
+    }
+    return el.value !== el.dataset.defaultValue ? el.value.trim() : null
+  }
   document.addEventListener('DOMContentLoaded', () => {
     const modalEl = document.getElementById('editAssetModal');
     if (!modalEl) return;
 
     const form = modalEl.querySelector('#editAssetForm');
     const errorBox = modalEl.querySelector('#editAssetErrorMessage');
+    const editId = modalEl.querySelector('#editId');
     const nameInput = modalEl.querySelector("#editName");
+    const editType = modalEl.querySelector('#editType');
     const tagInput = modalEl.querySelector('#editTag');
     const typeInput = modalEl.querySelector('#editType');
     const statusSel = modalEl.querySelector('#editStatus');
+    const commentsInput = modalEl.querySelector('#editComments')
     const mfs = modalEl.querySelector('#markForSurvey');
 
     async function populateAssetTypes() {
@@ -115,12 +125,18 @@
       if (!button) return;
 
       await populateAssetTypes();
-      this.querySelector('#editId').value = button.getAttribute('data-hardware-id') || button.getAttribute('data-software-id');
-      this.querySelector('#editName').value = button.getAttribute('data-name') || '';
-      this.querySelector('#editType').value = button.getAttribute('data-type') || '';
-      this.querySelector('#editTag').value = button.getAttribute('data-tag') || '';
-      this.querySelector('#editStatus').value = button.getAttribute('data-status') || '';
-      this.querySelector('#editComments').value = button.getAttribute('data-comments') || '';
+      editId.value = button.getAttribute('data-hardware-id') || button.getAttribute('data-software-id');
+      editId.dataset.defaultValue = editId.value;
+      nameInput.value = button.getAttribute('data-name') || '';
+      nameInput.dataset.defaultValue = editId.value;
+      editType.value = button.getAttribute('data-type') || '';
+      editType.dataset.defaultValue = editId.value;
+      tagInput.value = button.getAttribute('data-tag') || '';
+      tagInput.dataset.defaultValue = editId.value;
+      statusSel.value = button.getAttribute('data-status') || '';
+      statusSel.dataset.defaultValue = editId.value;
+      commentsInput.value = button.getAttribute('data-comments') || '';
+      commentsInput.dataset.defaultValue = editId.value;
     });
 
 
@@ -159,8 +175,8 @@
           dto = {
 
             SoftwareID: parseInt(this.querySelector('#editId').value, 10),
-            SoftwareName: this.querySelector('#editName').value.trim(),
-            SoftwareType: this.querySelector('#editType').value.trim(),
+            SoftwareName: valueToSend(nameInput),
+            SoftwareType: valueToSend(editType)
           }
           break;
         // for now, the rest are hardware
@@ -168,24 +184,14 @@
           url = "/api/hardware/edit"
           dto = {
             HardwareID: parseInt(this.querySelector('#editId').value, 10),
-            AssetName: this.querySelector('#editName').value.trim(),
-            AssetType: this.querySelector('#editType').value.trim(),
-            AssetTag: this.querySelector('#editTag').value.trim(),
-            Status: this.querySelector('#editStatus').value ,
-            Comments: this.querySelector('#editComments').value.trim() || '',
+            AssetName: valueToSend(nameInput),
+            AssetType: valueToSend(editType),
+            AssetTag: valueToSend(tagInput),
+            Status: valueToSend(statusSel),
+            Comments: valueToSend(commentsInput),
             MarkForSurvey: this.querySelector('#markForSurvey').checked
           }
       } 
-      // Building the DTO. UpdateHardwareDto is in the HardwareQuery.cs file right now.
-      const UpdateHardwareDto = {
-        HardwareID: parseInt(this.querySelector('#editId').value, 10),
-        AssetName: this.querySelector('#editName').value.trim(),
-        AssetType: this.querySelector('#editType').value.trim(),
-        AssetTag: this.querySelector('#editTag').value.trim(),
-        Status: this.querySelector('#editStatus').value,
-        Comments: this.querySelector('#editComments').value.trim(),
-        MarkForSurvey: this.querySelector('#markForSurvey').checked
-      };
       try {
         const id = dto.HardwareID || dto.SoftwareID;
         const res = await fetch(`${url}/${id}`, {
