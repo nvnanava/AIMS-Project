@@ -89,6 +89,7 @@ public class AssetsApiController : ControllerBase
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
+                Comment = h.Comment,
                 SoftwareID = (int?)null,
                 HardwareID = (int?)h.HardwareID // Nullable for now.may need a unified dto that includes IDs. Edits in db are called using the ID
             };
@@ -106,6 +107,7 @@ public class AssetsApiController : ControllerBase
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = "",
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
+                Comment = s.Comment,
                 SoftwareID = (int?)s.SoftwareID,
                 HardwareID = (int?)null //
             };
@@ -229,6 +231,7 @@ public class AssetsApiController : ControllerBase
             {
                 HardwareID = x.HardwareID,
                 SoftwareID = x.SoftwareID,
+                Comment = x.Comment,
                 AssetName = x.AssetName ?? "",
                 Type = type,
                 Tag = x.Tag ?? "",

@@ -74,7 +74,8 @@ public class SoftwareController : ControllerBase
             SoftwareLicenseKey = dto.SoftwareLicenseKey,
             SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration,
             SoftwareUsageData = dto.SoftwareUsageData,
-            SoftwareCost = dto.SoftwareCost
+            SoftwareCost = dto.SoftwareCost,
+            Comment = dto.Comment
         };
 
         _db.SoftwareAssets.Add(software);
@@ -115,20 +116,39 @@ public class SoftwareController : ControllerBase
             ModelState.AddModelError("SoftwareLicenseKey", "A software asset with this license key already exists.");
             return BadRequest(ModelState);
         }
-        // Update fields
-        software.SoftwareName = dto.SoftwareName ?? software.SoftwareName;
-        software.SoftwareType = dto.SoftwareType ?? software.SoftwareType;
-        software.SoftwareVersion = dto.SoftwareVersion ?? software.SoftwareVersion;
-        software.SoftwareLicenseKey = dto.SoftwareLicenseKey ?? software.SoftwareLicenseKey;
-        software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration ?? software.SoftwareLicenseExpiration;
+        // Update field        if (dto.AssetTag is not null)
+        if (dto.SoftwareName is not null)
+        {
+
+            software.SoftwareName = dto.SoftwareName;
+        }
+        if (dto.SoftwareType is not null)
+        {
+            software.SoftwareType = dto.SoftwareType;
+        }
+        if (dto.SoftwareVersion is not null)
+        {
+
+            software.SoftwareVersion = dto.SoftwareVersion;
+        }
+        if (dto.SoftwareLicenseKey is not null)
+        {
+
+            software.SoftwareLicenseKey = dto.SoftwareLicenseKey;
+        }
+        if (dto.SoftwareLicenseExpiration is not null)
+        {
+
+            software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration;
+        }
+        if (dto.Comment is not null)
+        {
+
+            software.Comment = dto.Comment;
+        }
         software.SoftwareUsageData = dto.SoftwareUsageData;
         software.SoftwareCost = dto.SoftwareCost;
 
-        if (string.IsNullOrEmpty(software.SoftwareName))
-        {
-            ModelState.AddModelError("SoftwareName", "SoftwareName cannot be empty");
-            return BadRequest(ModelState);
-        }
 
         await _db.SaveChangesAsync(ct);
 

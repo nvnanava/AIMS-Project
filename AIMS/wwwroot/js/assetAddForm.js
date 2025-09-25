@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('AssetAddForm').addEventListener('submit', function (e) {
-        console.log("Submitting asset form"); // debugging line
         e.preventDefault(); // Stay on page
         const assetFormError = document.getElementById('assetFormError');
         assetFormError.style.display = "none";
@@ -81,7 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const errorBox = document.getElementById('serverErrorMessage');
             try {
                 if (res.ok) {
-                    console.log("Asset added successfully!");
                     errorBox.style.display = 'none';
                     const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
                     assignToast.show();

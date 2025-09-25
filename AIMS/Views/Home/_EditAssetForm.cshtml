@@ -176,7 +176,8 @@
 
             SoftwareID: parseInt(this.querySelector('#editId').value, 10),
             SoftwareName: valueToSend(nameInput),
-            SoftwareType: valueToSend(editType)
+            SoftwareType: valueToSend(editType),
+            Comment: valueToSend(commentsInput),
           }
           break;
         // for now, the rest are hardware
@@ -188,7 +189,7 @@
             AssetType: valueToSend(editType),
             AssetTag: valueToSend(tagInput),
             Status: valueToSend(statusSel),
-            Comments: valueToSend(commentsInput),
+            Comment: valueToSend(commentsInput),
             MarkForSurvey: this.querySelector('#markForSurvey').checked
           }
       } 

@@ -15,4 +15,5 @@ public class Software
     public DateOnly? SoftwareLicenseExpiration { get; set; }
     public long SoftwareUsageData { get; set; }
     public decimal SoftwareCost { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }
