@@ -1,8 +1,10 @@
+<!-- Phase 1 of multi-asset addition form for hardware assets. -->
+<!-- Base asset data is entered and number of assets is selected. On submit, user is taken to a second form to enter serial/tag numbers. -->
 <div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addAssetModalLabel">Add New Asset</h5>
+                <h5 class="modal-title" id="addAssetModalLabel">Add New Assets</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -27,35 +29,31 @@
                         <label for="model" class="form-label">Model:</label>
                         <input type="text" id="model" name="model" class="form-control" placeholder="Enter Model">
                     </div>
-
-                    <div class="mb-3">
-                        <label for="serialNumber" class="form-label">Serial Number:</label>
-                        <input type="text" id="serialNumber" name="serialNumber" class="form-control"
-                            placeholder="Enter Serial Number">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="tagNumber" class="form-label">Tag Number:</label>
-                        <input type="text" id="tagNumber" name="tagNumber" class="form-control"
-                            placeholder="Enter Tag Number">
-                    </div>
                     <div id="assetFormError" class="text-danger small" style="display:none;"></div>
 
                     <div class="mb-3">
                         <label for="addPurchaseDate" class="form-label">Purchase Date</label>
-                        <input type="date" id="addPurchaseDate" name="purchaseDate" class="form-control">
-                        <div id="purchaseDateError" class="invalid-feedback">Purchase date is required.</div>
+                        <input type="date" id="addPurchaseDate" name="purchaseDate" class="form-control"
+                            max="@DateTime.Today.ToString("yyyy-MM-dd")">
+                        <div id="addPurchaseDateError" class="invalid-feedback"></div>
                     </div>
 
-                    <div class="mb-3"></div>
-                    <label for="warrantyExpiration" class="form-label">Warranty Expiration Date:</label>
-                    <input type="date" id="warrantyExpiration" name="warrantyExpiration" class="form-control"
-                        value="@DateTime.Now.ToString("yyyy-MM-dd")" min="@DateTime.Now.ToString("yyyy-MM-dd")">
-
+                    <div class="mb-3">
+                        <label for="warrantyExpiration" class="form-label">Warranty Expiration Date:</label>
+                        <input type="date" id="warrantyExpiration" name="warrantyExpiration" class="form-control"
+                            min="@DateTime.Today.ToString("yyyy-MM-dd")">
+                        <div id="warrantyExpirationError" class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="itemCount" class="form-label">Number of Items:</label>
+                        <input type="number" id="itemCount" name="itemCount" class="form-control" min="1" required>
+                        <div id="itemCountError" class="invalid-feedback"></div>
+                    </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Add Asset</button>
+                        <button id="startPhase2btn" class="btn btn-primary">Next</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
+
 
                 </form>
             </div>
@@ -64,133 +62,60 @@
     </div>
 </div>
 
-<script>
-    // Function to handle the form submission and shows werror message if any fields are missing.a 
-    document.addEventListener('DOMContentLoaded', function () {
-        const assetForm = document.getElementById('AssetAddForm');
-        const addAssetModal = document.getElementById('addAssetModal');
-        const assetFormError = document.getElementById('assetFormError');
-        const errorBox = document.getElementById('serverErrorMessage');
+<!-- Phase 2: On submit of above form, user is taken to a second form to enter serial/tag numbers for each asset being added. -->
+<div class="modal fade" id="itemDetailsModal" tabindex="-1" aria-labelledby="itemDetailsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="itemDetailsLabel">Enter Item Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="itemStep"></div>
+                <form id="ItemDetailsForm">
+                    <div id="itemInputs">
+                        <div class="mb-3">
+                            <label for="serialNumber" class="form-label">Serial Number:</label>
+                            <input type="text" id="serialNumber" name="serialNumber" class="form-control"
+                                placeholder="Enter Serial Number">
+                            <div id="serialNumberError" class="invalid-feedback">Serial Number is required.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tagNumber" class="form-label">Tag Number:</label>
+                            <input type="text" id="tagNumber" name="tagNumber" class="form-control"
+                                placeholder="Enter Tag Number">
+                            <div id="tagNumberError" class="invalid-feedback">Tag Number is required.</div>
+                        </div>
+                    </div>
+                </form>
+                <h6 class="mt-3">Preview</h6>
+                <ul id="previewList" class="list-group"></ul>
+            </div>
+            <div class="modal-footer">
+                <button id="saveProgress" type="button" class="btn btn-warning">Save Progress</button>
+                <button id="nextItemBtn" class="btn btn-primary">Next</button>
+                <button id="submitAllBtn" class="btn btn-success" style="display:none;">Add All Assets</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-        //reset the modal when closed    
-        addAssetModal.addEventListener('hidden.bs.modal', function () {
-            assetForm.reset();
-            assetFormError.style.display = "none";
-            assetFormError.textContent = "";
-            errorBox.style.display = "none";
-            errorBox.textContent = "";
+<!-- Global Server Error Modal -->
+<div class="modal fade" id="serverErrorModal" tabindex="-1" aria-labelledby="serverErrorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="serverErrorModalLabel">Error</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul id="serverErrorList" class="list-group list-group-flush"></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            assetForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        });
-
-        document.getElementById('AssetAddForm').addEventListener('submit', function (e) {
-            console.log("Submitting asset form"); // debugging line
-            e.preventDefault(); // Stay on page
-            const assetFormError = document.getElementById('assetFormError');
-            assetFormError.style.display = "none";
-            assetFormError.textContent = "";
-
-
-            // Validate required fields
-            const requiredFields = [
-                { id: "assetType", message: "Asset Type is required" },
-                { id: "manufacturer", message: "Manufacturer is required", errorId: "manufacturerError" },
-                { id: "model", message: "Model is required", errorId: "modelError" },
-                { id: "serialNumber", message: "Serial Number is required", errorId: "serialNumberError" },
-                { id: "tagNumber", message: "Tag Number is required", errorId: "tagNumberError" },
-                { id: "addPurchaseDate", message: "Purchase Date is required", errorId: "purchaseDateError" },
-                { id: "warrantyExpiration", message: "Warranty Expiration is required", errorId: "warrantyExpirationError" }
-            ];
-
-            let valid = true;
-
-            //loop through required fields and show error if any are missing.
-            requiredFields.forEach(field => {
-                const input = document.getElementById(field.id);
-                const errorElem = document.getElementById(field.errorId);
-                if (!input.value.trim()) {
-                    input.classList.add("is-invalid");
-                    input.value = "";
-                    input.placeholder = field.message;
-                    valid = false;
-                } else {
-                    input.classList.remove("is-invalid");
-                    input.placeholder = "";
-                }
-            });
-
-            if (!valid) return;
-
-            //build the dto object to send to the server.
-            const CreateHardwareDto = {
-                AssetTag: document.getElementById('tagNumber').value.trim(),
-                AssetName: document.getElementById('manufacturer').value + " " + document.getElementById('model').value,
-                AssetType: document.getElementById('assetType').value,
-                Status: "Available", // Default status
-                Manufacturer: document.getElementById('manufacturer').value,
-                Model: document.getElementById('model').value,
-                SerialNumber: document.getElementById('serialNumber').value.trim(),
-                WarrantyExpiration: document.getElementById('warrantyExpiration').value,
-                PurchaseDate: document.getElementById('addPurchaseDate').value
-            };
-
-            //send data if all required fields are filled.
-
-            fetch("/api/hardware/add", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify(CreateHardwareDto)
-            }).then(async res => {
-                const errorBox = document.getElementById('serverErrorMessage');
-                try {
-                    if (res.ok) {
-                        console.log("Asset added successfully!");
-                        errorBox.style.display = 'none';
-                        const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
-                        assignToast.show();
-
-                        $('#addAssetModal').modal('hide');
-
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const category = urlParams.get("category") || "@ViewData["Category"]";
-
-                        await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
-                        await loadAssets(category); //optimistically reload assets. Hardware controller now bumps cache stamp.
-                        return;
-                    }
-                    const data = await res.json();
-                    showErrorMessages(data, errorBox);
-                } catch (err) {
-                    showErrorMessages({ error: "Server response error: " + err.message }, errorBox);
-                }
-            });
-        });
-    });
-
-
-    function showErrorMessages(data, container) {
-        let message = "";
-        if (data?.errors) {
-            for (const key in data.errors) {
-                if (data.errors.hasOwnProperty(key)) {
-                    message += data.errors[key].join(" ") + " ";
-                }
-            }
-        } else if (typeof data === "object") { //for mismatched/unexpected data errors. Need to refine or keep.
-            for (const key in data) {
-                if (Array.isArray(data[key])) {
-                    message += data[key].join(" ") + " ";
-                }
-            }
-        } else if (data?.error) {
-            message = data.error;
-        } else {
-            message = "An unknown error occurred.";
-        }
-        container.innerText = message.trim();
-        container.style.display = "block";
-    }
-</script>
+<script src="~/js/asset-add.js"></script>
