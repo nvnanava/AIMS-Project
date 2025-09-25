@@ -1,11 +1,11 @@
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
-using AIMS.Tests.Integration;
+using AIMS.UnitTests;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace AIMS.Tests.Integration.AssetQuerySpecs;
+namespace AIMS.UnitTests.Queries.AssetQuerySpecs;
 
 public sealed class AssetQueryIntegrationTests : IClassFixture<DbTestHarness>
 {
@@ -45,9 +45,9 @@ public sealed class AssetQueryIntegrationTests : IClassFixture<DbTestHarness>
     {
         await using var db = await CreateContextAsync(_harness.ConnectionString);
         await SeedBasicAsync(db);
-        var sut = new AssetQuery(db);
+        var assetQuery = new AssetQuery(db);
 
-        var list = await sut.unique();
+        var list = await assetQuery.unique();
 
         // Expect union of: Laptop, Monitor, Mouse, IDE, Collaboration, Graphics, Utility
         Assert.Contains("Laptop", list);
