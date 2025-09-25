@@ -171,8 +171,8 @@
             AssetName: this.querySelector('#editName').value.trim(),
             AssetType: this.querySelector('#editType').value.trim(),
             AssetTag: this.querySelector('#editTag').value.trim(),
-            Status: this.querySelector('#editStatus').value,
-            Comments: this.querySelector('#editComments').value.trim(),
+            Status: this.querySelector('#editStatus').value ,
+            Comments: this.querySelector('#editComments').value.trim() || '',
             MarkForSurvey: this.querySelector('#markForSurvey').checked
           }
       } 
