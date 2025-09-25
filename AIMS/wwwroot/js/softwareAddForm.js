@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-    document.getElementById('SoftwareAddForm').addEventListener('submit', function (e) {
+    document.getElementById('SoftwareAddForm').addEventListener('submit', async function (e) {
         e.preventDefault(); // Prevent form submission
 
         // Clear previous error message
@@ -65,35 +65,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         // Send data to server via AJAX
-        fetch('/api/software/add', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(CreateSoftwareDto)
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.message || 'Failed to add software.'); }); //Could touch up with more directed error handling based on status code.
-                }
-                return response.json();
+        try {
+            const res = await fetch('/api/software/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(CreateSoftwareDto)
             })
-            .then(async data => {
-                // Success = close modal and optionally refresh software list
-                const modalElem = document.getElementById('addSoftwareModal');
-                const modal = bootstrap.Modal.getInstance(modalElem);
-                if (modal) {
-                    modal.hide();
-                }
-                //update softwware list
-                //and wait for 250ms to ensure backend has processed the new software
-                await new Promise(resolve => setTimeout(resolve, 250));
-                loadAssets("Software");
-            })
-            .catch(error => {
-                // Display error message
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(`Failed to update asset: ${Object.values(err).flat().join(' ')}`); 
+            }
+            const modalElem = document.getElementById('addSoftwareModal');
+            const modal = bootstrap.Modal.getInstance(modalElem);
+            if (modal) {
+                modal.hide();
+            }
+            //update softwware list
+            //and wait for 250ms to ensure backend has processed the new software
+            await new Promise(resolve => setTimeout(resolve, 250));
+            loadAssets("Software");
+
+        } catch (error) {
                 errorMessageDiv.innerText = error.message;
                 errorMessageDiv.style.display = 'block';
-            });
+        }
     });
 });
