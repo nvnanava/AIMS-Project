@@ -13,5 +13,7 @@ public sealed class AssetRowVm
     public string? AssignedEmployeeNumber { get; init; }
     public string? AssignedEmployeeName { get; init; }
     public DateTime? AssignedAtUtc { get; set; }
+
+    public string? Comment { get; set; }
 }
 

@@ -48,6 +48,7 @@ public class GetHardwareDto
     public string SerialNumber { get; set; } = string.Empty; // unique
     public DateOnly WarrantyExpiration { get; set; }
     public DateOnly PurchaseDate { get; set; }
+    public string Comment { get; set; } = string.Empty;
 
     public bool IsAssigned { get; set; }
 
@@ -71,6 +72,7 @@ public class CreateHardwareDto
     public string SerialNumber { get; set; } = string.Empty; // unique
     public DateOnly WarrantyExpiration { get; set; }
     public DateOnly PurchaseDate { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }
 
 public class UpdateHardwareDto
@@ -81,5 +83,6 @@ public class UpdateHardwareDto
     public string? Status { get; set; }
     public string? Manufacturer { get; set; }
     public string? Model { get; set; }
+    public string? Comment { get; set; }
 
 }

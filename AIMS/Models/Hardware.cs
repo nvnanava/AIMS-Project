@@ -17,4 +17,5 @@ public class Hardware
     public string SerialNumber { get; set; } = string.Empty; // unique
     public DateOnly WarrantyExpiration { get; set; }
     public DateOnly PurchaseDate { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }

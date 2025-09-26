@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AIMS.Utilities;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace AIMS.Controllers;
 
@@ -73,7 +74,8 @@ public class SoftwareController : ControllerBase
             SoftwareLicenseKey = dto.SoftwareLicenseKey,
             SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration,
             SoftwareUsageData = dto.SoftwareUsageData,
-            SoftwareCost = dto.SoftwareCost
+            SoftwareCost = dto.SoftwareCost,
+            Comment = dto.Comment
         };
 
         _db.SoftwareAssets.Add(software);
@@ -104,14 +106,49 @@ public class SoftwareController : ControllerBase
         if (software == null)
             return NotFound();
 
-        // Update fields
-        software.SoftwareName = dto.SoftwareName;
-        software.SoftwareType = dto.SoftwareType;
-        software.SoftwareVersion = dto.SoftwareVersion;
-        software.SoftwareLicenseKey = dto.SoftwareLicenseKey;
-        software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration;
+        // check for duplicate License Key:
+        var existsKey = await _db.SoftwareAssets
+        .Where(s => s.SoftwareID != id && s.SoftwareLicenseKey == dto.SoftwareLicenseKey)
+        .AnyAsync();
+
+        if (existsKey)
+        {
+            ModelState.AddModelError("SoftwareLicenseKey", "A software asset with this license key already exists.");
+            return BadRequest(ModelState);
+        }
+        // Update field        if (dto.AssetTag is not null)
+        if (dto.SoftwareName is not null)
+        {
+
+            software.SoftwareName = dto.SoftwareName;
+        }
+        if (dto.SoftwareType is not null)
+        {
+            software.SoftwareType = dto.SoftwareType;
+        }
+        if (dto.SoftwareVersion is not null)
+        {
+
+            software.SoftwareVersion = dto.SoftwareVersion;
+        }
+        if (dto.SoftwareLicenseKey is not null)
+        {
+
+            software.SoftwareLicenseKey = dto.SoftwareLicenseKey;
+        }
+        if (dto.SoftwareLicenseExpiration is not null)
+        {
+
+            software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration;
+        }
+        if (dto.Comment is not null)
+        {
+
+            software.Comment = dto.Comment;
+        }
         software.SoftwareUsageData = dto.SoftwareUsageData;
         software.SoftwareCost = dto.SoftwareCost;
+
 
         await _db.SaveChangesAsync(ct);
 
