@@ -9,6 +9,8 @@ namespace AIMS.Tests.Integration;
 public sealed class DbTestHarness : IAsyncLifetime
 {
     public string ConnectionString { get; }
+
+    public bool AutoDelete { get; set; } = true;
     public IDbConnection OpenConnection() => new SqlConnection(ConnectionString);
 
     public DbTestHarness()
@@ -40,7 +42,10 @@ public sealed class DbTestHarness : IAsyncLifetime
     public async Task DisposeAsync()
     {
         // Clean up after the test class finishes (keeps DB tidy across runs)
-        await ResetDatabaseAsync();
+        if (AutoDelete)
+        {
+            await ResetDatabaseAsync();
+        }
     }
 
     private async Task ResetDatabaseAsync()

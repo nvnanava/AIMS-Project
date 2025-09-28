@@ -6,6 +6,7 @@ using Dapper;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace AIMS.Tests.Integration;
 
@@ -13,10 +14,13 @@ namespace AIMS.Tests.Integration;
 public class AssetsAPITests
 {
     private readonly HttpClient _client;
-    public AssetsAPITests(APiTestFixture fixture)
+    private readonly ITestOutputHelper _output;
+    public AssetsAPITests(APiTestFixture fixture, ITestOutputHelper output)
     {
         _client = fixture._webFactory.CreateClient();
         _client.BaseAddress = new Uri("https://localhost:5119");
+
+        _output = output;
     }
 
     [Fact]
@@ -37,6 +41,8 @@ public class AssetsAPITests
 
         // Act
         var response = await _client.GetAsync("/api/assets/types/unique");
+        var outp = await response.Content.ReadAsStringAsync();
+        _output.WriteLine(outp);
 
         response.EnsureSuccessStatusCode();
 

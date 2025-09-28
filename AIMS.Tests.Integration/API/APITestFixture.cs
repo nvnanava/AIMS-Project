@@ -9,6 +9,7 @@ public class APiTestFixture : IAsyncLifetime, ICollectionFixture<APiTestFixture>
     {
         // First, set up the external resource
         _harness = new DbTestHarness();
+        _harness.AutoDelete = false;
         await _harness.InitializeAsync();
 
         // Then, set up the WebApplicationFactory using the resource's state
