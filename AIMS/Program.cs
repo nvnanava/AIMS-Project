@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using AIMS.Data;
 using AIMS.Queries;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
@@ -14,6 +17,7 @@ builder.Services.AddEndpointsApiExplorer();   // dev/test
 builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
+builder.Services.AddHttpContextAccessor();
 
 // Query/DAO services
 builder.Services.AddScoped<UserQuery>();
@@ -22,7 +26,8 @@ builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
-builder.Services.AddScoped<FeedbackQuery>();
+// builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
+builder.Services.AddScoped<AssetSearchQuery>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -37,7 +42,7 @@ string? GetConn(string name)
 var preferName =
     builder.Environment.IsDevelopment() &&
     Environment.OSVersion.Platform == PlatformID.Win32NT
-        ? "DefaultConnection"
+        ? "LocalConnection"
         : "DockerConnection";
 
 var cs =
@@ -72,37 +77,55 @@ builder.Services
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 
+var isDev = builder.Environment.IsDevelopment();
+
+bool DevBypass(Microsoft.AspNetCore.Authorization.AuthorizationHandlerContext ctx)
+{
+    if (!isDev) return false;
+
+    // Try MVC first, then raw HttpContext (minimal APIs), then Endpoint
+    var http =
+        (ctx.Resource as AuthorizationFilterContext)?.HttpContext
+        ?? (ctx.Resource as HttpContext)
+        ?? (ctx.Resource as Microsoft.AspNetCore.Routing.RouteEndpoint)?.Metadata
+               .GetMetadata<IHttpContextAccessor>()?.HttpContext;
+
+    if (http == null) return false;
+
+    // Only allow for /api/assets*
+    if (!http.Request.Path.StartsWithSegments("/api/assets", StringComparison.OrdinalIgnoreCase))
+        return false;
+
+    var v = http.Request.Query["devBypass"].ToString();
+    return string.Equals(v, "true", StringComparison.OrdinalIgnoreCase);
+}
+
 builder.Services.AddAuthorizationBuilder()
-  .AddPolicy("mbcAdmin", policy =>
-      policy.RequireAssertion(context =>
-          context.User.HasClaim(c =>
-              c.Type == "preferred_username" &&
-              new[] {
-                  // test accounts for now
-                  "niyant397@gmail.com",
-                  "nvnanavati@csus.edu",
-                  "akalustatsingh@csus.edu",
-                  "tburguillos@csus.edu",
-                  "keeratkhandpur@csus.edu",
-                  "suhailnajimudeen@csus.edu",
-                  "hkaur20@csus.edu",
-                  "cameronlanzaro@csus.edu",
-                  "norinphlong@csus.edu"
-              }.Contains(c.Value))))
-  .AddPolicy("mbcHelpDesk", policy =>
-      policy.RequireAssertion(context =>
-          context.User.HasClaim(c =>
-              c.Type == "preferred_username" &&
-              new[] {
-                  "barryAllen@centralcity.edu"
-              }.Contains(c.Value))))
-  .AddPolicy("mbcSupervisor", policy =>
-      policy.RequireAssertion(context =>
-          context.User.HasClaim(c =>
-              c.Type == "preferred_username" &&
-              new[] {
-                  "richardGrayson@gotham.edu"
-              }.Contains(c.Value))));
+    .AddPolicy("mbcAdmin", policy =>
+        policy.RequireAssertion(ctx =>
+            DevBypass(ctx) || ctx.User.HasClaim(c =>
+                c.Type == "preferred_username" &&
+                new[] {
+                    "niyant397@gmail.com",
+                    "nvnanavati@csus.edu",
+                    "akalustatsingh@csus.edu",
+                    "tburguillos@csus.edu",
+                    "keeratkhandpur@csus.edu",
+                    "suhailnajimudeen@csus.edu",
+                    "hkaur20@csus.edu",
+                    "cameronlanzaro@csus.edu",
+                    "norinphlong@csus.edu"
+                }.Contains(c.Value))))
+    .AddPolicy("mbcHelpDesk", policy =>
+        policy.RequireAssertion(ctx =>
+            DevBypass(ctx) || ctx.User.HasClaim(c =>
+                c.Type == "preferred_username" &&
+                new[] { "barryAllen@centralcity.edu" }.Contains(c.Value))))
+    .AddPolicy("mbcSupervisor", policy =>
+        policy.RequireAssertion(ctx =>
+            DevBypass(ctx) || ctx.User.HasClaim(c =>
+                c.Type == "preferred_username" &&
+                new[] { "richardGrayson@gotham.edu" }.Contains(c.Value))));
 
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 
@@ -157,6 +180,34 @@ else
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
     app.UseHttpsRedirection();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (ctx, next) =>
+    {
+        // Allow ?impersonate=28809  OR  ?impersonate=john.smith@aims.local
+        var imp = ctx.Request.Query["impersonate"].ToString();
+        if (!string.IsNullOrWhiteSpace(imp))
+        {
+            // Try to resolve the user from DB once per request
+            using var scope = ctx.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AIMS.Data.AimsDbContext>();
+
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.EmployeeNumber == imp || u.Email == imp);
+
+            if (user != null)
+            {
+                // Store for downstream code
+                ctx.Items["ImpersonatedUserId"] = user.UserID;
+                ctx.Items["ImpersonatedEmail"] = user.Email;
+            }
+        }
+
+        await next();
+    });
 }
 
 // Order matters: Routing -> AuthN -> AuthZ -> endpoints

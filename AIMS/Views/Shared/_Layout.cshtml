@@ -21,7 +21,7 @@
 <body>
     <header>
         <nav
-            class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
                     <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
@@ -59,12 +59,14 @@
                                 <span class="label">Audit Log</span>
                             </a>
                         </li>
+                        <!-- Scaffolded
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Feedback">
                                 <span class="emoji">✉️ </span>
                                 <span class="label">Feedback</span>
                             </a>
                         </li>
+                        -->
                     </ul>
                 </div>
 
@@ -142,8 +144,12 @@
         </div>
     </div>
 
+    <!-- Loading Spinner -->
+    <div id="global-loading-overlay" class="global-loading-overlay" aria-hidden="true">
+        <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
+    </div>
 
-
+    <script src="~/js/global-spinner.js" asp-append-version="true"></script>
 </body>
 
 </html>
