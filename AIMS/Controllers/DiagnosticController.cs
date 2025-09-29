@@ -42,7 +42,7 @@ public class DiagnosticsController : ControllerBase
             Hardware = await _db.HardwareAssets.CountAsync(),
             Software = await _db.SoftwareAssets.CountAsync(),
             Assignments = await _db.Assignments.CountAsync(),
-            Feedback = await _db.FeedbackEntries.CountAsync(),
+            // Feedback = await _db.FeedbackEntries.CountAsync(), # Scaffolded
             AuditLogs = await _db.AuditLogs.CountAsync(),
             LatestAssignment = await _db.Assignments
                 .AsNoTracking()

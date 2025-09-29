@@ -71,3 +71,35 @@ body {
   display: flex;
   justify-content: space-around;
 }
+
+.global-loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  /* shown via JS */
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  /* no opaque overlay */
+  z-index: 2000;
+  /* higher than tables/modals */
+  opacity: 0;
+  transition: opacity .14s ease-in-out;
+}
+
+.global-loading-overlay.is-visible {
+  display: flex;
+  opacity: 1;
+}
+
+.global-loading-overlay .logo-spinner {
+  width: 256px;
+  height: 256px;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
