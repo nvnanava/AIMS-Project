@@ -76,7 +76,8 @@ public class HardwareController : ControllerBase
             Model = dto.Model,
             SerialNumber = dto.SerialNumber,
             WarrantyExpiration = dto.WarrantyExpiration,
-            PurchaseDate = dto.PurchaseDate
+            PurchaseDate = dto.PurchaseDate,
+            Comment = dto.Comment
         };
 
         _db.HardwareAssets.Add(hardware);
@@ -199,11 +200,52 @@ public class HardwareController : ControllerBase
         if (hardware == null)
             return NotFound();
 
+        // check for duplicate Tag:
+        var existsTag = await _db.HardwareAssets
+        .Where(h => h.HardwareID != id && h.AssetTag == dto.AssetTag)
+        .AnyAsync();
+
+        if (existsTag)
+        {
+            ModelState.AddModelError("AssetTag", "A hardware asset with this asset tag already exists.");
+            return BadRequest(ModelState);
+        }
+
         // Update fields with coalescence to avoid nulls
-        hardware.AssetTag = dto.AssetTag ?? hardware.AssetTag;
-        hardware.AssetName = dto.AssetName ?? hardware.AssetName;
-        hardware.AssetType = dto.AssetType ?? hardware.AssetType;
-        hardware.Status = dto.Status ?? hardware.Status;
+
+
+        // avoid rewriting values
+        if (dto.AssetTag is not null)
+        {
+
+            hardware.AssetTag = dto.AssetTag;
+        }
+        if (dto.AssetName is not null)
+        {
+            hardware.AssetName = dto.AssetName;
+        }
+        if (dto.AssetType is not null)
+        {
+
+            hardware.AssetType = dto.AssetType;
+        }
+        if (dto.Status is not null)
+        {
+
+            hardware.Status = dto.Status;
+        }
+        if (dto.Comment is not null)
+        {
+
+            hardware.Comment = dto.Comment;
+        }
+
+
+        if (string.IsNullOrEmpty(hardware.AssetName))
+        {
+            ModelState.AddModelError("AssetName", "AssetName cannot be empty");
+            return BadRequest(ModelState);
+        }
 
 
         await _db.SaveChangesAsync(ct);
