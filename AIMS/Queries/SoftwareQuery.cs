@@ -38,6 +38,7 @@ public class GetSoftwareDto
     public DateOnly? SoftwareLicenseExpiration { get; set; }
     public long SoftwareUsageData { get; set; }
     public decimal SoftwareCost { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }
 
 public class CreateSoftwareDto
@@ -49,6 +50,7 @@ public class CreateSoftwareDto
     public DateOnly? SoftwareLicenseExpiration { get; set; }
     public long SoftwareUsageData { get; set; }
     public decimal SoftwareCost { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }
 
 public class UpdateSoftwareDto
@@ -60,4 +62,5 @@ public class UpdateSoftwareDto
     public DateOnly? SoftwareLicenseExpiration { get; set; }
     public long SoftwareUsageData { get; set; }
     public decimal SoftwareCost { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }
