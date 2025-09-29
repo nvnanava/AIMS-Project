@@ -101,5 +101,19 @@ namespace AIMS.Queries
                 .Take(n)
                 .ToListAsync();
         }
+        public async Task<List<string>> unique()
+        {
+            var hardware_query = _db.HardwareAssets
+                .AsNoTracking()
+                .Select(h => h.AssetType)
+                .Distinct();
+            var software_query = _db.SoftwareAssets
+                .AsNoTracking()
+                .Select(s => s.SoftwareType)
+                .Distinct();
+            return await hardware_query.Concat(software_query)
+                    .Order()
+                    .ToListAsync();
+        }
     }
 }

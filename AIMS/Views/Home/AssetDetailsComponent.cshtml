@@ -98,6 +98,7 @@
           case "in repair": statusClass = "status-in-repair"; break;
         }
 
+
         row.innerHTML = `
                     <td>${asset.assetName}</td>
                     <td>${asset.type}</td>
@@ -113,11 +114,13 @@
                                 aria-label="Edit ${asset.assetName}"
                                 title="Edit asset"
                                 data-bs-toggle="modal"
-                                data-id="${asset.hardwareID}"
+                                data-hardware-id="${asset.hardwareID || ''}"
+                                data-software-id="${asset.softwareID || ''}"
                                 data-bs-target="#editAssetModal"
                                 data-name="${asset.assetName}"
                                 data-type="${asset.type}"
                                 data-tag="${asset.tag}"
+                                data-comments="${asset.comment}"
                                 data-status="${asset.status}">
                             <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
                             <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
