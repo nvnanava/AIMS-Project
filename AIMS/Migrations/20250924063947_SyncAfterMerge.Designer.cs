@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AIMS.Migrations
 {
     [DbContext(typeof(AimsDbContext))]
-    [Migration("20250916013032_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250924063947_SyncAfterMerge")]
+    partial class SyncAfterMerge
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -66,7 +66,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Assignments", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
                         });
                 });
 
@@ -125,7 +125,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
                         });
                 });
 
@@ -171,6 +171,10 @@ namespace AIMS.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HardwareID"));
 
                     b.Property<string>("AssetName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AssetTag")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
