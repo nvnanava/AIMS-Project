@@ -1,5 +1,6 @@
 @* Views/Home/_EditAssetForm.cshtml *@
 <div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetModalLabel" aria-hidden="true">
+feature/task-5-asset-modals-ui
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
 
@@ -59,9 +60,76 @@
             </div>
 
         </div>
+
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="editAssetModalLabel">Edit Asset</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="editAssetForm" novalidate>
+          <!-- Hidden primary key (if you use one) -->
+          <input type="hidden" id="editId" name="id" />
+
+          <div id="editAssetErrorMessage" class="alert alert-danger" style="display:none;"></div>
+
+          <div class="mb-3">
+            <label for="editName" class="form-label">Asset Name</label>
+            <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name">
+          </div>
+
+          <div class="mb-3">
+            <label for="editType" class="form-label">Type</label>
+            <input type="text" id="editType" name="type" class="form-control" placeholder="Enter type (e.g., Laptop)">
+          </div>
+
+          <div class="mb-3">
+            <label for="editTag" class="form-label">Tag Number</label>
+            <input type="text" id="editTag" name="tagNumber" class="form-control" placeholder="Enter tag number"
+              required>
+            <div class="invalid-feedback">Tag Number is required.</div>
+          </div>
+
+          <div class="mb-3">
+            <label for="editStatus" class="form-label">Status</label>
+            <select id="editStatus" name="status" class="form-select">
+              <option value="">-- Select status --</option>
+              <option>Available</option>
+              <option>Assigned</option>
+              <option>Surveyed</option>
+              <option>Marked for Survey</option>
+              <option>In Repair</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="editComments" class="form-label">Comments</label>
+            <textarea id="editComments" name="comments" class="form-control" rows="4"
+              placeholder="Add any remarks..."></textarea>
+          </div>
+
+          <!-- Back-compat for your older workflow -->
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="markForSurvey" name="markForSurvey">
+            <label class="form-check-label" for="markForSurvey">Mark for Survey</label>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+ main
     </div>
+  </div>
 </div>
 
+feature/task-5-asset-modals-ui
 <script>
     (function () {
         const modalEl = document.getElementById('editAssetModal');
@@ -170,4 +238,140 @@
             tagEl.classList.remove('is-invalid');
         });
     })();
+
+@*<script>
+  // Light client-side UX:
+  // 1) show required error for Tag when empty
+  // 2) keep "Mark for Survey" checkbox in sync with Status
+  (function () {
+    const modalEl = document.getElementById('editAssetModal');
+    if (!modalEl) return;
+
+    const form = modalEl.querySelector('#editAssetForm');
+    const tagInput = modalEl.querySelector('#editTag');
+    const statusSel = modalEl.querySelector('#editStatus');
+    const mfs = modalEl.querySelector('#markForSurvey');
+
+    // Validate Tag on submit (HTML5 required already helps; this adds nicer styling)
+    form.addEventListener('submit', function () {
+      if (!tagInput.value.trim()) {
+        tagInput.classList.add('is-invalid');
+        // Let the browser block the submit because of "required"
+      }
+    });
+
+    tagInput.addEventListener('input', function () {
+      if (this.value.trim()) this.classList.remove('is-invalid');
+    });
+
+    // Sync checkbox <-> status
+    if (statusSel && mfs) {
+      statusSel.addEventListener('change', function () {
+        const v = (this.value || '').toLowerCase();
+        mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
+      });
+      mfs.addEventListener('change', function () {
+        if (this.checked) {
+          // Prefer "Marked for Survey" when the box is checked
+          statusSel.value = 'Marked for Survey';
+        }
+      });
+    }
+  })();
+</script>*@
+
+
+<script>
+  //second script toi mirror abopve with ajax submission
+  document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('editAssetModal');
+    if (!modalEl) return;
+
+    const form = modalEl.querySelector('#editAssetForm');
+    const errorBox = modalEl.querySelector('#editAssetErrorMessage');
+    const tagInput = modalEl.querySelector('#editTag');
+    const statusSel = modalEl.querySelector('#editStatus');
+    const mfs = modalEl.querySelector('#markForSurvey');
+
+
+    //populates the form with the element's data attributes when opened
+    modalEl.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      if (!button) return;
+
+      this.querySelector('#editId').value = button.getAttribute('data-id') || '';
+      this.querySelector('#editName').value = button.getAttribute('data-name') || '';
+      this.querySelector('#editType').value = button.getAttribute('data-type') || '';
+      this.querySelector('#editTag').value = button.getAttribute('data-tag') || '';
+      this.querySelector('#editStatus').value = button.getAttribute('data-status') || '';
+      this.querySelector('#editComments').value = button.getAttribute('data-comments') || '';
+    });
+
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      errorBox.style.display = 'none';
+      errorBox.innerText = '';
+
+      if (!tagInput.value.trim()) {
+        tagInput.classList.add('is-invalid');
+        errorBox.innerText = 'Tag Number is required.';
+        errorBox.style.display = 'block';
+        return;
+      } else {
+        tagInput.classList.remove('is-invalid');
+      }
+
+      // Building the DTO. UpdateHardwareDto is in the HardwareQuery.cs file right now.
+      const UpdateHardwareDto = {
+        HardwareID: parseInt(this.querySelector('#editId').value, 10),
+        AssetName: this.querySelector('#editName').value.trim(),
+        AssetType: this.querySelector('#editType').value.trim(),
+        AssetTag: this.querySelector('#editTag').value.trim(),
+        Status: this.querySelector('#editStatus').value,
+        Comments: this.querySelector('#editComments').value.trim(),
+        MarkForSurvey: this.querySelector('#markForSurvey').checked
+      };
+      console.log('Submitting edit:', UpdateHardwareDto); // Debugging line
+      try {
+        const id = UpdateHardwareDto.HardwareID;
+        const res = await fetch(`/api/hardware/edit/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(UpdateHardwareDto)
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.message || 'Failed to update asset.');
+        }
+        // Success = close modal and refrehs list
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        //reload list after short delay
+        const urlParams = new URLSearchParams(window.location.search);
+        const category = urlParams.get("category") || "@ViewData["Category"]";
+        await new Promise(resolve => setTimeout(resolve, 250));
+        loadAssets(category);
+      } catch (err) {
+        errorBox.innerText = err.message;
+        errorBox.style.display = 'block';
+      }
+    });
+    // Sync checkbox <-> status
+    if (statusSel && mfs) {
+      statusSel.addEventListener('change', function () {
+        const v = (this.value || '').toLowerCase();
+        mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
+      });
+      mfs.addEventListener('change', function () {
+        if (this.checked) {
+          // Prefer "Marked for Survey" when the box is checked
+          statusSel.value = 'Marked for Survey';
+        }
+      });
+    }
+  });
+main
 </script>

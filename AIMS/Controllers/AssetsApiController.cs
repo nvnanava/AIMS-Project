@@ -84,10 +84,11 @@ public class AssetsApiController : ControllerBase
             {
                 AssetName = h.AssetName,
                 TypeRaw = h.AssetType,
-                Tag = h.SerialNumber,
+                Tag = h.AssetTag,
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
-                AssignedAtUtc = (DateTime?)aa.AssignedAtUtc
+                AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
+                HardwareID = (int?)h.HardwareID // Nullable for now.may need a unified dto that includes IDs. Edits in db are called using the ID
             };
 
         var softwareBase =
@@ -102,7 +103,8 @@ public class AssetsApiController : ControllerBase
                 Tag = s.SoftwareLicenseKey,
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = "",
-                AssignedAtUtc = (DateTime?)aa.AssignedAtUtc
+                AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
+                HardwareID = (int?)null //
             };
 
         var queryable = hardwareBase.Concat(softwareBase);
@@ -221,6 +223,7 @@ public class AssetsApiController : ControllerBase
 
             return new AssetRowVm
             {
+                HardwareID = x.HardwareID,
                 AssetName = x.AssetName ?? "",
                 Type = type,
                 Tag = x.Tag ?? "",

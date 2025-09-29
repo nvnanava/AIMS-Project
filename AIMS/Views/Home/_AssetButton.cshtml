@@ -1,15 +1,26 @@
 @* <button class="button" type="button" data-bs-toggle="modal" data-bs-target="#addAssetModal">
     &#8853; Add Assets
 </button> *@
+@await Html.PartialAsync("_EditAssetForm")
+@{
+  var category = ViewData["Category"]?.ToString() ?? "Unknown";
+}
 
 <div class="assetManage">
   <button class="dropbtn"> Manage Asset</button>
   <div id="myassetManage" class="assetManage-content">
-    <a href="#"  data-bs-toggle="modal" data-bs-target="#addAssetModal">&#10133; Add Asset</a>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#editAssetModal">&#128295; Edit Asset</a>
-    <a href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">&#128194; Add New Category</a>
+    @if (category.Equals("Software", StringComparison.OrdinalIgnoreCase))
+    {
+      <a href="#" data-bs-toggle="modal" data-bs-target="#addSoftwareModal">&#10133; Add Software</a>
+      <a href="#" data-bs-toggle="modal" data-bs-target="#editAssetModal">&#128295; Edit Asset</a>
+      <a href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">&#128194; Add New Category</a>
+    }
+    else
+    {
+      <a href="#" data-bs-toggle="modal" data-bs-target="#addAssetModal">&#10133; Add Asset</a>
+      <a href="#" data-bs-toggle="modal" data-bs-target="#editAssetModal">&#128295; Edit Asset</a>
+      <a href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">&#128194; Add New Category</a>
+    }
 
   </div>
 </div>
-
-
