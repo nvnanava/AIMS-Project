@@ -1,6 +1,6 @@
 @* Views/Home/_EditAssetForm.cshtml *@
 <div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
 
             <div class="modal-header">
@@ -9,54 +9,53 @@
             </div>
 
             <div class="modal-body">
-                <form id="editAssetForm" action="/Home/EditAsset" method="post">
-                    <!-- Hidden primary key (if you use one) -->
-                    <input type="hidden" id="editId" name="id" />
+                <form id="editAssetForm" novalidate>
+                    <!-- Hidden original tag so we know what to update even if user changes Tag # -->
+                    <input type="hidden" id="OriginalTag" />
 
-                    <div class="mb-3">
-                        <label for="editName" class="form-label">Asset Name</label>
-                        <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="AssetName" class="form-label">Asset Name</label>
+                            <input type="text" id="AssetName" class="form-control" placeholder="Enter asset name">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="AssetType" class="form-label">Type</label>
+                            <input type="text" id="AssetType" class="form-control" placeholder="e.g., Laptop">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="Tag" class="form-label">Tag #</label>
+                            <input type="text" id="Tag" class="form-control" placeholder="Enter tag number" required>
+                            <div class="invalid-feedback">Tag # is required.</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="SerialNumber" class="form-label">Serial #</label>
+                            <input type="text" id="SerialNumber" class="form-control" placeholder="Enter serial number">
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="Comments" class="form-label">Comments</label>
+                            <textarea id="Comments" class="form-control" rows="3"
+                                placeholder="Add any remarks..."></textarea>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="editType" class="form-label">Type</label>
-                        <input type="text" id="editType" name="type" class="form-control" placeholder="Enter type (e.g., Laptop)">
-                    </div>
+                    <hr class="my-3" />
 
-                    <div class="mb-3">
-                        <label for="editTag" class="form-label">Tag Number</label>
-                        <input type="text" id="editTag" name="tagNumber" class="form-control" placeholder="Enter tag number" required>
-                        <div class="invalid-feedback">Tag Number is required.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="editStatus" class="form-label">Status</label>
-                        <select id="editStatus" name="status" class="form-select">
-                            <option value="">-- Select status --</option>
-                            <option>Available</option>
-                            <option>Assigned</option>
-                            <option>Surveyed</option>
-                            <option>Marked for Survey</option>
-                            <option>In Repair</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="editComments" class="form-label">Comments</label>
-                        <textarea id="editComments" name="comments" class="form-control" rows="4" placeholder="Add any remarks..."></textarea>
-                    </div>
-
-                    <!-- Back-compat for your older workflow -->
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="markForSurvey" name="markForSurvey">
-                        <label class="form-check-label" for="markForSurvey">Mark for Survey</label>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <div>
+                        <h6 class="mb-2">Assignment History</h6>
+                        <ul id="assignment-history" class="list-unstyled mb-0">
+                            @* filled by JS when opening the modal *@
+                        </ul>
                     </div>
                 </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="next-btn" class="btn btn-primary">Next</button>
+                <button type="submit" form="editAssetForm" class="btn btn-success">Save Changes</button>
             </div>
 
         </div>
@@ -64,43 +63,111 @@
 </div>
 
 <script>
-  // Light client-side UX:
-  // 1) show required error for Tag when empty
-  // 2) keep "Mark for Survey" checkbox in sync with Status
-  (function () {
-    const modalEl = document.getElementById('editAssetModal');
-    if (!modalEl) return;
+    (function () {
+        const modalEl = document.getElementById('editAssetModal');
+        if (!modalEl) return;
 
-    const form = modalEl.querySelector('#editAssetForm');
-    const tagInput = modalEl.querySelector('#editTag');
-    const statusSel = modalEl.querySelector('#editStatus');
-    const mfs = modalEl.querySelector('#markForSurvey');
+        const form = document.getElementById('editAssetForm');
+        const originalTag = document.getElementById('OriginalTag');
+        const nameEl = document.getElementById('AssetName');
+        const typeEl = document.getElementById('AssetType');
+        const tagEl = document.getElementById('Tag');
+        const serialEl = document.getElementById('SerialNumber');
+        const commentsEl = document.getElementById('Comments');
+        const nextBtn = document.getElementById('next-btn');
 
-    // Validate Tag on submit (HTML5 required already helps; this adds nicer styling)
-    form.addEventListener('submit', function () {
-      if (!tagInput.value.trim()) {
-        tagInput.classList.add('is-invalid');
-        // Let the browser block the submit because of "required"
-      }
-    });
+        // Validate Tag on submit (HTML "required" also helps)
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-    tagInput.addEventListener('input', function () {
-      if (this.value.trim()) this.classList.remove('is-invalid');
-    });
+            if (!tagEl.value.trim()) {
+                tagEl.classList.add('is-invalid');
+                tagEl.focus();
+                return;
+            }
 
-    // Sync checkbox <-> status
-    if (statusSel && mfs) {
-      statusSel.addEventListener('change', function () {
-        const v = (this.value || '').toLowerCase();
-        mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
-      });
-      mfs.addEventListener('change', function () {
-        if (this.checked) {
-          // Prefer "Marked for Survey" when the box is checked
-          statusSel.value = 'Marked for Survey';
-        }
-      });
-    }
-  })();
+            const orig = originalTag.value || tagEl.value.trim();
+
+            const payload = {
+                assetName: nameEl.value.trim() || null,
+                type: typeEl.value.trim() || null,
+                tagNumber: tagEl.value.trim() || null,
+                serialNumber: serialEl.value.trim() || null,
+                status: null,      // (optional) wire a status input if you add it to the modal
+                comments: commentsEl.value.trim() || null
+            };
+
+            const res = await fetch(`/api/assets/${encodeURIComponent(orig)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                alert('Save failed: ' + text);
+                return;
+            }
+
+            const updated = await res.json();
+
+            // Update the table row inline so the user sees changes immediately
+            try {
+                const table = document.querySelector('.asset-table') || document.querySelector('table');
+                const tbody = table?.querySelector('tbody') || document.getElementById('table-body');
+                const row = tbody ? [...tbody.rows].find(r => r.dataset.assetId === orig) : null;
+
+                function colIndex(name) {
+                    const ths = table.querySelectorAll('thead th');
+                    for (let i = 0; i < ths.length; i++) {
+                        const txt = (ths[i].innerText || '').trim().toLowerCase();
+                        if (txt === name.toLowerCase()) return i;
+                    }
+                    return -1;
+                }
+
+                if (row && table) {
+                    const idxName = colIndex('Asset Name');
+                    const idxType = colIndex('Type');
+                    const idxTag = colIndex('Tag #');
+                    const idxStatus = colIndex('Status');
+
+                    if (idxName >= 0) row.cells[idxName].textContent = updated.assetName ?? '';
+                    if (idxType >= 0) row.cells[idxType].textContent = updated.type ?? '';
+                    if (idxTag >= 0) row.cells[idxTag].textContent = updated.tag ?? '';
+                    if (idxStatus >= 0 && updated.status !== undefined) {
+                        row.cells[idxStatus].textContent = updated.status || '';
+                    }
+
+                    // Keep the row wiring correct if Tag changed
+                    if (updated.tag && updated.tag !== orig) {
+                        row.dataset.assetId = updated.tag;
+
+                        // Update action buttons data-tag, if present
+                        row.querySelectorAll('[data-tag]').forEach(el => el.dataset.tag = updated.tag);
+                    }
+                }
+            } catch (_) { /* non-fatal UI update */ }
+
+            // Close modal
+            bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        });
+
+        tagEl.addEventListener('input', function () {
+            if (this.value.trim()) this.classList.remove('is-invalid');
+        });
+
+        // "Next" clears only Tag + Serial
+        nextBtn?.addEventListener('click', function () {
+            tagEl.value = '';
+            serialEl.value = '';
+            tagEl.classList.remove('is-invalid');
+            tagEl.focus();
+        });
+
+        // When modal is shown, clear validation state
+        modalEl.addEventListener('shown.bs.modal', function () {
+            tagEl.classList.remove('is-invalid');
+        });
+    })();
 </script>
-

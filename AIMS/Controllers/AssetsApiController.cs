@@ -21,7 +21,9 @@ public class AssetsApiController : ControllerBase
         _cache = cache;
     }
 
-    // GET /api/assets?page=1&pageSize=50&sort=AssetName&dir=asc&q=thinkpad&types=Laptop&statuses=Assigned&scope=my
+    // =========================
+    // GET /api/assets (list)
+    // =========================
     [HttpGet]
     public async Task<IActionResult> Get(
         [FromQuery] int page = 1,
@@ -70,8 +72,8 @@ public class AssetsApiController : ControllerBase
         const int SoftwareKind = 2;
 
         var activeAssignments = _db.Assignments.AsNoTracking()
-    .Where(a => a.UnassignedAtUtc == null)
-    .Select(a => new { AssetKind = (int)a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID, a.AssignedAtUtc });
+            .Where(a => a.UnassignedAtUtc == null)
+            .Select(a => new { AssetKind = (int)a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID, a.AssignedAtUtc });
 
         var hardwareBase =
             from h in _db.HardwareAssets.AsNoTracking()
@@ -197,7 +199,6 @@ public class AssetsApiController : ControllerBase
 
         var items = slice.Select(x =>
         {
-            // Resolve assigned user safely (no unassigned local warnings)
             string assigned;
             string? empNum = null;
             string? empName = null;
@@ -226,7 +227,6 @@ public class AssetsApiController : ControllerBase
                 AssignedTo = assigned,
                 Status = status,
 
-                // optional fields used by the client filter logic
                 AssignedUserId = x.AssignedUserId,
                 AssignedEmployeeNumber = empNum,
                 AssignedEmployeeName = empName,
@@ -253,8 +253,6 @@ public class AssetsApiController : ControllerBase
             };
         }
 
-        // Always include direct reports for the current user so the UI can render the dropdown,
-        // regardless of scope.
         reportVms = await _db.Users.AsNoTracking()
             .Where(u => u.SupervisorID == myUserId)
             .OrderBy(u => u.FullName)
@@ -288,5 +286,158 @@ public class AssetsApiController : ControllerBase
         Response.Headers.ETag = pageEtag;
 
         return Ok(payload);
+    }
+
+    // =========================
+    // GET /api/assets/{tag}
+    // =========================
+    [HttpGet("{tag}")]
+    public async Task<IActionResult> GetByTag(string tag, CancellationToken ct = default)
+    {
+        const int HardwareKind = 1;
+        const int SoftwareKind = 2;
+
+        // --- Try hardware by SerialNumber ---
+        var hw = await _db.HardwareAssets.AsNoTracking()
+            .FirstOrDefaultAsync(h => h.SerialNumber == tag, ct);
+
+        if (hw != null)
+        {
+            var history = await (
+                from a in _db.Assignments.AsNoTracking()
+                join u in _db.Users.AsNoTracking() on a.UserID equals u.UserID into au
+                from u in au.DefaultIfEmpty()
+                where (int)a.AssetKind == HardwareKind && a.AssetTag == hw.HardwareID
+                orderby a.AssignedAtUtc descending
+                select new
+                {
+                    user = u != null ? $"{u.FullName} ({u.EmployeeNumber})" : $"UserID {a.UserID}",
+                    date = a.AssignedAtUtc
+                })
+                .ToListAsync(ct);
+
+            return Ok(new
+            {
+                assetName = hw.AssetName,
+                type = hw.AssetType,
+                tag = hw.SerialNumber,
+                serialNumber = hw.SerialNumber,
+                status = hw.Status,
+                assignmentHistory = history
+            });
+        }
+
+        // --- Try software by License Key ---
+        var sw = await _db.SoftwareAssets.AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SoftwareLicenseKey == tag, ct);
+
+        if (sw != null)
+        {
+            var history = await (
+                from a in _db.Assignments.AsNoTracking()
+                join u in _db.Users.AsNoTracking() on a.UserID equals u.UserID into au
+                from u in au.DefaultIfEmpty()
+                where (int)a.AssetKind == SoftwareKind && a.SoftwareID == sw.SoftwareID
+                orderby a.AssignedAtUtc descending
+                select new
+                {
+                    user = u != null ? $"{u.FullName} ({u.EmployeeNumber})" : $"UserID {a.UserID}",
+                    date = a.AssignedAtUtc
+                })
+                .ToListAsync(ct);
+
+            var hasActive = await _db.Assignments.AsNoTracking()
+                .AnyAsync(a => (int)a.AssetKind == SoftwareKind &&
+                               a.SoftwareID == sw.SoftwareID &&
+                               a.UnassignedAtUtc == null, ct);
+
+            return Ok(new
+            {
+                assetName = sw.SoftwareName,
+                type = sw.SoftwareType ?? "Software",
+                tag = sw.SoftwareLicenseKey,
+                serialNumber = "", // N/A
+                status = hasActive ? "Assigned" : "Available",
+                assignmentHistory = history
+            });
+        }
+
+        return NotFound();
+    }
+
+    // =========================
+    // PUT /api/assets/{tag}
+    // Body: { assetName?, type?, tagNumber?, serialNumber?, status?, comments? }
+    // =========================
+    public sealed class EditAssetRequest
+    {
+        public string? AssetName { get; set; }
+        public string? Type { get; set; }
+        public string? TagNumber { get; set; }       // preferred alias for "Tag #"
+        public string? SerialNumber { get; set; }    // hardware serial (same as Tag for hardware)
+        public string? Status { get; set; }          // hardware-only column
+        public string? Comments { get; set; }        // optional, ignored here (no column shown)
+    }
+
+    [HttpPut("{tag}")]
+    public async Task<IActionResult> UpdateByTag(string tag, [FromBody] EditAssetRequest req, CancellationToken ct = default)
+    {
+        if (req == null) return BadRequest("Missing body.");
+
+        // --- Try hardware first (SerialNumber = tag) ---
+        var hw = await _db.HardwareAssets
+            .FirstOrDefaultAsync(h => h.SerialNumber == tag, ct);
+
+        if (hw != null)
+        {
+            if (!string.IsNullOrWhiteSpace(req.AssetName)) hw.AssetName = req.AssetName!;
+            if (!string.IsNullOrWhiteSpace(req.Type)) hw.AssetType = req.Type!;
+            // If they change the tag/serial, update both to maintain your current design
+            var newSerial = !string.IsNullOrWhiteSpace(req.TagNumber) ? req.TagNumber!.Trim()
+                          : !string.IsNullOrWhiteSpace(req.SerialNumber) ? req.SerialNumber!.Trim()
+                          : null;
+            if (!string.IsNullOrWhiteSpace(newSerial)) hw.SerialNumber = newSerial!;
+            if (!string.IsNullOrWhiteSpace(req.Status)) hw.Status = req.Status!;
+
+            await _db.SaveChangesAsync(ct);
+
+            // Optionally: CacheStamp bump if your utility exposes it
+            // CacheStamp.BumpAssets();
+
+            return Ok(new
+            {
+                assetName = hw.AssetName,
+                type = hw.AssetType,
+                tag = hw.SerialNumber,
+                serialNumber = hw.SerialNumber,
+                status = hw.Status
+            });
+        }
+
+        // --- Try software (License Key = tag) ---
+        var sw = await _db.SoftwareAssets
+            .FirstOrDefaultAsync(s => s.SoftwareLicenseKey == tag, ct);
+
+        if (sw != null)
+        {
+            if (!string.IsNullOrWhiteSpace(req.AssetName)) sw.SoftwareName = req.AssetName!;
+            if (!string.IsNullOrWhiteSpace(req.Type)) sw.SoftwareType = req.Type!;
+            // If they change the tag, update license key
+            var newKey = !string.IsNullOrWhiteSpace(req.TagNumber) ? req.TagNumber!.Trim() : null;
+            if (!string.IsNullOrWhiteSpace(newKey)) sw.SoftwareLicenseKey = newKey!;
+
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(new
+            {
+                assetName = sw.SoftwareName,
+                type = sw.SoftwareType ?? "Software",
+                tag = sw.SoftwareLicenseKey,
+                serialNumber = "", // N/A
+                status = ""        // derived elsewhere
+            });
+        }
+
+        return NotFound("Asset not found.");
     }
 }

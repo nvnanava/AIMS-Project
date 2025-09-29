@@ -7,14 +7,14 @@
     // Define Table Headers
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
-    // Empty placeholders; the JS will fetch real data from /api/assets
+    // Empty placeholders; JS will fetch real data from /api/assets
     var tableData = new List<Dictionary<string, string>>();
     var users = new List<Dictionary<string, string>>();
-
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Index.cshtml.css" asp-append-version="true" />
 }
 
 <!-- View switch (role demo UI behavior wired in JS) -->
@@ -23,25 +23,18 @@
         data-testid="toggle-view-dropdown">
         Change View
     </button>
-
     <div id="view-dropdown" class="view-dropdown" hidden data-testid="view-dropdown">
         <div class="view-label admin">
             <button id="switch-admin" class="standard-button" type="button" data-role="Admin"
-                data-testid="switch-admin">
-                Switch to Admin
-            </button>
+                data-testid="switch-admin">Switch to Admin</button>
         </div>
         <div class="view-label supervisor">
             <button id="switch-supervisor" class="standard-button" type="button" data-role="Supervisor"
-                data-testid="switch-supervisor">
-                Switch to Supervisor
-            </button>
+                data-testid="switch-supervisor">Switch to Supervisor</button>
         </div>
         <div class="view-label it-help-desk">
             <button id="switch-it-help-desk" class="standard-button" type="button" data-role="IT Help Desk"
-                data-testid="switch-it-help-desk">
-                Switch to IT Help Desk
-            </button>
+                data-testid="switch-it-help-desk">Switch to IT Help Desk</button>
         </div>
     </div>
 </div>
@@ -51,18 +44,15 @@
     <button class="carousel-arrow left" type="button" aria-label="Scroll Left" data-dir="left">
         <img src="@Url.Content("~/CardComponentImages/left-arrow.svg")" alt="" />
     </button>
-
     <div class="carousel-viewport" role="region" aria-label="Asset types">
         <div id="card-carousel-track" class="card-carousel-track">
             @await Html.PartialAsync("~/Views/Home/_HomePageCardComponent.cshtml")
         </div>
     </div>
-
     <button class="carousel-arrow right" type="button" aria-label="Scroll Right" data-dir="right">
         <img src="@Url.Content("~/CardComponentImages/right-arrow.svg")" alt="" />
     </button>
 </div>
-
 
 <!-- Welcome Message (shown for Supervisor view) -->
 <section id="role-message" class="role-message-container" data-testid="role-message" hidden>
@@ -91,52 +81,34 @@
             <!-- Filter Button -->
             <div id="filter-button-container" class="dropdown" data-testid="filter-button">
                 <button id="filter-button-toggle" class="standard-button dropdown-toggle" type="button"
-                    aria-controls="filterDropdown" aria-expanded="false">
-                    Filter
-                </button>
+                    aria-controls="filterDropdown" aria-expanded="false">Filter</button>
 
                 <div id="filterDropdown" class="dropdown-menu" hidden role="menu" aria-label="Asset filters">
                     <!-- My Assets -->
                     <div id="filter-my-assets-container" class="filter-section">
                         <label class="assets-parent">
-                            <input type="checkbox" id="filter-my-assets">
-                            My Assets
+                            <input type="checkbox" id="filter-my-assets"> My Assets
                         </label>
                     </div>
 
                     <!-- All My Direct Reports' Assets -->
                     <div id="filter-direct-reports-container" class="filter-section">
                         <button id="toggle-direct-reports" class="expandable" type="button"
-                            aria-controls="reports-panel" aria-expanded="false">
-                            Filter By Direct Report
-                        </button>
-
+                            aria-controls="reports-panel" aria-expanded="false">Filter By Direct Report</button>
                         <div id="reports-panel" class="nested-panel" hidden>
-                            <!-- Parent -->
-                            <label class="reports-parent">
-                                <input type="checkbox" id="filter-all-reports">
-                                All My Reports
-                            </label>
-
-                            <!-- Children populated by JS -->
+                            <label class="reports-parent"><input type="checkbox" id="filter-all-reports"> All My
+                                Reports</label>
                             <div id="reports-list" class="reports-children" role="group"
-                                aria-labelledby="filter-all-reports">
-                            </div>
+                                aria-labelledby="filter-all-reports"></div>
                         </div>
                     </div>
 
                     <!-- Filter by Type -->
                     <div id="filter-type-container" class="filter-section">
                         <button id="toggle-type-dropdown" class="expandable" type="button"
-                            aria-controls="types-dropdown" aria-expanded="false">
-                            Filter By Type
-                        </button>
-
+                            aria-controls="types-dropdown" aria-expanded="false">Filter By Type</button>
                         <div id="types-dropdown" class="mt-2" hidden>
-                            <label class="type-parent">
-                                <input type="checkbox" id="filter-all-types"> All Types
-                            </label>
-
+                            <label class="type-parent"><input type="checkbox" id="filter-all-types"> All Types</label>
                             <div id="types-list" class="type-children" role="group" aria-labelledby="filter-all-types">
                                 <label><input type="checkbox" class="filter-type" value="Monitor"> Monitors</label>
                                 <label><input type="checkbox" class="filter-type" value="Laptop"> Laptops</label>
@@ -152,15 +124,10 @@
                     <!-- Filter by Status -->
                     <div id="filter-status-container" class="filter-section">
                         <button id="toggle-status-dropdown" class="expandable" type="button"
-                            aria-controls="status-dropdown" aria-expanded="false">
-                            Filter By Status
-                        </button>
-
+                            aria-controls="status-dropdown" aria-expanded="false">Filter By Status</button>
                         <div id="status-dropdown" class="mt-2" hidden>
-                            <label class="status-parent">
-                                <input type="checkbox" id="filter-all-status"> All Statuses
-                            </label>
-
+                            <label class="status-parent"><input type="checkbox" id="filter-all-status"> All
+                                Statuses</label>
                             <div id="status-list" class="status-children" role="group"
                                 aria-labelledby="filter-all-status">
                                 <label><input type="checkbox" class="filter-status" value="Assigned"> Assigned</label>
@@ -174,33 +141,164 @@
             </div>
         </div>
 
-        @* Conditional, Entra-based display code*@
-        @* @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
-        { *@
-            <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
-                <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
-                    data-bs-target="#assignAssetModal">
-                    Assign Asset
-                </button>
-            </div>
-        @* } *@
-
+        <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+            <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
+                data-bs-target="#assignAssetModal">Assign Asset</button>
+        </div>
     </header>
 
-    <!-- Include Table Component -->
+    <!-- Asset Table -->
     @if (tableHeaders == null || tableData == null)
     {
         <p style="color: red;">Table Data is Missing!</p>
     }
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
-    <!-- Include Modal HTML -->
-    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
 
+    <!-- Include Modals -->
+    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
+    @await Html.PartialAsync("~/Views/Home/_EditAssetForm.cshtml")
 </section>
 
 @section Scripts {
     <script> window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));</script>
-
     <script src="~/js/assignAssetModal.js" defer></script>
     <script src="~/js/home.index.js" asp-append-version="true" defer></script>
+
+    <script>
+
+        const IS_ADMIN =
+            @( (User?.IsInRole("Admin") == true || User?.IsInRole("IT Help Desk") == true) ? "true" : "false");
+
+
+        function getTagColumnIndex(table) {
+            const ths = table.querySelectorAll("thead th");
+            for (let i = 0; i < ths.length; i++) {
+                const txt = (ths[i].innerText || "").trim().toLowerCase();
+                if (txt === "tag #" || txt === "tag") return i;
+            }
+            return 2; // sensible default
+        }
+
+        async function openEditModalByTag(tag) {
+            try {
+                const res = await fetch(`/api/assets/${encodeURIComponent(tag)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Fill modal fields
+                const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
+                set("AssetName", data.assetName);
+                set("AssetType", data.type);
+                set("Tag", data.tag);
+                set("SerialNumber", data.serialNumber);
+                set("Comments", "");
+                const origInput = document.getElementById("OriginalTag");
+                if (origInput) origInput.value = data.tag;
+
+                // History
+                const ul = document.getElementById("assignment-history");
+                if (ul) {
+                    ul.innerHTML = "";
+                    (data.assignmentHistory || []).forEach(h => {
+                        const li = document.createElement("li");
+                        li.textContent = `${h.user} — ${new Date(h.date).toLocaleString()}`;
+                        ul.appendChild(li);
+                    });
+                }
+
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("editAssetModal")).show();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function ensureActionsCell(row, tag) {
+            let cell = row.querySelector("td.actions-cell");
+            if (!cell) {
+                cell = row.insertCell(-1);
+                cell.className = "actions-cell";
+            }
+            cell.innerHTML = IS_ADMIN ? `
+                  <div class="row-actions">
+                    <button type="button" class="standard-button no-row-open view-audit" data-tag="${tag}">View Audit Log</button>
+                    <button type="button" class="standard-button no-row-open agreements" data-tag="${tag}">Agreements</button>
+                  </div>
+                ` : "";
+        }
+
+        function enhanceRows() {
+            const table = document.querySelector(".asset-table") || document.querySelector("table");
+            if (!table) return;
+            const tbody = table.querySelector("tbody") || document.getElementById("table-body");
+            if (!tbody) return;
+
+            const tagIdx = getTagColumnIndex(table);
+
+            [...tbody.rows].forEach(r => {
+                // already enhanced?
+                if (r.dataset.enhanced === "1") return;
+
+                const tagCell = r.cells[tagIdx];
+                if (!tagCell) return;
+
+                const tag = (tagCell.innerText || "").trim();
+                if (!tag) return;
+
+                r.dataset.assetId = tag;
+                r.classList.add("asset-row");
+                r.style.cursor = "pointer";
+
+                // Row click (ignore clicks on action buttons)
+                r.addEventListener("click", e => {
+                    if (e.target.closest(".no-row-open")) return;
+                    openEditModalByTag(tag);
+                });
+
+                // Ensure actions column exists (role-gated)
+                ensureActionsCell(r, tag);
+
+                r.dataset.enhanced = "1";
+            });
+        }
+
+        // Observe dynamic table updates (home.index.js repopulates)
+        const observer = new MutationObserver(enhanceRows);
+        window.addEventListener("DOMContentLoaded", () => {
+            const container = document.querySelector(".asset-table tbody") || document.getElementById("table-body");
+            if (container) {
+                observer.observe(container, { childList: true, subtree: true });
+                enhanceRows(); // first pass
+            }
+        });
+
+        // Next button: clear Tag + Serial only
+        document.addEventListener("click", function () {
+            const btn = document.getElementById("next-btn");
+            if (!btn || btn.dataset.bound) return;
+            btn.dataset.bound = "1";
+            btn.addEventListener("click", () => {
+                const tag = document.getElementById("Tag");
+                const serial = document.getElementById("SerialNumber");
+                if (tag) tag.value = "";
+                if (serial) serial.value = "";
+                if (tag) tag.focus();
+            });
+        });
+
+        // (Optional) wire action buttons – replace with real routes if you have them
+        document.addEventListener("click", e => {
+            const va = e.target.closest(".view-audit");
+            const ag = e.target.closest(".agreements");
+            if (va) {
+                const t = va.dataset.tag;
+                // e.g., navigate to audit log page
+                window.location.href = `/Audit/Asset?tag=${encodeURIComponent(t)}`;
+            } else if (ag) {
+                const t = ag.dataset.tag;
+                window.location.href = `/Agreements?assetTag=${encodeURIComponent(t)}`;
+            }
+        });
+    </script>
+
+
 }

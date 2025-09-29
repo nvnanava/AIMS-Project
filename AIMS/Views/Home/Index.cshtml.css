@@ -442,3 +442,9 @@
     color: #34495e;
     box-shadow: 0 4px 4px 0 #0000003e;
 }
+
+
+.asset-row:hover {
+    background-color: #dfe6e9;
+    cursor: pointer;
+}
