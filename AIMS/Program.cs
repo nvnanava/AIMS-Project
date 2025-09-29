@@ -205,3 +205,10 @@ app.MapGet("/error/not-found-raw", () => Results.Content("<!doctype html><html><
 
 app.Run();
 
+feat/scrum-206-invalid-route-handling
+
+
+public partial class Program { }
+ main
+ 
+ 
