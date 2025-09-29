@@ -1,6 +1,38 @@
-@{ ViewData["Title"]="Not Authorized"; Layout="_Layout"; }
-<link rel="stylesheet" href="~/css/error.css" asp-append-version="true" />
-<section class="error-shell"><div class="error-card">
-<h1 class="error-title">403</h1><p class="error-subtitle">You don’t have permission to view this.</p>
-<a class="btn-primary" asp-controller="Home" asp-action="Index">Go to Dashboard</a>
-</div></section>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "403 - Not Authorized";
+}
+
+<div class="error-container text-center">
+    <h1 class="error-title">403</h1>
+    <p class="error-message">You are not authorized to view this page.</p>
+    <a class="btn btn-primary mt-3" href="/">⬅ Back to Dashboard</a>
+</div>
+
+<style>
+.error-container {
+    margin-top: 5rem;
+}
+.error-title {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+.error-message {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #555;
+}
+.btn-primary {
+    background-color: #1b3a57; /* AIMS theme navy */
+    border-color: #1b3a57;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: 8px;
+}
+.btn-primary:hover {
+    background-color: #163046;
+    border-color: #163046;
+}
+</style>
+

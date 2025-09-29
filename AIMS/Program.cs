@@ -84,7 +84,7 @@ builder.Services
     .AddMicrosoftIdentityWebApp(options =>
     {
         builder.Configuration.Bind("AzureAd", options);
-        options.AccessDeniedPath = "/Home/Error";
+        options.AccessDeniedPath = "/error/not-authorized"; // ★ corrected to use your error page
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 
@@ -171,7 +171,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/error/not-found"); // ★ ensure proper error page
     app.UseHsts();
     app.UseHttpsRedirection();
 }
@@ -183,28 +183,6 @@ app.UseAuthorization();
 
 // ★ Re-execute to /error/{code} for 403/404/etc.
 app.UseStatusCodePagesWithReExecute("/error/{0}");
-
-// ★ Force themed error pages even when the browser tries “friendly” errors
-app.Use(async (context, next) =>
-{
-    await next();
-
-    if (!context.Response.HasStarted)
-    {
-        if (context.Response.StatusCode == 404)
-        {
-            context.Request.Path = "/error/not-found";
-            context.Response.StatusCode = 200; // render the view
-            await next();
-        }
-        else if (context.Response.StatusCode == 403)
-        {
-            context.Request.Path = "/error/not-authorized";
-            context.Response.StatusCode = 200; // render the view
-            await next();
-        }
-    }
-});
 
 app.MapStaticAssets();
 
@@ -220,8 +198,10 @@ app.MapControllers();
 // Identity UI pages
 app.MapRazorPages();
 
+// Endpoint list for debugging
 app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
     string.Join("\n", eds.Endpoints.Select(e => e.DisplayName)));
+app.MapGet("/error/not-found-raw", () => Results.Content("<!doctype html><html><head><meta charset='utf-8'><title>404</title></head><body style='font-family:system-ui;padding:2rem'><h1 style='color:var(--primary)'>404</h1><p>We couldn’t find that page.</p><a href='/' style='display:inline-block;padding:.6rem 1rem;border-radius:.5rem;background:var(--primary);color:#fff;text-decoration:none;border:1px solid var(--primary)'>Go to Dashboard</a></body></html>", "text/html"));
 
 app.Run();
 
