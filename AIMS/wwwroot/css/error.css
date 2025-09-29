@@ -1,6 +1,0 @@
-.error-shell{min-height:calc(100dvh - 120px);display:grid;place-items:center;padding:2rem}
-.error-card{width:min(640px,92vw);background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:1.25rem;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:2.5rem;text-align:center}
-.error-title{font-size:clamp(3rem,8vw,5rem);line-height:1;margin:0 0 .75rem 0;color:var(--primary)}
-.error-subtitle{font-size:1.125rem;color:#475569;margin-bottom:1.5rem}
-.btn-primary{display:inline-block;padding:.75rem 1.25rem;border-radius:.75rem;font-weight:600;border:1px solid var(--primary);color:#fff;background:var(--primary);text-decoration:none}
-.btn-primary:hover{filter:brightness(0.95)}
