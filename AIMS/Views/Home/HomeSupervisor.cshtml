@@ -1,4 +1,4 @@
-﻿@using System.Text.Json;
+@using System.Text.Json;
 @model AIMS.Controllers.HomeIndexViewModel
 @using AIMS.Helpers <!-- For role based feature lockdown on the Homepage -->
 
@@ -13,62 +13,14 @@
     var users = new List<Dictionary<string, string>>();
 
 }
-
 @section Styles {
     <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
 }
 
-<!-- View switch (role demo UI behavior wired in JS) -->
-<div id="view-switch-buttons" class="view-switch-buttons" data-testid="view-switch-buttons">
-    <button id="view-toggle" class="standard-button" type="button" aria-controls="view-dropdown" aria-expanded="false"
-        data-testid="toggle-view-dropdown">
-        Change View
-    </button>
-
-    <div id="view-dropdown" class="view-dropdown" hidden data-testid="view-dropdown">
-        <div class="view-label admin">
-            <button id="switch-admin" class="standard-button" type="button" data-role="Admin"
-                data-testid="switch-admin">
-                Switch to Admin
-            </button>
-        </div>
-        <div class="view-label supervisor">
-            <button id="switch-supervisor" class="standard-button" type="button" data-role="Supervisor"
-                data-testid="switch-supervisor">
-                Switch to Supervisor
-            </button>
-        </div>
-        <div class="view-label it-help-desk">
-            <button id="switch-it-help-desk" class="standard-button" type="button" data-role="IT Help Desk"
-                data-testid="switch-it-help-desk">
-                Switch to IT Help Desk
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Summary cards / carousel -->
-<div class="carousel-wrapper" data-testid="summary-cards-section">
-    <button class="carousel-arrow left" type="button" aria-label="Scroll Left" data-dir="left">
-        <img src="@Url.Content("~/CardComponentImages/left-arrow.svg")" alt="" />
-    </button>
-
-    <div class="carousel-viewport" role="region" aria-label="Asset types">
-        <div id="card-carousel-track" class="card-carousel-track">
-            @await Html.PartialAsync("~/Views/Home/_HomePageCardComponent.cshtml")
-        </div>
-    </div>
-
-    <button class="carousel-arrow right" type="button" aria-label="Scroll Right" data-dir="right">
-        <img src="@Url.Content("~/CardComponentImages/right-arrow.svg")" alt="" />
-    </button>
-</div>
-
-
 <!-- Welcome Message (shown for Supervisor view) -->
-<section id="role-message" class="role-message-container" data-testid="role-message" hidden>
-    <h1 id="welcome-title" class="welcome-title" data-testid="welcome-title"></h1>
-    <h2 id="welcome-subtitle" class="welcome-subtitle" data-testid="welcome-subtitle"></h2>
+<section class="welcome-section">
+<h1 class="welcome-title">Hello, @User.Identity.Name!</h1>
+<h2 class="welcome-subtitle">Here are your assets and reports.</h2>
 </section>
 
 <!-- Asset Table Section -->
@@ -175,7 +127,9 @@
             </div>
         </div>
 
-       
+         @* Conditional, Entra-based display code*@
+        @* @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+        { *@
             <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
 
                 @if (User.IsAdmin())
@@ -184,13 +138,9 @@
                     data-bs-target="#assignAssetModal">
                     Assign Asset
                 </button>
-                <button id="unassign-asset-button" class="unassign-asset-button" type="button" data-bs-toggle="modal"
-                    data-bs-target="#unassignAssetModal">
-                    Unassign Asset
-                </button>
                 }
             </div>
-
+        @* } *@
 
     </header>
 
@@ -202,8 +152,6 @@
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
     <!-- Include Modal HTML -->
     @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
-    @await Html.PartialAsync("~/Views/Shared/_UnassignAssetModal.cshtml", Model)
-
 
 </section>
 
@@ -211,6 +159,6 @@
     <script> window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));</script>
 
     <script src="~/js/assignAssetModal.js" defer></script>
-    <script src="~/js/unassignAssetModal.js" defer></script>
     <script src="~/js/home.index.js" asp-append-version="true" defer></script>
 }
+

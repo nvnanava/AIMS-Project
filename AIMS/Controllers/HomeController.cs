@@ -4,6 +4,7 @@ using AIMS.Models;
 using AIMS.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
+using AIMS.Helpers; // For ClaimsPrincipalExtensions
 
 namespace AIMS.Controllers;
 
@@ -38,11 +39,21 @@ public class HomeController : Controller
                 Hardware = await _hardwareQuery.GetAllHardwareAsync(),
                 Software = await _softwareQuery.GetAllSoftwareAsync()
             };
+            if (User.IsSupervisor()) // If the user is a supervisor, show the supervisor home page
+        {
+            return View("HomeSupervisor");
+        }
+
+        else if (User.IsHelpDesk() && User.IsAdmin()) //if User is both helpdesk and admin, show the full Home Page
+        {
+            return View("Index");
+
+        }
             return View(model);
         }
 
         return View(); // no model; the page can call /api/assets client-side
-    }
+            }
 
     public IActionResult Reports() => View();
 
@@ -51,6 +62,8 @@ public class HomeController : Controller
         ViewBag.SearchQuery = searchQuery ?? "";
         return View();
     }
+
+    public IActionResult AuditLog() => View();
 
     public IActionResult Privacy() => View();
 
