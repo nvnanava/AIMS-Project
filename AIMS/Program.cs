@@ -205,7 +205,9 @@ app.MapGet("/error/not-found-raw", () => Results.Content("<!doctype html><html><
 
 app.Run();
 
-public partial class Program { }
- 
+public partial class Program {
+}
+
+
  
  
