@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using AIMS.Data;
-using AIMS.Queries;
 using AIMS.Models;
+using AIMS.Queries;
 using AIMS.Utilities;
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Mvc;
