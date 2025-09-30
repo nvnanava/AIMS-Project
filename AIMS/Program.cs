@@ -5,6 +5,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,6 +72,10 @@ builder.Services
         options.AccessDeniedPath = "/Home/Error";
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
+builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
+{
+    options.FallbackPolicy = options.DefaultPolicy;
+});
 
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
@@ -79,7 +84,6 @@ builder.Services.AddAuthorizationBuilder()
               c.Type == "preferred_username" &&
               new[] {
                   // test accounts for now
-                  "niyant397@gmail.com",
                   "nvnanavati@csus.edu",
                   "akalustatsingh@csus.edu",
                   "tburguillos@csus.edu",
@@ -101,8 +105,12 @@ builder.Services.AddAuthorizationBuilder()
           context.User.HasClaim(c =>
               c.Type == "preferred_username" &&
               new[] {
-                  "richardGrayson@gotham.edu"
+                  "richardGrayson@gotham.edu",
+                  "niyant397@gmail.com"
               }.Contains(c.Value))));
+
+
+
 
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 
