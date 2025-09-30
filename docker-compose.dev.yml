@@ -12,6 +12,7 @@ services:
       - aims_obj:/src/AIMS/obj     # <- fixed name (was ains_obj)
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      DOTNET_ENVIRONMEMT: Development
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
       ASPNETCORE_URLS: "http://0.0.0.0:5119"
       DOTNET_CLI_TELEMETRY_OUTPUT: "1"
