@@ -16,6 +16,7 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th onclick="sortTable(4)" style="cursor:pointer;">Status ⬍</th>
+                <th>Assets</th>
             </tr>
         </thead>
         <tbody>
@@ -49,10 +50,25 @@
                             @user.Status
                         </span>
                     </td>
+                    <td>
+                        <button class="assets-btn" onclick="showAssetsModal('@user.Name')">
+                            View Assets
+                        </button>
+                    </td>
                 </tr>
             }
         </tbody>
     </table>
+    <div id="assetsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeAssetsModal()">&times;</span>
+            <h2 id="assetsModalTitle"></h2>
+            <div id="assetsList">
+                <!-- Asset list gets populated here -->
+            </div>
+        </div>
+    </div>
+
     <script>
     function sortTable(n) {
         let table = document.getElementById("adminTable");
@@ -68,5 +84,129 @@
         rows.forEach(row => table.tBodies[0].appendChild(row));
         table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
     }
+
+    function showAssetsModal(userName) {
+        // Set title
+        document.getElementById("assetsModalTitle").innerText = 
+            "Assets assigned to " + userName;
+
+        // TODO: Replace with API call to your backend
+        // Example: fetch(`/api/assign/user/${userId}/history`)
+        // For now, mock with static HTML
+        let dummyAssets = [
+            { type: "Hardware", name: "Laptop Dell XPS 13" },
+            { type: "Software", name: "Microsoft Office 365" }
+        ];
+
+        let listHtml = "<ul>";
+        dummyAssets.forEach(a => {
+            listHtml += `<li><strong>${a.type}:</strong> ${a.name}</li>`;
+        });
+        listHtml += "</ul>";
+
+        document.getElementById("assetsList").innerHTML = listHtml;
+
+        // Show modal
+        document.getElementById("assetsModal").style.display = "block";
+    }
+
+    function closeAssetsModal() {
+        document.getElementById("assetsModal").style.display = "none";
+    }
+
+    
     </script>
+    <style>
+    /* Modal container */
+    .modal-content {
+        border: 3px solid #34495E;
+        border-radius: 8px;
+        background-color: #ECF0F1;
+        color: #34495E;
+        overflow: hidden;
+    }
+
+    /* Modal header */
+    .modal-header {
+        background-color: #2C3E50;
+        border-bottom: 3px solid #34495E;
+        color: #ECF0F1;
+        overflow: hidden;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+
+    /* Close button (X) */
+    .btn-close {
+        background-color: red;
+        border: none;
+        opacity: 1; /* override bootstrap's fade */
+        cursor: pointer;
+        box-shadow: 0px 4px 4px 0px #0000003e;
+        transition: all 0.3s ease-in-out;
+    }
+    .btn-close:hover {
+        transform: scale(1.1);
+    }
+
+    /* Form select dropdown */
+    .form-select {
+        color: #34495E;
+        cursor: pointer;
+        border: 2px solid #34495E;
+        border-radius: 6px;
+    }
+
+    /* Default buttons inside modal footer */
+    .modal-footer .btn {
+        border-radius: 20px;
+        min-width: 120px;
+        text-align: center;
+        transition: all 150ms ease-out;
+    }
+
+    /* Cancel button */
+    .modal-footer .btn-secondary,
+    .modal-footer .custom-upload-btn {
+        background-color: transparent;
+        color: #2C3E50;
+        border: 3px solid #2C3E50;
+    }
+    .modal-footer .btn-secondary:hover,
+    .modal-footer .custom-upload-btn:hover {
+        border: 3px solid #1abc9c;
+    }
+
+    /* Submit button */
+    .modal-footer .btn-primary,
+    .modal-footer .custom-submit-btn {
+        background-color: #4CAF50;
+        color: white;
+        border: 3px solid #2C3E50;
+    }
+    .modal-footer .btn-primary:hover,
+    .modal-footer .custom-submit-btn:hover {
+        border: 3px solid #1abc9c;
+    }
+
+    /* 🔹 Trigger button (to open modal) */
+    .asset-btn {
+        border: 3px solid #2C3E50;
+        border-radius: 20px;
+        background-color: transparent;
+        color: #2C3E50;
+        padding: 6px 14px;
+        font-weight: 500;
+        transition: all 150ms ease-out;
+        box-shadow: 0px 3px 4px 0px #00000025;
+        cursor: pointer;
+    }
+    .asset-btn:hover {
+        border: 3px solid #1abc9c;
+        color: #1abc9c;
+        transform: translateY(-2px);
+    }
+
+    </style>
 </div>
+
