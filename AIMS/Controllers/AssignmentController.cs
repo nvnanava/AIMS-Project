@@ -243,6 +243,73 @@ public class AssignmentController : ControllerBase
 
         return Ok();
     }
+
+    // GET /api/assign/user/{userId}/history
+    [HttpGet("user/{userId}/history")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserAssignments(int userId, CancellationToken ct = default)
+    {
+        var user = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.UserID == userId)
+            .SingleOrDefaultAsync(ct);
+
+        if (user is null)
+            return NotFound($"No user with UserID {userId} exists!");
+
+        var assignments = await _db.Assignments
+            .Where(a => a.UserID == userId)
+            .OrderByDescending(a => a.AssignedAtUtc)
+            .ToListAsync(ct);
+
+        return Ok(assignments);
+    }
+
+    // GET /api/assign/software/{softwareId}/history
+    [HttpGet("software/{softwareId}/history")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSoftwareHistory(int softwareId, CancellationToken ct = default)
+    {
+        var software = await _db.SoftwareAssets
+            .AsNoTracking()
+            .Where(sw => sw.SoftwareID == softwareId)
+            .SingleOrDefaultAsync(ct);
+
+        if (software is null)
+            return NotFound($"No software with ID {softwareId} exists!");
+
+        var history = await _db.Assignments
+            .Where(a => a.SoftwareID == softwareId)
+            .OrderByDescending(a => a.AssignedAtUtc)
+            .ToListAsync(ct);
+
+        return Ok(history);
+    }
+
+    // GET /api/assign/hardware/{hardwareId}/history
+    [HttpGet("hardware/{hardwareId}/history")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetHardwareHistory(int hardwareId, CancellationToken ct = default)
+    {
+        var hardware = await _db.HardwareAssets
+            .AsNoTracking()
+            .Where(hw => hw.HardwareID == hardwareId)
+            .SingleOrDefaultAsync(ct);
+
+        if (hardware is null)
+            return NotFound($"No hardware with ID {hardwareId} exists!");
+
+        var history = await _db.Assignments
+            .Where(a => a.AssetTag == hardwareId)
+            .OrderByDescending(a => a.AssignedAtUtc)
+            .ToListAsync(ct);
+
+        return Ok(history);
+    }
+
 }
 
 /**
