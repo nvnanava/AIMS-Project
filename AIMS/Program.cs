@@ -187,3 +187,6 @@ app.MapControllers();
 app.MapRazorPages();
 
 app.Run();
+
+
+public partial class Program { }
