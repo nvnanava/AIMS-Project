@@ -77,6 +77,8 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult AuditLog() => View();
+
     public IActionResult Privacy() => View();
     // public IActionResult Feedback() => View(); # Scaffolded
 
