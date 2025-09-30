@@ -10,8 +10,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers;
 
-// Commented out for now, enable when we have EntraID
-// [Authorize(Roles = "Admin")]
 // With EntraID wired, we gate via policy configured in Program.cs:
 [Authorize(Policy = "mbcAdmin")]
 [ApiController]

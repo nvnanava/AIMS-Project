@@ -1,12 +1,12 @@
 using System;
-using Xunit;
 using System.Collections.Generic;
-using AIMS.Models;
+using System.Threading.Tasks;
 using AIMS.Controllers;
+using AIMS.Data;
+using AIMS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using AIMS.Data;
+using Xunit;
 
 namespace AIMS.UnitTests
 {

@@ -12,7 +12,7 @@ namespace AIMS.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Hardware> HardwareAssets { get; set; }
         public DbSet<Software> SoftwareAssets { get; set; }
-        public DbSet<Feedback> FeedbackEntries { get; set; }
+        // public DbSet<Feedback> FeedbackEntries { get; set; } # Scaffolded
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Assignment> Assignments { get; set; }
         public DbSet<Report> Reports { get; set; }
@@ -27,7 +27,7 @@ namespace AIMS.Data
             modelBuilder.Entity<Hardware>().ToTable("HardwareAssets");
             modelBuilder.Entity<Software>().ToTable("SoftwareAssets");
             modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
-            modelBuilder.Entity<Feedback>().ToTable("FeedbackEntries");
+            // modelBuilder.Entity<Feedback>().ToTable("FeedbackEntries"); # Scaffolded
             modelBuilder.Entity<Assignment>().ToTable("Assignments");
             modelBuilder.Entity<Report>().ToTable("Reports");
 
@@ -78,12 +78,16 @@ namespace AIMS.Data
             // FEEDBACK
             // -------------------------
 
+            /* Scaffolded 
+
             // Feedback ↔ User (many feedback per user)
             modelBuilder.Entity<Feedback>()
                 .HasOne(f => f.SubmittedByUser)
                 .WithMany(u => u.FeedbackSubmissions)
                 .HasForeignKey(f => f.SubmittedByUserID)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            */
 
             // -------------------------
             // AUDIT LOG

@@ -1,10 +1,10 @@
 using System.Linq;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Utilities;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace AIMS.Controllers;
@@ -37,6 +37,7 @@ public class SoftwareController : ControllerBase
     }
 
     [HttpPost("add")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddSoftware([FromBody] CreateSoftwareDto dto, CancellationToken ct = default)
@@ -90,6 +91,7 @@ public class SoftwareController : ControllerBase
     }
 
     [HttpPut("edit/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

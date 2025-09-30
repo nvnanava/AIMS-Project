@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
-    @using AIMS.Helpers <!-- For role based feature lockdown on the navbar -->
+    @using AIMS.Utilities
 
 
     <!-- NOTE:
@@ -31,7 +31,7 @@
 <body>
     <header>
         <nav
-            class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
                     <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
@@ -45,12 +45,20 @@
 
                 <div id="mainNav" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
+                        @if (User.IsSupervisor())
+                        {
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Search">
+                                <span class="emoji">🏠 </span>
+                                <span class="label">Home</span>
+                            </a>
+                        }
+                        else
+                        {
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">
                                 <span class="emoji">🏠 </span>
                                 <span class="label">Home</span>
                             </a>
-                        </li>
+                        }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Reports">
                                 <span class="emoji">📊 </span>
@@ -124,6 +132,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
     <script src="~/js/site.js" asp-append-version="true" asp-append-version="true" defer></script>
+    <script src="~/js/global-spinner.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
 
@@ -170,6 +179,10 @@
         </div>
     </div>
 
+    <!-- Loading Spinner -->
+    <div id="global-loading-overlay" class="global-loading-overlay" aria-hidden="true">
+        <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
+    </div>
 
 
 </body>
