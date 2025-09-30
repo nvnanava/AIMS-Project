@@ -1,10 +1,10 @@
 using System.Linq;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Utilities;
 
 namespace AIMS.Controllers;
 
@@ -35,6 +35,7 @@ public class HardwareController : ControllerBase
     }
 
     [HttpPost("add")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddHardware([FromBody] CreateHardwareDto dto, CancellationToken ct = default)
@@ -92,7 +93,100 @@ public class HardwareController : ControllerBase
         );
     }
 
+    [HttpPost("add-bulk")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AddHardwareBulk([FromBody] List<CreateHardwareDto> dtos, CancellationToken ct = default)
+    {
+        if (dtos == null)
+        {
+            ModelState.AddModelError("Dtos", "Input list cannot be empty.");
+            return BadRequest(ModelState);
+        }
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+
+        //collecting error messages to send back to client
+        var errors = new Dictionary<int, List<string>>();
+
+        for (int i = 0; i < dtos.Count; i++)
+        {
+            var dto = dtos[i];
+            var itemErrors = new List<string>();
+            //should be handled by front end but adding overlapping validation here
+            if (string.IsNullOrWhiteSpace(dto.AssetTag) ||
+                string.IsNullOrWhiteSpace(dto.Manufacturer) ||
+                string.IsNullOrWhiteSpace(dto.Model) ||
+                string.IsNullOrWhiteSpace(dto.SerialNumber) ||
+                string.IsNullOrWhiteSpace(dto.AssetType) ||
+                string.IsNullOrWhiteSpace(dto.Status))
+            {
+                itemErrors.Add("All fields are required for each hardware asset.");
+            }
+            if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber.ToLower() == dto.SerialNumber.ToLower(), ct))
+            {
+                itemErrors.Add($"Duplicate serial number: {dto.SerialNumber}");
+            }
+            if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag.ToLower() == dto.AssetTag.ToLower(), ct))
+            {
+                itemErrors.Add($"Duplicate asset tag: {dto.AssetTag}");
+            }
+            if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
+            {
+                itemErrors.Add("Purchase date cannot be in the future.");
+            }
+            if (dto.WarrantyExpiration < dto.PurchaseDate)
+            {
+                itemErrors.Add("Warranty expiration cannot be before purchase date.");
+            }
+
+            if (itemErrors.Count > 0)
+                errors[i] = itemErrors;
+        }
+        //if no errors then proceed to add
+        if (errors.Count > 0)
+        {
+            return BadRequest(new { errors });
+        }
+
+        var hardwareList = new List<Hardware>();
+
+        foreach (var dto in dtos)
+        {
+            // dto is valid, map to entity
+            var hardware = new Hardware
+            {
+                AssetTag = dto.AssetTag.Trim(),
+                AssetName = $"{dto.Manufacturer} {dto.Model}".Trim(), //concat the make and model for names
+                AssetType = dto.AssetType.Trim(),
+                Status = dto.Status.Trim(),
+                Manufacturer = dto.Manufacturer.Trim(),
+                Model = dto.Model.Trim(),
+                SerialNumber = dto.SerialNumber.Trim(),
+                WarrantyExpiration = dto.WarrantyExpiration,
+                PurchaseDate = dto.PurchaseDate
+            };
+
+            hardwareList.Add(hardware);
+        }
+
+        _db.HardwareAssets.AddRange(hardwareList);
+        await _db.SaveChangesAsync(ct);
+
+        CacheStamp.BumpAssets(); // signal client to refresh cache
+
+        return CreatedAtAction(
+            nameof(GetAllHardware),   // could also make a GetById and reference it here
+            null,
+            hardwareList
+        );
+    }
+
     [HttpPut("edit/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

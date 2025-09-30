@@ -15,31 +15,41 @@ namespace AIMS.Data
     {
         public AimsDbContext CreateDbContext(string[] args)
         {
-            // Load config similarly to Program.cs
-            var env = System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-                      ?? "Development";
+            // Make sure we point at the AIMS project folder even when running from solution root.
+            var basePath = Directory.GetCurrentDirectory();
+            var aimsPath = Path.Combine(basePath, "AIMS");
+            if (File.Exists(Path.Combine(aimsPath, "appsettings.json")))
+                basePath = aimsPath; // use AIMS/ if present
 
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+            var env = System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Development";
+
+            var cfg = new ConfigurationBuilder()
+                .SetBasePath(basePath)
                 .AddJsonFile("appsettings.json", optional: true)
                 .AddJsonFile($"appsettings.{env}.json", optional: true)
-                .AddEnvironmentVariables();
+                .AddEnvironmentVariables()
+                .Build();
 
-            var config = builder.Build();
+            // Prefer docker in container, otherwise pick what exists
+            var isContainer = File.Exists("/.dockerenv");
+            string? cs =
+                (isContainer ? cfg.GetConnectionString("DockerConnection") : null)
+                ?? cfg.GetConnectionString("DockerConnection")
+                ?? cfg.GetConnectionString("DefaultConnection")
+                ?? cfg.GetConnectionString("CliConnection")
+                ?? System.Environment.GetEnvironmentVariable("ConnectionStrings__DockerConnection")
+                ?? System.Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? System.Environment.GetEnvironmentVariable("ConnectionStrings__CliConnection");
 
-            var isContainer = File.Exists("/.dockerenv"); // present inside Docker
-            var isWindows = System.Environment.OSVersion.Platform == PlatformID.Win32NT;
-
-            // Choose the right CS for CLI:
-            // - In Docker: use service name (sqlserver-dev)
-            // - On Windows host: LocalDB
-            // - On Mac/Linux host: localhost:1433
-            var cs =
-                isContainer
-                    ? config.GetConnectionString("DockerConnection")
-                    : (isWindows
-                        ? config.GetConnectionString("DefaultConnection")
-                        : config.GetConnectionString("CliConnection")); // localhost
+            if (string.IsNullOrWhiteSpace(cs))
+            {
+                throw new InvalidOperationException(
+                    "DesignTimeDbContextFactory could not find a connection string. " +
+                    "Looked for ConnectionStrings: DockerConnection, DefaultConnection, CliConnection " +
+                    "in appsettings(.Development).json under the AIMS project folder, and in environment variables " +
+                    "(ConnectionStrings__*). Set one (e.g., export ConnectionStrings__DockerConnection=...) and retry."
+                );
+            }
 
             var options = new DbContextOptionsBuilder<AimsDbContext>()
                 .UseSqlServer(cs)

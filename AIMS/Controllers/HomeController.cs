@@ -1,28 +1,32 @@
 using System.Diagnostics;
-using System.Threading.Tasks;
+using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
-using AIMS.Helpers; // For ClaimsPrincipalExtensions
+using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly AimsDbContext _db;
 
-    // Optional services: will be null if not registered
     private readonly HardwareQuery? _hardwareQuery;
     private readonly SoftwareQuery? _softwareQuery;
     private readonly UserQuery? _userQuery;
     private readonly AssignmentsQuery? _assignQuery;
 
-    public HomeController(ILogger<HomeController> logger, IServiceProvider sp)
+    public HomeController(
+        ILogger<HomeController> logger,
+        AimsDbContext db,
+        IServiceProvider sp
+    )
     {
         _logger = logger;
+        _db = db;
 
-        // Try-resolve; if not found, actions fall back to simple views
         _hardwareQuery = sp.GetService<HardwareQuery>();
         _softwareQuery = sp.GetService<SoftwareQuery>();
         _userQuery = sp.GetService<UserQuery>();
@@ -32,6 +36,10 @@ public class HomeController : Controller
     // If services exist, pass a model. Otherwise just render the view (client can fetch /api/assets).
     public async Task<IActionResult> Index()
     {
+        // Supervisors should land on Search, not the cards page
+        if (User.IsSupervisor())
+            return RedirectToAction(nameof(Search), new { searchQuery = (string?)null });
+
         if (_hardwareQuery is not null && _softwareQuery is not null)
         {
             var model = new HomeIndexViewModel
@@ -39,27 +47,37 @@ public class HomeController : Controller
                 Hardware = await _hardwareQuery.GetAllHardwareAsync(),
                 Software = await _softwareQuery.GetAllSoftwareAsync()
             };
-            if (User.IsSupervisor()) // If the user is a supervisor, show the supervisor home page
-        {
-            return View("HomeSupervisor");
-        }
-
-        else if (User.IsHelpDesk() && User.IsAdmin()) //if User is both helpdesk and admin, show the full Home Page
-        {
-            return View("Index");
-
-        }
             return View(model);
         }
 
         return View(); // no model; the page can call /api/assets client-side
-            }
+    }
 
     public IActionResult Reports() => View();
 
-    public IActionResult Search(string? searchQuery)
+    // Search page: blank query renders empty; otherwise view can still fetch via /api/assets.
+    [HttpGet]
+    public async Task<IActionResult> Search(string? searchQuery)
     {
-        ViewBag.SearchQuery = searchQuery ?? "";
+        var q = string.IsNullOrWhiteSpace(searchQuery) ? null : searchQuery.Trim();
+        ViewBag.SearchQuery = q;
+
+        if (q is null)
+        {
+            ViewBag.Results = new List<Dictionary<string, string>>();
+            return View();
+        }
+
+        try
+        {
+            ViewBag.Results = new List<Dictionary<string, string>>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Search failed for query '{Query}'", q);
+            ViewBag.Results = new List<Dictionary<string, string>>();
+        }
+
         return View();
     }
 
@@ -67,21 +85,75 @@ public class HomeController : Controller
 
     public IActionResult Privacy() => View();
 
-    public IActionResult Feedback() => View();
-
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
         => View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 
-    public IActionResult AssetDetailsComponent(string? category)
+    // ----------------------------------------------------------------------------
+    // Details page with a server-side guard:
+    // ----------------------------------------------------------------------------
+    public async Task<IActionResult> AssetDetailsComponent(string? category, string? tag)
     {
-        ViewData["Category"] = string.IsNullOrWhiteSpace(category) ? "Laptop" : category;
+        // 🔒 Supervisors are not allowed here — bounce to Search
+        if (User.IsSupervisor())
+            return RedirectToAction(nameof(Search), new { searchQuery = (string?)null });
+
+        // Normalize requested category (used when no tag)
+        var requestedCategory = string.IsNullOrWhiteSpace(category) ? "Laptop" : category.Trim();
+        var requestedKey = requestedCategory.ToLowerInvariant();
+
+        ViewData["Category"] = requestedCategory;
+        ViewData["Title"] = $"{requestedCategory} Asset Details";
+
+        // No tag? Just render the category view (list-by-type behavior)
+        if (string.IsNullOrWhiteSpace(tag))
+            return View();
+
+        var t = tag.Trim();
+
+        // Try hardware by serial, then software by license key
+        var hw = await _db.HardwareAssets
+            .AsNoTracking()
+            .Where(h => h.SerialNumber == t)
+            .Select(h => new { Type = h.AssetType })
+            .FirstOrDefaultAsync();
+
+        string? detectedType = hw?.Type;
+
+        if (detectedType is null)
+        {
+            var sw = await _db.SoftwareAssets
+                .AsNoTracking()
+                .Where(s => s.SoftwareLicenseKey == t)
+                .Select(s => new { Type = "Software" })
+                .FirstOrDefaultAsync();
+
+            detectedType = sw?.Type;
+        }
+
+        if (detectedType is null)
+        {
+            ViewData["MissingTag"] = t;
+            return View();
+        }
+
+        // Category mismatch? Redirect to the correct category for this tag
+        if (!string.Equals(detectedType.Trim(), requestedCategory.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return RedirectToAction(nameof(AssetDetailsComponent), new
+            {
+                category = detectedType,
+                tag = t
+            });
+        }
+
+        // Types match — render
+        ViewData["Category"] = detectedType;
+        ViewData["Title"] = $"{detectedType} Asset Details";
         return View();
     }
 }
 
-// ViewModel is only used when services are available.
-// (GetHardwareDto / GetSoftwareDto come from our existing query layer)
 public class HomeIndexViewModel
 {
     public List<GetHardwareDto> Hardware { get; set; } = new();

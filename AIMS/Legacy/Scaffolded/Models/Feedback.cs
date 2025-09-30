@@ -1,3 +1,7 @@
+// AIMS/Models/Feedback.cs
+// Legacy scaffold — kept for historical reference and to preserve migrations.
+// NOTE: Feature removed from UI. Do not inject/use in new code.
+
 using System;
 
 namespace AIMS.Models;

@@ -1,123 +1,210 @@
-table {
+/* ===== Page-level empty/loading ===== */
+.search-empty {
+  margin: 1rem auto;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.search-loading {
+  margin: 1rem auto;
+  text-align: center;
+}
+
+.search-loading img {
+  width: 64px;
+  height: 64px;
+}
+
+/* ===== Table Wrapper ===== */
+.table-container {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 1400px;
+  margin: 12px auto;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+  max-height: 85.91vh;
+  overflow: hidden;
+  border: 1px solid #e6e9ec;
+}
+
+/* ===== Table Header ===== */
+.asset-table-header {
   width: 100%;
   table-layout: fixed;
-  /* This is the magic line */
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
-.search-container {
-  background-color: #34495e;
-  border: 2px solid transparent;
-  padding: 5px 12px;
-  transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+.asset-table-header th {
+  padding: 16px;
+  text-align: center;
+  color: #34495e;
+  border-bottom: 1px solid #34495e;
+}
+
+.asset-table-header th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.asset-table-header th:last-child {
+  border-top-right-radius: 8px;
+}
+
+/* ===== Toolbar ===== */
+.table-toolbar {
+  z-index: 10;
+  height: 56px;
+  background: #34495e;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.toolbar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
   width: 100%;
 }
 
-.search-input {
+.filter-input.search-input {
   height: 41px;
-  background-color: #ecf0f1;
   text-align: center;
   border: 1px solid #34495e;
   border-radius: 8px;
   outline: none;
-  padding: 0px;
+  padding: 0;
+  background-color: #F0F4F5;
 }
 
-.search-input:focus {
+.filter-input.search-input:focus {
   box-shadow: none;
   border-color: #1abc9c;
 }
 
 .form-select {
+  height: 41px;
   border-radius: 8px;
   padding: 10px;
   font-size: 14px;
   border: 1px solid #ccc;
-  transition: border-color 0.2s ease-in-out;
+  transition: border-color .2s ease-in-out;
+  background-color: #F0F4F5;
 }
 
 .form-select:focus {
   border-color: #3498db;
-  box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 0 5px rgba(52, 152, 219, .3);
 }
 
-.asset-table thead tr>th:first-child {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-}
-
-.asset-table thead tr>th:last-child {
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-/* Table Styles */
-.table-container {
-  max-height: 100%;
-  max-width: 100%;
-  overflow-x: auto;
+/* ===== Scrollable Body ===== */
+.table-body-scroll {
+  flex-grow: 1;
   overflow-y: auto;
-  border-radius: 0;
-  display: flex;
-  justify-content: center;
+  box-sizing: content-box;
+  padding-right: 10px;
+  position: relative;
+  /* needed for overlay */
 }
 
-.asset-table {
-  width: 90%;
+.asset-table-body {
+  width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
-  /* background-color: #ecf0f1; */
-  border-spacing: 0px 10px;
+  border-spacing: 0 20px;
 }
 
-.asset-table th,
-.asset-table td {
-  padding: 12px;
-  text-align: center;
-}
-
-.asset-table thead tr {
-  border-bottom: 1px solid #34495e;
-}
-
-.asset-table tbody tr {
-  height: 150px;
-}
-
-.asset-table tbody tr>td:first-child {
-  border-width: 1px 0px 1px 1px;
-  border-color: #34495e;
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-}
-
-.asset-table tbody tr>td:not(:first-child):not(:last-child) {
-  border-width: 1px 0px;
-  border-color: #34495e;
-}
-
-.asset-table tbody tr>td:last-child {
-  border-width: 1px 1px 1px 0px;
-  border-color: #34495e;
-
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-}
-
-.asset-table tbody tr:nth-child(even) {
+/* Zebra striping */
+.asset-table-body tr:nth-child(even) td {
   background-color: #ECF0F1;
 }
 
-.asset-table tbody tr:nth-child(odd) {
+.asset-table-body tr:nth-child(odd) td {
   background-color: #E0E4E5;
 }
 
+.asset-table-body tr {
+  height: 150px;
+  border-radius: 8px;
+  background-color: transparent;
+}
 
-/* Status Badges */
+.asset-table-body td {
+  padding: 12px;
+  text-align: center;
+  border-style: solid;
+  border-color: #34495e;
+  box-shadow: 3px 3px rgba(44, 62, 80, .35);
+  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+}
+
+/* Column widths */
+.asset-table-header th:nth-child(1),
+.asset-table-body td:nth-child(1) {
+  width: 20%;
+}
+
+.asset-table-header th:nth-child(2),
+.asset-table-body td:nth-child(2) {
+  width: 20%;
+}
+
+.asset-table-header th:nth-child(3),
+.asset-table-body td:nth-child(3) {
+  width: 20%;
+}
+
+.asset-table-header th:nth-child(4),
+.asset-table-body td:nth-child(4) {
+  width: 20%;
+}
+
+.asset-table-header th:nth-child(5),
+.asset-table-body td:nth-child(5) {
+  width: 20%;
+}
+
+/* Grouped borders */
+.asset-table-body tr>td:first-child {
+  border-width: 3px 0 3px 3px;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.asset-table-body tr>td:not(:first-child):not(:last-child) {
+  border-width: 3px 0;
+}
+
+.asset-table-body tr>td:last-child {
+  border-width: 3px 3px 3px 0;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* No results row */
+.no-results-row {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.no-results-row td {
+  border: 0 !important;
+}
+
+/* Status badges */
 .status {
+  display: inline-block;
   padding: 5px 10px;
   border-radius: 20px;
   font-size: 18px;
   color: #34495e;
-  box-shadow: 0px 4px 4px 0px #0000003e;
+  box-shadow: 0 4px 4px 0 #0000003e;
 }
 
 .status.assigned {
@@ -128,10 +215,172 @@ table {
   background-color: #4caf4f29;
 }
 
-.status.damaged {
-  background-color: #ff000029
-}
-
 .status.inrepair {
   background-color: #fff20029;
+}
+
+.status.damaged {
+  background-color: #ff000029;
+}
+
+/* Class-based zebra (when filtering hides rows) */
+#table-body>tr.zebra-even td {
+  background-color: #ECF0F1 !important;
+}
+
+#table-body>tr.zebra-odd td {
+  background-color: #E0E4E5 !important;
+}
+
+/* ===== Hover / focus affordance (row-level) ===== */
+#table-body>tr.result:hover td,
+#table-body>tr.result:focus-within td {
+  border-color: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, .45);
+  transform: translateY(-1px);
+  cursor: pointer;
+}
+
+/* Row hover/focus: outer-edge glow only */
+.asset-table-body tr:hover td,
+.asset-table-body tr:focus-within td {
+  position: relative;
+  z-index: 2;
+}
+
+/* Top + bottom glow for every cell in the hovered row */
+.asset-table-body tr:hover td,
+.asset-table-body tr:focus-within td {
+  box-shadow:
+    0 -10px 14px -10px rgba(46, 204, 113, .45),
+    /* top */
+    0 10px 14px -10px rgba(46, 204, 113, .45);
+  /* bottom */
+}
+
+/* Add LEFT edge glow only on the first cell */
+.asset-table-body tr:hover td:first-child,
+.asset-table-body tr:focus-within td:first-child {
+  box-shadow:
+    -10px 0 14px -10px rgba(46, 204, 113, .45),
+    /* left */
+    0 -10px 14px -10px rgba(46, 204, 113, .45),
+    0 10px 14px -10px rgba(46, 204, 113, .45);
+}
+
+/* Add RIGHT edge glow only on the last cell */
+.asset-table-body tr:hover td:last-child,
+.asset-table-body tr:focus-within td:last-child {
+  box-shadow:
+    10px 0 14px -10px rgba(46, 204, 113, .45),
+    /* right */
+    0 -10px 14px -10px rgba(46, 204, 113, .45),
+    0 10px 14px -10px rgba(46, 204, 113, .45);
+}
+
+/* Reset per-cell shadow so we don’t get inner glows */
+.asset-table-body td {
+  box-shadow: none !important;
+}
+
+/* Hover/focus glow on the entire row only */
+.asset-table-body tr:hover,
+.asset-table-body tr:focus-within {
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 12px rgba(46, 204, 113, .55);
+  transition: box-shadow .18s ease, transform .18s ease;
+  transform: translateY(-1px);
+  /* optional lift */
+}
+
+/* Keep row background intact */
+.asset-table-body tr:hover td,
+.asset-table-body tr:focus-within td {
+  background-clip: padding-box;
+  /* ensures glow only outside */
+}
+
+/* Little “click to edit” chip */
+.row-hint {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: #2ecc711a;
+  color: #2e7d32;
+}
+
+.row-clickable {
+  cursor: pointer;
+}
+
+.search-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: none;
+
+  opacity: 0;
+  transition: opacity .14s ease-in-out;
+  z-index: 20;
+}
+
+/* spin mbc logo image */
+.search-loading-overlay .logo-spinner {
+  width: 256px;
+  height: 256px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== New: skeleton rows ===== */
+.skel-row td {
+  padding: 12px;
+  border: 0;
+  background: transparent !important;
+}
+
+.skel {
+  height: 16px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e9edf0 25%, #f5f7f9 37%, #e9edf0 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.1s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0
+  }
+
+  100% {
+    background-position: 0 0
+  }
+}
+
+.skel.w20 {
+  width: 20%;
+}
+
+.skel.w35 {
+  width: 35%;
+}
+
+.skel.w50 {
+  width: 50%;
+}
+
+.skel.w70 {
+  width: 70%;
 }

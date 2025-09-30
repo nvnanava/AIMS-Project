@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AIMS.Data;
+using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;
 using AIMS.ViewModels;
@@ -16,16 +17,52 @@ public class AssetsApiController : ControllerBase
     private readonly AimsDbContext _db;
     private readonly AssetQuery _assetQuery;
     private readonly IMemoryCache _cache;
+    private readonly IWebHostEnvironment _env;
 
-    public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery)
+    public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery, IWebHostEnvironment env)
     {
         _db = db;
         _cache = cache;
         _assetQuery = assetQuery;
+        _env = env;
     }
 
+ feature/task-5-asset-modals-ui
 
     // GET /api/assets (list)
+
+
+    // --------------------------------------------------------------------
+    // GET /api/assets/whoami?impersonate=28809      (DEV only)
+    // Quick self-diagnosis endpoint: who am I, what role, my reports.
+    // --------------------------------------------------------------------
+    [HttpGet("whoami")]
+    public async Task<IActionResult> WhoAmI([FromQuery] string? impersonate = null, CancellationToken ct = default)
+    {
+        var (user, role) = await ResolveCurrentUserAsync(impersonate, ct);
+        if (user is null)
+            return Ok(new { user = (object?)null, role = (string?)null, devImpersonation = false });
+
+        var reports = await _db.Users.AsNoTracking()
+            .Where(u => u.SupervisorID == user.UserID)
+            .OrderBy(u => u.FullName)
+            .Select(u => new { u.UserID, u.FullName, u.EmployeeNumber })
+            .ToListAsync(ct);
+
+        return Ok(new
+        {
+            user = new { user.UserID, user.FullName, user.Email, user.EmployeeNumber },
+            role,
+            devImpersonation = !string.IsNullOrWhiteSpace(impersonate) && _env.IsDevelopment(),
+            directReportCount = reports.Count,
+            directReports = reports
+        });
+    }
+
+    // --------------------------------------------------------------------
+    // GET /api/assets
+    // page/pageSize/sort/dir/q/types/statuses/scope=my|reports|all&impersonate=...
+    // --------------------------------------------------------------------
 
     [HttpGet]
     public async Task<IActionResult> Get(
@@ -35,32 +72,58 @@ public class AssetsApiController : ControllerBase
         [FromQuery] string? dir = "asc",
         [FromQuery] string? q = null,
         [FromQuery] List<string>? types = null,
+        [FromQuery] string? category = null, // alias: single category maps into `types`
         [FromQuery] List<string>? statuses = null,
+feature/task-5-asset-modals-ui
         [FromQuery] string scope = "all",
+
+        [FromQuery] string scope = "all", // "all" | "my" | "reports"
+        [FromQuery] string? impersonate = null,
+
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 10, 200);
 
 
+
         bool isAdminOrIt = User.IsInRole("Admin") || User.IsInRole("IT Help Desk");
 
-        // In dev or when unauthenticated, default to Admin behavior so scope=all works
-        if (!User?.Identity?.IsAuthenticated ?? true)
-            isAdminOrIt = true;
+        // Normalize single 'category' into the existing 'types' list
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            types ??= new List<string>();
+            if (!types.Contains(category, StringComparer.OrdinalIgnoreCase))
+                types.Add(category);
+        }
+
+
+        // Defensive: if a 'tag' is present, this is a single-asset ask → use /api/assets/one
+        if (Request.Query.ContainsKey("tag"))
+            return BadRequest(new { error = "Use /api/assets/one for single-asset lookups (by tag/hardwareId/softwareId)." });
+
 
         var currentEmpId = User?.FindFirstValue("employeeNumber") ?? "28809";
 
+        // ----- Resolve current user -----
+        var (me, myRole) = await ResolveCurrentUserAsync(impersonate, ct);
+        var myRoleName = myRole ?? "Employee";
+        var myUserId = me?.UserID ?? 0;
+        var myEmpNumber = me?.EmployeeNumber ?? "unknown";
+        var isAdminOrIt = User.IsAdminOrHelpdesk();
+
+
+        // Non-admins cannot request "all"
         if (!isAdminOrIt && scope == "all")
-            scope = "my"; // non-admins cannot see "all"
+            scope = "my";
 
 
         var ver = CacheStamp.AssetsVersion;
-        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:u{currentEmpId}";
+        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:u{myEmpNumber}";
         if (_cache.TryGetValue<AssetsPagePayloadVm>(key, out var cached))
         {
             var firstTag = cached!.Items.FirstOrDefault()?.Tag ?? string.Empty;
-            var lastTag = cached.Items.LastOrDefault()?.Tag ?? "";
+            var lastTag = cached.Items.LastOrDefault()?.Tag ?? string.Empty;
             var etag = $"W/\"{cached.Total}-{firstTag}-{lastTag}\"";
 
             if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm.Contains(etag))
@@ -70,6 +133,7 @@ public class AssetsApiController : ControllerBase
             return Ok(cached);
         }
 
+
         // Base dataset (hardware + software)
         const int HardwareKind = 1;
         const int SoftwareKind = 2;
@@ -78,27 +142,33 @@ public class AssetsApiController : ControllerBase
             .Where(a => a.UnassignedAtUtc == null)
             .Select(a => new { AssetKind = (int)a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID, a.AssignedAtUtc });
 
+        // ---------- Base dataset (hardware + software) ----------
+        var activeAssignments = _db.Assignments.AsNoTracking()
+            .Where(a => a.UnassignedAtUtc == null)
+            .Select(a => new { a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID, a.AssignedAtUtc });
+
+
         var hardwareBase =
             from h in _db.HardwareAssets.AsNoTracking()
-            join aa in activeAssignments.Where(x => x.AssetKind == HardwareKind)
+            join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Hardware)
                 on h.HardwareID equals aa.AssetTag into ha
             from aa in ha.DefaultIfEmpty()
             select new
             {
                 AssetName = h.AssetName,
                 TypeRaw = h.AssetType,
-                Tag = h.AssetTag,
+                Tag = h.SerialNumber,
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
                 Comment = h.Comment,
                 SoftwareID = (int?)null,
-                HardwareID = (int?)h.HardwareID // Nullable for now.may need a unified dto that includes IDs. Edits in db are called using the ID
+                HardwareID = (int?)h.HardwareID
             };
 
         var softwareBase =
             from s in _db.SoftwareAssets.AsNoTracking()
-            join aa in activeAssignments.Where(x => x.AssetKind == SoftwareKind)
+            join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Software)
                 on s.SoftwareID equals aa.SoftwareID into sa
             from aa in sa.DefaultIfEmpty()
             select new
@@ -111,55 +181,47 @@ public class AssetsApiController : ControllerBase
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
                 Comment = s.Comment,
                 SoftwareID = (int?)s.SoftwareID,
-                HardwareID = (int?)null //
+                HardwareID = (int?)null
             };
 
         var queryable = hardwareBase.Concat(softwareBase);
 
 
+
+
         if (!isAdminOrIt)
         {
-            // Non-admins: restrict to "my" or "reports"
-            scope = scope is "reports" ? "reports" : "my";
-        }
-
-        int myUserId = 0;
-        List<int> reportIds = new();
-
-        if (scope is "my" or "reports")
-        {
-            var me = await _db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.EmployeeNumber == currentEmpId, ct);
-            myUserId = me?.UserID ?? 0;
-
             if (scope == "my")
             {
                 queryable = queryable.Where(x => x.AssignedUserId == myUserId);
             }
             else
             {
-                reportIds = await _db.Users.AsNoTracking()
-                    .Where(u => u.SupervisorID == myUserId)
-                    .Select(u => u.UserID)
-                    .ToListAsync(ct);
+                // Reuse a single definition of “scope” everywhere
+                var scopeIds = await SupervisorScopeHelper
+                    .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
 
                 queryable = queryable.Where(x =>
-                    x.AssignedUserId == myUserId ||
-                    (x.AssignedUserId != null && reportIds.Contains(x.AssignedUserId.Value)));
+                    x.AssignedUserId != null && scopeIds.Contains(x.AssignedUserId.Value));
             }
         }
 
         // filters (types/status + search)
         if (types is { Count: > 0 })
-            queryable = queryable.Where(x => types.Contains(string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw));
+        {
+            var tset = types
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            queryable = queryable.Where(x =>
+                tset.Contains(string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw!));
+        }
 
         if (statuses is { Count: > 0 })
         {
-            // StatusRaw is only set for hardware; software uses Assigned/Available
             queryable = queryable.Where(x =>
                 (!string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.StatusRaw)) ||
-                (string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.AssignedUserId != null ? "Assigned" : "Available"))
-            );
+                (string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.AssignedUserId != null ? "Assigned" : "Available")));
         }
 
         if (!string.IsNullOrWhiteSpace(q))
@@ -187,15 +249,20 @@ public class AssetsApiController : ControllerBase
         };
 
 
+
         var total = await queryable.CountAsync(ct);
 
+
+
+        // ---------- Total + slice ----------
+        var total = await queryable.CountAsync(ct);
 
         var slice = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
 
-        // Resolve names for the page
+        // Resolve names for the page (for “Kate” etc.)
         var ids = slice.Where(r => r.AssignedUserId.HasValue)
                        .Select(r => r.AssignedUserId!.Value)
                        .Distinct()
@@ -208,19 +275,20 @@ public class AssetsApiController : ControllerBase
 
         var items = slice.Select(x =>
         {
+
             string assigned;
             string? empNum = null;
             string? empName = null;
 
+            string assignedText = "Unassigned";
+            string? empNum = null, empName = null;
+
+
             if (x.AssignedUserId.HasValue && userMap.TryGetValue(x.AssignedUserId.Value, out var uinfo))
             {
-                assigned = $"{uinfo.FullName} ({uinfo.EmployeeNumber})";
+                assignedText = $"{uinfo.FullName} ({uinfo.EmployeeNumber})";
                 empNum = uinfo.EmployeeNumber;
                 empName = uinfo.FullName;
-            }
-            else
-            {
-                assigned = "Unassigned";
             }
 
             var type = string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw!;
@@ -236,8 +304,12 @@ public class AssetsApiController : ControllerBase
                 AssetName = x.AssetName ?? "",
                 Type = type,
                 Tag = x.Tag ?? "",
-                AssignedTo = assigned,
+                AssignedTo = assignedText,
                 Status = status,
+
+
+
+                // used by the client filter logic
 
                 AssignedUserId = x.AssignedUserId,
                 AssignedEmployeeNumber = empNum,
@@ -248,24 +320,21 @@ public class AssetsApiController : ControllerBase
 
         //Supervisor + Direct Reports
         PersonVm? supervisorVm = null;
-        List<PersonVm> reportVms = new();
-
-        var meRow = await _db.Users.AsNoTracking()
-            .Where(u => u.UserID == myUserId)
-            .Select(u => new { u.UserID, u.FullName, u.EmployeeNumber })
-            .FirstOrDefaultAsync(ct);
-
-        if (meRow is not null)
+        if (me is not null)
         {
             supervisorVm = new PersonVm
             {
-                UserID = meRow.UserID,
-                Name = meRow.FullName,
-                EmployeeNumber = meRow.EmployeeNumber
+                UserID = me.UserID,
+                Name = me.FullName,
+                EmployeeNumber = me.EmployeeNumber
             };
         }
 
+
         reportVms = await _db.Users.AsNoTracking()
+
+        var reportVms = await _db.Users.AsNoTracking()
+
             .Where(u => u.SupervisorID == myUserId)
             .OrderBy(u => u.FullName)
             .Select(u => new PersonVm
@@ -455,6 +524,220 @@ public class AssetsApiController : ControllerBase
             return Ok(res);
 
         }
+    }
+
+    // --------------------------------------------------------------------
+    // GET /api/assets/one?tag=CC-0019 | hardwareId=123 | softwareId=7 [&impersonate=...]
+    // Returns a single AssetRowVm (role scoped: Admin/IT can fetch any; others only “my or reports”).
+    // --------------------------------------------------------------------
+    [HttpGet("one")]
+    public async Task<ActionResult<AssetRowVm>> GetOne(
+        [FromQuery] string? tag = null,
+        [FromQuery] int? hardwareId = null,
+        [FromQuery] int? softwareId = null,
+        [FromQuery] string? impersonate = null,
+        CancellationToken ct = default)
+    {
+        var (me, myRole) = await ResolveCurrentUserAsync(impersonate, ct);
+        var isAdminOrIt = User.IsAdminOrHelpdesk();
+        var myUserId = me?.UserID ?? 0;
+
+        if (string.IsNullOrWhiteSpace(tag) && hardwareId is null && softwareId is null)
+            return BadRequest(new { error = "Provide tag OR hardwareId OR softwareId." });
+
+        // -------------- Try HARDWARE --------------
+        if (!string.IsNullOrWhiteSpace(tag) || hardwareId is not null)
+        {
+            var t = tag?.Trim();
+            var hw = await (
+                from h in _db.HardwareAssets.AsNoTracking()
+                where (t != null && h.SerialNumber == t) || (hardwareId != null && h.HardwareID == hardwareId)
+                let a = _db.Assignments
+                            .Where(x => x.AssetKind == AssetKind.Hardware && x.AssetTag == h.HardwareID && x.UnassignedAtUtc == null)
+                            .OrderByDescending(x => x.AssignedAtUtc)
+                            .FirstOrDefault()
+                select new
+                {
+                    h.HardwareID,
+                    AssetName = h.AssetName,
+                    Type = h.AssetType,
+                    Tag = h.SerialNumber,
+                    Status = string.IsNullOrEmpty(h.Status)
+                                ? (a != null ? "Assigned" : "Available")
+                                : h.Status,
+                    AssignedUserId = a != null ? (int?)a.UserID : null
+                }
+            ).FirstOrDefaultAsync(ct);
+
+            if (hw is not null)
+            {
+                // Role scope
+                if (!isAdminOrIt)
+                {
+                    bool allowed = false;
+                    if (hw.AssignedUserId == myUserId) allowed = true;
+                    else if (hw.AssignedUserId is int uid)
+                    {
+                        var scopeIds = await SupervisorScopeHelper
+                            .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
+                        allowed = scopeIds.Contains(uid);
+                    }
+                    if (!allowed) return NotFound();
+                }
+
+                string assignedDisplay = "Unassigned";
+                string? empNum = null, empName = null;
+                if (hw.AssignedUserId is int uid2)
+                {
+                    var u = await _db.Users.AsNoTracking()
+                        .Where(x => x.UserID == uid2)
+                        .Select(x => new { x.FullName, x.EmployeeNumber })
+                        .FirstOrDefaultAsync(ct);
+                    if (u is not null)
+                    {
+                        assignedDisplay = $"{u.FullName} ({u.EmployeeNumber})";
+                        empNum = u.EmployeeNumber; empName = u.FullName;
+                    }
+                }
+
+                var dto = new AssetRowVm
+                {
+                    HardwareID = hw.HardwareID,
+                    SoftwareID = null,
+                    AssetName = hw.AssetName ?? "",
+                    Type = string.IsNullOrWhiteSpace(hw.Type) ? "Hardware" : hw.Type!,
+                    Tag = hw.Tag ?? "",
+                    AssignedTo = assignedDisplay,
+                    Status = hw.Status ?? "Available",
+                    AssignedUserId = hw.AssignedUserId,
+                    AssignedEmployeeNumber = empNum,
+                    AssignedEmployeeName = empName,
+                    AssignedAtUtc = null
+                };
+                var etagHw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
+                if (Request.Headers.TryGetValue("If-None-Match", out var inmHw) && inmHw.Contains(etagHw))
+                    return StatusCode(304);
+                Response.Headers.ETag = etagHw;
+                return Ok(dto);
+            }
+        }
+
+        // -------------- Try SOFTWARE --------------
+        if (!string.IsNullOrWhiteSpace(tag) || softwareId is not null)
+        {
+            var t = tag?.Trim();
+            var sw = await (
+                from s in _db.SoftwareAssets.AsNoTracking()
+                where (t != null && s.SoftwareLicenseKey == t) || (softwareId != null && s.SoftwareID == softwareId)
+                let a = _db.Assignments
+                            .Where(x => x.AssetKind == AssetKind.Software && x.SoftwareID == s.SoftwareID && x.UnassignedAtUtc == null)
+                            .OrderByDescending(x => x.AssignedAtUtc)
+                            .FirstOrDefault()
+                select new
+                {
+                    s.SoftwareID,
+                    AssetName = s.SoftwareName,
+                    Type = s.SoftwareType,
+                    Tag = s.SoftwareLicenseKey,
+                    Status = a != null ? "Assigned" : "Available",
+                    AssignedUserId = a != null ? (int?)a.UserID : null
+                }
+            ).FirstOrDefaultAsync(ct);
+
+            if (sw is not null)
+            {
+                if (!isAdminOrIt)
+                {
+                    bool allowed = false;
+                    if (sw.AssignedUserId == myUserId) allowed = true;
+                    else if (sw.AssignedUserId is int uid)
+                    {
+                        var scopeIds = await SupervisorScopeHelper
+                            .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
+                        allowed = scopeIds.Contains(uid);
+                    }
+                    if (!allowed) return NotFound();
+                }
+
+                string assignedDisplay = "Unassigned";
+                string? empNum = null, empName = null;
+                if (sw.AssignedUserId is int uid2)
+                {
+                    var u = await _db.Users.AsNoTracking()
+                        .Where(x => x.UserID == uid2)
+                        .Select(x => new { x.FullName, x.EmployeeNumber })
+                        .FirstOrDefaultAsync(ct);
+                    if (u is not null)
+                    {
+                        assignedDisplay = $"{u.FullName} ({u.EmployeeNumber})";
+                        empNum = u.EmployeeNumber; empName = u.FullName;
+                    }
+                }
+
+                var dto = new AssetRowVm
+                {
+                    HardwareID = null,
+                    SoftwareID = sw.SoftwareID,
+                    AssetName = sw.AssetName ?? "",
+                    Type = string.IsNullOrWhiteSpace(sw.Type) ? "Software" : sw.Type!,
+                    Tag = sw.Tag ?? "",
+                    AssignedTo = assignedDisplay,
+                    Status = sw.Status ?? "Available",
+                    AssignedUserId = sw.AssignedUserId,
+                    AssignedEmployeeNumber = empNum,
+                    AssignedEmployeeName = empName,
+                    AssignedAtUtc = null
+                };
+                var etagSw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
+                if (Request.Headers.TryGetValue("If-None-Match", out var inmSw) && inmSw.Contains(etagSw))
+                    return StatusCode(304);
+                Response.Headers.ETag = etagSw;
+                return Ok(dto);
+            }
+        }
+
+        return NotFound();
+    }
+
+    // --------------------------------------------------------------------
+    // Helper: real user or DEV impersonation (by employee # or email)
+    // --------------------------------------------------------------------
+    private async Task<(AIMS.Models.User? user, string? role)> ResolveCurrentUserAsync(string? impersonate, CancellationToken ct)
+    {
+        // DEV impersonation: /api/assets?impersonate=28809 or email
+        if (!string.IsNullOrWhiteSpace(impersonate) && _env.IsDevelopment())
+        {
+            var key = impersonate.Trim();
+            var imp = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.EmployeeNumber == key || u.Email == key, ct);
+
+            if (imp is not null)
+            {
+                var roleName = await _db.Roles.AsNoTracking()
+                    .Where(r => r.RoleID == imp.RoleID)
+                    .Select(r => r.RoleName)
+                    .FirstOrDefaultAsync(ct);
+                return (imp, roleName);
+            }
+        }
+
+        // Normal resolution from claims
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+        var emp = User.FindFirstValue("employeeNumber");
+
+        var me = await _db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u =>
+                (!string.IsNullOrEmpty(email) && u.Email == email) ||
+                (!string.IsNullOrEmpty(emp) && u.EmployeeNumber == emp), ct);
+
+        if (me is null) return (null, null);
+
+        var myRole = await _db.Roles.AsNoTracking()
+            .Where(r => r.RoleID == me.RoleID)
+            .Select(r => r.RoleName)
+            .FirstOrDefaultAsync(ct);
+
+        return (me, myRole);
     }
 }
 

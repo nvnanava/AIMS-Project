@@ -1,10 +1,18 @@
+using System.Security.Claims;
 using AIMS.Data;
 using AIMS.Queries;
+using AIMS.Utilities;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+// ★ NEW usings (for route constraint + policies)
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +23,20 @@ builder.Services.AddEndpointsApiExplorer();   // dev/test
 builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
+builder.Services.AddHttpContextAccessor();
+
+// ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
+builder.Services.Configure<RouteOptions>(o =>
+{
+    o.ConstraintMap["allowedAssetType"] = typeof(AIMS.Routing.AllowedAssetTypeConstraint);
+});
+
+// ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanBulkUpload", policy =>
+        policy.RequireRole("Admin", "Manager"));
+});
 
 // Query/DAO services
 builder.Services.AddScoped<UserQuery>();
@@ -23,7 +45,8 @@ builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
-builder.Services.AddScoped<FeedbackQuery>();
+// builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
+builder.Services.AddScoped<AssetSearchQuery>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -38,7 +61,7 @@ string? GetConn(string name)
 var preferName =
     builder.Environment.IsDevelopment() &&
     Environment.OSVersion.Platform == PlatformID.Win32NT
-        ? "DefaultConnection"
+        ? "LocalConnection"
         : "DockerConnection";
 
 var cs =
@@ -69,7 +92,7 @@ builder.Services
     .AddMicrosoftIdentityWebApp(options =>
     {
         builder.Configuration.Bind("AzureAd", options);
-        options.AccessDeniedPath = "/Home/Error";
+        options.AccessDeniedPath = "/error/not-authorized"; // ★ corrected to use your error page
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
@@ -77,6 +100,7 @@ builder.Services.AddAuthorization(options => // Require auth by default, you mus
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
+// keep your existing custom policies
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
       policy.RequireAssertion(context =>
@@ -106,7 +130,8 @@ builder.Services.AddAuthorizationBuilder()
               c.Type == "preferred_username" &&
               new[] {
                   "richardGrayson@gotham.edu",
-                  "niyant397@gmail.com"
+                  "niyant397@gmail.com",
+                  "tnburg@pacbell.net"
               }.Contains(c.Value))));
 
 
@@ -162,15 +187,46 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/error/not-found"); // ★ ensure proper error page
     app.UseHsts();
     app.UseHttpsRedirection();
 }
 
-// Order matters: Routing -> AuthN -> AuthZ -> endpoints
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (ctx, next) =>
+    {
+        // Allow ?impersonate=28809  OR  ?impersonate=john.smith@aims.local
+        var imp = ctx.Request.Query["impersonate"].ToString();
+        if (!string.IsNullOrWhiteSpace(imp))
+        {
+            // Try to resolve the user from DB once per request
+            using var scope = ctx.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AIMS.Data.AimsDbContext>();
+
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.EmployeeNumber == imp || u.Email == imp);
+
+            if (user != null)
+            {
+                // Store for downstream code
+                ctx.Items["ImpersonatedUserId"] = user.UserID;
+                ctx.Items["ImpersonatedEmail"] = user.Email;
+            }
+        }
+
+        await next();
+    });
+}
+
+// Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ★ Re-execute to /error/{code} for 403/404/etc.
+app.UseStatusCodePagesWithReExecute("/error/{0}");
 
 app.MapStaticAssets();
 
@@ -186,7 +242,16 @@ app.MapControllers();
 // Identity UI pages
 app.MapRazorPages();
 
+// Endpoint list for debugging
+app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
+    string.Join("\n", eds.Endpoints.Select(e => e.DisplayName)));
+app.MapGet("/error/not-found-raw", () => Results.Content("<!doctype html><html><head><meta charset='utf-8'><title>404</title></head><body style='font-family:system-ui;padding:2rem'><h1 style='color:var(--primary)'>404</h1><p>We couldn’t find that page.</p><a href='/' style='display:inline-block;padding:.6rem 1rem;border-radius:.5rem;background:var(--primary);color:#fff;text-decoration:none;border:1px solid var(--primary)'>Go to Dashboard</a></body></html>", "text/html"));
+
 app.Run();
 
+public partial class Program {
+}
 
-public partial class Program { }
+
+ 
+ 

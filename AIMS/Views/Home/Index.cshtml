@@ -1,8 +1,7 @@
-﻿@using System.Text.Json;
+@using System.Text.Json
 @model AIMS.Controllers.HomeIndexViewModel
-@using AIMS.Helpers <!-- For role based feature lockdown on the Homepage -->
-
 @{
+
     ViewData["Title"] = "Home Page";
 
     // Define Table Headers
@@ -11,10 +10,16 @@
     // Empty placeholders; JS will fetch real data from /api/assets
     var tableData = new List<Dictionary<string, string>>();
     var users = new List<Dictionary<string, string>>();
+
+    ViewData["Title"] = "Home";
+
 }
 
 @section Styles {
+    <!-- Order matters: base site styles, component styles, then page-local styles -->
+    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
+
     <link rel="stylesheet" href="~/css/Index.cshtml.css" asp-append-version="true" />
 }
 
@@ -163,7 +168,7 @@
             </div>
         @* } *@
 
- main
+
     </header>
 
     <!-- Asset Table -->
@@ -269,5 +274,38 @@ feature/task-5-asset-modals-ui
     </script>
 }
 
+
+    <link rel="stylesheet" href="~/Views/Home/Index.cshtml.css" asp-append-version="true" />
 }
- main
+
+<!--
+  Cards viewport
+  - Fixed-height window under the navbar
+  - Holds the gutter (outer padding) and the grid (2 rows; 3/2/1 columns)
+-->
+<section class="cards-viewport" role="region" aria-label="Asset categories">
+    <div class="cards-gutter">
+        <!--
+          Strict grid modes are applied via JS:
+          - mode-3x2 (default), mode-2x2, mode-2x1
+          - Pagination shows only the current page’s cards
+        -->
+        <div class="cards-grid mode-3x2" id="cards-grid" data-testid="cards-grid">
+            @await Html.PartialAsync("~/Views/Home/_HomePageCardComponent.cshtml")
+        </div>
+
+        <!-- Pager -->
+        <nav class="cards-pager" aria-label="Card pagination">
+            <button type="button" class="pager-btn" id="cards-prev" aria-label="Previous page">‹ Prev</button>
+            <div class="pager-dots" id="cards-dots"></div>
+            <button type="button" class="pager-btn" id="cards-next" aria-label="Next page">Next ›</button>
+        </nav>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/unassignAssetModal.js" defer></script>
+    <script src="~/js/home.index.js" asp-append-version="true"></script>
+
+}
+
