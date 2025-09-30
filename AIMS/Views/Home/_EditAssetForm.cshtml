@@ -104,6 +104,16 @@
     const commentsInput = modalEl.querySelector('#editComments')
     const mfs = modalEl.querySelector('#markForSurvey');
 
+    // to disable and undisable marked for survey based on if status is set to available
+    function toggleMfsAvailability() {
+      const status = (statusSel.value || "").toLowerCase();
+      if (status === "available") {
+        mfs.disabled = false;
+      } else {
+        mfs.disabled = true;
+        mfs.checked = false;
+      }
+    }
     async function populateAssetTypes() {
       try {
         const assetTypes = await fetchUniqueAssetTypes();
@@ -137,7 +147,26 @@
       statusSel.dataset.defaultValue = editId.value;
       commentsInput.value = button.getAttribute('data-comments') || '';
       commentsInput.dataset.defaultValue = editId.value;
+
+      toggleMfsAvailability();
     });
+
+    // for function toggleMfsAvailability above, on status change
+    if (statusSel) {
+      statusSel.addEventListener('change', function () {
+        toggleMfsAvailability();
+      });
+    }
+
+    // for function toggleMfsAvailability above, if checkbox changes
+    if (mfs) {
+      mfs.addEventListener('change', function () {
+        // Only allow setting if status is "Available"
+        if (this.checked && statusSel.value !== "Available") {
+          this.checked = false;
+        }
+      });
+    }
 
 
     form.addEventListener('submit', async function (e) {
@@ -204,7 +233,7 @@
           const err = await res.json();
           throw new Error(`Failed to update asset: ${Object.values(err).flat().join(' ')}`);
         }
-        // Success = close modal and refrehs list
+        // Success = close modal and refresh list
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
 
