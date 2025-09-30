@@ -1,0 +1,39 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "404 - Not Found";
+}
+
+<div class="error-container text-center">
+    <h1 class="error-title">404</h1>
+    <p class="error-message">We couldn’t find that page.</p>
+    <a class="btn btn-primary mt-3" href="/">⬅ Back to Dashboard</a>
+</div>
+
+<style>
+.error-container {
+    margin-top: 5rem;
+}
+.error-title {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+.error-message {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #555;
+}
+.btn-primary {
+    background-color: #1b3a57; /* AIMS theme navy */
+    border-color: #1b3a57;
+    padding: 0.6rem 1.2rem;
+    font-size: 1rem;
+    border-radius: 8px;
+}
+.btn-primary:hover {
+    background-color: #163046;
+    border-color: #163046;
+}
+</style>
+
+
