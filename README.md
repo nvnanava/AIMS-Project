@@ -14,23 +14,25 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
 
 -   **Docker**: Ensure that Docker is installed on your machine.
 
-  > **Apple Silicon Macs (M1/M2/M3):**  
-  > SQL Server only publishes `amd64` images, so Docker must emulate x86 using **Rosetta 2**.  
-  >  
-  > 1. Install Rosetta if you don’t already have it:  
-  >    ```bash
-  >    softwareupdate --install-rosetta
-  >    ```
-  >    (If it’s already installed, this command will say so.)
-  >
-  > 2. In **Docker Desktop**, go to **Settings → Features in development** and enable  
-  >    **“Use Rosetta for x86/amd64 emulation on Apple Silicon”**.  
-  >
-  > 3. Our `docker-compose.dev.yml` already includes:  
-  >    ```yaml
-  >    platform: linux/amd64
-  >    ```  
-  >    so Docker will automatically use Rosetta when starting the SQL Server container.
+> **Apple Silicon Macs (M1/M2/M3):**
+> SQL Server only publishes `amd64` images, so Docker must emulate x86 using **Rosetta 2**.
+>
+> 1. Install Rosetta if you don’t already have it:
+>
+>     ```bash
+>     softwareupdate --install-rosetta
+>     ```
+>
+>     (If it’s already installed, this command will say so.)
+>
+> 2. In **Docker Desktop**, go to **Settings → Features in development** and enable
+>    **“Use Rosetta for x86/amd64 emulation on Apple Silicon”**.
+>
+> 3. Our `docker-compose.dev.yml` already includes:
+>     ```yaml
+>     platform: linux/amd64
+>     ```
+>     so Docker will automatically use Rosetta when starting the SQL Server container.
 
 -   **Visual Studio Code (VS Code)**: Clone the GitHub AIMS project onto your IDE (VS Code).
 
@@ -52,24 +54,27 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
 
 3. **Start Containers**
 
-   - Preferred (new scripts with better cross-platform support):  
-     ```bash
-     ./scripts/up_stack.sh dev
-     ./scripts/db_ready.sh dev ensure
-     ```
-     These scripts:
-     - Wait for SQL Server to be healthy.
-     - Run EF Core migrations in the container automatically.
-     - Support Mac, Windows, and Linux.
+    - Preferred (new scripts with better cross-platform support):
 
-   - Legacy (old script, still available):  
-     ```bash
-     ./scripts/build_containers.sh dev
-     ```
-     Differences:
-     - Uses a simpler wait loop.
-     - Sometimes skips EF migrations if the container name doesn’t match.
-     - Kept for reference but we recommend **up_stack.sh + db_ready.sh**.
+        ```bash
+        ./scripts/up_stack.sh dev
+        ./scripts/db_ready.sh dev ensure
+        ```
+
+        These scripts:
+
+        - Wait for SQL Server to be healthy.
+        - Run EF Core migrations in the container automatically.
+        - Support Mac, Windows, and Linux.
+
+    - Legacy (old script, still available):
+        ```bash
+        ./scripts/build_containers.sh dev
+        ```
+        Differences:
+        - Uses a simpler wait loop.
+        - Sometimes skips EF migrations if the container name doesn’t match.
+        - Kept for reference but we recommend **up_stack.sh + db_ready.sh**.
 
 4. **Check Running Containers**
 
@@ -138,16 +143,30 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
         ```
 
 7. **Verify ASP.NET Core App**
+
     - Open a browser window and enter the following URL to verify the ASP.NET Core application is working:
+
         ```
         http://localhost:5119
         ```
+
         _Note: The correct port number is specified in the `docker-compose.yml` file._
-    
+
     - Swagger UI will be available at:
-     ```
-     http://localhost:5119/swagger/index.html
-     ```
+
+    ```
+    http://localhost:5119/swagger/index.html
+    ```
+
+8. **Azure Entra Authentication(For Devs during testing)**
+
+    - Use your CSUS SSO for sign in purposes, by default devs are all registered as admins.
+
+    - To switch to a different role stop the scripts, go to `ClaimsPrincipalExtensions.cs` to change your account to Help Desk or Supervisor.
+
+    - Once you sign in, you should see the page of your respective role: Help Desk, Supervisor or Admin.
+
+    - NOTE: Admin and Help Desk have the same UI landing page, Help Desk has lack of adding/assigning assets/editing.
 
 ### Final Check
 
@@ -178,11 +197,12 @@ To interact with the AIMS (Asset Inventory Management System) Docker containers,
     -   Waits for SQL Server to become **healthy**.
     -   Leaves them running in the background.
 
-⚠️ **Note on old script**:  
-Previously, we used `./scripts/build_containers.sh dev`. That script bundled *both* container startup **and** EF migrations in one step. The new approach **splits concerns**:  
-- `up_stack.sh` → brings the stack up, waits for SQL to be healthy.  
-- `db_ready.sh` → ensures the `AIMS` database exists, applies migrations, and can reseed when needed.  
-This separation makes failures easier to debug and improves cross-platform reliability.
+⚠️ **Note on old script**:
+Previously, we used `./scripts/build_containers.sh dev`. That script bundled _both_ container startup **and** EF migrations in one step. The new approach **splits concerns**:
+
+-   `up_stack.sh` → brings the stack up, waits for SQL to be healthy.
+-   `db_ready.sh` → ensures the `AIMS` database exists, applies migrations, and can reseed when needed.
+    This separation makes failures easier to debug and improves cross-platform reliability.
 
 ---
 
@@ -200,7 +220,7 @@ This separation makes failures easier to debug and improves cross-platform relia
     ./scripts/db_ready.sh dev reseed
     ```
 
-⚠️ Use `reseed` carefully — it wipes all data.  
+⚠️ Use `reseed` carefully — it wipes all data.
 The script runs inside the `web-dev` container, so EF migrations/seeding use the **same environment** as the app.
 
 ---
@@ -232,6 +252,7 @@ To enforce consistent formatting via `.editorconfig`, we use a **pre-commit hook
 Run these commands once after cloning:
 
 ### macOS/Linux
+
 ```bash
 dotnet tool restore
 git config core.hooksPath .githooks
@@ -239,21 +260,23 @@ chmod +x .githooks/pre-commit
 ```
 
 ### Windows (PowerShell)
+
 ```powershell
 dotnet tool restore
 git config core.hooksPath .githooks
 # Make sure the hook script is executable for PowerShell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
+
 From then on, every commit will be blocked if formatting issues are detected.
 
 ---
 
 ### 5. **Special Note for Apple Silicon (M1/M2/M3)**
 
-SQL Server is **x86_64 only**. On Apple Silicon, Docker must emulate it using **Rosetta**.  
+SQL Server is **x86_64 only**. On Apple Silicon, Docker must emulate it using **Rosetta**.
 
-Make sure Docker Desktop → **Settings** → **Features in Development** → ✅ **Use Rosetta for x86/amd64 emulation** is enabled.  
+Make sure Docker Desktop → **Settings** → **Features in Development** → ✅ **Use Rosetta for x86/amd64 emulation** is enabled.
 Without this, the SQL Server container will fail to start.
 
 ---

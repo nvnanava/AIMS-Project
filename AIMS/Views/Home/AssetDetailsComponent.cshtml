@@ -2,6 +2,7 @@
 @await Html.PartialAsync("_EditAssetForm")
 @await Html.PartialAsync("_AddCategoryForm")
 @await Html.PartialAsync("_SoftwareAddForm")
+@using AIMS.Helpers <!-- For role based feature lockdown -->
 
 
 
@@ -10,6 +11,7 @@
   <link rel="stylesheet" href="~/css/_AssetButton.css" asp-asp-append-version="true" />
   <link rel="stylesheet" href="~/css/_AssetAddForm.css" asp-asp-append-version="true" />
 }
+
 
 @{
   var category = ViewData["Category"]?.ToString() ?? "Unknown";
@@ -35,7 +37,9 @@
         <th>Status</th>
         <th>
           <div style="margin-left: auto;">
-            @await Html.PartialAsync("_AssetButton")
+          @if (User.IsAdmin()) { // Only show the Add button to admins
+             @await Html.PartialAsync("_AssetButton")
+             }
           </div>
         </th>
       </tr>
@@ -98,6 +102,7 @@
           case "in repair": statusClass = "status-in-repair"; break;
         }
 
+
         row.innerHTML = `
                     <td>${asset.assetName}</td>
                     <td>${asset.type}</td>
@@ -108,22 +113,27 @@
                     </td>
                     <td><span class="status-badge ${statusClass}">${asset.status}</span></td>
                     <td class="actions-cell text end" onclick="event.stopPropagation()">
-                        <button type="button"
+                    @if (User.IsAdmin())
+                                { // Only show the Edit button to admins
+                                <button type="button"
                                 class="action-btn blue-pencil"
                                 aria-label="Edit ${asset.assetName}"
                                 title="Edit asset"
                                 data-bs-toggle="modal"
-                                data-id="${asset.hardwareID}"
+                                data-hardware-id="${asset.hardwareID || ''}"
+                                data-software-id="${asset.softwareID || ''}"
                                 data-bs-target="#editAssetModal"
                                 data-name="${asset.assetName}"
                                 data-type="${asset.type}"
                                 data-tag="${asset.tag}"
+                                data-comments="${asset.comment}"
                                 data-status="${asset.status}">
                             <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
                             <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
                             <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
                             </svg>
                         </button>
+                        }
                     </td>
                 `;
 

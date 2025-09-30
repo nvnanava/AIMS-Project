@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AIMS.Data;
+using AIMS.Queries;
 using AIMS.Utilities;
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +14,14 @@ namespace AIMS.Controllers;
 public class AssetsApiController : ControllerBase
 {
     private readonly AimsDbContext _db;
+    private readonly AssetQuery _assetQuery;
     private readonly IMemoryCache _cache;
 
-    public AssetsApiController(AimsDbContext db, IMemoryCache cache)
+    public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery)
     {
         _db = db;
         _cache = cache;
+        _assetQuery = assetQuery;
     }
 
 
@@ -88,6 +91,8 @@ public class AssetsApiController : ControllerBase
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
+                Comment = h.Comment,
+                SoftwareID = (int?)null,
                 HardwareID = (int?)h.HardwareID // Nullable for now.may need a unified dto that includes IDs. Edits in db are called using the ID
             };
 
@@ -104,6 +109,8 @@ public class AssetsApiController : ControllerBase
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = "",
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
+                Comment = s.Comment,
+                SoftwareID = (int?)s.SoftwareID,
                 HardwareID = (int?)null //
             };
 
@@ -224,6 +231,8 @@ public class AssetsApiController : ControllerBase
             return new AssetRowVm
             {
                 HardwareID = x.HardwareID,
+                SoftwareID = x.SoftwareID,
+                Comment = x.Comment,
                 AssetName = x.AssetName ?? "",
                 Type = type,
                 Tag = x.Tag ?? "",
@@ -291,6 +300,7 @@ public class AssetsApiController : ControllerBase
         return Ok(payload);
     }
 
+ feature/task-5-asset-modals-ui
     // GET /api/assets/{tag}
 
     [HttpGet("{tag}")]
@@ -437,5 +447,12 @@ public class AssetsApiController : ControllerBase
         }
 
         return NotFound("Asset not found.");
+
+    [HttpGet("types/unique")]
+    public async Task<IActionResult> unique()
+    {
+        var res = await _assetQuery.unique();
+        return Ok(res);
+ main
     }
 }
