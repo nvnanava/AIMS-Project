@@ -70,7 +70,6 @@ public class AssetsApiController : ControllerBase
         [FromQuery] List<string>? statuses = null,
         [FromQuery] string scope = "all", // "all" | "my" | "reports"
         [FromQuery] string? impersonate = null,
-        [FromQuery] bool devBypass = false,
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
@@ -93,20 +92,12 @@ public class AssetsApiController : ControllerBase
 
 
 
-        // ----- Resolve current user (supports DEV impersonation) -----
+        // ----- Resolve current user -----
         var (me, myRole) = await ResolveCurrentUserAsync(impersonate, ct);
         var myRoleName = myRole ?? "Employee";
         var myUserId = me?.UserID ?? 0;
         var myEmpNumber = me?.EmployeeNumber ?? "unknown";
-        var isAdminOrIt = myRoleName is "Admin" or "IT Help Desk";
-        var bypass = _env.IsDevelopment() && devBypass;
-        if (bypass)
-        {
-            // make the request behave like an admin in dev
-            isAdminOrIt = true;
-            scope = "all";
-            Console.WriteLine("[devBypass] Skipping role scoping for /api/assets");
-        }
+        var isAdminOrIt = User.IsAdminOrHelpdesk();
 
         // Non-admins cannot request "all"
         if (!isAdminOrIt && scope == "all")
@@ -342,9 +333,8 @@ public class AssetsApiController : ControllerBase
     }
 
     // --------------------------------------------------------------------
-    // GET /api/assets/one?tag=CC-0019 | hardwareId=123 | softwareId=7 [&impersonate=...] [&devBypass=true]
+    // GET /api/assets/one?tag=CC-0019 | hardwareId=123 | softwareId=7 [&impersonate=...]
     // Returns a single AssetRowVm (role scoped: Admin/IT can fetch any; others only “my or reports”).
-    // In Development, passing devBypass=true skips the role scope (useful for UI testing).
     // --------------------------------------------------------------------
     [HttpGet("one")]
     public async Task<ActionResult<AssetRowVm>> GetOne(
@@ -352,11 +342,10 @@ public class AssetsApiController : ControllerBase
         [FromQuery] int? hardwareId = null,
         [FromQuery] int? softwareId = null,
         [FromQuery] string? impersonate = null,
-        [FromQuery] bool devBypass = false,
         CancellationToken ct = default)
     {
         var (me, myRole) = await ResolveCurrentUserAsync(impersonate, ct);
-        var isAdminOrIt = myRole is "Admin" or "IT Help Desk";
+        var isAdminOrIt = User.IsAdminOrHelpdesk();
         var myUserId = me?.UserID ?? 0;
 
         if (string.IsNullOrWhiteSpace(tag) && hardwareId is null && softwareId is null)
@@ -388,8 +377,8 @@ public class AssetsApiController : ControllerBase
 
             if (hw is not null)
             {
-                // Role scope unless devBypass in Development
-                if (!isAdminOrIt && !(_env.IsDevelopment() && devBypass))
+                // Role scope
+                if (!isAdminOrIt)
                 {
                     bool allowed = false;
                     if (hw.AssignedUserId == myUserId) allowed = true;
@@ -465,7 +454,7 @@ public class AssetsApiController : ControllerBase
 
             if (sw is not null)
             {
-                if (!isAdminOrIt && !(_env.IsDevelopment() && devBypass))
+                if (!isAdminOrIt)
                 {
                     bool allowed = false;
                     if (sw.AssignedUserId == myUserId) allowed = true;

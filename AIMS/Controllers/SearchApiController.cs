@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using AIMS.Data;
 using AIMS.Queries;
+using AIMS.Utilities;
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,9 +54,8 @@ public sealed class SearchApiController : ControllerBase
 
         if (isBlank)
         {
-            var role = await ResolveRoleNameAsync();
             // Only Supervisors auto-load their scoped list on blank; everyone else gets empty (no DB hit).
-            if (!string.Equals(role, "Supervisor", StringComparison.OrdinalIgnoreCase))
+            if (!User.IsSupervisor())
                 return Ok(PagedResult<AssetRowVm>.Empty());
         }
 

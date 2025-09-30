@@ -1,3 +1,7 @@
+/* Search page client logic
+   - Uses server-rendered window.__CAN_ADMIN__ (from Search.cshtml) instead of fetching /api/assets/whoami
+   - Keeps existing filtering, rendering, and fetch behavior intact
+*/
 (function () {
     // ----- DOM -----
     const tbody = document.getElementById("table-body");
@@ -110,7 +114,9 @@
     }
 
     // ---- CLICK HANDLER (delegated) ----
-    let canDeepLink = false;
+    // We still keep this behavior: clicking a row deep-links to details
+    // (Admin/Helpdesk hint is exposed via window.__CAN_ADMIN__, reserved for future UI toggles)
+    let canDeepLink = !!window.__CAN_ADMIN__;
     tbody.addEventListener('click', (e) => {
         const tr = e.target.closest('tr.result');
         if (!tr) return;
@@ -192,15 +198,7 @@
 
     // ---- INIT ----
     (async function init() {
-        try {
-            const r = await fetch('/api/assets/whoami', { cache: 'no-store' });
-            if (r.ok) {
-                const w = await r.json();
-                const role = (w?.role || '').toLowerCase();
-                canDeepLink = role === 'admin' || role === 'it help desk';
-            }
-        } catch { /* ignore */ }
-
+        // No whoami call—role already provided by server in window.__CAN_ADMIN__
         if (initialQ.length > 0) {
             await fetchInitial(initialQ, 1, 25);
         } else {

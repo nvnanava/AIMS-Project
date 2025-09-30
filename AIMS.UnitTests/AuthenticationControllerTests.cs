@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
-using Moq; // For mocking URL logic
 using Microsoft.AspNetCore.Mvc;
+using Moq; // For mocking URL logic
 using Xunit;
 //using Microsoft.Identity.Web;
 //using AIMS.Helpers; // For ClaimsPrincipalExtensions
@@ -24,8 +24,8 @@ public class AuthenticationControllerTests
             HttpContext = new DefaultHttpContext()
         };
 
-     // Use a small concrete IUrlHelper to avoid mocking extension methods
-     controller.Url = new TestUrlHelper();
+        // Use a small concrete IUrlHelper to avoid mocking extension methods
+        controller.Url = new TestUrlHelper();
 
         // Act
         var result = controller.Logout() as SignOutResult;

@@ -1,11 +1,22 @@
+@using AIMS.Controllers
+@using AIMS.Utilities
+
 @{
     ViewData["Title"] = "Search";
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
+
+    // Server-rendered role flag (avoids fetching whoami just to infer roles)
+    var __CAN_ADMIN__ = User.IsAdminOrHelpdesk();
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/search.page.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
 }
+
+<!-- Expose role to JS (keeps client hints in sync with Entra/policy/claims) -->
+<script>
+    window.__CAN_ADMIN__ = @(__CAN_ADMIN__ ? "true" : "false");
+</script>
 
 <div class="page-fill">
     <div class="table-container">
@@ -77,7 +88,5 @@
 </div>
 
 @section Scripts {
-
     <script src="~/js/search.page.js" asp-append-version="true"></script>
-    
 }

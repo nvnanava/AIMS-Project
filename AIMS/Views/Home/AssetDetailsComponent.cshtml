@@ -1,3 +1,5 @@
+
+@using AIMS.Utilities
 @await Html.PartialAsync("_AssetAddForm")
 @await Html.PartialAsync("_EditAssetForm")
 @await Html.PartialAsync("_AddCategoryForm")
@@ -236,36 +238,39 @@ async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
       case "damaged": statusClass = "status-in-repair"; break;
     }
 
-        row.innerHTML = `
-                    <td>${asset.assetName}</td>
-                    <td>${asset.type}</td>
-                    <td>
-                        <span onclick="showPopup('${asset.assetName}', '${asset.tag}', event)" style="cursor:pointer;">
-                            ${asset.tag}
-                        </span>
-                    </td>
-                    <td><span class="status-badge ${statusClass}">${asset.status}</span></td>
-                    <td class="actions-cell text end" onclick="event.stopPropagation()">
-                        <button type="button"
-                                class="action-btn blue-pencil"
-                                aria-label="Edit ${asset.assetName}"
-                                title="Edit asset"
-                                data-bs-toggle="modal"
-                                data-hardware-id="${asset.hardwareID || ''}"
-                                data-software-id="${asset.softwareID || ''}"
-                                data-bs-target="#editAssetModal"
-                                data-name="${asset.assetName}"
-                                data-type="${asset.type}"
-                                data-tag="${asset.tag}"
-                                data-comments="${asset.comment}"
-                                data-status="${asset.status}">
-                            <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
-                            <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
-                            <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
-                            </svg>
-                        </button>
-                    </td>
-                `;
+    row.innerHTML = `
+      <td>${asset.assetName}</td>
+      <td>${asset.type}</td>
+      <td>
+        <span onclick="showPopup('${asset.assetName}', '${asset.tag}', event)" style="cursor:pointer;">
+          ${asset.tag}
+        </span>
+      </td>
+      <td><span class="status-badge ${statusClass}">${asset.status}</span></td>
+      <td class="actions-cell text end" onclick="event.stopPropagation()">
+        @if (User.IsAdmin())
+        { // Only show the Edit button to admins
+          <button type="button"
+                  class="action-btn blue-pencil"
+                  aria-label="Edit ${asset.assetName}"
+                  title="Edit asset"
+                  data-bs-toggle="modal"
+                  data-hardware-id="${asset.hardwareID || ''}"
+                  data-software-id="${asset.softwareID || ''}"
+                  data-bs-target="#editAssetModal"
+                  data-name="${asset.assetName}"
+                  data-type="${asset.type}"
+                  data-tag="${asset.tag}"
+                  data-comments="${asset.comment}"
+                  data-status="${asset.status}">
+            <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
+              <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
+            </svg>
+          </button>
+        }
+      </td>
+    `;
 
     tbody.appendChild(row);
   }
@@ -293,11 +298,4 @@ async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
       popup.setAttribute("aria-hidden", "true");
     }
   });
-
-  function escapeHtml(s) {
-    return String(s ?? "").replace(/[&<>"']/g, c => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
-  }
-
 </script>
