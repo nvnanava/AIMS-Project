@@ -165,140 +165,86 @@
     <script src="~/js/home.index.js" asp-append-version="true" defer></script>
 
     <script>
+        (function () {
 
-        const IS_ADMIN =
-            @( (User?.IsInRole("Admin") == true || User?.IsInRole("IT Help Desk") == true) ? "true" : "false");
+            const allEditModals = document.querySelectorAll('#editAssetModal');
+            allEditModals.forEach((m, i) => { if (i > 0) m.remove(); });
 
 
-        function getTagColumnIndex(table) {
-            const ths = table.querySelectorAll("thead th");
-            for (let i = 0; i < ths.length; i++) {
-                const txt = (ths[i].innerText || "").trim().toLowerCase();
-                if (txt === "tag #" || txt === "tag") return i;
-            }
-            return 2; // sensible default
-        }
+            if (window.__AIMS_EDIT_ROW_BOUND__) return;
+            window.__AIMS_EDIT_ROW_BOUND__ = true;
 
-        async function openEditModalByTag(tag) {
-            try {
-                const res = await fetch(`/api/assets/${encodeURIComponent(tag)}`);
-                if (!res.ok) return;
-                const data = await res.json();
+            const tableRoot = document.querySelector('.asset-management');
+            let opening = false;
 
-                // Fill modal fields
-                const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
-                set("AssetName", data.assetName);
-                set("AssetType", data.type);
-                set("Tag", data.tag);
-                set("SerialNumber", data.serialNumber);
-                set("Comments", "");
-                const origInput = document.getElementById("OriginalTag");
-                if (origInput) origInput.value = data.tag;
+            function getTagFromRow(tr) {
+                const table = tr.closest('table');
+                if (!table) return null;
 
-                // History
-                const ul = document.getElementById("assignment-history");
-                if (ul) {
-                    ul.innerHTML = "";
-                    (data.assignmentHistory || []).forEach(h => {
-                        const li = document.createElement("li");
-                        li.textContent = `${h.user} — ${new Date(h.date).toLocaleString()}`;
-                        ul.appendChild(li);
-                    });
-                }
-
-                bootstrap.Modal.getOrCreateInstance(document.getElementById("editAssetModal")).show();
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        function ensureActionsCell(row, tag) {
-            let cell = row.querySelector("td.actions-cell");
-            if (!cell) {
-                cell = row.insertCell(-1);
-                cell.className = "actions-cell";
-            }
-            cell.innerHTML = IS_ADMIN ? `
-                  <div class="row-actions">
-                    <button type="button" class="standard-button no-row-open view-audit" data-tag="${tag}">View Audit Log</button>
-                    <button type="button" class="standard-button no-row-open agreements" data-tag="${tag}">Agreements</button>
-                  </div>
-                ` : "";
-        }
-
-        function enhanceRows() {
-            const table = document.querySelector(".asset-table") || document.querySelector("table");
-            if (!table) return;
-            const tbody = table.querySelector("tbody") || document.getElementById("table-body");
-            if (!tbody) return;
-
-            const tagIdx = getTagColumnIndex(table);
-
-            [...tbody.rows].forEach(r => {
-                // already enhanced?
-                if (r.dataset.enhanced === "1") return;
-
-                const tagCell = r.cells[tagIdx];
-                if (!tagCell) return;
-
-                const tag = (tagCell.innerText || "").trim();
-                if (!tag) return;
-
-                r.dataset.assetId = tag;
-                r.classList.add("asset-row");
-                r.style.cursor = "pointer";
-
-                // Row click (ignore clicks on action buttons)
-                r.addEventListener("click", e => {
-                    if (e.target.closest(".no-row-open")) return;
-                    openEditModalByTag(tag);
+                const ths = table.tHead ? table.tHead.querySelectorAll('th') : table.querySelectorAll('thead th');
+                let idx = -1;
+                ths.forEach((th, i) => {
+                    const t = (th.innerText || '').trim().toLowerCase();
+                    if (t === 'tag #' || t === 'tag') idx = i;
                 });
-
-                // Ensure actions column exists (role-gated)
-                ensureActionsCell(r, tag);
-
-                r.dataset.enhanced = "1";
-            });
-        }
-
-        // Observe dynamic table updates (home.index.js repopulates)
-        const observer = new MutationObserver(enhanceRows);
-        window.addEventListener("DOMContentLoaded", () => {
-            const container = document.querySelector(".asset-table tbody") || document.getElementById("table-body");
-            if (container) {
-                observer.observe(container, { childList: true, subtree: true });
-                enhanceRows(); // first pass
+                if (idx < 0) idx = 2; // fallback
+                const cell = tr.cells[idx];
+                return cell ? (cell.innerText || '').trim() : null;
             }
-        });
 
-        // Next button: clear Tag + Serial only
-        document.addEventListener("click", function () {
-            const btn = document.getElementById("next-btn");
-            if (!btn || btn.dataset.bound) return;
-            btn.dataset.bound = "1";
-            btn.addEventListener("click", () => {
-                const tag = document.getElementById("Tag");
-                const serial = document.getElementById("SerialNumber");
-                if (tag) tag.value = "";
-                if (serial) serial.value = "";
-                if (tag) tag.focus();
-            });
-        });
+            async function fetchAndOpen(tag) {
+                if (!tag || opening) return;
+                opening = true;
+                try {
+                    const res = await fetch(`/api/assets/${encodeURIComponent(tag)}`);
+                    if (!res.ok) return;
 
-        // (Optional) wire action buttons – replace with real routes if you have them
-        document.addEventListener("click", e => {
-            const va = e.target.closest(".view-audit");
-            const ag = e.target.closest(".agreements");
-            if (va) {
-                const t = va.dataset.tag;
-                // e.g., navigate to audit log page
-                window.location.href = `/Audit/Asset?tag=${encodeURIComponent(t)}`;
-            } else if (ag) {
-                const t = ag.dataset.tag;
-                window.location.href = `/Agreements?assetTag=${encodeURIComponent(t)}`;
+                    const data = await res.json();
+                    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
+
+                    set('AssetName', data.assetName);
+                    set('AssetType', data.type);
+                    set('Tag', data.tag);
+                    set('SerialNumber', data.serialNumber);
+                    set('Comments', '');
+
+                    const orig = document.getElementById('OriginalTag');
+                    if (orig) orig.value = data.tag;
+
+                    const ul = document.getElementById('assignment-history');
+                    if (ul) {
+                        ul.innerHTML = '';
+                        (data.assignmentHistory || []).forEach(h => {
+                            const li = document.createElement('li');
+                            li.textContent = `${h.user} — ${new Date(h.date).toLocaleString()}`;
+                            ul.appendChild(li);
+                        });
+                    }
+
+                    const modalEl = document.getElementById('editAssetModal');
+                    if (modalEl && !modalEl.classList.contains('show')) {
+                        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    }
+                } finally {
+                    setTimeout(() => opening = false, 0);
+                }
             }
-        });
+
+            // ---- Single delegated handler (captures before other listeners) ----
+            tableRoot?.addEventListener('click', (e) => {
+
+                if (e.target.closest('[data-bs-toggle="modal"]')) return;
+
+                const tr = e.target.closest('tbody tr');
+                if (!tr) return;
+
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const tag = getTagFromRow(tr);
+                fetchAndOpen(tag);
+            }, { capture: true });
+        })();
     </script>
-
-
 }

@@ -3,7 +3,6 @@
 feature/task-5-asset-modals-ui
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-
             <div class="modal-header">
                 <h5 class="modal-title" id="editAssetModalLabel">Edit Asset</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -11,7 +10,7 @@ feature/task-5-asset-modals-ui
 
             <div class="modal-body">
                 <form id="editAssetForm" novalidate>
-                    <!-- Hidden original tag so we know what to update even if user changes Tag # -->
+                    <!-- Keep the original tag so updates work even if Tag # is changed -->
                     <input type="hidden" id="OriginalTag" />
 
                     <div class="row g-3">
@@ -48,17 +47,15 @@ feature/task-5-asset-modals-ui
                     <div>
                         <h6 class="mb-2">Assignment History</h6>
                         <ul id="assignment-history" class="list-unstyled mb-0">
-                            @* filled by JS when opening the modal *@
+                            @* populated by JS *@
                         </ul>
                     </div>
                 </form>
             </div>
 
             <div class="modal-footer">
-                <button type="button" id="next-btn" class="btn btn-primary">Next</button>
                 <button type="submit" form="editAssetForm" class="btn btn-success">Save Changes</button>
             </div>
-
         </div>
 
   <div class="modal-dialog modal-lg">
@@ -142,9 +139,8 @@ feature/task-5-asset-modals-ui
         const tagEl = document.getElementById('Tag');
         const serialEl = document.getElementById('SerialNumber');
         const commentsEl = document.getElementById('Comments');
-        const nextBtn = document.getElementById('next-btn');
 
-        // Validate Tag on submit (HTML "required" also helps)
+        // Save to API
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
 
@@ -155,13 +151,12 @@ feature/task-5-asset-modals-ui
             }
 
             const orig = originalTag.value || tagEl.value.trim();
-
             const payload = {
                 assetName: nameEl.value.trim() || null,
                 type: typeEl.value.trim() || null,
                 tagNumber: tagEl.value.trim() || null,
                 serialNumber: serialEl.value.trim() || null,
-                status: null,      // (optional) wire a status input if you add it to the modal
+                status: null,
                 comments: commentsEl.value.trim() || null
             };
 
@@ -179,7 +174,7 @@ feature/task-5-asset-modals-ui
 
             const updated = await res.json();
 
-            // Update the table row inline so the user sees changes immediately
+            // Update row inline (best-effort)
             try {
                 const table = document.querySelector('.asset-table') || document.querySelector('table');
                 const tbody = table?.querySelector('tbody') || document.getElementById('table-body');
@@ -195,47 +190,27 @@ feature/task-5-asset-modals-ui
                 }
 
                 if (row && table) {
-                    const idxName = colIndex('Asset Name');
-                    const idxType = colIndex('Type');
-                    const idxTag = colIndex('Tag #');
-                    const idxStatus = colIndex('Status');
+                    const iName = colIndex('Asset Name');
+                    const iType = colIndex('Type');
+                    const iTag = colIndex('Tag #');
+                    const iStatus = colIndex('Status');
 
-                    if (idxName >= 0) row.cells[idxName].textContent = updated.assetName ?? '';
-                    if (idxType >= 0) row.cells[idxType].textContent = updated.type ?? '';
-                    if (idxTag >= 0) row.cells[idxTag].textContent = updated.tag ?? '';
-                    if (idxStatus >= 0 && updated.status !== undefined) {
-                        row.cells[idxStatus].textContent = updated.status || '';
-                    }
+                    if (iName >= 0) row.cells[iName].textContent = updated.assetName ?? '';
+                    if (iType >= 0) row.cells[iType].textContent = updated.type ?? '';
+                    if (iTag >= 0) row.cells[iTag].textContent = updated.tag ?? '';
+                    if (iStatus >= 0 && updated.status !== undefined) row.cells[iStatus].textContent = updated.status || '';
 
-                    // Keep the row wiring correct if Tag changed
                     if (updated.tag && updated.tag !== orig) {
                         row.dataset.assetId = updated.tag;
-
-                        // Update action buttons data-tag, if present
-                        row.querySelectorAll('[data-tag]').forEach(el => el.dataset.tag = updated.tag);
                     }
                 }
-            } catch (_) { /* non-fatal UI update */ }
+            } catch { /* non-fatal */ }
 
-            // Close modal
             bootstrap.Modal.getOrCreateInstance(modalEl).hide();
         });
 
         tagEl.addEventListener('input', function () {
             if (this.value.trim()) this.classList.remove('is-invalid');
-        });
-
-        // "Next" clears only Tag + Serial
-        nextBtn?.addEventListener('click', function () {
-            tagEl.value = '';
-            serialEl.value = '';
-            tagEl.classList.remove('is-invalid');
-            tagEl.focus();
-        });
-
-        // When modal is shown, clear validation state
-        modalEl.addEventListener('shown.bs.modal', function () {
-            tagEl.classList.remove('is-invalid');
         });
     })();
 

@@ -21,9 +21,9 @@ public class AssetsApiController : ControllerBase
         _cache = cache;
     }
 
-    // =========================
+
     // GET /api/assets (list)
-    // =========================
+
     [HttpGet]
     public async Task<IActionResult> Get(
         [FromQuery] int page = 1,
@@ -33,25 +33,25 @@ public class AssetsApiController : ControllerBase
         [FromQuery] string? q = null,
         [FromQuery] List<string>? types = null,
         [FromQuery] List<string>? statuses = null,
-        [FromQuery] string scope = "all", // "all" | "my" | "reports"
+        [FromQuery] string scope = "all",
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 10, 200);
 
-        // ----- Role/ownership guard (placeholder) -----
+
         bool isAdminOrIt = User.IsInRole("Admin") || User.IsInRole("IT Help Desk");
 
         // In dev or when unauthenticated, default to Admin behavior so scope=all works
         if (!User?.Identity?.IsAuthenticated ?? true)
             isAdminOrIt = true;
 
-        var currentEmpId = User?.FindFirstValue("employeeNumber") ?? "28809"; // fallback for demo
+        var currentEmpId = User?.FindFirstValue("employeeNumber") ?? "28809";
 
         if (!isAdminOrIt && scope == "all")
             scope = "my"; // non-admins cannot see "all"
 
-        // ---- cache key includes version stamp so it auto-busts after assign/close ----
+
         var ver = CacheStamp.AssetsVersion;
         var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:u{currentEmpId}";
         if (_cache.TryGetValue<AssetsPagePayloadVm>(key, out var cached))
@@ -67,7 +67,7 @@ public class AssetsApiController : ControllerBase
             return Ok(cached);
         }
 
-        // ---------- Base dataset (hardware + software) ----------
+        // Base dataset (hardware + software)
         const int HardwareKind = 1;
         const int SoftwareKind = 2;
 
@@ -109,7 +109,7 @@ public class AssetsApiController : ControllerBase
 
         var queryable = hardwareBase.Concat(softwareBase);
 
-        // ---------- Ownership scope ----------
+
         if (!isAdminOrIt)
         {
             // Non-admins: restrict to "my" or "reports"
@@ -129,7 +129,7 @@ public class AssetsApiController : ControllerBase
             {
                 queryable = queryable.Where(x => x.AssignedUserId == myUserId);
             }
-            else // "reports" => me + my direct reports
+            else
             {
                 reportIds = await _db.Users.AsNoTracking()
                     .Where(u => u.SupervisorID == myUserId)
@@ -142,7 +142,7 @@ public class AssetsApiController : ControllerBase
             }
         }
 
-        // ---------- Server filters (types/status + search) ----------
+        // filters (types/status + search)
         if (types is { Count: > 0 })
             queryable = queryable.Where(x => types.Contains(string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw));
 
@@ -164,7 +164,7 @@ public class AssetsApiController : ControllerBase
                 (x.Tag ?? "").ToLower().Contains(term));
         }
 
-        // ---------- Sorting ----------
+
         bool asc = string.Equals(dir, "asc", StringComparison.OrdinalIgnoreCase);
         queryable = (sort?.ToLower()) switch
         {
@@ -179,10 +179,10 @@ public class AssetsApiController : ControllerBase
             _ => queryable.OrderByDescending(x => x.AssignedAtUtc).ThenBy(x => x.AssetName)
         };
 
-        // ---------- Total before paging ----------
+
         var total = await queryable.CountAsync(ct);
 
-        // ---------- Page slice ----------
+
         var slice = await queryable
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -237,7 +237,7 @@ public class AssetsApiController : ControllerBase
             };
         }).ToList();
 
-        // ---- Supervisor + Direct Reports (for dropdown) ----
+        //Supervisor + Direct Reports
         PersonVm? supervisorVm = null;
         List<PersonVm> reportVms = new();
 
@@ -267,7 +267,7 @@ public class AssetsApiController : ControllerBase
             })
             .ToListAsync(ct);
 
-        // ---------- Final payload ----------
+
         var payload = new AssetsPagePayloadVm
         {
             Supervisor = supervisorVm,
@@ -291,9 +291,8 @@ public class AssetsApiController : ControllerBase
         return Ok(payload);
     }
 
-    // =========================
     // GET /api/assets/{tag}
-    // =========================
+
     [HttpGet("{tag}")]
     public async Task<IActionResult> GetByTag(string tag, CancellationToken ct = default)
     {
@@ -330,7 +329,7 @@ public class AssetsApiController : ControllerBase
             });
         }
 
-        // --- Try software by License Key ---
+
         var sw = await _db.SoftwareAssets.AsNoTracking()
             .FirstOrDefaultAsync(s => s.SoftwareLicenseKey == tag, ct);
 
@@ -368,10 +367,7 @@ public class AssetsApiController : ControllerBase
         return NotFound();
     }
 
-    // =========================
-    // PUT /api/assets/{tag}
-    // Body: { assetName?, type?, tagNumber?, serialNumber?, status?, comments? }
-    // =========================
+
     public sealed class EditAssetRequest
     {
         public string? AssetName { get; set; }
@@ -379,7 +375,7 @@ public class AssetsApiController : ControllerBase
         public string? TagNumber { get; set; }       // preferred alias for "Tag #"
         public string? SerialNumber { get; set; }    // hardware serial (same as Tag for hardware)
         public string? Status { get; set; }          // hardware-only column
-        public string? Comments { get; set; }        // optional, ignored here (no column shown)
+        public string? Comments { get; set; }
     }
 
     [HttpPut("{tag}")]
@@ -387,7 +383,7 @@ public class AssetsApiController : ControllerBase
     {
         if (req == null) return BadRequest("Missing body.");
 
-        // --- Try hardware first (SerialNumber = tag) ---
+        // --- hardware first (SerialNumber = tag) ---
         var hw = await _db.HardwareAssets
             .FirstOrDefaultAsync(h => h.SerialNumber == tag, ct);
 
@@ -404,8 +400,7 @@ public class AssetsApiController : ControllerBase
 
             await _db.SaveChangesAsync(ct);
 
-            // Optionally: CacheStamp bump if your utility exposes it
-            // CacheStamp.BumpAssets();
+
 
             return Ok(new
             {
