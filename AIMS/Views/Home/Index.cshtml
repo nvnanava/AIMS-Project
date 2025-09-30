@@ -175,9 +175,7 @@
             </div>
         </div>
 
-        @* Conditional, Entra-based display code*@
-        @* @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
-        { *@
+       
             <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
 
                 @if (User.IsAdmin())
@@ -186,9 +184,12 @@
                     data-bs-target="#assignAssetModal">
                     Assign Asset
                 </button>
-                }
+                <button id="unassign-asset-button" class="unassign-asset-button" type="button" data-bs-toggle="modal"
+                    data-bs-target="#unassignAssetModal">
+                    Unassign Asset
+                </button>
             </div>
-        @* } *@
+
 
     </header>
 
@@ -200,6 +201,8 @@
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
     <!-- Include Modal HTML -->
     @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
+    @await Html.PartialAsync("~/Views/Shared/_UnassignAssetModal.cshtml", Model)
+
 
 </section>
 
@@ -207,5 +210,6 @@
     <script> window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));</script>
 
     <script src="~/js/assignAssetModal.js" defer></script>
+    <script src="~/js/unassignAssetModal.js" defer></script>
     <script src="~/js/home.index.js" asp-append-version="true" defer></script>
 }
