@@ -79,18 +79,13 @@ public class AssetsApiController : ControllerBase
         if (!string.IsNullOrWhiteSpace(category))
         {
             types ??= new List<string>();
-            if (!string.IsNullOrWhiteSpace(category))
-            {
-                types ??= new List<string>();
-                if (!types.Contains(category, StringComparer.OrdinalIgnoreCase))
-                    types.Add(category);
-            }
+            if (!types.Contains(category, StringComparer.OrdinalIgnoreCase))
+                types.Add(category);
         }
+
         // Defensive: if a 'tag' is present, this is a single-asset ask → use /api/assets/one
         if (Request.Query.ContainsKey("tag"))
             return BadRequest(new { error = "Use /api/assets/one for single-asset lookups (by tag/hardwareId/softwareId)." });
-
-
 
         // ----- Resolve current user -----
         var (me, myRole) = await ResolveCurrentUserAsync(impersonate, ct);
@@ -101,7 +96,7 @@ public class AssetsApiController : ControllerBase
 
         // Non-admins cannot request "all"
         if (!isAdminOrIt && scope == "all")
-            scope = "my"; // non-admins cannot see "all"
+            scope = "my";
 
         // ---- cache key includes version stamp so it auto-busts after assign/close ----
         var ver = CacheStamp.AssetsVersion;
@@ -139,7 +134,7 @@ public class AssetsApiController : ControllerBase
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
                 Comment = h.Comment,
                 SoftwareID = (int?)null,
-                HardwareID = (int?)h.HardwareID // Nullable for now.may need a unified dto that includes IDs. Edits in db are called using the ID
+                HardwareID = (int?)h.HardwareID
             };
 
         var softwareBase =
@@ -171,14 +166,12 @@ public class AssetsApiController : ControllerBase
             }
             else // "reports" => me + my direct reports
             {
-                var reportIds = await _db.Users.AsNoTracking()
-                    .Where(u => u.SupervisorID == myUserId)
-                    .Select(u => u.UserID)
-                    .ToListAsync(ct);
+                // Reuse a single definition of “scope” everywhere
+                var scopeIds = await SupervisorScopeHelper
+                    .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
 
                 queryable = queryable.Where(x =>
-                    x.AssignedUserId == myUserId ||
-                    (x.AssignedUserId != null && reportIds.Contains(x.AssignedUserId.Value)));
+                    x.AssignedUserId != null && scopeIds.Contains(x.AssignedUserId.Value));
             }
         }
 
@@ -194,9 +187,11 @@ public class AssetsApiController : ControllerBase
         }
 
         if (statuses is { Count: > 0 })
+        {
             queryable = queryable.Where(x =>
                 (!string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.StatusRaw)) ||
                 (string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.AssignedUserId != null ? "Assigned" : "Available")));
+        }
 
         if (!string.IsNullOrWhiteSpace(q))
         {
@@ -229,7 +224,7 @@ public class AssetsApiController : ControllerBase
             .Take(pageSize)
             .ToListAsync(ct);
 
-        // Resolve names for the page
+        // Resolve names for the page (for “Kate” etc.)
         var ids = slice.Where(r => r.AssignedUserId.HasValue)
                        .Select(r => r.AssignedUserId!.Value)
                        .Distinct()
@@ -242,12 +237,12 @@ public class AssetsApiController : ControllerBase
 
         var items = slice.Select(x =>
         {
-            string assigned = "Unassigned";
+            string assignedText = "Unassigned";
             string? empNum = null, empName = null;
 
             if (x.AssignedUserId.HasValue && userMap.TryGetValue(x.AssignedUserId.Value, out var uinfo))
             {
-                assigned = $"{uinfo.FullName} ({uinfo.EmployeeNumber})";
+                assignedText = $"{uinfo.FullName} ({uinfo.EmployeeNumber})";
                 empNum = uinfo.EmployeeNumber;
                 empName = uinfo.FullName;
             }
@@ -265,10 +260,10 @@ public class AssetsApiController : ControllerBase
                 AssetName = x.AssetName ?? "",
                 Type = type,
                 Tag = x.Tag ?? "",
-                AssignedTo = assigned,
+                AssignedTo = assignedText,
                 Status = status,
 
-                // optional fields used by the client filter logic
+                // used by the client filter logic
                 AssignedUserId = x.AssignedUserId,
                 AssignedEmployeeNumber = empNum,
                 AssignedEmployeeName = empName,
@@ -288,8 +283,6 @@ public class AssetsApiController : ControllerBase
             };
         }
 
-        // Always include direct reports for the current user so the UI can render the dropdown,
-        // regardless of scope.
         var reportVms = await _db.Users.AsNoTracking()
             .Where(u => u.SupervisorID == myUserId)
             .OrderBy(u => u.FullName)
@@ -384,11 +377,9 @@ public class AssetsApiController : ControllerBase
                     if (hw.AssignedUserId == myUserId) allowed = true;
                     else if (hw.AssignedUserId is int uid)
                     {
-                        var reportIds = await _db.Users.AsNoTracking()
-                            .Where(u => u.SupervisorID == myUserId)
-                            .Select(u => u.UserID)
-                            .ToListAsync(ct);
-                        allowed = reportIds.Contains(uid);
+                        var scopeIds = await SupervisorScopeHelper
+                            .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
+                        allowed = scopeIds.Contains(uid);
                     }
                     if (!allowed) return NotFound();
                 }
@@ -460,11 +451,9 @@ public class AssetsApiController : ControllerBase
                     if (sw.AssignedUserId == myUserId) allowed = true;
                     else if (sw.AssignedUserId is int uid)
                     {
-                        var reportIds = await _db.Users.AsNoTracking()
-                            .Where(u => u.SupervisorID == myUserId)
-                            .Select(u => u.UserID)
-                            .ToListAsync(ct);
-                        allowed = reportIds.Contains(uid);
+                        var scopeIds = await SupervisorScopeHelper
+                            .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
+                        allowed = scopeIds.Contains(uid);
                     }
                     if (!allowed) return NotFound();
                 }

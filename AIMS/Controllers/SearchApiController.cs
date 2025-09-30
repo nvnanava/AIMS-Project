@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using AIMS.Data;
 using AIMS.Queries;
-using AIMS.Utilities;
+using AIMS.Utilities; // IsSupervisor()
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -33,11 +33,9 @@ public sealed class SearchApiController : ControllerBase
         [FromQuery] string? impersonate = null)
     {
         // ----- DEV impersonation support -----
-        // AssetSearchQuery looks for HttpContext.Items["ImpersonatedEmail"] / ["ImpersonatedUserId"].
         if (!string.IsNullOrWhiteSpace(impersonate) && _env.IsDevelopment())
         {
             var key = impersonate.Trim();
-            // Prefer employee number, then email. Resolve here and stash in Items so the query can scope correctly.
             var impUser = await _db.Users.AsNoTracking()
                 .FirstOrDefaultAsync(u => u.EmployeeNumber == key || u.Email == key);
             if (impUser is not null)
@@ -54,8 +52,11 @@ public sealed class SearchApiController : ControllerBase
 
         if (isBlank)
         {
-            // Only Supervisors auto-load their scoped list on blank; everyone else gets empty (no DB hit).
-            if (!User.IsSupervisor())
+            // Ask the query helper to resolve the DB role
+            var (_, roleName) = await _search.ResolveCurrentUserAsync(HttpContext.RequestAborted);
+
+            // Only DB "Supervisor" gets auto-load on blank; everyone else (including Admin/Helpdesk) = empty
+            if (!string.Equals(roleName, "Supervisor", StringComparison.OrdinalIgnoreCase))
                 return Ok(PagedResult<AssetRowVm>.Empty());
         }
 
@@ -65,37 +66,5 @@ public sealed class SearchApiController : ControllerBase
             ct: HttpContext.RequestAborted);
 
         return Ok(result);
-    }
-
-    // -------- helpers --------
-    private async Task<string?> ResolveRoleNameAsync()
-    {
-        // If impersonating, we already looked up the user—re-use that
-        if (HttpContext.Items.TryGetValue("ImpersonatedUserId", out var idObj) && idObj is int impId)
-        {
-            var role = await (from u in _db.Users.AsNoTracking()
-                              join r in _db.Roles.AsNoTracking() on u.RoleID equals r.RoleID
-                              where u.UserID == impId
-                              select r.RoleName).FirstOrDefaultAsync();
-            return role;
-        }
-
-        // Otherwise use claims (email or employeeNumber)
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
-        var emp = User.FindFirstValue("employeeNumber");
-
-        var me = await _db.Users.AsNoTracking()
-            .FirstOrDefaultAsync(u =>
-                (!string.IsNullOrEmpty(email) && u.Email == email) ||
-                (!string.IsNullOrEmpty(emp) && u.EmployeeNumber == emp));
-
-        if (me is null) return null;
-
-        var myRole = await _db.Roles.AsNoTracking()
-            .Where(r => r.RoleID == me.RoleID)
-            .Select(r => r.RoleName)
-            .FirstOrDefaultAsync();
-
-        return myRole;
     }
 }

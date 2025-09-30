@@ -7,6 +7,7 @@
 
     // Server-rendered role flag (avoids fetching whoami just to infer roles)
     var __CAN_ADMIN__ = User.IsAdminOrHelpdesk();
+    var __IS_SUPERVISOR__ = User.IsSupervisor();
 }
 
 @section Styles {
@@ -16,6 +17,7 @@
 <!-- Expose role to JS (keeps client hints in sync with Entra/policy/claims) -->
 <script>
     window.__CAN_ADMIN__ = @(__CAN_ADMIN__ ? "true" : "false");
+    window.__IS_SUPERVISOR__ = @(__IS_SUPERVISOR__ ? "true" : "false");
 </script>
 
 <div class="page-fill">

@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 inTransition = false;
                 bootstrap.Modal.getInstance(itemDetailsModal).hide();
                 await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
-                await loadAssets(baseData.AssetType); //optimistically reload assets. Hardware controller now bumps cache stamp.
+                await loadAssetsPaged(baseData.AssetType, 1, 50);
                 return;
             }
             // server side validation errors

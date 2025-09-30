@@ -1,6 +1,7 @@
 /* Search page client logic
-   - Uses server-rendered window.__CAN_ADMIN__ (from Search.cshtml) instead of fetching /api/assets/whoami
-   - Keeps existing filtering, rendering, and fetch behavior intact
+   - Uses server-rendered window.__CAN_ADMIN__ / window.__IS_SUPERVISOR__ (no whoami fetch)
+   - Supervisors auto-load blank (server scopes to self + direct reports)
+   - Admin/Helpdesk and others do NOT auto-load on blank
 */
 (function () {
     // ----- DOM -----
@@ -72,7 +73,15 @@
         clearBody();
         for (const row of (items || [])) {
             const tr = document.createElement("tr");
-            tr.className = "result row-clickable";
+            tr.className = "result";
+            if (canDeepLink) {
+                tr.classList.add("row-clickable");     // pointer + hover for admins
+                tr.style.cursor = "pointer";
+                tr.title = "View details";
+            } else {
+                tr.setAttribute("aria-disabled", "true"); // supervisors: not clickable
+                tr.style.cursor = "default";
+            }
             tr.setAttribute("applied-filters", "0");
             tr.dataset.tag = row.tag || "";
             tr.dataset.type = row.type || "";
@@ -114,10 +123,9 @@
     }
 
     // ---- CLICK HANDLER (delegated) ----
-    // We still keep this behavior: clicking a row deep-links to details
-    // (Admin/Helpdesk hint is exposed via window.__CAN_ADMIN__, reserved for future UI toggles)
-    let canDeepLink = !!window.__CAN_ADMIN__;
+    let canDeepLink = !!window.__CAN_ADMIN__; // reserved for future UI toggles
     tbody.addEventListener('click', (e) => {
+        if (!canDeepLink) return;
         const tr = e.target.closest('tr.result');
         if (!tr) return;
 
@@ -133,16 +141,13 @@
     });
 
     // ---- Client-side filtering ----
-    // Bit flags used to mark which filters apply (row hidden if applied-filters != 0)
     const headerFlags = {
-        ["Asset Name"]: 1 << 0, // 00001
-        ["Type"]: 1 << 1,       // 00010
-        ["Tag #"]: 1 << 2,      // 00100
-        ["Assignment"]: 1 << 3, // 01000
-        ["Status"]: 1 << 4      // 10000
+        ["Asset Name"]: 1 << 0,
+        ["Type"]: 1 << 1,
+        ["Tag #"]: 1 << 2,
+        ["Assignment"]: 1 << 3,
+        ["Status"]: 1 << 4
     };
-
-    // Instead of re-querying the DB, we filter via DOM manipulation only
     const selectorByHeader = {
         ["Asset Name"]: ".col-name",
         ["Type"]: ".col-type",
@@ -180,14 +185,14 @@
     if (selectStat) selectStat.addEventListener("change", e => applyFilterFor("Status", e.target.value));
 
     // ---- Loading (use GlobalSpinner + keep table blank until min time) ----
-    const LOCAL_MIN_VISIBLE_MS = 500; // keep table blank at least this long
+    const LOCAL_MIN_VISIBLE_MS = 500;
     let localShownAt = 0;
 
     function startLoading() {
         localShownAt = performance.now();
-        clearBody();           // table blank immediately
+        clearBody();
         setEmpty(false);
-        GlobalSpinner.show();  // global center logo spinner
+        GlobalSpinner.show();
     }
 
     function waitForMinimum() {
@@ -198,7 +203,13 @@
 
     // ---- INIT ----
     (async function init() {
-        // No whoami call—role already provided by server in window.__CAN_ADMIN__
+        // Supervisors: auto-load blank (server will scope)
+        if (window.__IS_SUPERVISOR__) {
+            await fetchInitial("", 1, 25);
+            applyZebra();
+            return;
+        }
+        // Others: only fetch if there's a query
         if (initialQ.length > 0) {
             await fetchInitial(initialQ, 1, 25);
         } else {
@@ -211,14 +222,16 @@
     // ---- Fetch ----
     async function fetchInitial(q, page = 1, pageSize = 25) {
         const isBlank = !q || q.trim() === "";
-        if (isBlank) {
+
+        // Only supervisors may fetch blank
+        if (isBlank && !window.__IS_SUPERVISOR__) {
             clearBody();
             setEmpty(true);
             return;
         }
 
         const url = new URL("/api/assets/search", window.location.origin);
-        url.searchParams.set("q", q.trim());
+        if (!isBlank) url.searchParams.set("q", q.trim());
         url.searchParams.set("page", String(page));
         url.searchParams.set("pageSize", String(pageSize));
 
@@ -229,8 +242,6 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
 
-            // Keep table blank until our minimum time is met,
-            // then render and hide spinner.
             await waitForMinimum();
             renderRows(data.items || []);
             if (!data.items || data.items.length === 0) setEmpty(true);
@@ -239,8 +250,7 @@
             clearBody();
             setEmpty(true);
         } finally {
-            GlobalSpinner.hide(); // respects its own min/fade
+            GlobalSpinner.hide();
         }
     }
-
 })();

@@ -112,7 +112,8 @@ builder.Services.AddAuthorizationBuilder()
               c.Type == "preferred_username" &&
               new[] {
                   "richardGrayson@gotham.edu",
-                  "niyant397@gmail.com"
+                  "niyant397@gmail.com",
+                  "tnburg@pacbell.net"
               }.Contains(c.Value))));
 
 

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,10 @@ public class HomeController : Controller
     // If services exist, pass a model. Otherwise just render the view (client can fetch /api/assets).
     public async Task<IActionResult> Index()
     {
+        // Supervisors should land on Search, not the cards page
+        if (User.IsSupervisor())
+            return RedirectToAction(nameof(Search), new { searchQuery = (string?)null });
+
         if (_hardwareQuery is not null && _softwareQuery is not null)
         {
             var model = new HomeIndexViewModel
@@ -63,7 +68,6 @@ public class HomeController : Controller
             return View();
         }
 
-        // (Optional) If we wire a real query layer later, map into ViewBag.Results here.
         try
         {
             ViewBag.Results = new List<Dictionary<string, string>>();
@@ -80,7 +84,6 @@ public class HomeController : Controller
     public IActionResult AuditLog() => View();
 
     public IActionResult Privacy() => View();
-    // public IActionResult Feedback() => View(); # Scaffolded
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
@@ -88,11 +91,13 @@ public class HomeController : Controller
 
     // ----------------------------------------------------------------------------
     // Details page with a server-side guard:
-    // If tag is provided and its true type doesn't match the category in the URL,
-    // redirect to the same page with the corrected category.
     // ----------------------------------------------------------------------------
     public async Task<IActionResult> AssetDetailsComponent(string? category, string? tag)
     {
+        // 🔒 Supervisors are not allowed here — bounce to Search
+        if (User.IsSupervisor())
+            return RedirectToAction(nameof(Search), new { searchQuery = (string?)null });
+
         // Normalize requested category (used when no tag)
         var requestedCategory = string.IsNullOrWhiteSpace(category) ? "Laptop" : category.Trim();
         var requestedKey = requestedCategory.ToLowerInvariant();
@@ -128,7 +133,6 @@ public class HomeController : Controller
 
         if (detectedType is null)
         {
-            // Tag not found: render the page so the client JS can show the empty state nicely
             ViewData["MissingTag"] = t;
             return View();
         }
@@ -144,7 +148,7 @@ public class HomeController : Controller
         }
 
         // Types match — render
-        ViewData["Category"] = detectedType; // ensure canonical casing
+        ViewData["Category"] = detectedType;
         ViewData["Title"] = $"{detectedType} Asset Details";
         return View();
     }
