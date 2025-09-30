@@ -1,3 +1,10 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using Microsoft.AspNetCore.Http
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@* Layout file for the entire application. Contains the navbar and footer. *@
 <html lang="en">
 
 <head>
@@ -8,7 +15,10 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
+    @using AIMS.Helpers <!-- For role based feature lockdown on the navbar -->
+
 
     <!-- NOTE:
      index.overrides.css is loaded last on purpose.
@@ -47,24 +57,41 @@
                                 <span class="label">Reports</span>
                             </a>
                         </li>
+                        <!-- Only show the Admin button to admins -->
+                        @if (User.IsAdmin())
+                        {
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
                                 <span class="emoji">⚙️ </span>
                                 <span class="label">Admin</span>
                             </a>
                         </li>
+                        }
+                            <!-- Only show the Audit Log button to admins and help desk -->
+                        @if (User.IsAdmin() || User.IsHelpDesk())
+                        {
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
                                 <span class="emoji">📝 </span>
                                 <span class="label">Audit Log</span>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        }
+                        @* <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Feedback">
                                 <span class="emoji">✉️ </span>
                                 <span class="label">Feedback</span>
                             </a>
-                        </li>
+                        </li> *@
+                         <li class = "nav-item">
+                            <form method = "post" asp-controller="Authentication" asp-action="Logout" style='display: inline;'>
+                            <input type = "hidden" name="_RequestVerificationToken" value = "@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+                             <button type="submit" class="nav-link text-dark">
+                            <span class="emoji">&#128100;</span>
+                            <span class="label">Sign out</span>
+                            </button>
+                            </form>
+                            </li>
                     </ul>
                 </div>
 
@@ -76,6 +103,7 @@
                                 placeholder="Search for assets or employees..." aria-label="Search"
                                 aria-describedby="search-addon">
                         </div>
+
 
                     </form>
                 </div>
@@ -114,7 +142,7 @@
     <div class="error-toast-container">
         <div id="errorToast" class="toast error-toast" role="alert" data-bs-autohide="true">
             <div class="d-flex">
-                <div class="toast-body"> 
+                <div class="toast-body">
                 </div>
             </div>
         </div>

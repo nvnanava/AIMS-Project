@@ -8,6 +8,7 @@ using Microsoft.Identity.Web.UI;
 // ★ NEW usings (for route constraint + policies)
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,6 +88,10 @@ builder.Services
         options.AccessDeniedPath = "/error/not-authorized"; // ★ corrected to use your error page
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
+builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
+{
+    options.FallbackPolicy = options.DefaultPolicy;
+});
 
 // keep your existing custom policies
 builder.Services.AddAuthorizationBuilder()
@@ -96,7 +101,6 @@ builder.Services.AddAuthorizationBuilder()
               c.Type == "preferred_username" &&
               new[] {
                   // test accounts for now
-                  "niyant397@gmail.com",
                   "nvnanavati@csus.edu",
                   "akalustatsingh@csus.edu",
                   "tburguillos@csus.edu",
@@ -118,8 +122,12 @@ builder.Services.AddAuthorizationBuilder()
           context.User.HasClaim(c =>
               c.Type == "preferred_username" &&
               new[] {
-                  "richardGrayson@gotham.edu"
+                  "richardGrayson@gotham.edu",
+                  "niyant397@gmail.com"
               }.Contains(c.Value))));
+
+
+
 
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 
