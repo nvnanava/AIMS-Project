@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="~/css/layout.css" asp-append-version="true" />
 <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -8,7 +9,7 @@
             </div>
 
             <div class="modal-body">
-                <form action="/Home/AddCategory" method="post">
+                <form id="addCategoryForm">
 
                     <div class="mb-3">
                         <label for="categoryName" class="form-label">Enter a New Asset Category:</label>
@@ -27,3 +28,41 @@
     </div>
 </div>
 
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        const form = document.getElementById("addCategoryForm");
+        const nameInput = document.getElementById("categoryName");
+        const toast = new bootstrap.Toast(document.getElementById("categoryToast"));
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault(); // prevent actual form submission
+
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                nameInput.classList.add("is-invalid");
+                nameInput.placeholder = "Category Name is required";
+                return;
+            }
+
+            // Clear error styles
+            nameInput.classList.remove("is-invalid");
+            nameInput.placeholder = "Enter Category Name";
+
+            // Show success toast
+            toast.show();
+
+            // Reset form & close modal
+            form.reset();
+            bootstrap.Modal.getInstance(document.getElementById("addCategoryModal")).hide();
+        });
+
+        // Clear error on input
+        nameInput.addEventListener("input", function () {
+            this.classList.remove("is-invalid");
+            this.placeholder = "Enter Category Name";
+        });
+    });
+</script>

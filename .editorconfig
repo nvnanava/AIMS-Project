@@ -25,3 +25,4 @@ csharp_prefer_braces = true:suggestion
 dotnet_style_qualification_for_property = true:suggestion
 dotnet_style_qualification_for_method = false:suggestion
 
+dotnet_diagnostic.IDE0005.severity = silent

@@ -1,9 +1,9 @@
 @{
-  ViewData["Title"] = "Search";
+    ViewData["Title"] = "Search";
 
-  var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
-  // Define Table Data
-  var tableData = new List<Dictionary<string, string>> {
+    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
+    // Define Table Data
+    var tableData = new List<Dictionary<string, string>> {
 new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
 {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assignment", "John Smith (28809)"},
 {"Status", "Assigned"} },
@@ -48,203 +48,182 @@ new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
 {"Status", "Assigned"} }
 };
 
-  // thank you Norin for this logic
-  tableData = string.IsNullOrEmpty(ViewBag.SearchQuery) ? tableData : tableData
-  .Where(dict => dict.Values.Any(value => value.Contains(ViewBag.SearchQuery)))
-  .ToList();
+    // thank you Norin for this logic
+    tableData = string.IsNullOrEmpty(ViewBag.SearchQuery) ? tableData : tableData
+    .Where(dict => dict.Values.Any(value => value.Contains(ViewBag.SearchQuery)))
+    .ToList();
 
 }
-
-<div class="global-search mb-3">
-  <input type="text" id="globalSearchInput" class="form-control" placeholder="Search all assets...">
-  <button id="clearSearch" class="btn btn-sm btn-outline-secondary mt-2">Clear All Filters</button>
-</div>
-
 <div class="table-container">
-  <table class="asset-table">
-    <thead>
-      <tr>
-        @foreach (var header in tableHeaders)
-        {
-          <th>@header</th>
-        }
-      </tr>
-      <tr class="search-container">
-        <th scope="col">
-          <input class="search-input filter-input" type="text" name="Asset Name" id="Asset Name"
-            placeholder="Filter by Asset Name" />
-        </th>
-        <th scope="col">
-          <select id="Type" name="Type" class="filter-input form-select">
-            <option value="">All Devices</option>
-            <option value="Desktop">Desktop</option>
-            <option value="Laptop">Laptop</option>
-            <option value="Headset">Headset</option>
-            <option value="Software">Software</option>
-            <option value="Charging Cable">Charging Cable</option>
-          </select>
-        </th>
-        <th scope="col">
-          <input class="filter-input search-input" type="text" name="Tag #" id="Tag #" placeholder="Filter by Tag #" />
-        </th>
-        <th scope="col">
-          <input class="filter-input search-input" type="text" name="Assignment" id="Assignment"
-            placeholder="Filter by Assignment" />
-        </th>
-        <th scope="col">
-          <select id="Status" name="Status" class="filter-input form-select">
-            <option value="">All Status</option>
-            <option value="Assigned">Assigned</option>
-            <option value="Available">Available</option>
-            <option value="In Repair">In Repair</option>
-            <option value="Damaged">Damaged</option>
-          </select>
-        </th>
-      </tr>
-    </thead>
-    <tbody id="table-body">
-      @if (tableData.Count == 0)
-      {
-        <tr>
-          <td colspan="@tableHeaders.Count" style="text-align: center;">No data available</td>
-        </tr>
-      }
-      else
-      {
-        @foreach (var row in tableData)
-        {
-          <tr class="result">
-            @foreach (var header in tableHeaders)
+    <table class="asset-table">
+        <thead>
+            <tr>
+                @foreach (var header in tableHeaders)
+                {
+                    <th>@header</th>
+                }
+            </tr>
+            <tr class="search-container">
+                <th scope="col">
+                    <input class="search-input filter-input" type="text" name="Asset Name" id="Asset Name"
+                        placeholder="Filter by Asset Name" />
+                </th>
+                <th scope="col">
+                    <select id="Type" name="Type" class="filter-input form-select">
+                        <option value="">All Devices</option>
+                        <option value="Desktop">Desktop</option>
+                        <option value="Laptop">Laptop</option>
+                        <option value="Headset">Headset</option>
+                        <option value="Software">Software</option>
+                        <option value="Charging Cable">Charging Cable</option>
+                    </select>
+                </th>
+                <th scope="col">
+                    <input class="filter-input search-input" type="text" name="Tag #" id="Tag #"
+                        placeholder="Filter by Tag #" />
+                </th>
+                <th scope="col">
+                    <input class="filter-input search-input" type="text" name="Assignment" id="Assignment"
+                        placeholder="Filter by Assignment" />
+                </th>
+                <th scope="col">
+                    <select id="Status" name="Status" class="filter-input form-select">
+                        <option value="">All Status</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Available">Available</option>
+                        <option value="In Repair">In Repair</option>
+                        <option value="Damaged">Damaged</option>
+                    </select>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="table-body">
+            @if (tableData.Count == 0)
             {
-              <td id="@header">@(row.ContainsKey(header) ? row[header] : "-")</td>
+                <tr>
+                    <td colspan="@tableHeaders.Count" style="text-align: center;">No data available</td>
+                </tr>
             }
-          </tr>
-        }
-      }
-    </tbody>
-  </table>
+            else
+            {
+                @foreach (var row in tableData)
+                {
+                    <tr class="result">
+                        @foreach (var header in tableHeaders)
+                        {
+                            <td id="@header">@(row.ContainsKey(header) ? row[header] : "-")</td>
+                        }
+                    </tr>
+                }
+                <tr id="no-results-row" class="no-results-row">
+                    <td colspan="@tableHeaders.Count">
+                        No matching results found
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
-    
+
 <script type="text/javascript">
 
-  /**
-  This function verifies that a row satisfies a header input's current inputted value.
+    /**
+    This function verifies that a row satisfies a header input's current inputted value.
 
-  It accepts the relevant header name, and the row to verify.
-  */
-  function validateCellUsingHeader(header, cell, inputValue) {
-    // if the row text does not include a filter's current value, it does not satisfy the rule.
-    if (cell.innerHTML.toLowerCase().includes(inputValue.toLowerCase())) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
-    This is the generalized callback function which will break called when an input's state changes.
-
-    Based on the new value, it will filter out any rules. It uses bit flags to keep track of
-    which rows to display (applied-filters === 0 => display row)
-
-    to avoid more calls to the database aside from the initial page load, we use HTML manipulation.
-  */
-  function filter(e) {
-    // stop this function from running on modifier keys
-    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.key === 'Tab') {
-      return;
-    }
-
-    // new inputted value
-    const inputValue = e.target.value.trim();
-    const header = e.target.getAttribute('name');
-
-    // get all the rows
-    const results = document.querySelectorAll(".result");
-
-    // validate each row
-    for (const result of results) {
-      // relevant cell in the row that corresponds to the header
-      const filterCell = result.querySelector(`[id="${header}"]`);
-
-      // relevant boolean flags for our filter
-      let relevantFlag = headerFlags[header];
-
-      // get state of previous filter applications
-      const appliedFiltersAttribute = parseInt(result.getAttribute("applied-filters"));
-
-      // updated attribute after boolean logic
-      let newFiltersAttribute = appliedFiltersAttribute;
-
-      // bool: does a new filter apply?
-      const filterApplies = !validateCellUsingHeader(header, filterCell, inputValue);
-
-      // if a filter applies to this row
-      if (filterApplies) {
-        // only do a document manipulation if the filter doesn't already exist
-        if (!((appliedFiltersAttribute | relevantFlag) === appliedFiltersAttribute)) {
-          newFiltersAttribute = appliedFiltersAttribute | relevantFlag;
-          result.setAttribute("applied-filters", newFiltersAttribute);
+    It accepts the relevant header name, and the row to verify.
+    */
+    function validateCellUsingHeader(header, cell, inputValue) {
+        // if the row text does not include a filter's current value, it does not satisfy the rule.
+        if (cell.innerHTML.toLowerCase().includes(inputValue.toLowerCase())) {
+            return true;
+        } else {
+            return false;
         }
-      } else if (!filterApplies && appliedFiltersAttribute !== 0) {
-        // otherwise, remove the filter
-        newFiltersAttribute = appliedFiltersAttribute & ~relevantFlag;
-        result.setAttribute("applied-filters", newFiltersAttribute);
-      }
-
-      // if some filter applies
-      if (newFiltersAttribute !== 0) {
-        // turn off display
-        result.style.display = "none";
-      } else {
-        // otherwise, enable display
-        result.style.display = "";
-      }
     }
-  }
 
-  const inputs = document.querySelectorAll(".filter-input");
+    /**
+      This is the generalized callback function which will break called when an input's state changes.
 
-  // these bit flags are used to notate which flags apply to any result row n
-  const headerFlags = {
-    ["Asset Name"]: 1 << 0, // 00001
-    ["Type"]: 1 << 1, // 00010
-    ["Tag #"]: 1 << 2, // 00100
-    ["Assignment"]: 1 << 3, // 01000
-    ["Status"]: 1 << 4 // 10000
-  };
+      Based on the new value, it will filter out any rules. It uses bit flags to keep track of
+      which rows to display (applied-filters === 0 => display row)
 
-  // assign an event listener for each input (will activate on: keyboard entry,entry from
-  // non-keyboard sources).
-  for (const input of inputs) {
-    input.addEventListener("input", filter)
-  }
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const inputs = document.querySelectorAll('.search-input');
-    const rows = document.querySelectorAll('tbody tr.result');
-    
-    function filter() {
-        const activeFilters = {};
-        inputs.forEach(input => {
-            const value = input.value.trim().toLowerCase();
-            if (value) activeFilters[input.name] = value;
-        });
-        
-        rows.forEach(row => {
-            let showRow = true;
-            for (const [name, value] of Object.entries(activeFilters)) {
-                const cell = row.querySelector(`td[id="${name}"]`);
-                if (!cell?.textContent.toLowerCase().includes(value)) {
-                    showRow = false;
-                    break;
+      to avoid more calls to the database aside from the initial page load, we use HTML manipulation.
+    */
+    function filter(e) {
+        // stop this function from running on modifier keys
+        if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.key === 'Tab') {
+            return;
+        }
+
+        // new inputted value
+        const inputValue = e.target.value.trim();
+        const header = e.target.getAttribute('name');
+
+        // get all the rows
+        const results = document.querySelectorAll(".result");
+        const noResultsRow = document.getElementById("no-results-row");
+
+        //intitialize a variable to increment if a row is shown
+        let shownRows = 0;
+
+        // validate each row
+        for (const result of results) {
+            // relevant cell in the row that corresponds to the header
+            const filterCell = result.querySelector(`[id="${header}"]`);
+
+            // relevant boolean flags for our filter
+            let relevantFlag = headerFlags[header];
+
+            // get state of previous filter applications
+            const appliedFiltersAttribute = parseInt(result.getAttribute("applied-filters"));
+
+            // updated attribute after boolean logic
+            let newFiltersAttribute = appliedFiltersAttribute;
+
+            // bool: does a new filter apply?
+            const filterApplies = !validateCellUsingHeader(header, filterCell, inputValue);
+
+            // if a filter applies to this row
+            if (filterApplies) {
+                // only do a document manipulation if the filter doesn't already exist
+                if (!((appliedFiltersAttribute | relevantFlag) === appliedFiltersAttribute)) {
+                    newFiltersAttribute = appliedFiltersAttribute | relevantFlag;
+                    result.setAttribute("applied-filters", newFiltersAttribute);
                 }
+            } else if (!filterApplies && appliedFiltersAttribute !== 0) {
+                // otherwise, remove the filter
+                newFiltersAttribute = appliedFiltersAttribute & ~relevantFlag;
+                result.setAttribute("applied-filters", newFiltersAttribute);
             }
-            row.style.display = showRow ? '' : 'none';
-        });
+
+            // if some filter applies
+            if (newFiltersAttribute !== 0) {
+                // turn off display
+                result.style.display = "none";
+            } else {
+                // otherwise, enable display
+                result.style.display = "";
+                shownRows++;
+            }
+        }
+        // if no rows are shown, show the no-results-row. otherwise, hide it.
+        noResultsRow.style.display = shownRows === 0 ? "" : "none";
     }
-    
-    inputs.forEach(input => input.addEventListener('input', filter));
-    filter(); // Initial filter
-});
+
+    const inputs = document.querySelectorAll(".filter-input");
+
+    // these bit flags are used to notate which flags apply to any result row n
+    const headerFlags = {
+        ["Asset Name"]: 1 << 0, // 00001
+        ["Type"]: 1 << 1, // 00010
+        ["Tag #"]: 1 << 2, // 00100
+        ["Assignment"]: 1 << 3, // 01000
+        ["Status"]: 1 << 4 // 10000
+    };
+
+    // assign an event listener for each input (will activate on: keyboard entry,entry from
+    // non-keyboard sources).
+    for (const input of inputs) {
+        input.addEventListener("input", filter)
+    }
 </script>

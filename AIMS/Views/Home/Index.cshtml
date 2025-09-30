@@ -1,201 +1,196 @@
-@using System.Text.Json;
+﻿@using System.Text.Json;
+@model AIMS.Controllers.HomeIndexViewModel
+@using AIMS.Helpers <!-- For role based feature lockdown on the Homepage -->
+
 @{
     ViewData["Title"] = "Home Page";
 
     // Define Table Headers
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
-    // Define Table Data
-    var tableData = new List<Dictionary<string, string>> {
-new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
-{"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Assigned To", "John Smith (28809)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
-{"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Assigned To", "Jane Doe (69444)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
-{"Type", "Headset"}, {"Tag #", "HS-0080"}, {"Assigned To", "Unassigned"},
-{"Status", "Available"} },
-new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
-{"Type", "Desktop"}, {"Tag #", "DT-0011"}, {"Assigned To", "Randy Orton (58344)"},
-{"Status", "Damaged"} },
-new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
-{"Type", "Software"}, {"Tag #", "SW-0100"}, {"Assigned To", "Robin Williams (10971)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
-{"Type", "Monitor"}, {"Tag #", "MN-0023"}, {"Assigned To", "Sarah Johnson (62241)"},
-{"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "HP Pavillion TP01-2234"},
-{"Type", "Desktop"}, {"Tag #", "DT-0075"}, {"Assigned To", "Unassigned"},
-{"Status", "Available"} },
-new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
-{"Type", "Laptop"}, {"Tag #", "LT-0005"}, {"Assigned To", "Caitlin Clark (90334)"},
-{"Status", "Damaged"} },
-new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
-{"Type", "Headset"}, {"Tag #", "HS-0015"}, {"Assigned To", "Brian Regan (27094)"},
-{"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
-{"Type", "Charging Cable"}, {"Tag #", "CC-0088"}, {"Assigned To", "Unassigned"},
-{"Status", "Available"} },
-new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 3030"},
-{"Type", "Desktop"}, {"Tag #", "DT-0100"}, {"Assigned To", "Maximillian Brandt (20983)"},
-{"Status", "Assigned"} },
-new Dictionary<string, string> { {"Asset Name", "Poly Voyager 4320"},
-{"Type", "Headset"}, {"Tag #", "HS-0001"}, {"Assigned To", "Emily Carter (47283)"},
-{"Status", "In Repair"} },
-new Dictionary<string, string> { {"Asset Name", "j5create 100W Super Charger"},
-{"Type", "Charging Cable"}, {"Tag #", "CC-0019"}, {"Assigned To", "Bruce Wayne (34532)"},
-{"Status", "Damaged"} },
-new Dictionary<string, string> { {"Asset Name", "Dell Inspiron 15"},
-{"Type", "Laptop"}, {"Tag #", "LT-0115"}, {"Assigned To", "Kate Rosenberg (93232)"},
-{"Status", "Assigned"} }
-};
+    // Empty placeholders; the JS will fetch real data from /api/assets
+    var tableData = new List<Dictionary<string, string>>();
+    var users = new List<Dictionary<string, string>>();
 
-    // Define Dummy Users (TODO: Replace with API Calls to Fetch Real Data)
-    var users = new List<Dictionary<string, string>> {
-new Dictionary<string, string> {
-{"Name", "John Smith"}, {"Role", "Supervisor"}, {"ID", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Jane Doe"}, {"Role", "IT Help Desk"}, {"ID", "69444"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Randy Orton"}, {"Role", "IT Help Desk"}, {"ID", "58344"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Robin Williams"}, {"Role", "IT Help Desk"}, {"ID", "10971"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Sarah Johnson"}, {"Role", "Supervisor"}, {"ID", "62241"}
-},
-new Dictionary<string, string> {
-{"Name", "Caitlin Clark"}, {"Role", "Supervisor"}, {"ID", "90334"}
-},
-new Dictionary<string, string> {
-{"Name", "Brian Regan"}, {"Role", "Supervisor"}, {"ID", "27094"}
-},
-new Dictionary<string, string> {
-{"Name", "Maximillian Brandt"}, {"Role", "Admin"}, {"ID", "20983"}
-},
-new Dictionary<string, string> {
-{"Name", "Kate Rosenberg"}, {"Role", "Admin"}, {"ID", "93232"}
-},
-new Dictionary<string, string> {
-{"Name", "Emily Carter"}, {"Role", "IT Help Desk"}, {"ID", "47283"}, {"Supervisor", "28809"}
-},
-new Dictionary<string, string> {
-{"Name", "Bruce Wayne"}, {"Role", "IT Help Desk"}, {"ID", "34532"}, {"Supervisor", "28809"}
-},
-};
-
-    var serializedTableData = JsonSerializer.Serialize(tableData);
-    var serializedUsers = JsonSerializer.Serialize(users);
 }
 
-<!-- Buttons to Switch Views -->
+@section Styles {
+    <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
+}
+
+<!-- View switch (role demo UI behavior wired in JS) -->
 <div id="view-switch-buttons" class="view-switch-buttons" data-testid="view-switch-buttons">
-    <span id="view-toggle" class="expandable" onclick="toggleViewDropdown()" data-testid="toggle-view-dropdown">Change
-        View ▶️</span>
-    <div id="view-dropdown" class="view-dropdown" style="display:none;" data-testid="view-dropdown">
-        <label class="view-label admin">
-            <button id="switch-admin" class="standard-button" onclick="switchRole('Admin')"
-                data-testid="switch-admin">Switch to Admin</button>
-        </label><br>
-        <label class="view-label supervisor">
-            <button id="switch-supervisor" class="standard-button" onclick="switchRole('Supervisor')"
-                data-testid="switch-supervisor">Switch to Supervisor</button>
-        </label><br>
-        <label class="view-label it-help-desk">
-            <button id="switch-it-help-desk" class="standard-button" onclick="switchRole('IT Help Desk')"
-                data-testid="switch-it-help-desk">Switch to IT Help Desk</button>
-        </label><br>
+    <button id="view-toggle" class="standard-button" type="button" aria-controls="view-dropdown" aria-expanded="false"
+        data-testid="toggle-view-dropdown">
+        Change View
+    </button>
+
+    <div id="view-dropdown" class="view-dropdown" hidden data-testid="view-dropdown">
+        <div class="view-label admin">
+            <button id="switch-admin" class="standard-button" type="button" data-role="Admin"
+                data-testid="switch-admin">
+                Switch to Admin
+            </button>
+        </div>
+        <div class="view-label supervisor">
+            <button id="switch-supervisor" class="standard-button" type="button" data-role="Supervisor"
+                data-testid="switch-supervisor">
+                Switch to Supervisor
+            </button>
+        </div>
+        <div class="view-label it-help-desk">
+            <button id="switch-it-help-desk" class="standard-button" type="button" data-role="IT Help Desk"
+                data-testid="switch-it-help-desk">
+                Switch to IT Help Desk
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- Placeholder for Summary Cards -->
-<div id="summary-cards-section" class="summary-cards-placeholder" data-testid="summary-cards-section">
-    <p>Summary Cards Placeholder - Replace this with summary cards section</p>
+<!-- Summary cards / carousel -->
+<div class="carousel-wrapper" data-testid="summary-cards-section">
+    <button class="carousel-arrow left" type="button" aria-label="Scroll Left" data-dir="left">
+        <img src="@Url.Content("~/CardComponentImages/left-arrow.svg")" alt="" />
+    </button>
+
+    <div class="carousel-viewport" role="region" aria-label="Asset types">
+        <div id="card-carousel-track" class="card-carousel-track">
+            @await Html.PartialAsync("~/Views/Home/_HomePageCardComponent.cshtml")
+        </div>
+    </div>
+
+    <button class="carousel-arrow right" type="button" aria-label="Scroll Right" data-dir="right">
+        <img src="@Url.Content("~/CardComponentImages/right-arrow.svg")" alt="" />
+    </button>
 </div>
 
-<!-- Welcome Message for Supervisors -->
-<div id="role-message" class="role-message-container" data-testid="role-message">
+
+<!-- Welcome Message (shown for Supervisor view) -->
+<section id="role-message" class="role-message-container" data-testid="role-message" hidden>
     <h1 id="welcome-title" class="welcome-title" data-testid="welcome-title"></h1>
     <h2 id="welcome-subtitle" class="welcome-subtitle" data-testid="welcome-subtitle"></h2>
-</div>
+</section>
 
 <!-- Asset Table Section -->
-<div id="asset-management" class="asset-management">
-    <div id="asset-header" class="asset-header">
+<section id="asset-management" class="asset-management">
+    <header id="asset-header" class="asset-header">
         <div id="header-left-section" class="left-section">
             <!-- Search Bar -->
-            <div id="search-container" class="search-container">
-                <span id="search-addon" class="input-group-text search-icon" onclick="triggerSearch()">🔍</span>
-                <input type="text" id="search-input" class="form-control search-input"
-                    placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
+            <div id="asset-search-container" class="search-container">
+                <button id="asset-search-addon" class="input-group-text search-icon" type="button"
+                    aria-label="Run Search">🔍</button>
+                <input type="text" id="asset-search-input" class="form-control search-input"
+                    placeholder="Search for assets or employees..." aria-label="Search">
             </div>
+
             <!-- View Full List Button -->
             <a id="view-full-list-button" class="standard-button" data-testid="view-full-list-button"
                 href="@Url.Action("Search", "Home")" style="text-decoration: none;">
                 View Full List
             </a>
-            <!-- Filter Buttton -->
-            <div id="filter-button-container" class="dropdown" data-testid="filter-button" style="position: relative;">
-                <button id="filter-button-toggle" class="standard-button dropdown-toggle"
-                    onclick="toggleDropdown()">Filter</button>
-                <div id="filterDropdown" class="dropdown-menu" style="display: none;">
+
+            <!-- Filter Button -->
+            <div id="filter-button-container" class="dropdown" data-testid="filter-button">
+                <button id="filter-button-toggle" class="standard-button dropdown-toggle" type="button"
+                    aria-controls="filterDropdown" aria-expanded="false">
+                    Filter
+                </button>
+
+                <div id="filterDropdown" class="dropdown-menu" hidden role="menu" aria-label="Asset filters">
                     <!-- My Assets -->
-                    <div id="filter-my-assets-container">
-                        <label>
-                            <input type="checkbox" id="filter-my-assets" onchange="filterTable()"> My Assets
+                    <div id="filter-my-assets-container" class="filter-section">
+                        <label class="assets-parent">
+                            <input type="checkbox" id="filter-my-assets">
+                            My Assets
                         </label>
                     </div>
+
                     <!-- All My Direct Reports' Assets -->
                     <div id="filter-direct-reports-container" class="filter-section">
-                        <input type="checkbox" id="filter-all-reports" onchange="toggleAllReports()">
-                        <span id="toggle-direct-reports" class="expandable" onclick="toggleReportsDropdown()">All My
-                            Direct Report's Assets ▶️</span>
-                        <div id="reports-dropdown" style="display: none; margin-left: 20px;"></div>
+                        <button id="toggle-direct-reports" class="expandable" type="button"
+                            aria-controls="reports-panel" aria-expanded="false">
+                            Filter By Direct Report
+                        </button>
+
+                        <div id="reports-panel" class="nested-panel" hidden>
+                            <!-- Parent -->
+                            <label class="reports-parent">
+                                <input type="checkbox" id="filter-all-reports">
+                                All My Reports
+                            </label>
+
+                            <!-- Children populated by JS -->
+                            <div id="reports-list" class="reports-children" role="group"
+                                aria-labelledby="filter-all-reports">
+                            </div>
+                        </div>
                     </div>
+
                     <!-- Filter by Type -->
                     <div id="filter-type-container" class="filter-section">
-                        <input type="checkbox" id="filterByTypeAll" onchange="toggleAllTypes()">
-                        <span id="toggle-type-dropdown" class="expandable" onclick="toggleTypesDropdown()">Filter By
-                            Type ▶️</span>
-                        <div id="types-dropdown" style="display: none; margin-left: 20px;">
-                            <label>
-                                <input type="checkbox" class="filter-type" data-type="Monitors" value="Monitor"
-                                    onchange="updateTypes()"> Monitors
-                            </label><br>
-                            <label>
-                                <input type="checkbox" class="filter-type" data-type="Laptops" value="Laptop"
-                                    onchange="updateTypes()"> Laptops
-                            </label><br>
-                            <label>
-                                <input type="checkbox" class="filter-type" data-type="Desktops" value="Desktop"
-                                    onchange="updateTypes()"> Desktops
-                            </label><br>
-                            <label>
-                                <input type="checkbox" class="filter-type" data-type="Software" value="Software"
-                                    onchange="updateTypes()"> Software
-                            </label><br>
-                            <label>
-                                <input type="checkbox" class="filter-type" data-type="Headsets" value="Headset"
-                                    onchange="updateTypes()"> Headsets
-                            </label><br>
-                            <label>
-                                <input type="checkbox" class="filter-type" data-type="Charging Cables"
-                                    value="Charging Cable" onchange="updateTypes()"> Charging Cables
-                            </label><br>
+                        <button id="toggle-type-dropdown" class="expandable" type="button"
+                            aria-controls="types-dropdown" aria-expanded="false">
+                            Filter By Type
+                        </button>
+
+                        <div id="types-dropdown" class="mt-2" hidden>
+                            <label class="type-parent">
+                                <input type="checkbox" id="filter-all-types"> All Types
+                            </label>
+
+                            <div id="types-list" class="type-children" role="group" aria-labelledby="filter-all-types">
+                                <label><input type="checkbox" class="filter-type" value="Monitor"> Monitors</label>
+                                <label><input type="checkbox" class="filter-type" value="Laptop"> Laptops</label>
+                                <label><input type="checkbox" class="filter-type" value="Desktop"> Desktops</label>
+                                <label><input type="checkbox" class="filter-type" value="Software"> Software</label>
+                                <label><input type="checkbox" class="filter-type" value="Headset"> Headsets</label>
+                                <label><input type="checkbox" class="filter-type" value="Charging Cable"> Charging
+                                    Cables</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Status -->
+                    <div id="filter-status-container" class="filter-section">
+                        <button id="toggle-status-dropdown" class="expandable" type="button"
+                            aria-controls="status-dropdown" aria-expanded="false">
+                            Filter By Status
+                        </button>
+
+                        <div id="status-dropdown" class="mt-2" hidden>
+                            <label class="status-parent">
+                                <input type="checkbox" id="filter-all-status"> All Statuses
+                            </label>
+
+                            <div id="status-list" class="status-children" role="group"
+                                aria-labelledby="filter-all-status">
+                                <label><input type="checkbox" class="filter-status" value="Assigned"> Assigned</label>
+                                <label><input type="checkbox" class="filter-status" value="Available"> Available</label>
+                                <label><input type="checkbox" class="filter-status" value="In Repair"> In Repair</label>
+                                <label><input type="checkbox" class="filter-status" value="Damaged"> Damaged</label>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
-            <button id="assign-asset-button" class="assign-asset-button" data-bs-toggle="modal"
-                data-bs-target="#assignAssetModal">Assign Asset</button>
-        </div>
-    </div>
+
+        @* Conditional, Entra-based display code*@
+        @* @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+        { *@
+            <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+
+                @if (User.IsAdmin())
+                {
+                <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
+                    data-bs-target="#assignAssetModal">
+                    Assign Asset
+                </button>
+                }
+            </div>
+        @* } *@
+
+    </header>
 
     <!-- Include Table Component -->
     @if (tableHeaders == null || tableData == null)
@@ -203,328 +198,14 @@ new Dictionary<string, string> {
         <p style="color: red;">Table Data is Missing!</p>
     }
     @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
-
     <!-- Include Modal HTML -->
-    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml")
+    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
 
-    <!-- Include Modal Functionality Script -->
-    <script src="~/js/assignAssetModal.js"></script>
-</div>
+</section>
 
-<script>
-    // --- State + Initialization ---
-    let currentView = "Admin";
-    const tableData = @Html.Raw(serializedTableData);
-    const users = @Html.Raw(serializedUsers);
+@section Scripts {
+    <script> window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));</script>
 
-    // --- Utility Functions ---
-
-    // Reset table visibility to show all rows
-    function resetTableVisibility() {
-        document.querySelectorAll("#table-body tr").forEach(row => {
-            row.style.display = "";
-        });
-    }
-  
-    // Return assets for a supervisor and their direct reports
-    function getAssetsForSupervisor(supervisorID) {
-        const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
-        return tableData.filter(item =>
-            reportIDs.some(id => item["Assigned To"].includes(id)) || item["Assigned To"].includes(supervisorID));
-    }
-
-    // Updates welcome message based on role
-    function updateWelcomeMessage(user) {
-        const messageContainer = document.getElementById("role-message");
-        const title = document.getElementById("welcome-title");
-        const subtitle = document.getElementById("welcome-subtitle");
-
-        if (user.role === "Admin" || user.role === "IT Help Desk") {
-            messageContainer.style.display = "none";
-        } else {
-            messageContainer.style.display = "block";
-            title.textContent = `Welcome ${user.name}!`;
-            subtitle.textContent = `Here's an overview of your assets along with those assigned to your team.`;
-        }
-    }
-
-    // --- Role Switching ---
-
-    // Changes the current view and updates visibility of sections.
-    function switchRole(role) {
-        currentView = role;
-
-        const summaryCardsSection = document.querySelector("[data-testid='summary-cards-section']");
-        const assignAssetSection = document.querySelector("[data-testid='assign-asset-section']");
-        const viewFullListButton = document.querySelector("[data-testid='view-full-list-button']");
-        const filterButton = document.querySelector("[data-testid='filter-button']");
-        const viewDropdown = document.querySelector('#view-dropdown');
-        const messageContainer = document.getElementById("role-message");
-
-        if (role === "Admin") {
-            summaryCardsSection.style.display = "flex";
-            assignAssetSection.style.display = "block";
-            viewFullListButton.style.display = "block";
-            filterButton.style.display = "none";
-            messageContainer.style.display = "none";
-            resetTableVisibility();
-        } else if (role === "Supervisor") {
-            summaryCardsSection.style.display = "none";
-            assignAssetSection.style.display = "none";
-            viewFullListButton.style.display = "none";
-            filterButton.style.display = "block";
-            populateDirectReports("28809");
-            filterForSupervisor("28809");
-            updateWelcomeMessage({ name: "John Smith", id: "28809", role: "Supervisor" });
-            applyRowStriping();
-        } else {
-            summaryCardsSection.style.display = "flex";
-            assignAssetSection.style.display = "none";
-            viewFullListButton.style.display = "block";
-            filterButton.style.display = "none";
-            messageContainer.style.display = "none";
-            resetTableVisibility();
-        }
-        viewDropdown.style.display = 'none';
-    }
-    switchRole(currentView);
-
-    // --- Dropdown Toggle Handlers ---
-
-    // Show/hide the view dropdown
-    function toggleViewDropdown() {
-        const viewDropdown = document.querySelector('#view-dropdown');
-        viewDropdown.style.display = (viewDropdown.style.display === 'none') ? 'block' : 'none';
-    }
-
-    // Show/hide the main filter dropdown
-    function toggleDropdown() {
-        const dropdown = document.querySelector("#filterDropdown");
-        dropdown.style.display = (dropdown.style.display === 'none') ? 'block' : 'none';
-    }
-
-    // Show/hide the reports filter dropdown
-    function toggleReportsDropdown() {
-        const reportsDropdown = document.querySelector('#reports-dropdown');
-        const reportsToggle = document.querySelector('span[onclick="toggleReportsDropdown()"]');
-
-        if (reportsDropdown.style.display === 'none') {
-            reportsDropdown.style.display = 'block';
-            reportsToggle.innerHTML = 'All My Direct Reports\' Assets 🔽';
-        } else {
-            reportsDropdown.style.display = 'none';
-            reportsToggle.innerHTML = 'All My Direct Reports\' Assets ▶️'
-        }
-    }
-
-    // Show/hide the type filter dropdown
-    function toggleTypesDropdown() {
-        const typesDropdown = document.querySelector('#types-dropdown');
-        const typesToggle = document.querySelector('span[onclick="toggleTypesDropdown()"]');
-
-        if (typesDropdown.style.display === 'none') {
-            typesDropdown.style.display = 'block';
-            typesToggle.innerHTML = 'Filter By Type 🔽';
-        } else {
-            typesDropdown.style.display = 'none';
-            typesToggle.innerHTML = 'Filter By Type ▶️'
-        }
-    }
-
-    // --- Filter Checkbox Handlers ---
-
-    // Toggles all direct report checkboxes
-    function toggleAllReports() {
-        const allReportsCheckbox = document.querySelector('#filter-all-reports');
-        const reportsCheckboxes = document.querySelectorAll('.filter-report');
-
-        reportsCheckboxes.forEach(cb => cb.checked = allReportsCheckbox.checked);
-        filterTable();
-    }
-
-    // Toggles all asset type checkboxes
-    function toggleAllTypes() {
-        const allTypesCheckbox = document.querySelector('#filterByTypeAll');
-        const typesCheckboxes = document.querySelectorAll('.filter-type');
-
-        typesCheckboxes.forEach(cb => cb.checked = allTypesCheckbox.checked);
-        filterTable();
-    }
-
-    // Updates "All Reports" checkbox if all children checked
-    function updateReports() {
-        const allReportsCheckbox = document.querySelector('#filter-all-reports');
-        const reportsCheckboxes = document.querySelectorAll('.filter-report');
-
-        let allChecked = true;
-        reportsCheckboxes.forEach(cb => {
-            if (!cb.checked) {
-                allChecked = false;
-            }
-        });
-
-        allReportsCheckbox.checked = allChecked;
-        filterTable();
-    }
-
-    // Updates "All Types" checkbox if all children checked
-    function updateTypes() {
-        const allTypesCheckbox = document.querySelector('#filterByTypeAll');
-        const typesCheckboxes = document.querySelectorAll('.filter-type');
-
-        let allChecked = true;
-        typesCheckboxes.forEach(cb => {
-            if (!cb.checked) {
-                allChecked = false;
-            }
-        });
-
-        allTypesCheckbox.checked = allChecked;
-        filterTable();
-    }
-
-    // --- Dynamic Filter Content ---
-
-    // Populates direct report checkboxes under a supervisor
-    function populateDirectReports(supervisorID) {
-        const reportDropdown = document.querySelector('#reports-dropdown');
-        reportDropdown.innerHTML = '';
-
-        const directReports = users.filter(user => user.Supervisor === supervisorID);
-
-        directReports.forEach(report => {
-            const label = document.createElement('label');
-            label.innerHTML = `<input type="checkbox" class="filter-report" data-report="${report.ID}" value="${report.ID}" onchange="updateReports()"> ${report.Name}`;
-            reportDropdown.appendChild(label);
-            reportDropdown.appendChild(document.createElement('br'));
-        });
-    }
-
-    // --- Filtering Logic ---
-
-    // Combines search, ownership, and type filters
-    function filterTable() {
-        // Get the search input and convert it to lowercase for case-insensitive comparison.
-        const input = document.getElementById("search-input")?.value.toLowerCase() || "";
-
-        // Get all checked type filter checkboxes (e.g., Laptops, Monitors, etc.)
-        const typeCheckboxes = document.querySelectorAll(".filter-type:checked");
-        const selectedTypes = Array.from(typeCheckboxes).map(cb => cb.value.trim());
-
-        // Get all checked direct report checkboxes (visible only to the supervisors)
-        const reportCheckboxes = document.querySelectorAll(".filter-report:checked");
-        const selectedReports = Array.from(reportCheckboxes).map(cb => cb.dataset.report);
-
-        // For now I'm hardcoding this just for simulation purposes.
-        const supervisorID = "28809";
-
-        // Check if "My Assets is" checked.
-        const showMyAssets = document.querySelector("#filter-my-assets")?.checked;
-
-        // Loop through all the table rows in the body.
-        const rows = document.querySelectorAll("#table-body tr");
-        rows.forEach(row => {
-            // --- Search Filter ---
-            const cells = row.querySelectorAll("td");
-            const assignedToCell = cells[3];
-            const typeCell = cells[1];
-
-            const assignedToText = assignedToCell?.textContent || "";
-            const typeText = typeCell?.textContent.trim() || "";
-            const match = assignedToText.match(/\((\d+)\)/);
-            const assignedToID = match ? match[1] : "";
-
-            const matchesSearch = Array.from(cells).some(cell =>
-                cell.textContent.toLowerCase().includes(input)
-            );
-
-            // --- Determine Ownership ---
-            const isSupervisorAsset = assignedToID === supervisorID;
-            const isDirectReportAsset = selectedReports.includes(assignedToID);
-            const isInSupervisorView =
-                isSupervisorAsset ||
-                isDirectReportAsset ||
-                (assignedToID && users.find(u => u.ID === assignedToID)?.Supervisor === supervisorID);
-
-            // --- Type Filter ---
-            matchesType = selectedTypes.length === 0 || selectedTypes.includes(typeText);
-            const ownershipFilterActive = showMyAssets || selectedReports.length > 0;
-
-            let visible = false;
-
-            if (ownershipFilterActive) {
-                visible = matchesSearch && matchesType && ((showMyAssets && isSupervisorAsset) || isDirectReportAsset);
-            } else {
-                visible = matchesSearch && matchesType && isInSupervisorView;
-            }
-            row.style.display = visible ? "" : "none";
-        });
-
-        applyRowStriping();
-    }
-
-    // Filters visible rows for supervisor and their team
-    function filterForSupervisor(supervisorID) {
-        const reportIDs = users.filter(user => user.Supervisor === supervisorID).map(user => user.ID);
-        const rows = document.querySelectorAll("#table-body tr");
-
-        rows.forEach(row => {
-            const assignedToCell = row.querySelector("td:nth-child(4)"); // Assigned to
-            const assignedText = assignedToCell?.textContent || "";
-            const isSupervisorAsset = assignedText.includes(supervisorID);
-            const isDirectReportAsset = reportIDs.some(id => assignedText.includes(id));
-
-            if (isSupervisorAsset || isDirectReportAsset) {
-                row.style.display = "";
-            } else {
-                row.style.display = "none";
-            }
-        });
-    }
-
-    // Filter visible rows for an individual employee
-    function filterTableForUser(userID) {
-        const rows = document.querySelectorAll("#table-body tr");
-
-        rows.forEach(row => {
-            const assignedToCell = row.querySelector("td:nth-child(4)");
-            const assignedToRaw = assignedToCell?.textContent.trim() || "";
-            const match = assignedToRaw.match(/\((\d+)\)/);
-            const assigneToID = match ? match[1] : null;
-
-            row.style.display = assigneToID === userID ? "" : "none";
-        });
-    }
-
-    function applyRowStriping() {
-        const allRows = Array.from(document.querySelectorAll("#table-body tr"));
-
-        //Remove all existing .even/.odd classes first
-        allRows.forEach(row => row.classList.remove("even-row", "odd-row"));
-
-        // Then apple new striping to visible rows only
-        const visibleRows = Array.from(allRows).filter(row => row.style.display !== "none");
-        visibleRows.forEach((row, index) => {
-            row.classList.add(index % 2 === 0 ? "even-row" : "odd-row");
-        });
-    }
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('search-input');
-    const tableRows = document.querySelectorAll('#table-body tr');
-    
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.trim().toLowerCase();
-        
-        tableRows.forEach(row => {
-            const rowText = Array.from(row.cells)
-                .map(cell => cell.textContent.toLowerCase())
-                .join(' ');
-            
-            row.style.display = rowText.includes(searchTerm) ? '' : 'none';
-        });
-    });
-});
-</script>
+    <script src="~/js/assignAssetModal.js" defer></script>
+    <script src="~/js/home.index.js" asp-append-version="true" defer></script>
+}

@@ -54,6 +54,15 @@
     </div>
 
     <table id="adminTable" class="admin-table">
+
+<div class="table-wrapper">
+    <div class="table-controls">
+        <button class="add-btn">Add User</button>
+    </div>
+
+
+    <table id="adminTable" class="table">
+
         <thead>
             <tr>
                 <th>Actions</th>
@@ -62,6 +71,7 @@
                 <th>Role</th>
                 <th onclick="sortTable(4)" style="cursor:pointer;">Status ⬍</th>
                 <th>Separation Date</th>
+
             </tr>
         </thead>
         <tbody>
@@ -80,11 +90,9 @@
                     new { Name = "Michael Dawson", Email = "michael.dawson@email.com", Role = "User", Status = "Inactive", SeparationDate = "09/15/2025" },
                     new { Name = "Clint Clark", Email = "clint.clark@email.com", Role = "Admin", Status = "Active", SeparationDate = " " },
                     new { Name = "Tobi Brown", Email = "tobi.brown@email.com", Role = "User", Status = "Active", SeparationDate = " "}
-                };
-            }
-
             @foreach (var user in users)
             {
+
                 <tr class="user-row @(user.Status.ToLower())">
                     <td>
                 <button class="icon-btn" title="Edit">
@@ -93,6 +101,9 @@
                 </svg>
             </button>
         </td>
+
+                <tr>
+                    <td><button class="edit-btn">Edit</button></td>
                     <td>@user.Name</td>
                     <td>@user.Email</td>
                     <td>@user.Role</td>
@@ -119,6 +130,7 @@
         rows.forEach(row => table.tBodies[0].appendChild(row));
         table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
     }
+
 
     // Inactive user toggle
     function toggleInactiveUsers() {

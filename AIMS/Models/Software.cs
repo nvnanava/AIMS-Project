@@ -1,25 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 
 namespace AIMS.Models;
 
-public partial class Software
+public class Software
 {
-    public int SoftwareId { get; set; }
+    // PK
+    public int SoftwareID { get; set; }
 
-    public string SoftwareName { get; set; } = null!;
-
-    public string SoftwareType { get; set; } = null!;
-
-    public string SoftwareVersion { get; set; } = null!;
-
-    public string SoftwareDeploymentLocation { get; set; } = null!;
-
-    public string SoftwareLicenseKey { get; set; } = null!;
-
+    // Columns
+    public string SoftwareName { get; set; } = string.Empty;
+    public string SoftwareType { get; set; } = string.Empty;
+    public string SoftwareVersion { get; set; } = string.Empty;
+    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
     public DateOnly? SoftwareLicenseExpiration { get; set; }
-
     public long SoftwareUsageData { get; set; }
-
     public decimal SoftwareCost { get; set; }
+    public string Comment { get; set; } = string.Empty;
 }
