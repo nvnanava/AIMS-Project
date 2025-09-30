@@ -77,6 +77,10 @@ public static class DbSeeder
 
             new User { FullName = "Bruce Wayne", Email = "bruce.wayne@aims.local", EmployeeNumber = "34532",
                        IsActive = true, RoleID = roleByName["IT Help Desk"].RoleID, ExternalId = UId("34532","bruce.wayne@aims.local") },
+
+            // --- NEW: Tyler (Supervisor 80003) ---
+            new User { FullName = "Tyler Burguillos", Email = "tnburg@pacbell.net", EmployeeNumber = "80003",
+                       IsActive = true, RoleID = roleByName["Supervisor"].RoleID, ExternalId = UId("80003","tnburg@pacbell.net") },
         };
 
         foreach (var u in usersWanted) await UpsertUserAsync(db, u, ct);
@@ -90,6 +94,16 @@ public static class DbSeeder
         {
             if (usersByEmp.TryGetValue(emp, out var user))
                 await EnsureSupervisorAsync(db, user, johnId, ct);
+        }
+        await db.SaveChangesAsync(ct);
+
+        // --- NEW: Map two existing users to Tyler (80003) as direct reports ---
+        int tylerId = usersByEmp["80003"].UserID;
+        string[] reportsOfTyler = { "34532", "62241" }; // Bruce, Sarah
+        foreach (var emp in reportsOfTyler)
+        {
+            if (usersByEmp.TryGetValue(emp, out var user))
+                await EnsureSupervisorAsync(db, user, tylerId, ct);
         }
         await db.SaveChangesAsync(ct);
 
@@ -107,7 +121,7 @@ public static class DbSeeder
             // Monitors
             new Hardware { AssetName="Dell S2421NX", AssetType ="Monitor", Status="Assigned", Manufacturer="Dell", Model ="", SerialNumber="MN-0001",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)) },
-            new Hardware { AssetName="HP 527SH", AssetType="Monitor", Status="In Repair", Manufacturer="HP", Model="", SerialNumber="MN-0023",
+            new Hardware { AssetName="HP 527SH", AssetType="Monitor", Status="Assigned", Manufacturer="HP", Model="", SerialNumber="MN-0023",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)) },
 
             // Desktops
@@ -129,7 +143,7 @@ public static class DbSeeder
             // Cables
             new Hardware { AssetName="Belkin BoostCharge 3.3ft USB-C", AssetType="Charging Cable", Status="Available", Manufacturer="Belkin", Model="", SerialNumber="CC-0088",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)) },
-            new Hardware { AssetName="j5create 100W Super Charger", AssetType="Charging Cable", Status="Damaged", Manufacturer="j5create", Model ="", SerialNumber="CC-0019",
+            new Hardware { AssetName="j5create 100W Super Charger", AssetType="Charging Cable", Status="Assigned", Manufacturer="j5create", Model ="", SerialNumber="CC-0019",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)) },
         };
         foreach (var h in hardwareWanted) await UpsertHardwareAsync(db, h, ct);

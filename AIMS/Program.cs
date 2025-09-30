@@ -1,6 +1,11 @@
+using System.Security.Claims;
 using AIMS.Data;
 using AIMS.Queries;
+using AIMS.Utilities;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
@@ -18,6 +23,7 @@ builder.Services.AddEndpointsApiExplorer();   // dev/test
 builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
+builder.Services.AddHttpContextAccessor();
 
 // ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
@@ -39,7 +45,8 @@ builder.Services.AddScoped<HardwareQuery>();
 builder.Services.AddScoped<SoftwareQuery>();
 builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
-builder.Services.AddScoped<FeedbackQuery>();
+// builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
+builder.Services.AddScoped<AssetSearchQuery>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -54,7 +61,7 @@ string? GetConn(string name)
 var preferName =
     builder.Environment.IsDevelopment() &&
     Environment.OSVersion.Platform == PlatformID.Win32NT
-        ? "DefaultConnection"
+        ? "LocalConnection"
         : "DockerConnection";
 
 var cs =
@@ -123,7 +130,8 @@ builder.Services.AddAuthorizationBuilder()
               c.Type == "preferred_username" &&
               new[] {
                   "richardGrayson@gotham.edu",
-                  "niyant397@gmail.com"
+                  "niyant397@gmail.com",
+                  "tnburg@pacbell.net"
               }.Contains(c.Value))));
 
 
@@ -182,6 +190,34 @@ else
     app.UseExceptionHandler("/error/not-found"); // ★ ensure proper error page
     app.UseHsts();
     app.UseHttpsRedirection();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (ctx, next) =>
+    {
+        // Allow ?impersonate=28809  OR  ?impersonate=john.smith@aims.local
+        var imp = ctx.Request.Query["impersonate"].ToString();
+        if (!string.IsNullOrWhiteSpace(imp))
+        {
+            // Try to resolve the user from DB once per request
+            using var scope = ctx.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AIMS.Data.AimsDbContext>();
+
+            var user = await db.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.EmployeeNumber == imp || u.Email == imp);
+
+            if (user != null)
+            {
+                // Store for downstream code
+                ctx.Items["ImpersonatedUserId"] = user.UserID;
+                ctx.Items["ImpersonatedEmail"] = user.Email;
+            }
+        }
+
+        await next();
+    });
 }
 
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
