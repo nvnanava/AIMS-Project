@@ -115,6 +115,16 @@
             }
         </tbody>
     </table>
+    <div id="assetsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeAssetsModal()">&times;</span>
+            <h2 id="assetsModalTitle"></h2>
+            <div id="assetsList">
+                <!-- Asset list gets populated here -->
+            </div>
+        </div>
+    </div>
+
     <script>
     function sortTable(n) {
         let table = document.getElementById("adminTable");
@@ -166,3 +176,4 @@ function closeAddUserModal() {
 }
  </script>
 </div>
+

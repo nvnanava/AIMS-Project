@@ -1,10 +1,10 @@
 using System.Linq;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Utilities;
 
 namespace AIMS.Controllers;
 
@@ -35,6 +35,7 @@ public class HardwareController : ControllerBase
     }
 
     [HttpPost("add")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddHardware([FromBody] CreateHardwareDto dto, CancellationToken ct = default)
@@ -93,6 +94,7 @@ public class HardwareController : ControllerBase
     }
 
     [HttpPost("add-bulk")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddHardwareBulk([FromBody] List<CreateHardwareDto> dtos, CancellationToken ct = default)
@@ -184,6 +186,7 @@ public class HardwareController : ControllerBase
     }
 
     [HttpPut("edit/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
