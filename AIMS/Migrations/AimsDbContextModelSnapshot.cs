@@ -179,6 +179,10 @@ namespace AIMS.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Manufacturer")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -272,6 +276,10 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SoftwareID"));
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("SoftwareCost")
                         .HasColumnType("decimal(10,2)");
