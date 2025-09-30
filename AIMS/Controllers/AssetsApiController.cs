@@ -300,7 +300,7 @@ public class AssetsApiController : ControllerBase
         return Ok(payload);
     }
 
- feature/task-5-asset-modals-ui
+
     // GET /api/assets/{tag}
 
     [HttpGet("{tag}")]
@@ -448,11 +448,13 @@ public class AssetsApiController : ControllerBase
 
         return NotFound("Asset not found.");
 
-    [HttpGet("types/unique")]
-    public async Task<IActionResult> unique()
-    {
-        var res = await _assetQuery.unique();
-        return Ok(res);
- main
+        [HttpGet("types/unique")]
+        public async Task<IActionResult> unique()
+        {
+            var res = await _assetQuery.unique();
+            return Ok(res);
+
+        }
     }
 }
+
