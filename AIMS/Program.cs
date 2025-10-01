@@ -3,17 +3,17 @@ using AIMS.Data;
 using AIMS.Queries;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
+// ★ NEW usings (for route constraint + policies)
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-// ★ NEW usings (for route constraint + policies)
-using Microsoft.AspNetCore.Routing;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -249,9 +249,10 @@ app.MapGet("/error/not-found-raw", () => Results.Content("<!doctype html><html><
 
 app.Run();
 
-public partial class Program {
+public partial class Program
+{
 }
 
 
- 
- 
+
+
