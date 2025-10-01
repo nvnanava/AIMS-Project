@@ -1,14 +1,78 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // demo data (remove when wired to real model)
+    var users = new[]
+    {
+        new { Name = "John Smith",    Email = "john.smith@email.com",   Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Jane Doe",      Email = "jane.doe@email.com",     Role = "User",  Status = "Inactive", SeparationDate = "12/01/2024" },
+        new { Name = "Max Taylor",    Email = "max.taylor@email.com",   Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Zara Khan",     Email = "zara.khan@email.com",    Role = "User",  Status = "Inactive", SeparationDate = "11/16/2023" },
+        new { Name = "Leo Clark",     Email = "leo.clark@email.com",    Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Sophie Lee",    Email = "sophie.lee@email.com",   Role = "User",  Status = "Active",   SeparationDate = " " },
+        new { Name = "Nina Patel",    Email = "nina.patel@email.com",   Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Andrew Jackson",Email = "andrew.jackson@email.com",Role = "User", Status = "Inactive", SeparationDate = "10/31/2024" },
+        new { Name = "Taylor Jackson",Email = "taylor.jackson@email.com",Role = "Admin",Status = "Active",   SeparationDate = " " },
+        new { Name = "Michael Dawson",Email = "michael.dawson@email.com",Role = "User", Status = "Inactive", SeparationDate = "09/15/2025" },
+        new { Name = "Clint Clark",   Email = "clint.clark@email.com",  Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Tobi Brown",    Email = "tobi.brown@email.com",   Role = "User",  Status = "Active",   SeparationDate = " " }
+    };
 }
 
 <div class="table-wrapper">
-    <div class="table-controls">
-        <button class="add-btn">Add User</button>
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="admin-modal">
+        <div class="admin-modal-content">
+            <div class="admin-modal-header">
+                <h2>Add New User</h2>
+                <button class="admin-modal-close" onclick="closeAddUserModal()">&times;</button>
+            </div>
+            <form id="addUserForm" onsubmit="addUser(event)">
+                <label for="userName">Name</label>
+                <input type="text" id="userName" required>
+
+                <label for="userEmail">Email</label>
+                <input type="email" id="userEmail" required>
+
+                <label for="userRole">Role</label>
+                <select id="userRole" required>
+                    <option value="Admin">Admin</option>
+                    <option value="User">User</option>
+                </select>
+
+                <label for="userStatus">Status</label>
+                <select id="userStatus" required>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+
+                <button type="submit" class="add-btn">Add User</button>
+            </form>
+        </div>
     </div>
 
+    <!-- Table Controls -->
+    <div class="admin-table-controls">
+        <div>
+            <button class="add-btn" onclick="openAddUserModal()">Add User</button>
+        </div>
+        <div class="admin-table-controls-right">
+            <label class="toggle-container">
+                <input type="checkbox" id="showInactive" onchange="toggleInactiveUsers()">
+                <span class="slider"></span>
+                Show Inactive Users
+            </label>
 
-    <table id="adminTable" class="table">
+            <select id="roleFilter" onchange="filterByRole()">
+                <option value="All">All Roles</option>
+                <option value="Admin">Admin</option>
+                <option value="User">User</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Single table (no duplicates) -->
+    <table id="adminTable" class="admin-table">
         <thead>
             <tr>
                 <th>Actions</th>
@@ -16,197 +80,88 @@
                 <th>Email</th>
                 <th>Role</th>
                 <th onclick="sortTable(4)" style="cursor:pointer;">Status ⬍</th>
-                <th>Assets</th>
+                <th>Separation Date</th>
             </tr>
         </thead>
         <tbody>
-            @{
-                var users = new[]
-                {
-                    new { Name = "John Smith", Email = "john.smith@email.com", Role = "Admin", Status = "Active" },
-                    new { Name = "Jane Doe", Email = "jane.doe@email.com", Role = "User", Status = "Inactive" },
-                    new { Name = "Max Taylor", Email = "max.taylor@email.com", Role = "Admin", Status = "Active" },
-                    new { Name = "Zara Khan", Email = "zara.khan@email.com", Role = "User", Status = "Inactive" },
-                    new { Name = "Leo Clark", Email = "leo.clark@email.com", Role = "Admin", Status = "Active" },
-                    new { Name = "Sophie Lee", Email = "sophie.lee@email.com", Role = "User", Status = "Active" },
-                    new { Name = "Nina Patel", Email = "nina.patel@email.com", Role = "Admin", Status = "Active" },
-                    new { Name = "Andrew Jackson", Email = "andrew.jackson@email.com", Role = "User", Status = "Inactive" },
-                    new { Name = "Taylor Jackson", Email = "taylor.jackson@email.com", Role = "Admin", Status = "Active" },
-                    new { Name = "Michael Dawson", Email = "michael.dawson@email.com", Role = "User", Status = "Inactive" },
-                    new { Name = "Clint Clark", Email = "clint.clark@email.com", Role = "Admin", Status = "Active" },
-                    new { Name = "Tobi Brown", Email = "tobi.brown@email.com", Role = "User", Status = "Active" }
-                };
-            }
-
             @foreach (var user in users)
             {
-                <tr>
-                    <td><button class="edit-btn">Edit</button></td>
+                var statusClass = user.Status?.ToLowerInvariant() ?? "active";
+                <tr class="user-row @statusClass">
+                    <td>
+                        <button class="icon-btn" title="Edit">
+                            <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+                                <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
+                            </svg>
+                        </button>
+                    </td>
                     <td>@user.Name</td>
                     <td>@user.Email</td>
                     <td>@user.Role</td>
-                    <td>
-                        <span class="badge @(user.Status.ToLower())">
-                            @user.Status
-                        </span>
-                    </td>
-                    <td>
-                        <button class="assets-btn" onclick="showAssetsModal('@user.Name')">
-                            View Assets
-                        </button>
-                    </td>
+                    <td><span class="badge @statusClass">@user.Status</span></td>
+                    <td>@user.SeparationDate</td>
                 </tr>
             }
         </tbody>
     </table>
+
+    <!-- Assets Modal -->
     <div id="assetsModal" class="modal" style="display:none;">
         <div class="modal-content">
             <span class="close" onclick="closeAssetsModal()">&times;</span>
             <h2 id="assetsModalTitle"></h2>
-            <div id="assetsList">
-                <!-- Asset list gets populated here -->
-            </div>
+            <div id="assetsList"></div>
         </div>
     </div>
-
-    <script>
-    function sortTable(n) {
-        let table = document.getElementById("adminTable");
-        let rows = Array.from(table.rows).slice(1);
-        let asc = table.getAttribute("data-sort-dir") !== "asc";
-
-        rows.sort((a, b) => {
-            let x = a.cells[n].innerText.toLowerCase();
-            let y = b.cells[n].innerText.toLowerCase();
-            return asc ? x.localeCompare(y) : y.localeCompare(x);
-        });
-
-        rows.forEach(row => table.tBodies[0].appendChild(row));
-        table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
-    }
-
-    function showAssetsModal(userName) {
-        // Set title
-        document.getElementById("assetsModalTitle").innerText = 
-            "Assets assigned to " + userName;
-
-        // TODO: Replace with API call to your backend
-        // Example: fetch(`/api/assign/user/${userId}/history`)
-        // For now, mock with static HTML
-        let dummyAssets = [
-            { type: "Hardware", name: "Laptop Dell XPS 13" },
-            { type: "Software", name: "Microsoft Office 365" }
-        ];
-
-        let listHtml = "<ul>";
-        dummyAssets.forEach(a => {
-            listHtml += `<li><strong>${a.type}:</strong> ${a.name}</li>`;
-        });
-        listHtml += "</ul>";
-
-        document.getElementById("assetsList").innerHTML = listHtml;
-
-        // Show modal
-        document.getElementById("assetsModal").style.display = "block";
-    }
-
-    function closeAssetsModal() {
-        document.getElementById("assetsModal").style.display = "none";
-    }
-
-    
-    </script>
-    <style>
-    /* Modal container */
-    .modal-content {
-        border: 3px solid #34495E;
-        border-radius: 8px;
-        background-color: #ECF0F1;
-        color: #34495E;
-        overflow: hidden;
-    }
-
-    /* Modal header */
-    .modal-header {
-        background-color: #2C3E50;
-        border-bottom: 3px solid #34495E;
-        color: #ECF0F1;
-        overflow: hidden;
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-    }
-
-    /* Close button (X) */
-    .btn-close {
-        background-color: red;
-        border: none;
-        opacity: 1; /* override bootstrap's fade */
-        cursor: pointer;
-        box-shadow: 0px 4px 4px 0px #0000003e;
-        transition: all 0.3s ease-in-out;
-    }
-    .btn-close:hover {
-        transform: scale(1.1);
-    }
-
-    /* Form select dropdown */
-    .form-select {
-        color: #34495E;
-        cursor: pointer;
-        border: 2px solid #34495E;
-        border-radius: 6px;
-    }
-
-    /* Default buttons inside modal footer */
-    .modal-footer .btn {
-        border-radius: 20px;
-        min-width: 120px;
-        text-align: center;
-        transition: all 150ms ease-out;
-    }
-
-    /* Cancel button */
-    .modal-footer .btn-secondary,
-    .modal-footer .custom-upload-btn {
-        background-color: transparent;
-        color: #2C3E50;
-        border: 3px solid #2C3E50;
-    }
-    .modal-footer .btn-secondary:hover,
-    .modal-footer .custom-upload-btn:hover {
-        border: 3px solid #1abc9c;
-    }
-
-    /* Submit button */
-    .modal-footer .btn-primary,
-    .modal-footer .custom-submit-btn {
-        background-color: #4CAF50;
-        color: white;
-        border: 3px solid #2C3E50;
-    }
-    .modal-footer .btn-primary:hover,
-    .modal-footer .custom-submit-btn:hover {
-        border: 3px solid #1abc9c;
-    }
-
-    /* 🔹 Trigger button (to open modal) */
-    .asset-btn {
-        border: 3px solid #2C3E50;
-        border-radius: 20px;
-        background-color: transparent;
-        color: #2C3E50;
-        padding: 6px 14px;
-        font-weight: 500;
-        transition: all 150ms ease-out;
-        box-shadow: 0px 3px 4px 0px #00000025;
-        cursor: pointer;
-    }
-    .asset-btn:hover {
-        border: 3px solid #1abc9c;
-        color: #1abc9c;
-        transform: translateY(-2px);
-    }
-
-    </style>
 </div>
 
+<script>
+function sortTable(n) {
+    const table = document.getElementById("adminTable");
+    const tbody = table.tBodies[0];
+    const rows = Array.from(tbody.rows);
+    const asc = table.getAttribute("data-sort-dir") !== "asc";
+
+    rows.sort((a, b) => {
+        const x = a.cells[n].innerText.toLowerCase();
+        const y = b.cells[n].innerText.toLowerCase();
+        return asc ? x.localeCompare(y) : y.localeCompare(x);
+    });
+
+    rows.forEach(r => tbody.appendChild(r));
+    table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
+}
+
+// Inactive user toggle
+function toggleInactiveUsers() {
+    const showInactive = document.getElementById("showInactive").checked;
+    document.querySelectorAll(".user-row.inactive").forEach(row => {
+        row.style.display = showInactive ? "" : "none";
+    });
+}
+window.onload = toggleInactiveUsers;
+
+// Filter by role
+function filterByRole() {
+    const role = document.getElementById("roleFilter").value;
+    document.querySelectorAll("#adminTable tbody tr").forEach(row => {
+        const userRole = row.cells[3].innerText.trim();
+        row.style.display = (role === "All" || userRole === role) ? "" : "none";
+    });
+}
+
+// Add User Modal (open/close)
+function openAddUserModal() {
+    document.getElementById("addUserModal").classList.add("show");
+}
+function closeAddUserModal() {
+    document.getElementById("addUserModal").classList.remove("show");
+}
+
+// Stub: handle add user
+function addUser(e) {
+    e.preventDefault();
+    // TODO: wire to backend
+    closeAddUserModal();
+}
+</script>

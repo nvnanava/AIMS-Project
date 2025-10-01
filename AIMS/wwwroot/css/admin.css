@@ -13,6 +13,8 @@ body {
     align-items: center;
     padding: 1rem 2rem;
     border-bottom: 3px solid #ecf0f1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+
 }
 
 .logo h2 {
@@ -23,7 +25,8 @@ body {
 .logo p {
     font-size: 0.75rem;
     margin: 0;
-    color: #ccc;
+    color: #bdc3c7;
+
 }
 
 .nav-links {
@@ -66,21 +69,43 @@ body {
     font-size: 1.5rem;
 }
 
+.admin-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: none;
+}
+
 .table-wrapper {
-    padding: 20px;
+    padding: 20px 20px;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 30px;
 
 }
 
-.table-controls {
+.admin-table-controls {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
 }
+.admin-table-controls right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.admin-table thead {
+    background-color: #2c3e50;
+    color: white;
+    text-align: left;
+=======
+}
+
 
 .add-btn,
 .assign-btn,
@@ -97,30 +122,52 @@ body {
 .admin-table {
     width: 100%;
     border-collapse: collapse;
-    background-color: white;
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .admin-table thead {
-    background-color: #dce6eb; /* light blue */
+    background-color: #2c3e50;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem;
+    letter-spacing: 0.3px;
+}
+.admin-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 0.95rem;
+
 }
 
-.admin-table th,
+.table th,
 .admin-table td {
-    padding: 1rem;
-    text-align: left;
+    padding: 14px 18px;
+    color: #2c3e50;
     border-bottom: 1px solid #e1e1e1;
+    vertical-align: middle;
 }
+
+.admin-table .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #2c3e50;
+    transition: color 0,2 ease;
+}
+
 
 .badge {
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 12px;
     font-size: 12px;
-
     color: white;
-    font-weight: bold;
+    font-weight: 600;
+    display: inline-block;
+    text-transform: uppercase;
 }
 
 .badge.active {
@@ -129,8 +176,6 @@ body {
 
 .badge.inactive {
     background-color: red;
-
- 
 }
 
 
@@ -150,8 +195,179 @@ body {
     cursor: pointer;
 }
 
+.icon-btn {
+    background: #3498db;
+    border: none;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    font-size: 14px;
+    align-items: center;
+    justify-content: center;
+}
+.icon-btn:hover {
+    background-color: #2980b9;
+}
+.pencil-svg {
+    pointer-events: none;
+}
+
 
 .badge:hover {
     filter: brightness(1.1);
     transition: filter 0.2s ease-in-out;
+}
+
+#roleFilter {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+.toggle-container {
+    font-size: 14px;
+    color:#2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-top: 1rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+
+}
+.toggle-container input {
+    display: none;
+}
+.toggle-container .slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 34px;
+    transition: background-color 0.3s;
+}
+
+.toggle-container .slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 2px;
+    top: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+/* When checked */
+.toggle-container input:checked + .slider {
+    background-color: #46b29d;
+}
+
+.toggle-container input:checked + .slider::before {
+    transform: translateX(20px);
+}
+
+.admin-modal {
+    display: none;
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background:rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.admin-modal.show {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+.admin-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 450px;
+    max-width: 95%;
+    font-family: "Arial", sans-serif;
+    transform: translateY(-60px) scale(0.95);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.35s ease;
+    position: relative;
+    overflow: hidden;
+
+}
+.admin-modal-header {
+    background-color: #2c3e50;
+    border-bottom: 3px solid #34495E;
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.admin-modal-content form {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.admin-modal-header-close {
+    background-color: #e74c3c;
+    color: black;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    line-height: 1;
+    transition: background-color 0.2s ease;
+}
+
+.admin-modal.show .admin-modal-content {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+.admin-modal-content h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+.admin-modal-content .close {
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #333;
+}
+.admin-modal-content label {
+    font-weight: 600;
+    font-size: 14px;
+}
+.admin-modal-content input,
+.admin-modal-content select {
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+}
+.admin-modal-content input:focus,
+.admin-modal-content select:focus {
+    border-color: #46b29d;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
