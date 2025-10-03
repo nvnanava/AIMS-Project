@@ -128,7 +128,7 @@ public class AssetsApiController : ControllerBase
             {
                 AssetName = h.AssetName,
                 TypeRaw = h.AssetType,
-                Tag = h.SerialNumber,
+                Tag = h.AssetTag,
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
@@ -360,7 +360,7 @@ public class AssetsApiController : ControllerBase
                     h.HardwareID,
                     AssetName = h.AssetName,
                     Type = h.AssetType,
-                    Tag = h.SerialNumber,
+                    Tag = h.AssetTag,
                     Status = string.IsNullOrEmpty(h.Status)
                                 ? (a != null ? "Assigned" : "Available")
                                 : h.Status,

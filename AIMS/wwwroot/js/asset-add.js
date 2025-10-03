@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function () {
 
     const assetForm = document.getElementById('AssetAddForm'); //phase 1 form
@@ -13,6 +12,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const nextItemBtn = document.getElementById('nextItemBtn');
     const submitAllBtn = document.getElementById('submitAllBtn');
 
+    // adding assets is broken down into 2 "phases".
+    // Phase 1 is collecting the base asset data and number of items to add.
+    // Phase 2 is entering in the serial numbers and tag numbers for each individual item.
+    // Once phase 2 is complete, all items are sent to the server in a single batch. If any duplicate serial numbers
+    // or tag numbers are found, the server should highlight the preview list inline and show an error message.
+
+    //This code is just a rough shot at core functionality to show client. 
+    //Need to modularize better and clean up before dev complete.
+
+
 
     //beginning state with 0 items added
     let baseData = {};
@@ -25,6 +34,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     //load next item helper func
     function loadNextItem() {
+        //clamp current index so it doesn't go out of bounds
+        if (currentIndex >= itemCount) {
+            currentIndex = itemCount;
+            return; // don’t go past max
+        }
         itemForm.reset();
         currentIndex++;
         itemStep.textContent = `Item ${items.length + 1} of ${itemCount}`;
@@ -70,34 +84,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            //if we can find the saved data load that. If not we will just use defaults.
             const data = JSON.parse(save);
             if (data.baseData) baseData = data.baseData;
             if (data.itemCount) itemCount = data.itemCount;
             if (data.items) items = data.items;
 
-            currentIndex = items.length;
-            //rebuilding the preview list
-            previewList.innerHTML = "";
-            items.forEach(i => {
-                const li = document.createElement("li");
-                li.classList.add("list-group-item");
-                li.textContent = `${i.SerialNumber} | ${i.AssetTag}`;
-                previewList.appendChild(li);
-            });
-
-            //if we have already added some items, go to phase 2 directly
+            // Prevent adding more items than itemCount
             if (items.length >= itemCount) {
+                items = items.slice(0, itemCount); // Trim any excess
+                currentIndex = itemCount;
                 itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
-                document.getElementById('itemInputs').style.display = "none"; // hide the input boxes
+                document.getElementById('itemInputs').style.display = "none";
                 nextItemBtn.style.display = "none";
                 submitAllBtn.style.display = "inline-block";
             } else {
+                currentIndex = items.length;
                 itemStep.textContent = `Item ${items.length + 1} of ${itemCount}`;
                 document.getElementById('itemInputs').style.display = "block";
                 nextItemBtn.style.display = "inline-block";
                 submitAllBtn.style.display = "none";
             }
+
+            renderPreviewList();
         } catch (e) {
             console.error("Error loading saved progress:", e);
         }
@@ -135,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
         clearError('tagNumber');
     });
 
+    //when opening phase 1 modal, check for saved progress
     addAssetModal.addEventListener('show.bs.modal', function () {
         const saved = localStorage.getItem("assetProgress");
         if (saved) {
@@ -152,6 +161,8 @@ document.addEventListener('DOMContentLoaded', function () {
         items = [];
         previewList.innerHTML = "";
     });
+
+
     //begin phase 1 - collect base asset data and number of items 
     document.getElementById('startPhase2btn').addEventListener('click', function (e) {
         e.preventDefault();
@@ -233,7 +244,8 @@ document.addEventListener('DOMContentLoaded', function () {
             Model: document.getElementById('model').value.trim(),
             PurchaseDate: document.getElementById('addPurchaseDate').value.trim(),
             WarrantyExpiration: document.getElementById('warrantyExpiration').value.trim(),
-            Status: "Available"
+            Status: "Available",
+            Comment: "Added in bulk upload"
         }
 
 
@@ -244,7 +256,11 @@ document.addEventListener('DOMContentLoaded', function () {
         //close modal 1 and start phase 2
         inTransition = true; //marks that we are transitioning modals to avoid reset
         bootstrap.Modal.getInstance(addAssetModal).hide();
-        new bootstrap.Modal(itemDetailsModal).show();
+        const itemDetailsModalInstance = new bootstrap.Modal(itemDetailsModal, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        itemDetailsModalInstance.show();
         inTransition = false;
         loadNextItem();
     });
@@ -291,21 +307,21 @@ document.addEventListener('DOMContentLoaded', function () {
             ...baseData,
             AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim(), //concat make/model for name
             SerialNumber: serial.trim(),
-            AssetTag: tag.trim()
+            AssetTag: tag.trim(),
+            Status: baseData.Status || "Available",
+            Comment: baseData.Comment || "Bulk added"
         });
 
         //update preview list
-        const li = document.createElement("li");
-        li.classList.add("list-group-item");
-        li.textContent = `${serial} | ${tag}`;
-        previewList.appendChild(li);
+        renderPreviewList();
 
         //if we just enter the last item, hide next button and show submit button
-        if (currentIndex === itemCount) {
+        if (items.length >= itemCount) {
             itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
             document.getElementById('itemInputs').style.display = "none"; // hide the input boxes
             nextItemBtn.style.display = "none";
             submitAllBtn.style.display = "inline-block";
+            return;
         } else {
             loadNextItem();
         }
@@ -329,8 +345,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (addAssetModal) addAssetModal.hide();
 
         //show phase 2 modal and load saved data
-        const itemModal = new bootstrap.Modal(document.getElementById('itemDetailsModal'));
-        itemModal.show();
+        const itemDetailsModalInstance = new bootstrap.Modal(itemDetailsModal, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        itemDetailsModalInstance.show();
         loadProgress();
     });
 
@@ -338,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function () {
     submitAllBtn.addEventListener('click', async function (e) {
         e.preventDefault();
 
+        //adds the last item if user clicks submit without clicking next
         const serial = document.getElementById('serialNumber').value.trim();
         const tag = document.getElementById('tagNumber').value.trim();
         if (serial && tag && items.length < itemCount) {
@@ -347,6 +367,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 AssetTag: tag,
                 AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim(), //concat make/model for name
             });
+            renderPreviewList();
         }
 
         try {
@@ -363,16 +384,46 @@ document.addEventListener('DOMContentLoaded', function () {
                 bootstrap.Modal.getInstance(itemDetailsModal).hide();
                 await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
                 await loadAssetsPaged(baseData.AssetType, 1, 50);
+                clearSaveProgress();
                 return;
             }
             // server side validation errors
             const data = await res.json();
-            showServerErrors(data);
+            //showServerErrors(data); maybe use in client metting to see which they like better.
+            showServerErrorsInline(data);
         } catch (err) {
             showServerErrors({ error: "Server response error: " + err.message });
             inTransition = false;
         }
     });
+
+    function showServerErrorsInline(data) {
+
+        //clear previous error states
+        previewList.querySelectorAll("li").forEach(li => {
+            li.classList.remove("list-group-item-danger");
+            const existingError = li.querySelector(".inline-error");
+            if (existingError) existingError.remove();
+        });
+        if (data?.errors) {
+            for (const key in data.errors) {
+                const messages = data.errors[key];
+
+                const index = parseInt(key, 10);
+                if (!isNaN(index) && previewList.children[index]) {
+                    const li = previewList.children[index];
+                    li.classList.add("list-group-item-danger");
+                    const errorDiv = document.createElement("div");
+                    errorDiv.className = "inline-error text-danger small";
+                    errorDiv.textContent = messages.join(", ");
+                    li.appendChild(errorDiv);
+                }
+            }
+        } else if (data?.error) {
+            showServerErrors({ error: data.error });
+        }
+
+    }
 
     //helper to show error messages in the server error modal
     function showServerErrors(data) {
@@ -407,26 +458,101 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.show();
     }
 
-    function showErrorMessages(data, container) {
-        let message = "";
-        if (data?.errors) {
-            for (const key in data.errors) {
-                if (data.errors.hasOwnProperty(key)) {
-                    message += data.errors[key].join(" ") + " ";
-                }
-            }
-        } else if (typeof data === "object") { //for mismatched/unexpected data errors. Need to refine or keep.
-            for (const key in data) {
-                if (Array.isArray(data[key])) {
-                    message += data[key].join(" ") + " ";
-                }
-            }
-        } else if (data?.error) {
-            message = data.error;
-        } else {
-            message = "An unknown error occurred.";
-        }
-        container.innerText = message.trim();
-        container.style.display = "block";
+    let editIndex = null; //track edited item index
+
+
+    //render preview list items. This function is responsible for displaying inline edit buttons after an item has been added in a current batch.
+    // this should also show error states inline if the server returns any duplicate serial/tag errors.
+    function renderPreviewList() {
+        previewList.innerHTML = "";
+        items.forEach((i, index) => {
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.dataset.index = index;
+
+            // text span
+            const span = document.createElement("span");
+            span.classList.add("item-text");
+            span.textContent = `${i.SerialNumber} | ${i.AssetTag}`;
+            li.appendChild(span);
+
+            // edit button
+            const editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "action-btn blue-pencil";
+            editBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#032447ff" class="bi bi-pencil" viewBox="0 0 16 16">
+        <path d="M12.146.854a.5.5 0 0 1 .708 0l2.292 2.292a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-4 1a.5.5 0 0 1-.62-.62l1-4a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 12.5 5.793 10.207 3.5l1-1zm1.586 1.586-1-1L3 11.293V12h.707L12.793 4.086z"/>
+    </svg>
+`;
+            editBtn.addEventListener("click", () => startEdit(index));
+            li.appendChild(editBtn);
+            previewList.appendChild(li);
+        });
     }
+
+    //start editing an existing item in the preview list
+    function startEdit(index) {
+        editIndex = index;
+        //on click of edit button, load item data into form
+        const item = items[index];
+        document.getElementById('editSerialNumber').value = item.SerialNumber;
+        document.getElementById('editTagNumber').value = item.AssetTag;
+
+        //show slim modal
+
+        const editModalEl = document.getElementById('editItemModal');
+        const editModal = new bootstrap.Modal(editModalEl);
+        editModal.show();
+
+    }
+
+    document.getElementById('saveEditBtn').addEventListener("click", () => {
+        if (editIndex !== null) {
+            items[editIndex].SerialNumber = document.getElementById('editSerialNumber').value.trim();
+            items[editIndex].AssetTag = document.getElementById('editTagNumber').value.trim();
+
+            renderPreviewList();
+
+            // close modal
+            const editModalEl = document.getElementById('editItemModal');
+            const modalInstance = bootstrap.Modal.getInstance(editModalEl);
+            modalInstance.hide();
+
+            editIndex = null;
+        }
+    });
+
+    //Clears the fields in the slim edit modal
+    document.getElementById('editItemModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('editSerialNumber').value = "";
+        document.getElementById('editTagNumber').value = "";
+    });
+
+
+    // random generator helpers
+    function generateRandomSerial() {
+        // e.g. "SN-" + 8 digits
+        return "SN-" + Math.floor(10000000 + Math.random() * 90000000);
+    }
+
+    function generateRandomTag() {
+        // e.g. "MBC" + digits
+        const chars = "0123456789";
+        let result = "MBC";
+        for (let i = 0; i < 5; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    // hook up buttons
+    document.getElementById("generateSerialBtn").addEventListener("click", () => {
+        document.getElementById("serialNumber").value = generateRandomSerial();
+    });
+
+    document.getElementById("generateTagBtn").addEventListener("click", () => {
+        document.getElementById("tagNumber").value = generateRandomTag();
+    });
+
 });

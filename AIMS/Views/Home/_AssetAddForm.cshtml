@@ -8,7 +8,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-            <input type="hidden" id="categoryStore" name="categoryStory" value="@ViewData["Category"]" />
+                <input type="hidden" id="categoryStore" name="categoryStory" value="@ViewData["Category"]" />
                 <div id="serverErrorMessage" class="alert alert-danger" style="display: none;"></div>
                 <form id="AssetAddForm">
                     <div class="mb-3">
@@ -50,9 +50,8 @@
                         <input type="number" id="itemCount" name="itemCount" class="form-control" min="1" required>
                         <div id="itemCountError" class="invalid-feedback"></div>
                     </div>
-                    <div class="modal-footer">
-                        <button id="startPhase2btn" class="btn btn-primary">Next</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <div class="modal-footer justify-content-end">
+                        <button id="startPhase2btn" class="btn aims-next-btn">Next</button>
                     </div>
 
 
@@ -80,12 +79,18 @@
                             <label for="serialNumber" class="form-label">Serial Number:</label>
                             <input type="text" id="serialNumber" name="serialNumber" class="form-control"
                                 placeholder="Enter Serial Number">
+                            <button type="button" id="generateSerialBtn" class="btn btn-outline-secondary">
+                                Random
+                            </button>
                             <div id="serialNumberError" class="invalid-feedback">Serial Number is required.</div>
                         </div>
                         <div class="mb-3">
                             <label for="tagNumber" class="form-label">Tag Number:</label>
                             <input type="text" id="tagNumber" name="tagNumber" class="form-control"
                                 placeholder="Enter Tag Number">
+                            <button type="button" id="generateTagBtn" class="btn btn-outline-secondary">
+                                Random
+                            </button>
                             <div id="tagNumberError" class="invalid-feedback">Tag Number is required.</div>
                         </div>
                     </div>
@@ -95,7 +100,7 @@
             </div>
             <div class="modal-footer">
                 <button id="saveProgress" type="button" class="btn btn-warning">Save Progress</button>
-                <button id="nextItemBtn" class="btn btn-primary">Next</button>
+                <button id="nextItemBtn" class="btn aims-next-btn">Next</button>
                 <button id="submitAllBtn" class="btn btn-success" style="display:none;">Add All Assets</button>
             </div>
         </div>
@@ -115,6 +120,34 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- inline edit modal for items in preview list -->
+<div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="EditItemForm">
+                    <div class="mb-3">
+                        <label for="editSerialNumber" class="form-label">Serial Number:</label>
+                        <input type="text" id="editSerialNumber" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editTagNumber" class="form-label">Tag Number:</label>
+                        <input type="text" id="editTagNumber" class="form-control">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="saveEditBtn">Save</button>
             </div>
         </div>
     </div>

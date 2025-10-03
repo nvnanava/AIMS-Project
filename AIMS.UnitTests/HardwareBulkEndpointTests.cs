@@ -147,12 +147,12 @@ namespace AIMS.UnitTests
             {
                 new CreateHardwareDto
                 {
-                    AssetTag = null,
-                    Manufacturer = null,
-                    Model = null,
-                    AssetType = null,
-                    Status = null,
-                    SerialNumber = null,
+                    AssetTag = "",
+                    Manufacturer = "",
+                    Model = "",
+                    AssetType = "",
+                    Status = "",
+                    SerialNumber = "",
                     PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
                     WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
                 }

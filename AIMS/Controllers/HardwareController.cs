@@ -122,25 +122,29 @@ public class HardwareController : ControllerBase
                 string.IsNullOrWhiteSpace(dto.Model) ||
                 string.IsNullOrWhiteSpace(dto.SerialNumber) ||
                 string.IsNullOrWhiteSpace(dto.AssetType) ||
-                string.IsNullOrWhiteSpace(dto.Status))
+                string.IsNullOrWhiteSpace(dto.Status) ||
+                string.IsNullOrWhiteSpace(dto.Comment))
             {
                 itemErrors.Add("All fields are required for each hardware asset.");
             }
-            if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber.ToLower() == dto.SerialNumber.ToLower(), ct))
+            else
             {
-                itemErrors.Add($"Duplicate serial number: {dto.SerialNumber}");
-            }
-            if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag.ToLower() == dto.AssetTag.ToLower(), ct))
-            {
-                itemErrors.Add($"Duplicate asset tag: {dto.AssetTag}");
-            }
-            if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
-            {
-                itemErrors.Add("Purchase date cannot be in the future.");
-            }
-            if (dto.WarrantyExpiration < dto.PurchaseDate)
-            {
-                itemErrors.Add("Warranty expiration cannot be before purchase date.");
+                if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber.ToLower() == dto.SerialNumber.ToLower(), ct))
+                {
+                    itemErrors.Add($"Duplicate serial number: {dto.SerialNumber}");
+                }
+                if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag.ToLower() == dto.AssetTag.ToLower(), ct))
+                {
+                    itemErrors.Add($"Duplicate asset tag: {dto.AssetTag}");
+                }
+                if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
+                {
+                    itemErrors.Add("Purchase date cannot be in the future.");
+                }
+                if (dto.WarrantyExpiration < dto.PurchaseDate)
+                {
+                    itemErrors.Add("Warranty expiration cannot be before purchase date.");
+                }
             }
 
             if (itemErrors.Count > 0)
