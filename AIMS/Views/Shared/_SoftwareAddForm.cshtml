@@ -11,18 +11,14 @@
                 <form id="SoftwareAddForm" novalidate>
                     <div class="mb-3">
                         <label for="softwareName" class="form-label">Software Name</label>
-                        <input type="text" id="softwareName" name="softwareName" class="form-control" required>
+                        <input type="text" id="softwareName" name="softwareName" class="form-control" required
+                            placeholder="Enter software name">
                     </div>
 
                     <div class="mb-3">
                         <label for="softwareVersion" class="form-label">Version</label>
-                        <input type="text" id="softwareVersion" name="softwareVersion" class="form-control">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="softwareLicenseKey" class="form-label">License Key</label>
-                        <input type="text" id="softwareLicenseKey" name="softwareLicenseKey" class="form-control"
-                            required>
+                        <input type="text" id="softwareVersion" name="softwareVersion" class="form-control"
+                            placeholder="Enter software version">
                     </div>
 
                     <div class="mb-3">
@@ -36,11 +32,72 @@
                         <input type="number" step="0.01" id="softwareCost" name="softwareCost" class="form-control">
                     </div>
 
+                    <div class="mb-3">
+                        <label for="licenseCount" class="form-label">Number of Licenses</label>
+                        <input type="number" id="licenseCount" name="licenseCount" class="form-control" min="1"
+                            value="1" required>
+                    </div>
+
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Add Software</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button id="startSoftwarePhase2Btn" type="button" class="btn aims-next-btn">Next</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Phase 2: On submit of above form, user is taken to a second form to enter serial/tag numbers for each asset being added. -->
+<div class="modal fade" id="softwareDetailsModal" tabindex="-1" aria-labelledby="softwareDetailsLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="softwareDetailsLabel">Enter Software Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="licenseStep"></div>
+                <form id="licenseDetailsForm">
+                    <div id="licenseInputs">
+                        <div class="mb-3">
+                            <label for="licenseKey" class="form-label">License Key:</label>
+                            <input type="text" id="licenseKey" name="licenseKey" class="form-control"
+                                placeholder="Enter License Key">
+                            <button type="button" id="generateLicenseBtn" class="btn btn-outline-secondary">
+                                Random
+                            </button>
+                            <div id="licenseKeyError" class="invalid-feedback">License Key is required.</div>
+                        </div>
+                    </div>
+                </form>
+                <h6 class="mt-3">Preview</h6>
+                <ul id="softwarePreviewList" class="list-group"></ul>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSoftwareProgress" type="button" class="btn btn-warning">Save Progress</button>
+                <button id="nextLicenseBtn" class="btn aims-next-btn">Next</button>
+                <button id="submitSoftwareBtn" class="btn btn-success" style="display:none;">Add All Licenses</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editSoftwareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit License</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="editLicenseKey" class="form-label">License Key</label>
+                    <input type="text" id="editLicenseKey" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSoftwareEditBtn" type="button" class="btn btn-primary">Save</button>
             </div>
         </div>
     </div>
