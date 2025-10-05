@@ -108,32 +108,46 @@ public class HardwareController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-
-        //collecting error messages to send back to client
+        // collecting error messages to send back to client
         var errors = new Dictionary<int, List<string>>();
 
         for (int i = 0; i < dtos.Count; i++)
         {
             var dto = dtos[i];
             var itemErrors = new List<string>();
-            //should be handled by front end but adding overlapping validation here
-            if (string.IsNullOrWhiteSpace(dto.AssetTag) ||
-                string.IsNullOrWhiteSpace(dto.Manufacturer) ||
-                string.IsNullOrWhiteSpace(dto.Model) ||
-                string.IsNullOrWhiteSpace(dto.SerialNumber) ||
-                string.IsNullOrWhiteSpace(dto.AssetType) ||
-                string.IsNullOrWhiteSpace(dto.Status))
+
+            // normalize values with null-safe trims
+            var assetTag = dto.AssetTag?.Trim();
+            var manufacturer = dto.Manufacturer?.Trim();
+            var model = dto.Model?.Trim();
+            var serialNumber = dto.SerialNumber?.Trim();
+            var assetType = dto.AssetType?.Trim();
+            var status = dto.Status?.Trim();
+
+            // should be handled by front end but adding overlapping validation here
+            if (string.IsNullOrWhiteSpace(assetTag) ||
+                string.IsNullOrWhiteSpace(manufacturer) ||
+                string.IsNullOrWhiteSpace(model) ||
+                string.IsNullOrWhiteSpace(serialNumber) ||
+                string.IsNullOrWhiteSpace(assetType) ||
+                string.IsNullOrWhiteSpace(status))
             {
                 itemErrors.Add("All fields are required for each hardware asset.");
             }
-            if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber.ToLower() == dto.SerialNumber.ToLower(), ct))
+            else
             {
-                itemErrors.Add($"Duplicate serial number: {dto.SerialNumber}");
+                // duplicate checks only if values are present
+                if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber.ToLower() == serialNumber.ToLower(), ct))
+                {
+                    itemErrors.Add($"Duplicate serial number: {serialNumber}");
+                }
+                if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag.ToLower() == assetTag.ToLower(), ct))
+                {
+                    itemErrors.Add($"Duplicate asset tag: {assetTag}");
+                }
             }
-            if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag.ToLower() == dto.AssetTag.ToLower(), ct))
-            {
-                itemErrors.Add($"Duplicate asset tag: {dto.AssetTag}");
-            }
+
+            // validate dates
             if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
             {
                 itemErrors.Add("Purchase date cannot be in the future.");
@@ -145,6 +159,14 @@ public class HardwareController : ControllerBase
 
             if (itemErrors.Count > 0)
                 errors[i] = itemErrors;
+
+            // re-assign normalized values back to dto so mapping is consistent
+            dto.AssetTag = assetTag;
+            dto.Manufacturer = manufacturer;
+            dto.Model = model;
+            dto.SerialNumber = serialNumber;
+            dto.AssetType = assetType;
+            dto.Status = status;
         }
         //if no errors then proceed to add
         if (errors.Count > 0)
@@ -156,16 +178,16 @@ public class HardwareController : ControllerBase
 
         foreach (var dto in dtos)
         {
-            // dto is valid, map to entity
+            // dto is valid, map to entity with already normalized values
             var hardware = new Hardware
             {
-                AssetTag = dto.AssetTag.Trim(),
-                AssetName = $"{dto.Manufacturer} {dto.Model}".Trim(), //concat the make and model for names
-                AssetType = dto.AssetType.Trim(),
-                Status = dto.Status.Trim(),
-                Manufacturer = dto.Manufacturer.Trim(),
-                Model = dto.Model.Trim(),
-                SerialNumber = dto.SerialNumber.Trim(),
+                AssetTag = dto.AssetTag,
+                AssetName = $"{dto.Manufacturer} {dto.Model}".Trim(), // concat the make and model for names
+                AssetType = dto.AssetType,
+                Status = dto.Status,
+                Manufacturer = dto.Manufacturer,
+                Model = dto.Model,
+                SerialNumber = dto.SerialNumber,
                 WarrantyExpiration = dto.WarrantyExpiration,
                 PurchaseDate = dto.PurchaseDate
             };
@@ -215,9 +237,6 @@ public class HardwareController : ControllerBase
         }
 
         // Update fields with coalescence to avoid nulls
-
-
-        // avoid rewriting values
         if (dto.AssetTag is not null)
         {
 

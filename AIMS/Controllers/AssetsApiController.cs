@@ -19,6 +19,27 @@ public class AssetsApiController : ControllerBase
     private readonly IMemoryCache _cache;
     private readonly IWebHostEnvironment _env;
 
+    // Concrete DTOs to avoid anonymous/dynamic issues
+    private sealed class AssetFlat
+    {
+        public string? AssetName { get; set; }
+        public string? TypeRaw { get; set; }
+        public string? Tag { get; set; }
+        public int? AssignedUserId { get; set; }
+        public string? StatusRaw { get; set; }
+        public DateTime? AssignedAtUtc { get; set; }
+        public string? Comment { get; set; }
+        public int? SoftwareID { get; set; }
+        public int? HardwareID { get; set; }
+    }
+
+    private sealed class UserMini
+    {
+        public int UserID { get; set; }
+        public string FullName { get; set; } = "";
+        public string EmployeeNumber { get; set; } = "";
+    }
+
     public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery, IWebHostEnvironment env)
     {
         _db = db;
@@ -70,6 +91,7 @@ public class AssetsApiController : ControllerBase
         [FromQuery] List<string>? statuses = null,
         [FromQuery] string scope = "all", // "all" | "my" | "reports"
         [FromQuery] string? impersonate = null,
+        [FromQuery] string totalsMode = "lookahead",   // NEW: "lookahead" (default) or "exact"
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
@@ -100,7 +122,7 @@ public class AssetsApiController : ControllerBase
 
         // ---- cache key includes version stamp so it auto-busts after assign/close ----
         var ver = CacheStamp.AssetsVersion;
-        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:u{myEmpNumber}";
+        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:tmode{totalsMode}:u{myEmpNumber}";
         if (_cache.TryGetValue<AssetsPagePayloadVm>(key, out var cached))
         {
             var firstTag = cached!.Items.FirstOrDefault()?.Tag ?? string.Empty;
@@ -124,7 +146,7 @@ public class AssetsApiController : ControllerBase
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Hardware)
                 on h.HardwareID equals aa.AssetTag into ha
             from aa in ha.DefaultIfEmpty()
-            select new
+            select new AssetFlat
             {
                 AssetName = h.AssetName,
                 TypeRaw = h.AssetType,
@@ -142,7 +164,7 @@ public class AssetsApiController : ControllerBase
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Software)
                 on s.SoftwareID equals aa.SoftwareID into sa
             from aa in sa.DefaultIfEmpty()
-            select new
+            select new AssetFlat
             {
                 AssetName = s.SoftwareName,
                 TypeRaw = s.SoftwareType,
@@ -155,7 +177,7 @@ public class AssetsApiController : ControllerBase
                 HardwareID = (int?)null
             };
 
-        var queryable = hardwareBase.Concat(softwareBase);
+        IQueryable<AssetFlat> queryable = hardwareBase.Concat(softwareBase);
 
         // ---------- Role/Ownership scope ----------
         if (!isAdminOrIt)
@@ -218,11 +240,32 @@ public class AssetsApiController : ControllerBase
         };
 
         // ---------- Total + slice ----------
-        var total = await queryable.CountAsync(ct);
-        var slice = await queryable
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        var skip = (page - 1) * pageSize;
+        var useExact = string.Equals(totalsMode, "exact", StringComparison.OrdinalIgnoreCase);
+
+        int total;
+        List<AssetFlat> slice;
+
+        if (useExact)
+        {
+            total = await queryable.CountAsync(ct);
+            slice = await queryable
+                .Skip(skip)
+                .Take(pageSize)
+                .ToListAsync(ct);
+        }
+        else
+        {
+            // Look-ahead: fetch pageSize + 1, no COUNT(*)
+            var window = await queryable
+                .Skip(skip)
+                .Take(pageSize + 1)
+                .ToListAsync(ct);
+
+            var hasMore = window.Count > pageSize;
+            slice = hasMore ? window.Take(pageSize).ToList() : window;
+            total = hasMore ? -1 : (skip + slice.Count);
+        }
 
         // Resolve names for the page (for “Kate” etc.)
         var ids = slice.Where(r => r.AssignedUserId.HasValue)
@@ -232,8 +275,8 @@ public class AssetsApiController : ControllerBase
 
         var userMap = await _db.Users.AsNoTracking()
             .Where(u => ids.Contains(u.UserID))
-            .Select(u => new { u.UserID, u.FullName, u.EmployeeNumber })
-            .ToDictionaryAsync(u => u.UserID, u => new { u.FullName, u.EmployeeNumber }, ct);
+            .Select(u => new UserMini { UserID = u.UserID, FullName = u.FullName, EmployeeNumber = u.EmployeeNumber })
+            .ToDictionaryAsync(u => u.UserID, u => u, ct);
 
         var items = slice.Select(x =>
         {
