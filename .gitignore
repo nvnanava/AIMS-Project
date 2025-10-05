@@ -404,3 +404,11 @@ FodyWeavers.xsd
 .DS_Store
 .DS_Store
 #AIMS-Project/
+
+# Test results
+TestResults/
+*.trx
+*.xml
+*.html
+*.coverage
+*.log

@@ -76,9 +76,33 @@ public sealed class DbTestHarness : IAsyncLifetime
         // Minimal roles so tests can create Users (RoleID is NOT NULL)
         await con.ExecuteAsync(@"
             INSERT INTO Roles (RoleName, Description) VALUES
-                (N'Employee', N'Default employee role'),
-                (N'Admin',    N'Administrator role');
+            (N'Employee', N'Default employee role'),
+            (N'Admin',    N'Administrator role');
         ", transaction: tx);
+
+        // Seed one HardwareAssets row for each expected type
+        var types = new[] { "Charging Cable", "Desktop", "Headset", "Laptop", "Monitor" };
+        foreach (var t in types)
+        {
+            await con.ExecuteAsync(@"
+                INSERT INTO HardwareAssets
+                (AssetName, AssetType, Status, Manufacturer, Model, SerialNumber, WarrantyExpiration, PurchaseDate) VALUES
+                (@name, @type, 'InStock', 'Brand', 'ModelX', @sn, '2030-01-01', '2025-01-01');
+            ",
+            new
+            {
+                name = $"{t} A",
+                type = t,
+                sn = $"SN-{Guid.NewGuid():N}".Substring(0, 18)
+            }, tx);
+        }
+
+        // Seed one SoftwareAssets row so 'Software' appears
+        await con.ExecuteAsync(@"
+            INSERT INTO SoftwareAssets
+            (SoftwareName, SoftwareType, SoftwareVersion, SoftwareLicenseKey, SoftwareUsageData, SoftwareCost, SoftwareLicenseExpiration) VALUES
+            ('App A', 'Software', '1.0', @key, 0, 12.34, NULL);
+    ", new { key = $"KEY-{Guid.NewGuid():N}" }, tx);
 
         await tx.CommitAsync();
     }

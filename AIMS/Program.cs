@@ -3,11 +3,11 @@ using AIMS.Data;
 using AIMS.Queries;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.HttpOverrides;   // for UseForwardedHeaders
 // ★ NEW usings (for route constraint + policies)
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;

@@ -3,6 +3,7 @@ using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -92,6 +93,7 @@ public class HomeController : Controller
     // ----------------------------------------------------------------------------
     // Details page with a server-side guard:
     // ----------------------------------------------------------------------------
+    [AllowAnonymous] // dev only; public access, but Supervisors get redirected
     public async Task<IActionResult> AssetDetailsComponent(string? category, string? tag)
     {
         // 🔒 Supervisors are not allowed here — bounce to Search
