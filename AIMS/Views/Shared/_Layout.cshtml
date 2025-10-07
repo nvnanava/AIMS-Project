@@ -1,3 +1,4 @@
+@using AIMS.Utilities
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.AspNetCore.Authorization
@@ -5,41 +6,35 @@
 @using Microsoft.AspNetCore.Http
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 @* Layout file for the entire application. Contains the navbar and footer. *@
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - AIMS</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
-    @using AIMS.Utilities
 
-
-    <!-- NOTE:
-     index.overrides.css is loaded last on purpose.
-     Ran into an issue where Index.cshtml.css styles (like filter hover + green checkboxes)
-     weren’t applying correctly due to CSS isolation/scoping.
-     This overrides file forces those styles globally and ensures they stick. -->
+    <!-- Index overrides last on purpose -->
     <link rel="stylesheet" href="~/css/index.overrides.css" asp-append-version="true" />
 </head>
-
 <body>
     <header>
-        <nav
-            class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
+        <nav class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
                     <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
-                        class="d-inline-block align-text-top" asp-append-version="true" />
+                         class="d-inline-block align-text-top" asp-append-version="true" />
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
-                    aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                        aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -48,58 +43,44 @@
                         @if (User.IsSupervisor())
                         {
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Search">
-                                <span class="emoji">🏠 </span>
-                                <span class="label">Home</span>
+                                <span class="emoji">🏠 </span><span class="label">Home</span>
                             </a>
                         }
                         else
                         {
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">
-                                <span class="emoji">🏠 </span>
-                                <span class="label">Home</span>
+                                <span class="emoji">🏠 </span><span class="label">Home</span>
                             </a>
                         }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Reports">
-                                <span class="emoji">📊 </span>
-                                <span class="label">Reports</span>
+                                <span class="emoji">📊 </span><span class="label">Reports</span>
                             </a>
                         </li>
-                        <!-- Only show the Admin button to admins -->
                         @if (User.IsAdmin())
                         {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
-                                <span class="emoji">⚙️ </span>
-                                <span class="label">Admin</span>
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
+                                    <span class="emoji">⚙️ </span><span class="label">Admin</span>
+                                </a>
+                            </li>
                         }
-                            <!-- Only show the Audit Log button to admins and help desk -->
                         @if (User.IsAdmin() || User.IsHelpDesk())
                         {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
-                                <span class="emoji">📝 </span>
-                                <span class="label">Audit Log</span>
-                            </a>
-                        </li>
-                        }
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Feedback">
-                                <span class="emoji">✉️ </span>
-                                <span class="label">Feedback</span>
-                            </a>
-                        </li> *@
-                         <li class = "nav-item">
-                            <form method = "post" asp-controller="Authentication" asp-action="Logout" style='display: inline;'>
-                            <input type = "hidden" name="_RequestVerificationToken" value = "@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
-                             <button type="submit" class="nav-link text-dark">
-                            <span class="emoji">&#128100;</span>
-                            <span class="label">Sign out</span>
-                            </button>
-                            </form>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
+                                    <span class="emoji">📝 </span><span class="label">Audit Log</span>
+                                </a>
                             </li>
+                        }
+                        <li class="nav-item">
+                            <form method="post" asp-controller="Authentication" asp-action="Logout" style="display:inline;">
+                                <input type="hidden" name="_RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+                                <button type="submit" class="nav-link text-dark">
+                                    <span class="emoji">&#128100;</span><span class="label">Sign out</span>
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
 
@@ -108,74 +89,45 @@
                         <div id="search-container" class="search-container">
                             <button type="submit" id="search-addon" class="input-group-text search-icon">🔍</button>
                             <input name="searchQuery" type="text" id="search-input" class="form-control search-input"
-                                placeholder="Search for assets or employees..." aria-label="Search"
-                                aria-describedby="search-addon">
+                                   placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
                         </div>
-
-
                     </form>
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container-fluid">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    @* <footer class="border-top footer text-muted">
-        <div class="container-fluid">
-            &copy; 2025 - AIMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer> *@
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
-    <script src="~/js/site.js" asp-append-version="true" asp-append-version="true" defer></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
     <script src="~/js/global-spinner.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
-
-    <!-- Asset Assigned Message -->
+    <!-- Toasts -->
     <div class="assign-toast-container">
         <div id="assignToast" class="toast assign-toast" role="alert" data-bs-autohide="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    Asset Assigned!
-                </div>
-            </div>
+            <div class="d-flex"><div class="toast-body">Asset Assigned!</div></div>
         </div>
     </div>
-
-    <!-- Asset Assigned Message -->
     <div class="error-toast-container">
         <div id="errorToast" class="toast error-toast" role="alert" data-bs-autohide="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                </div>
-            </div>
+            <div class="d-flex"><div class="toast-body"></div></div>
         </div>
     </div>
-
-    <!-- Asset Edited Message -->
     <div class="edit-toast-container">
         <div id="editToast" class="toast edit-toast" role="alert" data-bs-autohide="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    Asset Edited!
-                </div>
-            </div>
+            <div class="d-flex"><div class="toast-body">Asset Edited!</div></div>
         </div>
     </div>
-
-    <!-- Asset Assigned Message -->
     <div class="assign-toast-container">
         <div id="categoryToast" class="toast assign-toast" role="alert" data-bs-autohide="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    Category Added!
-                </div>
-            </div>
+            <div class="d-flex"><div class="toast-body">Category Added!</div></div>
         </div>
     </div>
 
@@ -183,8 +135,5 @@
     <div id="global-loading-overlay" class="global-loading-overlay" aria-hidden="true">
         <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
     </div>
-
-
 </body>
-
 </html>

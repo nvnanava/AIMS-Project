@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Services;
 using AIMS.Utilities;
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -19,20 +20,25 @@ public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly AimsDbContext _db;
-
     private readonly HardwareQuery? _hardwareQuery;
     private readonly SoftwareQuery? _softwareQuery;
     private readonly UserQuery? _userQuery;
     private readonly AssignmentsQuery? _assignQuery;
+    private readonly AssetTypeCatalogService _catalog;
+    private readonly SummaryCardService _summarySvc;
 
     public HomeController(
         ILogger<HomeController> logger,
         AimsDbContext db,
-        IServiceProvider sp
+        IServiceProvider sp,
+        AssetTypeCatalogService catalog,
+        SummaryCardService summarySvc
     )
     {
         _logger = logger;
         _db = db;
+        _catalog = catalog;
+        _summarySvc = summarySvc;
 
         _hardwareQuery = sp.GetService<HardwareQuery>();
         _softwareQuery = sp.GetService<SoftwareQuery>();
@@ -40,12 +46,37 @@ public class HomeController : Controller
         _assignQuery = sp.GetService<AssignmentsQuery>();
     }
 
-    // If services exist, pass a model. Otherwise just render the view (client can fetch /api/assets).
     public async Task<IActionResult> Index()
     {
         // Supervisors should land on Search, not the cards page
         if (User.IsSupervisor())
             return RedirectToAction(nameof(Search), new { searchQuery = (string?)null });
+
+        // Provide dynamic asset types
+        List<AIMS.ViewModels.Home.AssetCardVm>? types = null;
+        try
+        {
+            types = (await _catalog.GetAllTypesAsync(HttpContext.RequestAborted)).ToList();
+            ViewData["AssetTypes"] = types;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load asset type catalog for Home/Index; falling back to view-only.");
+            ViewData["AssetTypes"] = null;
+        }
+
+        // Server-side snapshot for *first paint* (prevents number/dot flash)
+        try
+        {
+            var wanted = types?.Select(t => t.AssetType).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+            var snapshot = await _summarySvc.GetSummaryAsync(wanted, HttpContext.RequestAborted);
+            ViewData["CardSnapshot"] = snapshot; // read by the partial
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Summary snapshot not available for first paint.");
+            ViewData["CardSnapshot"] = null;
+        }
 
         if (_hardwareQuery is not null && _softwareQuery is not null)
         {
@@ -57,14 +88,13 @@ public class HomeController : Controller
             return View(model);
         }
 
-        return View(); // no model; the page can call /api/assets client-side
+        return View();
     }
 
     public IActionResult Reports() => View();
     public IActionResult AuditLog() => View();
     public IActionResult Privacy() => View();
 
-    // Search page: blank query renders empty; otherwise view can still fetch via /api/assets.
     [HttpGet]
     public IActionResult Search(string? searchQuery)
     {
@@ -99,23 +129,19 @@ public class HomeController : Controller
     [AllowAnonymous] // dev only; public access, but Supervisors get redirected
     public async Task<IActionResult> AssetDetailsComponent(string? category, string? tag)
     {
-        // 🔒 Supervisors are not allowed here — bounce to Search
         if (User.IsSupervisor())
             return RedirectToAction(nameof(Search), new { searchQuery = (string?)null });
 
-        // Normalize requested category (used when no tag)
         var requestedCategory = string.IsNullOrWhiteSpace(category) ? "Laptop" : category.Trim();
 
         ViewData["Category"] = requestedCategory;
         ViewData["Title"] = $"{requestedCategory} Asset Details";
 
-        // No tag? Just render the category view (list-by-type behavior)
         if (string.IsNullOrWhiteSpace(tag))
             return View();
 
         var t = tag.Trim();
 
-        // Try hardware by serial, then software by license key
         var hw = await _db.HardwareAssets
             .AsNoTracking()
             .Where(h => h.SerialNumber == t)
@@ -141,7 +167,6 @@ public class HomeController : Controller
             return View();
         }
 
-        // Category mismatch? Redirect to the correct category for this tag
         if (!string.Equals(detectedType.Trim(), requestedCategory.Trim(), StringComparison.OrdinalIgnoreCase))
         {
             return RedirectToAction(nameof(AssetDetailsComponent), new
@@ -151,7 +176,6 @@ public class HomeController : Controller
             });
         }
 
-        // Types match — render
         ViewData["Category"] = detectedType;
         ViewData["Title"] = $"{detectedType} Asset Details";
         return View();
