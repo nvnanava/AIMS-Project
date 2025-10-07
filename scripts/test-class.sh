@@ -322,9 +322,9 @@ fi
 # ---------------- Compose runner args --------------------------------------
 RUN_ARGS=()
 if [[ "$MULTI" == "true" ]]; then
-  RUN_ARGS=( "$INT_DLL" "$UNIT_DLL" -nologo -parallel "$PARALLEL" -html "$OUT_HTML" -xml "$OUT_JUNIT" )
+  RUN_ARGS=( "$INT_DLL" "$UNIT_DLL" -nologo -html "$OUT_HTML" -xml "$OUT_JUNIT" )
 else
-  RUN_ARGS=( "${TEST_DLL}" -nologo -parallel "$PARALLEL" -html "$OUT_HTML" -xml "$OUT_JUNIT" )
+  RUN_ARGS=( "${TEST_DLL}" -nologo -html "$OUT_HTML" -xml "$OUT_JUNIT" )
   if [[ -n "${TARGET:-}" && "$TARGET" != *.dll && "$TARGET" != *.csproj ]]; then
     if [[ "$USE_METHOD_FILTER" == "true" ]]; then
       RUN_ARGS+=( -method "$TARGET" )
@@ -333,6 +333,12 @@ else
     fi
   fi
 fi
+
+# only add -parallel if user explicitly set something other than 'auto'
+if [[ "$PARALLEL" != "auto" ]]; then
+  RUN_ARGS+=( -parallel "$PARALLEL" )
+fi
+
 [[ -n "$USE_TRAIT_FILTER" ]] && RUN_ARGS+=( -trait "$USE_TRAIT_FILTER" )
 [[ -n "$USE_NOTRAIT_FILTER" ]] && RUN_ARGS+=( -notrait "$USE_NOTRAIT_FILTER" )
 
@@ -405,10 +411,15 @@ if [[ $rc -ne 0 && $RETRY -gt 0 ]]; then
     RETRY_HTML="$OUT_ROOT/TestResults.retry.html"
     RETRY_ARGS=()
     if [[ "$MULTI" == "true" ]]; then
-      RETRY_ARGS=( "$INT_DLL" "$UNIT_DLL" -nologo -parallel "$PARALLEL" -html "$RETRY_HTML" -xml "$OUT_ROOT/TestResults.retry.junit.xml" )
+      RETRY_ARGS=( "$INT_DLL" "$UNIT_DLL" -nologo -html "$RETRY_HTML" -xml "$OUT_ROOT/TestResults.retry.junit.xml" )
     else
-      RETRY_ARGS=( "${TEST_DLL}" -nologo -parallel "$PARALLEL" -html "$RETRY_HTML" -xml "$OUT_ROOT/TestResults.retry.junit.xml" )
+      RETRY_ARGS=( "${TEST_DLL}" -nologo -html "$RETRY_HTML" -xml "$OUT_ROOT/TestResults.retry.junit.xml" )
     fi
+
+    if [[ "$PARALLEL" != "auto" ]]; then
+      RETRY_ARGS+=( -parallel "$PARALLEL" )
+    fi
+    
     for f in "${FAILED[@]}"; do RETRY_ARGS+=( -method "$f" ); done
     set +e
     "$RUNNER" "${RETRY_ARGS[@]}" 2>&1 | tee "$OUT_ROOT/console.retry.raw.txt"
