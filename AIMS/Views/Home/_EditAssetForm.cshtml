@@ -28,7 +28,8 @@
 
           <div class="mb-3">
             <label for="editTag" class="form-label">Tag Number</label>
-            <input type="text" id="editTag" name="tagNumber" class="form-control" placeholder="Enter tag number" required>
+            <input type="text" id="editTag" name="tagNumber" class="form-control" placeholder="Enter tag number"
+              required>
             <div class="invalid-feedback">Tag Number is required.</div>
           </div>
 
@@ -46,7 +47,8 @@
 
           <div class="mb-3">
             <label for="editComments" class="form-label">Comments</label>
-            <textarea id="editComments" name="comments" class="form-control" rows="4" placeholder="Add any remarks..."></textarea>
+            <textarea id="editComments" name="comments" class="form-control" rows="4"
+              placeholder="Add any remarks..."></textarea>
           </div>
 
           <!-- Back-compat for your older workflow -->
@@ -72,10 +74,10 @@
       headers: { "Accept": "application/json, text/json" },
       cache: "no-store"
     })
-    .then(res => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    });
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      });
   }
 
   function valueToSend(el) {
@@ -114,8 +116,6 @@
       try {
         const assetTypes = await fetchUniqueAssetTypes();
         typeSelect.replaceChildren();
-
-        // Ensure "Software" exists if you expect it always
         assetTypes.forEach(type => {
           const option = document.createElement("option");
           option.value = type;
@@ -154,7 +154,6 @@
       commentsInput.dataset.defaultValue = commentsInput.value;
 
       toggleMfsAvailability();
-      // Sync checkbox from status (if status already indicates surveyed)
       const v = (statusSel.value || '').toLowerCase();
       mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
     });
@@ -205,6 +204,7 @@
           SoftwareID: parseInt(editId.value, 10),
           SoftwareName: valueToSend(nameInput),
           SoftwareType: valueToSend(typeSelect),
+          SoftwareLicenseKey: valueToSend(tagInput), // <-- send license key so "Tag #" updates for software
           Comment: valueToSend(commentsInput),
         };
       } else {
@@ -229,13 +229,12 @@
         });
 
         if (!res.ok) {
-          // Try to extract server message; otherwise throw generic
           let message = `Failed to update asset (HTTP ${res.status})`;
           try {
             const err = await res.json();
             const combined = Object.values(err).flat().join(' ').trim();
             if (combined) message = combined;
-          } catch {}
+          } catch { }
           throw new Error(message);
         }
 
@@ -243,7 +242,6 @@
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
 
-        // reload list after short delay
         const urlParams = new URLSearchParams(window.location.search);
         const category = urlParams.get("category") || "@(ViewData["Category"] ?? "")";
         await new Promise(resolve => setTimeout(resolve, 250));

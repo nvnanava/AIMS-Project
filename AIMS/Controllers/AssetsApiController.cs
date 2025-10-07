@@ -139,18 +139,18 @@ public class AssetsApiController : ControllerBase
         // ---------- Base dataset (hardware + software) ----------
         var activeAssignments = _db.Assignments.AsNoTracking()
             .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new { a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID, a.AssignedAtUtc });
+            .Select(a => new { a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID, a.AssignedAtUtc });
 
         var hardwareBase =
             from h in _db.HardwareAssets.AsNoTracking()
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Hardware)
-                on h.HardwareID equals aa.AssetTag into ha
+                on h.HardwareID equals aa.HardwareID into ha
             from aa in ha.DefaultIfEmpty()
             select new AssetFlat
             {
                 AssetName = h.AssetName,
                 TypeRaw = h.AssetType,
-                Tag = h.SerialNumber,
+                Tag = h.AssetTag,
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
@@ -393,9 +393,9 @@ public class AssetsApiController : ControllerBase
             var t = tag?.Trim();
             var hw = await (
                 from h in _db.HardwareAssets.AsNoTracking()
-                where (t != null && h.SerialNumber == t) || (hardwareId != null && h.HardwareID == hardwareId)
+                where (t != null && (h.AssetTag == t || h.SerialNumber == t)) || (hardwareId != null && h.HardwareID == hardwareId)
                 let a = _db.Assignments
-                            .Where(x => x.AssetKind == AssetKind.Hardware && x.AssetTag == h.HardwareID && x.UnassignedAtUtc == null)
+                            .Where(x => x.AssetKind == AssetKind.Hardware && x.HardwareID == h.HardwareID && x.UnassignedAtUtc == null)
                             .OrderByDescending(x => x.AssignedAtUtc)
                             .FirstOrDefault()
                 select new
@@ -403,13 +403,13 @@ public class AssetsApiController : ControllerBase
                     h.HardwareID,
                     AssetName = h.AssetName,
                     Type = h.AssetType,
-                    Tag = h.SerialNumber,
+                    Tag = h.AssetTag,
                     Status = string.IsNullOrEmpty(h.Status)
-                                ? (a != null ? "Assigned" : "Available")
-                                : h.Status,
+                                            ? (a != null ? "Assigned" : "Available")
+                                            : h.Status,
                     AssignedUserId = a != null ? (int?)a.UserID : null
                 }
-            ).FirstOrDefaultAsync(ct);
+                        ).FirstOrDefaultAsync(ct);
 
             if (hw is not null)
             {

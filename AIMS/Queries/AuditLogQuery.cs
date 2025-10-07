@@ -4,164 +4,142 @@ using Microsoft.EntityFrameworkCore;
 
 public class AuditLogQuery
 {
-
     private readonly AimsDbContext _db;
+    public AuditLogQuery(AimsDbContext db) => _db = db;
 
-    public AuditLogQuery(AimsDbContext db)
-    {
-        _db = db;
-    }
-
-    public async Task<List<GetAuditRecordDto>> GetAllAuditRecordsAsync()
-    {
-        // Example query, adjust as needed
-        return await _db.AuditLogs
-            .Select(a => new GetAuditRecordDto
-            {
-                AuditLogID = a.AuditLogID,
-                ExternalId = a.ExternalId,
-                TimestampUtc = a.TimestampUtc,
-                UserID = a.UserID,
-                Action = a.Action,
-                Description = a.Description,
-                PreviousValue = a.PreviousValue,
-                NewValue = a.NewValue,
-                AssetKind = a.AssetKind,
-                AssetTag = a.AssetTag,
-                HardwareAsset = a.HardwareAsset,
-                SoftwareID = a.SoftwareID,
-                SoftwareAsset = a.SoftwareAsset
-            })
-            .ToListAsync();
-    }
-
-    public async Task<int> createAuditRecordAsync(CreateAuditRecordDto data)
-    {
-        // basic error checking
-        if (data == null)
-        {
-            throw new InvalidDataException("Missing record data!");
-        }
-
-        // check if the user is valid
-        bool userExists = await _db.Assignments.AnyAsync(u => u.UserID == data.UserID);
-        if (!userExists)
-        {
-            throw new Exception($"User with ID {data.UserID} does not exist!");
-        }
-
-        // check if hardwareTag is valid, if hardware
-        if (data.AssetKind == AssetKind.Hardware)
-        {
-            if (data.AssetTag == null)
-                throw new Exception("For AssetKind=Hardware you must supply AssetTag (HardwareID).");
-            var assetTagExists = await _db.HardwareAssets.AnyAsync(hw => hw.HardwareID == data.AssetTag);
-            if (!assetTagExists)
-            {
-                throw new Exception("Please specify a valid AssetTag (HardwareID).");
-            }
-        }
-        // check if softwareID is valid, if software
-
-        else if (data.AssetKind == AssetKind.Software)
-        {
-            if (data.SoftwareID == null)
-                throw new Exception("For AssetKind=Software you must supply SoftwareID.");
-
-            var softwareIDExists = await _db.SoftwareAssets.AnyAsync(sw => sw.SoftwareID == data.SoftwareID);
-            if (!softwareIDExists)
-                throw new Exception("Please specify a valid SoftwareID.");
-        }
-        else
-        {
-            throw new Exception("Unknown AssetKind.");
-        }
-
-
-        // check if description is not empty
-        if (string.IsNullOrEmpty(data.Description))
-        {
-            throw new Exception("Cannot have empty action description!");
-        }
-
-        AuditLog newRecord = new AuditLog
-        {
-            TimestampUtc = DateTime.UtcNow,
-            UserID = data.UserID,
-            Action = "Assign",
-            Description = data.Description,
-            AssetKind = data.AssetKind,
-            AssetTag = data.AssetKind == AssetKind.Hardware ? data.AssetTag : null,
-            SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null,
-        };
-
-        // finally, create assignment
-        _db.AuditLogs.Add(newRecord);
-        await _db.SaveChangesAsync();
-
-        return newRecord.AuditLogID;
-    }
-
-    public async Task<GetAuditRecordDto?> GetAuditRecordAsync(int auditRecID)
+    public async Task<List<GetAuditRecordDto>> GetAllAuditRecordsAsync(CancellationToken ct = default)
     {
         return await _db.AuditLogs
             .AsNoTracking()
-            .Where(a => a.AuditLogID == auditRecID)
+            .OrderByDescending(a => a.TimestampUtc)
             .Select(a => new GetAuditRecordDto
             {
                 AuditLogID = a.AuditLogID,
                 ExternalId = a.ExternalId,
                 TimestampUtc = a.TimestampUtc,
                 UserID = a.UserID,
+                UserName = a.User.FullName,
                 Action = a.Action,
                 Description = a.Description,
-                PreviousValue = a.PreviousValue,
-                NewValue = a.NewValue,
+                BlobUri = a.BlobUri,
+                SnapshotJson = a.SnapshotJson,
                 AssetKind = a.AssetKind,
-                AssetTag = a.AssetTag,
-                HardwareAsset = a.HardwareAsset,
+                HardwareID = a.HardwareID,
                 SoftwareID = a.SoftwareID,
-                SoftwareAsset = a.SoftwareAsset
+                HardwareName = a.HardwareAsset != null ? a.HardwareAsset.AssetName : null,
+                SoftwareName = a.SoftwareAsset != null ? a.SoftwareAsset.SoftwareName : null,
+                Changes = a.Changes
+                    .OrderBy(c => c.AuditLogChangeID)
+                    .Select(c => new AuditLogChangeDto
+                    {
+                        AuditLogChangeID = c.AuditLogChangeID,
+                        Field = c.Field,
+                        OldValue = c.OldValue,
+                        NewValue = c.NewValue
+                    }).ToList()
             })
-            .FirstOrDefaultAsync();
+            .ToListAsync(ct);
     }
-}
 
+    public async Task<GetAuditRecordDto?> GetAuditRecordAsync(int auditLogId, CancellationToken ct = default)
+    {
+        return await _db.AuditLogs
+            .AsNoTracking()
+            .Where(a => a.AuditLogID == auditLogId)
+            .Select(a => new GetAuditRecordDto
+            {
+                AuditLogID = a.AuditLogID,
+                ExternalId = a.ExternalId,
+                TimestampUtc = a.TimestampUtc,
+                UserID = a.UserID,
+                UserName = a.User.FullName,
+                Action = a.Action,
+                Description = a.Description,
+                BlobUri = a.BlobUri,
+                SnapshotJson = a.SnapshotJson,
+                AssetKind = a.AssetKind,
+                HardwareID = a.HardwareID,
+                SoftwareID = a.SoftwareID,
+                HardwareName = a.HardwareAsset != null ? a.HardwareAsset.AssetName : null,
+                SoftwareName = a.SoftwareAsset != null ? a.SoftwareAsset.SoftwareName : null,
+                Changes = a.Changes
+                    .OrderBy(c => c.AuditLogChangeID)
+                    .Select(c => new AuditLogChangeDto
+                    {
+                        AuditLogChangeID = c.AuditLogChangeID,
+                        Field = c.Field,
+                        OldValue = c.OldValue,
+                        NewValue = c.NewValue
+                    }).ToList()
+            })
+            .FirstOrDefaultAsync(ct);
+    }
 
+    public async Task<int> CreateAuditRecordAsync(CreateAuditRecordDto data, CancellationToken ct = default)
+    {
+        if (data is null) throw new ArgumentNullException(nameof(data));
+        if (string.IsNullOrWhiteSpace(data.Action)) throw new ArgumentException("Action is required.");
+        if (string.IsNullOrWhiteSpace(data.Description)) throw new ArgumentException("Description is required.");
 
-public class GetAuditRecordDto
-{
+        // Validate user exists
+        var userExists = await _db.Users.AsNoTracking().AnyAsync(u => u.UserID == data.UserID, ct);
+        if (!userExists) throw new InvalidOperationException($"User with ID {data.UserID} does not exist.");
 
-    // PK / identifiers
-    public int AuditLogID { get; set; }
-    public Guid ExternalId { get; set; } // for deterministic references/upserts
+        // Validate target based on AssetKind (XOR)
+        if (data.AssetKind == AssetKind.Hardware)
+        {
+            if (data.HardwareID is null)
+                throw new InvalidOperationException("For AssetKind=Hardware, HardwareID must be provided.");
+            var hwExists = await _db.HardwareAssets.AsNoTracking()
+                .AnyAsync(h => h.HardwareID == data.HardwareID, ct);
+            if (!hwExists) throw new InvalidOperationException("Please specify a valid HardwareID.");
+            if (data.SoftwareID is not null)
+                throw new InvalidOperationException("Specify only HardwareID for AssetKind=Hardware.");
+        }
+        else if (data.AssetKind == AssetKind.Software)
+        {
+            if (data.SoftwareID is null)
+                throw new InvalidOperationException("For AssetKind=Software, SoftwareID must be provided.");
+            var swExists = await _db.SoftwareAssets.AsNoTracking()
+                .AnyAsync(s => s.SoftwareID == data.SoftwareID, ct);
+            if (!swExists) throw new InvalidOperationException("Please specify a valid SoftwareID.");
+            if (data.HardwareID is not null)
+                throw new InvalidOperationException("Specify only SoftwareID for AssetKind=Software.");
+        }
+        else
+        {
+            throw new InvalidOperationException("Unknown AssetKind.");
+        }
 
-    // When / Who / What
-    public DateTime TimestampUtc { get; set; } = DateTime.UtcNow;
-    public int UserID { get; set; }
+        var log = new AuditLog
+        {
+            TimestampUtc = DateTime.UtcNow,
+            UserID = data.UserID,
+            Action = data.Action,
+            Description = data.Description,
+            BlobUri = data.BlobUri,
+            SnapshotJson = data.SnapshotJson,
+            AssetKind = data.AssetKind,
+            HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null,
+            SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null
+        };
 
-    // Action metadata
-    public string Action { get; set; } = string.Empty; // e.g., Create/Edit/Assign/Archive
-    public string Description { get; set; } = string.Empty;
-    public string? PreviousValue { get; set; }
-    public string? NewValue { get; set; }
+        // Optional per-field diffs
+        if (data.Changes is { Count: > 0 })
+        {
+            foreach (var c in data.Changes)
+            {
+                log.Changes.Add(new AuditLogChange
+                {
+                    Field = c.Field,
+                    OldValue = c.OldValue,
+                    NewValue = c.NewValue
+                });
+            }
+        }
 
-    public AssetKind AssetKind { get; set; } // 1 = Hardware, 2 = Software
-    public int? AssetTag { get; set; } // FK -> Hardware.HardwareID when AssetKind = Hardware
-    public Hardware? HardwareAsset { get; set; }
-    public int? SoftwareID { get; set; } // FK -> Software.SoftwareID when AssetKind = Software
-    public Software? SoftwareAsset { get; set; }
-
-}
-
-public class CreateAuditRecordDto
-{
-    public int UserID { get; set; }
-
-    // Action metadata
-    public string Description { get; set; } = string.Empty;
-
-    public AssetKind AssetKind { get; set; } // 1 = Hardware, 2 = Software
-    public int? AssetTag { get; set; } // FK -> Hardware.HardwareID when AssetKind = Hardware
-    public int? SoftwareID { get; set; } // FK -> Software.SoftwareID when AssetKind = Software
+        _db.AuditLogs.Add(log);
+        await _db.SaveChangesAsync(ct);
+        return log.AuditLogID;
+    }
 }

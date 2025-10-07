@@ -1,3 +1,4 @@
+using System.Linq;
 using AIMS.Data;
 using AIMS.Tests.Integration;
 using Microsoft.AspNetCore.Authentication;
@@ -11,10 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Xunit;
 using Microsoft.Extensions.Options;
-using System.Linq;
 using Microsoft.IdentityModel.Tokens;
+using Xunit;
 
 public class APIWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint>, IAsyncLifetime
     where TEntryPoint : class

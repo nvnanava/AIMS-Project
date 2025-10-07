@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function () {
 
     const assetForm = document.getElementById('AssetAddForm'); //phase 1 form
@@ -13,23 +12,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const nextItemBtn = document.getElementById('nextItemBtn');
     const submitAllBtn = document.getElementById('submitAllBtn');
 
-
     //beginning state with 0 items added
     let baseData = {};
     let itemCount = 0;
-    let currentIndex = 0;
+    let currentIndex = 0; // how many *slots* we have advanced through (1..itemCount)
     let items = [];
     let inTransition = false;
 
-    //helpers
+    // ---------------- helpers ----------------
 
     //load next item helper func
     function loadNextItem() {
         itemForm.reset();
-        currentIndex++;
-        itemStep.textContent = `Item ${items.length + 1} of ${itemCount}`;
+        currentIndex = items.length + 1; // next slot is 1-based
+        itemStep.textContent = `Item ${currentIndex} of ${itemCount}`;
         nextItemBtn.style.display = "inline-block";
         submitAllBtn.style.display = "none";
+        document.getElementById('itemInputs').style.display = "block";
     }
 
     //helper to set error state on input
@@ -48,14 +47,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /*
-    Save/load progress functions. Only saving data locally in browser for now. We can discuss saving in database with client.
+      Save/load progress functions. Only saving data locally in browser for now. We can discuss saving in database with client.
     */
-
     function saveProgress() {
         const data = {
             baseData,
-            itemCount,          // use variable, not DOM lookup
-            currentIndex: items.length, // or drop it entirely
+            itemCount,               // use variable, not DOM lookup
+            currentIndex: items.length,
             items
         };
         localStorage.setItem('assetProgress', JSON.stringify(data));
@@ -74,9 +72,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = JSON.parse(save);
             if (data.baseData) baseData = data.baseData;
             if (data.itemCount) itemCount = data.itemCount;
-            if (data.items) items = data.items;
+            if (Array.isArray(data.items)) items = data.items;
 
-            currentIndex = items.length;
             //rebuilding the preview list
             previewList.innerHTML = "";
             items.forEach(i => {
@@ -88,15 +85,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             //if we have already added some items, go to phase 2 directly
             if (items.length >= itemCount) {
+                // all items are already captured
                 itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
                 document.getElementById('itemInputs').style.display = "none"; // hide the input boxes
                 nextItemBtn.style.display = "none";
                 submitAllBtn.style.display = "inline-block";
             } else {
-                itemStep.textContent = `Item ${items.length + 1} of ${itemCount}`;
-                document.getElementById('itemInputs').style.display = "block";
-                nextItemBtn.style.display = "inline-block";
-                submitAllBtn.style.display = "none";
+                loadNextItem(); // shows the next slot number based on items.length
             }
         } catch (e) {
             console.error("Error loading saved progress:", e);
@@ -152,13 +147,13 @@ document.addEventListener('DOMContentLoaded', function () {
         items = [];
         previewList.innerHTML = "";
     });
-    //begin phase 1 - collect base asset data and number of items 
+
+    // ---------------- Phase 1 - collect base asset data and number of items ----------------
     document.getElementById('startPhase2btn').addEventListener('click', function (e) {
         e.preventDefault();
         const assetFormError = document.getElementById('assetFormError');
         assetFormError.style.display = "none";
         assetFormError.textContent = "";
-
 
         // Validate required fields
         const requiredFields = [
@@ -175,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function () {
         //loop through required fields and show error if any are missing.
         requiredFields.forEach(field => {
             const input = document.getElementById(field.id);
-            const errorElem = document.getElementById(field.errorId);
             if (!input.value.trim()) {
                 setError(field.id, field.message); //using helper
                 valid = false;
@@ -231,12 +225,12 @@ document.addEventListener('DOMContentLoaded', function () {
             AssetType: document.getElementById('assetType').value.trim(),
             Manufacturer: document.getElementById('manufacturer').value.trim(),
             Model: document.getElementById('model').value.trim(),
-            PurchaseDate: document.getElementById('addPurchaseDate').value.trim(),
-            WarrantyExpiration: document.getElementById('warrantyExpiration').value.trim(),
+            PurchaseDate: document.getElementById('addPurchaseDate').value.trim(),     // yyyy-MM-dd
+            WarrantyExpiration: document.getElementById('warrantyExpiration').value.trim(), // yyyy-MM-dd
             Status: "Available"
-        }
+        };
 
-
+        // reset item state
         currentIndex = 0;
         items = [];
         previewList.innerHTML = "";
@@ -249,10 +243,10 @@ document.addEventListener('DOMContentLoaded', function () {
         loadNextItem();
     });
 
-    //Phase 2 - enter in tags/serial#
-    nextItemBtn.addEventListener('click', function (e) {
-        e.preventDefault();
+    // ---------------- Phase 2 - per-item (tags/serials) ----------------
 
+    // Add the current inputs as an item (with validations). Returns true if added.
+    function addCurrentInputsAsItem() {
         const serial = document.getElementById('serialNumber').value.trim();
         const tag = document.getElementById('tagNumber').value.trim();
 
@@ -269,29 +263,24 @@ document.addEventListener('DOMContentLoaded', function () {
             valid = false;
         }
 
-        if (!valid) return;
+        if (!valid) return false;
+
         //check for duplicates in the current batch
-        //Serial Number duplicate check
         if (items.some(i => i.SerialNumber === serial)) {
             setError('serialNumber', 'Duplicate serial number in this batch.');
-            return;
+            return false;
         }
-        //Tag Number duplicate check
         if (items.some(i => i.AssetTag === tag)) {
             setError('tagNumber', 'Duplicate tag number in this batch.');
-            return;
+            return false;
         }
-        //clear any previous error states
-        // If valid, clear any lingering error messages
-        clearError('serialNumber');
-        clearError('tagNumber');
 
         //after validation, add to items array
         items.push({
             ...baseData,
             AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim(), //concat make/model for name
-            SerialNumber: serial.trim(),
-            AssetTag: tag.trim()
+            SerialNumber: serial,
+            AssetTag: tag
         });
 
         //update preview list
@@ -300,10 +289,28 @@ document.addEventListener('DOMContentLoaded', function () {
         li.textContent = `${serial} | ${tag}`;
         previewList.appendChild(li);
 
-        //if we just enter the last item, hide next button and show submit button
-        if (currentIndex === itemCount) {
+        return true;
+    }
+
+    //Phase 2 - enter in tags/serial#
+    nextItemBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        if (items.length >= itemCount) {
+            // Already reached the desired count
             itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
-            document.getElementById('itemInputs').style.display = "none"; // hide the input boxes
+            document.getElementById('itemInputs').style.display = "none";
+            nextItemBtn.style.display = "none";
+            submitAllBtn.style.display = "inline-block";
+            return;
+        }
+
+        if (!addCurrentInputsAsItem()) return;
+
+        if (items.length >= itemCount) {
+            //if we just entered the last item, hide next button and show submit button
+            itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
+            document.getElementById('itemInputs').style.display = "none";
             nextItemBtn.style.display = "none";
             submitAllBtn.style.display = "inline-block";
         } else {
@@ -334,43 +341,79 @@ document.addEventListener('DOMContentLoaded', function () {
         loadProgress();
     });
 
-    //Submit all items to server
+    // ---------------- Submit all items to server ----------------
     submitAllBtn.addEventListener('click', async function (e) {
         e.preventDefault();
 
-        const serial = document.getElementById('serialNumber').value.trim();
-        const tag = document.getElementById('tagNumber').value.trim();
-        if (serial && tag && items.length < itemCount) {
-            items.push({
-                ...baseData,
-                SerialNumber: serial,
-                AssetTag: tag,
-                AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim(), //concat make/model for name
-            });
+        // If the user typed the last row but didn’t click “Next”, fold it in (only if we still need more)
+        if (items.length < itemCount) {
+            const serial = document.getElementById('serialNumber').value.trim();
+            const tag = document.getElementById('tagNumber').value.trim();
+            if (serial && tag) {
+                const added = addCurrentInputsAsItem();
+                if (!added) return; // show input errors if any
+            }
         }
+
+        // Guard: if we still didn't reach itemCount, stop and prompt
+        if (items.length < itemCount) {
+            setError('serialNumber', 'Please add all items before submitting.');
+            return;
+        }
+
+        // Build payload from the items collected
+        const cleaned = items.map(r => ({
+            AssetTag: (r.AssetTag ?? "").trim(),
+            Manufacturer: (r.Manufacturer ?? "").trim(),
+            Model: (r.Model ?? "").trim(),
+            SerialNumber: (r.SerialNumber ?? "").trim(),
+            AssetType: (r.AssetType ?? "").trim(),
+            Status: (r.Status ?? "").trim(),
+            // IMPORTANT: keep dates as "yyyy-MM-dd" (what <input type="date"> provides)
+            PurchaseDate: r.PurchaseDate,            // "yyyy-MM-dd"
+            WarrantyExpiration: r.WarrantyExpiration // "yyyy-MM-dd"
+        }));
 
         try {
             const res = await fetch("/api/hardware/add-bulk", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify(items)
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({ dtos: cleaned }) // <-- wrapper required
             });
+
             if (res.ok) {
-                inTransition = false;
-                bootstrap.Modal.getInstance(itemDetailsModal).hide();
-                await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
-                await loadAssetsPaged(baseData.AssetType, 1, 50);
+                // clear saved draft on success
+                clearSaveProgress();
+
+                // close modal
+                const modal = bootstrap.Modal.getInstance(itemDetailsModal);
+                if (modal) modal.hide();
+
+                // small pause to let the modal finish animating
+                await new Promise(r => setTimeout(r, 250));
+
+                // If a page-level refresh function exists, use it; otherwise reload.
+                if (typeof window.loadAssetsPaged === 'function') {
+                    try {
+                        await window.loadAssetsPaged(baseData.AssetType, 1, 50);
+                    } catch (e) {
+                        window.location.reload();
+                    }
+                } else {
+                    window.location.reload();
+                }
                 return;
             }
-            // server side validation errors
-            const data = await res.json();
+
+            // Robust error parse (handles ValidationProblem and plain text)
+            let data;
+            try { data = await res.json(); }
+            catch {
+                data = { title: `HTTP ${res.status}`, detail: await res.text() };
+            }
             showServerErrors(data);
         } catch (err) {
-            showServerErrors({ error: "Server response error: " + err.message });
-            inTransition = false;
+            showServerErrors({ title: err.name || "Client error", detail: err.message || "Unexpected error" });
         }
     });
 
@@ -379,54 +422,87 @@ document.addEventListener('DOMContentLoaded', function () {
         const errorList = document.getElementById("serverErrorList");
         errorList.innerHTML = "";
 
-        let messages = [];
+        const messages = [];
 
-        if (data?.errors) {
-            for (const key in data.errors) {
-                messages.push(...data.errors[key]);
-            }
-        } else if (typeof data === "object") { //for mismatched/unexpected data errors. Need to refine or keep.
-            for (const key in data) {
-                if (Array.isArray(data[key])) {
-                    messages.push(...data[key]);
+        try {
+            if (data && typeof data === "object") {
+                // Standard ASP.NET Core ValidationProblem payload
+                if (data.errors && typeof data.errors === "object") {
+                    for (const [key, arr] of Object.entries(data.errors)) {
+                        if (Array.isArray(arr)) {
+                            for (const m of arr) messages.push(m);
+                        } else if (typeof arr === "string") {
+                            messages.push(arr);
+                        }
+                    }
                 }
+
+                // If nothing yet, also surface title/detail if present
+                if (data.title) messages.push(String(data.title));
+                if (data.detail) messages.push(String(data.detail));
+
+                // Some APIs may return { error: "..." }
+                if (data.error && typeof data.error === "string") {
+                    messages.push(data.error);
+                }
+
+                // Fallback: collect top-level array-of-strings props
+                if (messages.length === 0) {
+                    for (const [k, v] of Object.entries(data)) {
+                        if (Array.isArray(v)) {
+                            for (const m of v) if (typeof m === "string") messages.push(m);
+                        }
+                    }
+                }
+            } else if (typeof data === "string") {
+                messages.push(data);
             }
-        } else if (data?.error) {
-            messages.push(data.error);
-        } else {
-            messages.push("An unknown error occurred.");
+        } catch (e) {
+            console.warn("Error parsing server errors:", e);
         }
-        messages.forEach(msg => {
+
+        if (messages.length === 0) {
+            messages.push("An unknown error occurred. Please check your entries.");
+        }
+
+        for (const msg of messages) {
             const li = document.createElement("li");
             li.classList.add("list-group-item", "text-danger");
             li.textContent = msg;
             errorList.appendChild(li);
-        });
+        }
 
         const modal = new bootstrap.Modal(document.getElementById('serverErrorModal'));
         modal.show();
     }
 
+    // (kept) — for single-add path or other surfaces that use a text box error container
     function showErrorMessages(data, container) {
         let message = "";
-        if (data?.errors) {
-            for (const key in data.errors) {
-                if (data.errors.hasOwnProperty(key)) {
-                    message += data.errors[key].join(" ") + " ";
+
+        try {
+            if (data && typeof data === "object") {
+                // Preferred: ValidationProblem
+                if (data.errors && typeof data.errors === "object") {
+                    for (const [key, arr] of Object.entries(data.errors)) {
+                        if (Array.isArray(arr)) message += arr.join(" ") + " ";
+                    }
+                } else {
+                    // ModelState-as-dictionary or other dictionary
+                    for (const [key, arr] of Object.entries(data)) {
+                        if (Array.isArray(arr)) message += arr.join(" ") + " ";
+                    }
+                    // Fallback to title/detail
+                    if (!message && (data.title || data.detail)) {
+                        message = `${data.title ?? ""} ${data.detail ?? ""}`;
+                    }
                 }
             }
-        } else if (typeof data === "object") { //for mismatched/unexpected data errors. Need to refine or keep.
-            for (const key in data) {
-                if (Array.isArray(data[key])) {
-                    message += data[key].join(" ") + " ";
-                }
-            }
-        } else if (data?.error) {
-            message = data.error;
-        } else {
-            message = "An unknown error occurred.";
-        }
-        container.innerText = message.trim();
+        } catch { /* ignore */ }
+
+        if (!message.trim()) message = "An error occurred. Please check your entries.";
+
+        container.textContent = message.trim();
         container.style.display = "block";
     }
 });
