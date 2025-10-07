@@ -1,19 +1,28 @@
-namespace AIMS.Models;
+using System;
+using System.ComponentModel.DataAnnotations;
 
-public enum AssetKind { Hardware = 1, Software = 2 }
+namespace AIMS.Models;
 
 public class Assignment
 {
     public int AssignmentID { get; set; }
-    // Who
-    public int UserID { get; set; }
-    public User User { get; set; } = null!;
 
-    // What (one of these must be set, enforced in code/migration)
+    // Who
+    public int? UserID { get; set; } // nullable
+    public User? User { get; set; }
+
+    // Where (optional)
+    public int? OfficeID { get; set; }
+    public Office? Office { get; set; }
+
+    // What (XOR: one of these must be set; enforced via check constraint)
     public AssetKind AssetKind { get; set; }
-    public int? AssetTag { get; set; }      // when Hardware
+
+    // NOTE: these reference PKs (NOT human tags)
+    public int? HardwareID { get; set; } // when AssetKind = Hardware
     public Hardware? Hardware { get; set; }
-    public int? SoftwareID { get; set; }    // when Software
+
+    public int? SoftwareID { get; set; } // when AssetKind = Software
     public Software? Software { get; set; }
 
     // When
