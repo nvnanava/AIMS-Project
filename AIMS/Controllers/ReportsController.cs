@@ -32,6 +32,7 @@ public class ReportsController : ControllerBase
         public string AssetName { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string Comment { get; set; } = string.Empty;
+        public DateOnly? Expiration { get; set; }
     }
     public ReportsController(ReportsQuery reports, AimsDbContext db, ILogger<ReportsController> logger)
     {
@@ -166,7 +167,10 @@ public class ReportsController : ControllerBase
             // get assignments, sorted by activity
             IQueryable<Assignment> activeItemsFirst =
             _db.Assignments
-            .AsNoTracking().OrderBy(item => item.UnassignedAtUtc);
+            .AsNoTracking()
+            .OrderBy(item => item.UnassignedAtUtc)
+            .Include(a => a.Hardware)
+            .Include(a => a.Software);
 
             if (customOptions.seeHardware && !customOptions.seeSoftware)
             {
@@ -175,6 +179,14 @@ public class ReportsController : ControllerBase
             else if (customOptions.seeSoftware && !customOptions.seeHardware)
             {
                 activeItemsFirst = activeItemsFirst.Where(a => a.AssetKind == AssetKind.Software);
+            }
+
+            if (customOptions.filterByMaintenance)
+            {
+                activeItemsFirst = activeItemsFirst.Where(a =>
+                // Software does not have survey or repair status, so it will implicitly be excluded from this filter
+                a.HardwareID != null ? (a.Hardware.Status == "In Repair" || a.Hardware.Status == "Marked for Survey") : false
+                );
             }
 
             List<CSVIntermediate> list = await activeItemsFirst
@@ -193,7 +205,12 @@ public class ReportsController : ControllerBase
                                 : string.Empty,
                 Comment = a.AssetKind == AssetKind.Hardware
                                 ? a.Hardware!.Comment
-                                : a.Software!.Comment
+                                : a.Software!.Comment,
+                Expiration = a.AssetKind == AssetKind.Hardware
+                                    ? a.Hardware!.WarrantyExpiration
+                                    : a.Software!.SoftwareLicenseExpiration
+
+
             })
             .ToListAsync();
 
@@ -212,23 +229,54 @@ public class ReportsController : ControllerBase
                 {
                     // Manually write the custom header row
                     csvWriter.WriteField("AssignmentID");
-                    csvWriter.WriteField("Assignee");
-                    csvWriter.WriteField("Assignee Office");
+
+                    if (customOptions.seeUsers)
+                    {
+                        csvWriter.WriteField("Assignee");
+                    }
+
+                    if (customOptions.seeOffice)
+                    {
+                        csvWriter.WriteField("Assignee Office");
+                    }
                     csvWriter.WriteField("Asset Name");
                     csvWriter.WriteField("Asset Type");
                     // csvWriter.WriteField("Seat Number"); TODO: Add this when this field is added at the end of sprint 7
                     csvWriter.WriteField("Comment");
+                    if (customOptions.seeExpiration)
+                    {
+                        csvWriter.WriteField("Expiration");
+                    }
+                    if (customOptions.filterByMaintenance)
+                    {
+                        csvWriter.WriteField("Status");
+                    }
                     csvWriter.NextRecord(); // Move to the next line for data
 
                     // Manually write each record
                     foreach (CSVIntermediate assignment in list)
                     {
                         csvWriter.WriteField(assignment.AssignmentID);
-                        csvWriter.WriteField(assignment.Assignee);
-                        csvWriter.WriteField(assignment.Office);
+                        if (customOptions.seeUsers)
+                        {
+                            csvWriter.WriteField(assignment.Assignee);
+                        }
+                        if (customOptions.seeOffice)
+                        {
+
+                            csvWriter.WriteField(assignment.Office);
+                        }
                         csvWriter.WriteField(assignment.AssetName);
                         csvWriter.WriteField(assignment.AssetType);
                         csvWriter.WriteField(assignment.Comment);
+                        if (customOptions.seeExpiration)
+                        {
+                            csvWriter.WriteField(assignment.Expiration);
+                        }
+                        if (customOptions.filterByMaintenance)
+                        {
+                            csvWriter.WriteField(assignment.Status);
+                        }
                         csvWriter.NextRecord(); // Move to the next line
                     }
 
