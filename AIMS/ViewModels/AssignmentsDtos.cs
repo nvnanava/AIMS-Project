@@ -1,13 +1,14 @@
-namespace AIMS.ViewModels;
-
+using System;
 using AIMS.Models;
+
+namespace AIMS.ViewModels;
 
 public class CreateAssignmentDto
 {
     public int UserID { get; set; }
     public AssetKind AssetKind { get; set; } // Hardware or Software
-    public int? AssetTag { get; set; }       // when Hardware: HardwareID
-    public int? SoftwareID { get; set; }     // when Software: SoftwareID
+    public int? HardwareID { get; set; }     // when Hardware
+    public int? SoftwareID { get; set; }     // when Software
 }
 
 public class CloseAssignmentDto
@@ -20,13 +21,13 @@ public class GetAssignmentDto
     public int AssignmentID { get; set; }
 
     // Who
-    public int UserID { get; set; }
+    public int? UserID { get; set; }
     public string User { get; set; } = string.Empty;
 
-    // What (one of these must be set, enforced in controller/EF)
+    // What (exactly one set)
     public AssetKind AssetKind { get; set; }
-    public int? HardwareID { get; set; }   // when Hardware
-    public int? SoftwareID { get; set; }   // when Software
+    public int? HardwareID { get; set; }
+    public int? SoftwareID { get; set; }
 
     // When
     public DateTime AssignedAtUtc { get; set; }

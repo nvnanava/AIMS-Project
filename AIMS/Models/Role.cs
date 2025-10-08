@@ -1,16 +1,17 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
-namespace AIMS.Models
+namespace AIMS.Models;
+
+public class Role
 {
-    public class Role
-    {
-        public int RoleID { get; set; } // PK
+    public int RoleID { get; set; }
 
-        public string RoleName { get; set; } = string.Empty; // Required
+    [Required, MaxLength(64)]
+    public string RoleName { get; set; } = string.Empty;
 
-        public string Description { get; set; } = string.Empty; // Required
+    [Required, MaxLength(256)]
+    public string Description { get; set; } = string.Empty;
 
-        // Navigation property: One Role can be assigned to many Users
-        public ICollection<User> Users { get; set; } = new List<User>();
-    }
+    public ICollection<User> Users { get; set; } = new List<User>();
 }

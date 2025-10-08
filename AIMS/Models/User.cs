@@ -1,30 +1,35 @@
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIMS.Models;
 
 public class User
 {
-    // PK
     public int UserID { get; set; }
-    public Guid ExternalId { get; set; }
+    public Guid ExternalId { get; set; } = Guid.NewGuid();
 
-    // Columns
+    [Required, MaxLength(128)]
     public string FullName { get; set; } = string.Empty;
+
+    [Required, MaxLength(256)]
     public string Email { get; set; } = string.Empty;
-    public string? GraphObjectID { get; set; }     // MS Graph object id
-    public string EmployeeNumber { get; set; } = string.Empty; // e.g. "28809"
+
+    public string? GraphObjectID { get; set; }
+
+    [Required, MaxLength(32)]
+    public string EmployeeNumber { get; set; } = string.Empty;
+
     public bool IsActive { get; set; } = true;
 
-    // FKs
     public int RoleID { get; set; }
-    public int? SupervisorID { get; set; }
-
-    // Navigation
     public Role Role { get; set; } = null!;
+
+    public int? SupervisorID { get; set; }
     public User? Supervisor { get; set; }
+
     public ICollection<User> DirectReports { get; set; } = new List<User>();
 
-    // public ICollection<Feedback> FeedbackSubmissions { get; set; } = new List<Feedback>(); # Scaffolded
     public ICollection<AuditLog> AuditActions { get; set; } = new List<AuditLog>();
     public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 }

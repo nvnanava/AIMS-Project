@@ -167,7 +167,5 @@ main.pb-3 {
   padding-bottom: 0 !important;
 }
 
-/* put this in the LAST-loaded stylesheet */
-body {
-  padding-top: 72px;
-}
+:root { --nav-h: 96px; }       /* update if design changes */
+body { padding-top: var(--nav-h); }

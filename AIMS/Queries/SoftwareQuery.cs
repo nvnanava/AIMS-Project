@@ -1,6 +1,8 @@
 using AIMS.Data;
-using AIMS.Models;
+using AIMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
+
+namespace AIMS.Queries;
 
 public class SoftwareQuery
 {
@@ -20,47 +22,11 @@ public class SoftwareQuery
                 SoftwareLicenseKey = s.SoftwareLicenseKey,
                 SoftwareLicenseExpiration = s.SoftwareLicenseExpiration,
                 SoftwareUsageData = s.SoftwareUsageData,
-                SoftwareCost = s.SoftwareCost
+                SoftwareCost = s.SoftwareCost,
+                LicenseTotalSeats = s.LicenseTotalSeats,
+                LicenseSeatsUsed = s.LicenseSeatsUsed,
+                Comment = s.Comment
             })
             .ToListAsync(ct);
     }
-}
-
-public class GetSoftwareDto
-{
-    public int SoftwareID { get; set; }
-
-    // Columns
-    public string SoftwareName { get; set; } = string.Empty;
-    public string SoftwareType { get; set; } = string.Empty;
-    public string SoftwareVersion { get; set; } = string.Empty;
-    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
-    public DateOnly? SoftwareLicenseExpiration { get; set; }
-    public long SoftwareUsageData { get; set; }
-    public decimal SoftwareCost { get; set; }
-    public string Comment { get; set; } = string.Empty;
-}
-
-public class CreateSoftwareDto
-{
-    public string SoftwareName { get; set; } = string.Empty;
-    public string SoftwareType { get; set; } = string.Empty;
-    public string SoftwareVersion { get; set; } = string.Empty;
-    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
-    public DateOnly? SoftwareLicenseExpiration { get; set; }
-    public long SoftwareUsageData { get; set; }
-    public decimal SoftwareCost { get; set; }
-    public string Comment { get; set; } = string.Empty;
-}
-
-public class UpdateSoftwareDto
-{
-    public string SoftwareName { get; set; } = string.Empty;
-    public string SoftwareType { get; set; } = string.Empty;
-    public string SoftwareVersion { get; set; } = string.Empty;
-    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
-    public DateOnly? SoftwareLicenseExpiration { get; set; }
-    public long SoftwareUsageData { get; set; }
-    public decimal SoftwareCost { get; set; }
-    public string Comment { get; set; } = string.Empty;
 }
