@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const category = urlParams.get("category") || categoryStore.value
 
                     await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
-                    await loadAssets(category); //optimistically reload assets. Hardware controller now bumps cache stamp.
+                    await loadCategoryPaged(category, 1); //optimistically reload assets. Hardware controller now bumps cache stamp.
                     return;
                 }
                 const data = await res.json();

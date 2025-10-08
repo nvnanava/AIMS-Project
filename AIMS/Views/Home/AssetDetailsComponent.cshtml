@@ -1,4 +1,3 @@
-
 @using AIMS.Utilities
 @await Html.PartialAsync("_AssetAddForm")
 @await Html.PartialAsync("_EditAssetForm")
@@ -15,9 +14,13 @@
   var category = ViewData["Category"]?.ToString() ?? "Unknown";
   ViewData["Title"] = $"{category} Asset Details";
 }
+
 <script>
   // Share specs with JS for the popup
   const specsData = @Html.Raw(Json.Serialize(ViewData["SpecsData"]));
+
+  // Make the server category available to all functions BEFORE they run.
+  const SERVER_CATEGORY = '@(ViewData["Category"] ?? "")';
 </script>
 
 <h2 class="text-center my-4">@ViewData["Title"]</h2>
@@ -43,6 +46,13 @@
       <!-- Filled dynamically -->
     </tbody>
   </table>
+
+  <!-- Look-ahead pager -->
+  <div id="asset-pager" class="search-pager" hidden>
+    <button type="button" id="asset-prev" class="pager-btn">Prev</button>
+    <span id="asset-status" class="pager-status"></span>
+    <button type="button" id="asset-next" class="pager-btn">Next</button>
+  </div>
 </div>
 
 <p id="emptyMessage" class="text-center" style="display:none;">
@@ -67,82 +77,163 @@
 
 <script>
   // --- Safety: only allow known categories to be used in the API call ---
-const ALLOWED_TYPES = new Set(["monitor","laptop","desktop","software","headset","charging cable"]);
-function normalizeCategory(raw) {
-  const c = String(raw || "").trim().toLowerCase();
-  // normalize plurals commonly used in cards
-  const map = { monitors:"monitor", laptops:"laptop", desktops:"desktop", headsets:"headset", softwares:"software" };
-  return (map[c] || c);
-}
+  const ALLOWED_TYPES = new Set(["monitor","laptop","desktop","software","headset","charging cable"]);
+  function normalizeCategory(raw) {
+    const c = String(raw || "").trim().toLowerCase();
+    const map = { monitors:"monitor", laptops:"laptop", desktops:"desktop", headsets:"headset", softwares:"software" };
+    return (map[c] || c);
+  }
 
-// Paged category loader (used only when arriving from cards)
-async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
-  const safe = normalizeCategory(category);
-  if (!safe) return;
+  // ---------------- Look-ahead pager state (client cache) ----------------
+  let currentPage = 1;
+  let pageSize = 50;                 // default for details; adjust freely
+  const pageCache = new Map();       // pageNumber -> AssetRowVm[]
+  let lastMeta = { total: -1, page: 1, pageSize: 50 }; // total:-1 => look-ahead
+  const pager = document.getElementById('asset-pager');
+  const btnPrev = document.getElementById('asset-prev');
+  const btnNext = document.getElementById('asset-next');
+  const lblStatus = document.getElementById('asset-status');
 
-  const tbody = document.getElementById("assetTableBody");
-  const emptyMsg = document.getElementById("emptyMessage");
-  tbody.innerHTML = "";
-  emptyMsg.style.display = "none";
+  // ---------------- Helpers ----------------
+  function applyEmpty(isEmpty) {
+    document.getElementById("emptyMessage").style.display = isEmpty ? "block" : "none";
+  }
+  function clearTable() {
+    const tbody = document.getElementById("assetTableBody");
+    tbody.innerHTML = "";
+  }
+  function renderRows(rows) {
+    clearTable();
+    const tbody = document.getElementById("assetTableBody");
+    (rows || []).forEach(renderRow);
+  }
+  function updatePager(items) {
+    if (!pager || !btnPrev || !btnNext || !lblStatus) return;
+    const total = lastMeta?.total ?? -1;
+    const page = currentPage;
+    const size = lastMeta?.pageSize ?? pageSize;
 
-  let page = 1;
-  let receivedAny = false;
+    let hasNext, totalPages;
+    if (total === -1) {
+      // Look-ahead: if we got a full page, there might be more
+      hasNext = (items.length === size);
+      totalPages = page + (hasNext ? 1 : 0);   // display hint only
+      lblStatus.textContent = `Page ${page}`;
+    } else {
+      totalPages = Math.max(1, Math.ceil(total / size));
+      hasNext = page < totalPages;
+      lblStatus.textContent = `Page ${page} of ${totalPages}`;
+    }
+    const hasPrev = page > 1;
+    btnPrev.disabled = !hasPrev;
+    btnNext.disabled = !hasNext;
+    pager.hidden = (page === 1 && items.length === 0);
+  }
 
-  while (page <= maxPages) {
+  // ---------------- Fetch one page (uses look-ahead & caches) ----------------
+  async function getPage(category, page, size) {
+    // Cache first
+    if (pageCache.has(page)) {
+      const items = pageCache.get(page) || [];
+      lastMeta.page = page;
+      lastMeta.pageSize = size;
+      return { items, total: lastMeta.total, page, pageSize: size };
+    }
+
+    const safe = normalizeCategory(category);
+    if (!ALLOWED_TYPES.has(safe)) return { items: [], total: 0, page, pageSize: size };
+
     const url = new URL("/api/assets", window.location.origin);
     url.searchParams.set("page", String(page));
-    url.searchParams.set("pageSize", String(pageSize));
-    // server param is "types", client category is a single value
-    url.searchParams.set("types", safe);
+    url.searchParams.set("pageSize", String(size));
+    url.searchParams.set("category", safe);
     url.searchParams.set("scope", "all");
-    url.searchParams.set("devBypass", "true");
-    if (safe) url.searchParams.set("types", safe);
+    // IMPORTANT: tell server we want look-ahead behavior
+    url.searchParams.set("totalsMode", "lookahead");
 
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    // Expecting: { items, total, page, pageSize } where total == -1 means "there is/was another page"
+    const items = Array.isArray(data.items) ? data.items : [];
+    pageCache.set(page, items);
+    lastMeta = { total: (typeof data.total === "number" ? data.total : -1), page: data.page || page, pageSize: data.pageSize || size };
+    return { items, total: lastMeta.total, page: lastMeta.page, pageSize: lastMeta.pageSize };
+  }
+
+  // ---------------- Category page loader (pager-driven) ----------------
+  async function loadCategoryPaged(category, page = 1) {
     try {
-      const res = await fetch(url.toString(), { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed page ${page}: ${res.status}`);
-      const data = await res.json();
-
-      const items = Array.isArray(data.items) ? data.items : [];
-      if (items.length === 0 && !receivedAny) {
-        emptyMsg.style.display = "block";
-        break;
-      }
-
-      items.forEach(renderRow);
-      receivedAny = receivedAny || items.length > 0;
-
-      // stop early if last page is smaller than pageSize
-      if (items.length < pageSize) break;
-      page++;
+      const { items } = await getPage(category, page, pageSize);
+      currentPage = page;
+      renderRows(items);
+      applyEmpty(items.length === 0 && page === 1);
+      updatePager(items);
     } catch (err) {
       console.error(err);
-      if (!receivedAny) {
-        tbody.innerHTML = "";
-        emptyMsg.style.display = "block";
-      }
-      break;
+      clearTable();
+      applyEmpty(true);
+      updatePager([]);
     }
   }
-}
 
-  // Optional: flip to false if we'd rather show an error instead of auto-fixing.
-  const AUTO_FIX_CATEGORY = true;
+  // ---------------- Single by tag (unchanged) ----------------
+  async function loadOneByTag(tag) {
+    try {
+      const res = await fetch(`/api/assets/one?tag=${encodeURIComponent(tag)}&devBypass=true`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
+      const asset = await res.json();
 
-  function getCurrentCategory() {
-    const urlParams = new URLSearchParams(window.location.search);
-    // Razor sets @category; fallback to URL if present
-    return (urlParams.get("category") || "@category").trim();
+      const currentCategory = getCurrentCategory();
+      const assetCategory = (asset.type || "").trim();
+      if (assetCategory && currentCategory &&
+          assetCategory.toLowerCase() !== currentCategory.toLowerCase()) {
+        if (AUTO_FIX_CATEGORY) {
+          redirectToCorrectCategory(assetCategory, asset.tag || tag);
+          return;
+        } else {
+          showCategoryMismatchError(assetCategory, currentCategory);
+        }
+      }
+
+      clearTable();
+      applyEmpty(false);
+      renderRow(asset);
+      // Hide pager for single-asset path
+      pager.hidden = true;
+    } catch (err) {
+      console.error(err);
+      clearTable();
+      applyEmpty(true);
+      pager.hidden = true;
+    }
   }
 
+  // ---------------- Wire up pager buttons ----------------
+  if (btnPrev) btnPrev.addEventListener('click', async () => {
+    if (currentPage > 1) {
+      const category = getCurrentCategory();
+      await loadCategoryPaged(category, currentPage - 1);
+    }
+  });
+  if (btnNext) btnNext.addEventListener('click', async () => {
+    const category = getCurrentCategory();
+    await loadCategoryPaged(category, currentPage + 1);
+  });
+
+  // ---------------- Boot ----------------
+  const AUTO_FIX_CATEGORY = true;
+  function getCurrentCategory() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return (urlParams.get("category") || SERVER_CATEGORY|| "").trim();
+  }
   function redirectToCorrectCategory(correctCategory, tag) {
     const url = new URL('/Home/AssetDetailsComponent', window.location.origin);
     url.searchParams.set('category', correctCategory);
     url.searchParams.set('tag', tag);
-    // replace() avoids creating a back-button dead-end
     window.location.replace(url.toString());
   }
-
   function showCategoryMismatchError(expected, actual) {
     const msg = document.createElement('div');
     msg.style.cssText = `
@@ -157,78 +248,15 @@ async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
     `;
     document.body.prepend(msg);
   }
-
-  async function loadOneByTag(tag) {
-    try {
-      // devBypass=true for local testing; drop it when real RBAC is enforced
-      const res = await fetch(`/api/assets/one?tag=${encodeURIComponent(tag)}&devBypass=true`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
-      const asset = await res.json();
-
-      // --- Guard: category <> asset.type? ---
-      const currentCategory = getCurrentCategory();
-      const assetCategory = (asset.type || "").trim();
-
-      if (assetCategory && currentCategory &&
-        assetCategory.toLowerCase() !== currentCategory.toLowerCase()) {
-        if (AUTO_FIX_CATEGORY) {
-          // Auto-correct the URL to match the asset’s real category
-          redirectToCorrectCategory(assetCategory, asset.tag || tag);
-          return; // stop; page will reload on the correct route
-        } else {
-          // Don’t auto-redirect; warn the user and still render the row
-          showCategoryMismatchError(assetCategory, currentCategory);
-        }
-      }
-
-      // --- Normal render ---
-      const tbody = document.getElementById("assetTableBody");
-      const emptyMsg = document.getElementById("emptyMessage");
-      tbody.innerHTML = "";
-      emptyMsg.style.display = "none";
-      renderRow(asset);
-
-    } catch (err) {
-      console.error(err);
-      document.getElementById("assetTableBody").innerHTML = "";
-      document.getElementById("emptyMessage").style.display = "block";
-    }
-  }
-
   function escapeHtml(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
   }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tag = urlParams.get("tag");
-    const category = urlParams.get("category") || "@category";
-    const source = (urlParams.get("source") || "").toLowerCase(); // "card" when clicked from cards
-
-    if (tag) {
-      // Arrived from search row → fetch only that asset (no category paging)
-      loadOneByTag(tag); // will auto-fix category if needed
-      return;
-    }
-
-    // Only query the category (paged) when explicitly coming from a card click
-    if (source === "card") {
-      loadAssetsPaged(category, { maxPages: 2, pageSize: 50 });
-      return;
-    }
-
-    // Otherwise, don't auto-query; leave the table empty by default
-    document.getElementById("assetTableBody").innerHTML = "";
-    document.getElementById("emptyMessage").style.display = "block";
-  });
-
   function renderRow(asset) {
     const tbody = document.getElementById("assetTableBody");
     const row = document.createElement("tr");
     row.onclick = (event) => showPopup(asset.assetName, asset.tag, event);
-
     let statusClass = "";
     switch ((asset.status || "").toLowerCase()) {
       case "available": statusClass = "status-available"; break;
@@ -237,7 +265,6 @@ async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
       case "in repair": statusClass = "status-in-repair"; break;
       case "damaged": statusClass = "status-in-repair"; break;
     }
-
     row.innerHTML = `
       <td>${asset.assetName}</td>
       <td>${asset.type}</td>
@@ -249,7 +276,7 @@ async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
       <td><span class="status-badge ${statusClass}">${asset.status}</span></td>
       <td class="actions-cell text end" onclick="event.stopPropagation()">
         @if (User.IsAdmin())
-        { // Only show the Edit button to admins
+        {
           <button type="button"
                   class="action-btn blue-pencil"
                   aria-label="Edit ${asset.assetName}"
@@ -271,31 +298,48 @@ async function loadAssetsPaged(category, { maxPages = 2, pageSize = 50 } = {}) {
         }
       </td>
     `;
-
     tbody.appendChild(row);
   }
-
   function showPopup(assetName, tagNumber, event) {
     const popup = document.getElementById("popup");
     const rect = event.target.getBoundingClientRect();
     popup.style.top = (rect.top + window.scrollY + 20) + "px";
     popup.style.left = (rect.left + window.scrollX + 20) + "px";
-
     popup.innerHTML = `
       <strong>Asset Name:</strong> ${escapeHtml(assetName ?? "")}<br>
       <strong>Tag Number:</strong> ${escapeHtml(tagNumber ?? "")}<br>
     `;
-
     popup.style.display = "block";
     popup.setAttribute("aria-hidden", "false");
     event.stopPropagation();
   }
-
   document.addEventListener("click", function (event) {
     const popup = document.getElementById("popup");
     if (popup && popup.style.display === "block" && !popup.contains(event.target)) {
       popup.style.display = "none";
       popup.setAttribute("aria-hidden", "true");
     }
+  });
+
+  // ---------------- Startup routing ----------------
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tag = urlParams.get("tag");
+    const source = (urlParams.get("source") || "").toLowerCase(); // "card" when clicked from cards
+    const category = getCurrentCategory();
+
+    if (tag) {
+      await loadOneByTag(tag);
+      return;
+    }
+    // From a card → show page 1 and expose pager (look-ahead)
+    if (source === "card") {
+      await loadCategoryPaged(category, 1);
+      return;
+    }
+    // Otherwise, leave empty
+    clearTable();
+    applyEmpty(true);
+    pager.hidden = true;
   });
 </script>

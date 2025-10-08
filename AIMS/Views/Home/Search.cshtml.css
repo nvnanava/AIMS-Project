@@ -81,6 +81,7 @@
   outline: none;
   padding: 0;
   background-color: #F0F4F5;
+  width: 100%;
 }
 
 .filter-input.search-input:focus {
@@ -383,4 +384,31 @@
 
 .skel.w70 {
   width: 70%;
+}
+
+.search-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+  background: transparent;
+}
+
+.search-pager .pager-btn {
+  border: 1px solid #2c3e50;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.search-pager .pager-btn[disabled] {
+  opacity: .5;
+  cursor: default;
+}
+
+.pager-status {
+  color: #34495e;
+  font-size: 0.9rem;
 }

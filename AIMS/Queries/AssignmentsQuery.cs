@@ -1,4 +1,5 @@
-// File: AIMS/Queries/AssignmentsQuery.cs
+using System.Threading;
+using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.ViewModels;
@@ -22,7 +23,7 @@ public class AssignmentsQuery
             "active" => q.Where(a => a.UnassignedAtUtc == null),
             "closed" => q.Where(a => a.UnassignedAtUtc != null),
             "all" => q,
-            _ => q.Where(a => a.UnassignedAtUtc == null) // fallback
+            _ => q.Where(a => a.UnassignedAtUtc == null)
         };
 
         return await q
@@ -31,9 +32,9 @@ public class AssignmentsQuery
             {
                 AssignmentID = a.AssignmentID,
                 AssetKind = a.AssetKind,
-                UserID = a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
+                UserID = a.UserID ?? 0,
+                User = a.User != null ? a.User.FullName : string.Empty,
+                HardwareID = a.HardwareID,     // ✅ was AssetTag
                 SoftwareID = a.SoftwareID,
                 AssignedAtUtc = a.AssignedAtUtc,
                 UnassignedAtUtc = a.UnassignedAtUtc
@@ -50,9 +51,9 @@ public class AssignmentsQuery
             {
                 AssignmentID = a.AssignmentID,
                 AssetKind = a.AssetKind,
-                UserID = a.UserID,
-                User = a.User.FullName,
-                HardwareID = a.AssetTag,
+                UserID = a.UserID ?? 0,
+                User = a.User != null ? a.User.FullName : string.Empty,
+                HardwareID = a.HardwareID,     // ✅ was AssetTag
                 SoftwareID = a.SoftwareID,
                 AssignedAtUtc = a.AssignedAtUtc,
                 UnassignedAtUtc = a.UnassignedAtUtc

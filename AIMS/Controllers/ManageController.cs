@@ -10,7 +10,7 @@ namespace AIMS.Controllers
         [HttpGet("ping")]
         public IActionResult Ping() => Content("manage ok");
 
-        private const bool RedirectForbiddenToDashboard = false;
+        private static readonly bool RedirectForbiddenToDashboard = false;
 
         // primary route: /manage/bulk-upload
         // alias route:   /manage/bulkupload

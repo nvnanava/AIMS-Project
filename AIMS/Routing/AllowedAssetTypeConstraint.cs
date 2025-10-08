@@ -6,18 +6,48 @@ namespace AIMS.Routing
 {
     public sealed class AllowedAssetTypeConstraint : IRouteConstraint
     {
-        private static readonly HashSet<string> _allowed = new(StringComparer.OrdinalIgnoreCase)
+        // Map slugs (and plurals) -> canonical category string our app uses
+        private static readonly Dictionary<string, string> _slugToCategory =
+            new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase)
+            {
+                // singulars
+                ["laptop"] = "Laptop",
+                ["desktop"] = "Desktop",
+                ["monitor"] = "Monitor",
+                ["software"] = "Software",
+                ["headset"] = "Headset",
+                ["charging-cable"] = "Charging Cable",
+
+                // plurals (accepted and normalized to singular)
+                ["laptops"] = "Laptop",
+                ["desktops"] = "Desktop",
+                ["monitors"] = "Monitor",
+                ["headsets"] = "Headset",
+                ["softwares"] = "Software",       // just in case
+                ["charging-cables"] = "Charging Cable",
+            };
+
+        public static bool TryNormalize(string? slug, out string category)
         {
-            "hardware",
-            "software"
-        };
+            category = "";
+            if (string.IsNullOrWhiteSpace(slug)) return false;
+
+            // Normalize spaces to hyphens to be forgiving: "charging cable" → "charging-cable"
+            var key = slug.Trim().Replace(' ', '-');
+
+            if (_slugToCategory.TryGetValue(key, out var cat))
+            {
+                category = cat;
+                return true;
+            }
+            return false;
+        }
 
         public bool Match(HttpContext? httpContext, IRouter? route, string routeKey,
                           RouteValueDictionary values, RouteDirection routeDirection)
         {
             if (!values.TryGetValue(routeKey, out var obj) || obj is null) return false;
-            var type = obj.ToString();
-            return !string.IsNullOrWhiteSpace(type) && _allowed.Contains(type);
+            return TryNormalize(obj.ToString(), out _);
         }
     }
 }
