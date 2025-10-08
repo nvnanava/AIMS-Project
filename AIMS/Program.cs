@@ -54,6 +54,7 @@ builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
+builder.Services.AddScoped<ReportsQuery>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
