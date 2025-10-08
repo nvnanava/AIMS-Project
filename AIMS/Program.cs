@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using AIMS.Data;
 using AIMS.Queries;
+using AIMS.Services;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -23,6 +24,7 @@ builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SummaryCardService>();
 
 // ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
