@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
         baseSoftware = {
             SoftwareName: document.getElementById('softwareName').value.trim(),
             SoftwareVersion: document.getElementById('softwareVersion').value.trim(),
+            SoftwareType: "Software", //unsure what we want to do with this
             SoftwareLicenseExpiration: document.getElementById('softwareLicenseExpiration').value.trim(),
             SoftwareCost: parseFloat(document.getElementById('softwareCost').value) || 0,
             Status: "Available",
@@ -258,19 +259,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    
-
-
-
-
-
-
-
     //save progress button
-    document.getElementById('saveSoftwareProgress').addEventListener('click', saveProgress);
+    const saveBtn = document.getElementById('saveSoftwareProgress');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveProgress);
+    }
 
     //load licenses progress
-    document.getElementById('loadSoftwareProgressBtn').addEventListener('click', function (e) {
+    const loadBtn = document.getElementById('loadSoftwareProgressBtn');
+    if (loadBtn) {
+        loadBtn.addEventListener('click', function (e) {
         e.preventDefault();
 
         // try to load from localStorage
@@ -289,8 +287,10 @@ document.addEventListener('DOMContentLoaded', function () {
             keyboard: false
         });
         softwareDetailsModalInstance.show();
-        loadProgress();
-    });
+            loadProgress();
+            
+        });
+    }
 
     // render and manage preview list
     function renderPreviewList() {
@@ -378,26 +378,6 @@ document.addEventListener('DOMContentLoaded', function () {
         softwareErrorBox.textContent = data.error || "An unknown error occurred.";
         softwareErrorBox.style.display = "block";
     }
-
-    
-
-    function returnRandomLicenseKey() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let result = '';
-        for (let i = 0; i < 16; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
-
-   document.getElementById("generateLicenseBtn").addEventListener("click", () => {
-       document.getElementById("licenseKey").value = returnRandomLicenseKey();
-   });
-
-
-
-
-
 
 
 });
