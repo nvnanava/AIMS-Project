@@ -228,6 +228,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
+// TODO: Remove when we add proper Azure Blob storage
+// allow saving to wwwroot folder
+app.UseStaticFiles();
+
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
 app.UseAuthentication();

@@ -7,8 +7,6 @@ using System.Text;
 using AIMS.Models;
 using CsvHelper.Configuration;
 using System.Globalization;
-using Microsoft.Extensions.Logging;
-using System.Text.Json;
 using AIMS.ViewModels;
 
 namespace AIMS.Controllers;
@@ -21,7 +19,9 @@ public class ReportsController : ControllerBase
 {
     private readonly ReportsQuery _reports;
     private readonly AimsDbContext _db;
-    private readonly ILogger<ReportsController> _logger;
+
+    // TODO: Using for wwwroot saving. Remove when Blob storage is added
+    private readonly IWebHostEnvironment _web;
 
     private sealed class CSVIntermediate
     {
@@ -34,25 +34,29 @@ public class ReportsController : ControllerBase
         public string Comment { get; set; } = string.Empty;
         public DateOnly? Expiration { get; set; }
     }
-    public ReportsController(ReportsQuery reports, AimsDbContext db, ILogger<ReportsController> logger)
+    public ReportsController(
+        ReportsQuery reports,
+        AimsDbContext db,
+        IWebHostEnvironment web)
     {
         _reports = reports;
         _db = db;
-        _logger = logger;
+        _web = web;
     }
 
     [HttpPost("/")]
     public async Task<IActionResult> Create(
-        [FromQuery] string? type,
         [FromQuery] DateOnly start,
+        [FromQuery] string reportName,
+        [FromQuery] int CreatorUserID,
+        [FromQuery] string? type,
         [FromQuery] DateOnly? end,
         [FromQuery] int? OfficeID,
         [FromQuery] string? desc,
-        [FromQuery] CustomReportDto? customOptions,
+        [FromQuery] CustomReportOptionsDto? customOptions,
          CancellationToken ct = default
         )
     {
-
         // perform basic checking
         if (end is null)
         {
@@ -76,7 +80,6 @@ public class ReportsController : ControllerBase
         }
 
         var creationDate = DateTime.Now;
-
         // Assignments Report
         // Data In: Start Date, End Date (optional; today if null), Description (optional)
         // Data Out: AssignmentID, Assignee, Office, Asset Name, Asset Type, Asset Seat Number, Comment
@@ -85,6 +88,17 @@ public class ReportsController : ControllerBase
 
         if (reportType == ReportType.Assignment)
         {
+            var dateString = creationDate.ToString("yyyy-MM-dd_HH-mm-ss");
+            var fileName = $"{reportName}_Assignment_Report_{dateString}.csv";
+            var folder = "reports";
+            var dirPath = Path.Combine(_web.WebRootPath, folder);
+
+            // ensure directory exists
+            Directory.CreateDirectory(dirPath);
+
+            var filePath = Path.Combine(dirPath, fileName);
+
+
             // get assignments, sorted by activity
             var activeItemsFirst = await _db.Assignments
             .AsNoTracking()
@@ -111,7 +125,8 @@ public class ReportsController : ControllerBase
             // 2. Generate CSV content using CsvHelper
             // Create the MemoryStream outside of a using block
             var memoryStream = new MemoryStream();
-            using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+
+            using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true))
             {
                 var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
@@ -146,13 +161,37 @@ public class ReportsController : ControllerBase
                 }
             }
 
-            var bytes = memoryStream.ToArray();
+            // save the file
+            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                await memoryStream.CopyToAsync(fileStream);
+            }
 
-            return File(
-                bytes,
-                contentType: "text/csv",
-                fileDownloadName: $"Assignment_Report_{creationDate}.csv"
-            );
+            // 3. Reset the MemoryStream position again for the download
+            memoryStream.Position = 0;
+
+            // create report entry
+            await _reports.CreateReport(new CreateReportDto
+            {
+                Name = reportName,
+
+                Type = type,
+
+                Description = desc,
+
+                DateCreated = creationDate,
+
+                // Who/Where generated
+                GeneratedByUserID = CreatorUserID,
+
+                GeneratedByOfficeID = OfficeID,
+                BlobUri = filePath
+            }, ct);
+            // force download
+            Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
+            // Return the file
+
+            return File(memoryStream, "text/csv", fileName);
 
 
             // Custom Report
@@ -163,6 +202,14 @@ public class ReportsController : ControllerBase
         }
         else if (reportType == ReportType.Custom)
         {
+            var fileName = $"Assignment_Report_{creationDate}.csv";
+            var folder = "reports";
+            var dirPath = Path.Combine(_web.WebRootPath, folder);
+
+            // ensure directory exists
+            Directory.CreateDirectory(dirPath);
+
+            var filePath = Path.Combine(dirPath, fileName);
 
             // get assignments, sorted by activity
             IQueryable<Assignment> activeItemsFirst =
@@ -172,7 +219,7 @@ public class ReportsController : ControllerBase
             .Include(a => a.Hardware)
             .Include(a => a.Software);
 
-            if (customOptions.seeHardware && !customOptions.seeSoftware)
+            if (customOptions!.seeHardware && !customOptions.seeSoftware)
             {
                 activeItemsFirst = activeItemsFirst.Where(a => a.AssetKind == AssetKind.Hardware);
             }
@@ -185,7 +232,7 @@ public class ReportsController : ControllerBase
             {
                 activeItemsFirst = activeItemsFirst.Where(a =>
                 // Software does not have survey or repair status, so it will implicitly be excluded from this filter
-                a.HardwareID != null ? (a.Hardware.Status == "In Repair" || a.Hardware.Status == "Marked for Survey") : false
+                a.HardwareID != null ? (a.Hardware!.Status == "In Repair" || a.Hardware.Status == "Marked for Survey") : false
                 );
             }
 
@@ -218,7 +265,7 @@ public class ReportsController : ControllerBase
             // 2. Generate CSV content using CsvHelper
             // Create the MemoryStream outside of a using block
             var memoryStream = new MemoryStream();
-            using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+            using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true))
             {
                 var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
@@ -283,19 +330,48 @@ public class ReportsController : ControllerBase
                     streamWriter.Flush();
                 }
             }
+            // save the file
+            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                await memoryStream.CopyToAsync(fileStream);
+            }
 
-            var bytes = memoryStream.ToArray();
+            // 3. Reset the MemoryStream position again for the download
+            memoryStream.Position = 0;
+            // create report entry
+            await _reports.CreateReport(new CreateReportDto
+            {
+                Name = reportName,
 
-            return File(
-                bytes,
-                contentType: "text/csv",
-                fileDownloadName: $"Custom_Report_{creationDate}.csv"
-            );
+                Type = type,
 
+                Description = desc,
+
+                DateCreated = creationDate,
+
+                // Who/Where generated
+                GeneratedByUserID = CreatorUserID,
+
+                GeneratedByOfficeID = OfficeID,
+                BlobUri = filePath
+            }, ct);
+            // force download
+            Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
+            // Return the file
+            return File(memoryStream, "text/csv", fileName);
 
         }
         else if (reportType == ReportType.Office)
         {
+            var fileName = $"Assignment_Report_{creationDate}.csv";
+            var folder = "reports";
+            var dirPath = Path.Combine(_web.WebRootPath, folder);
+
+            // ensure directory exists
+            Directory.CreateDirectory(dirPath);
+
+            var filePath = Path.Combine(dirPath, fileName);
+
             if (OfficeID is null)
             {
                 ModelState.AddModelError(nameof(OfficeID), "Please specify a valid OfficeID.");
@@ -345,7 +421,7 @@ public class ReportsController : ControllerBase
             // 2. Generate CSV content using CsvHelper
             // Create the MemoryStream outside of a using block
             var memoryStream = new MemoryStream();
-            using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+            using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true))
             {
                 var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
@@ -379,14 +455,35 @@ public class ReportsController : ControllerBase
                     streamWriter.Flush();
                 }
             }
+            // save the file
+            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                await memoryStream.CopyToAsync(fileStream);
+            }
 
-            var bytes = memoryStream.ToArray();
+            // 3. Reset the MemoryStream position again for the download
+            memoryStream.Position = 0;
+            // create report entry
+            await _reports.CreateReport(new CreateReportDto
+            {
+                Name = reportName,
 
-            return File(
-                bytes,
-                contentType: "text/csv",
-                fileDownloadName: $"{office.OfficeName}_Report_{creationDate}.csv"
-            );
+                Type = type,
+
+                Description = desc,
+
+                DateCreated = creationDate,
+
+                // Who/Where generated
+                GeneratedByUserID = CreatorUserID,
+
+                GeneratedByOfficeID = OfficeID,
+                BlobUri = filePath
+            }, ct);
+            // force download
+            Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
+            // Return the file
+            return File(memoryStream, "text/csv", fileName);
 
         }
         return Ok();
