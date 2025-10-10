@@ -190,8 +190,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // CORS only in dev (handy for local frontend)
-    app.UseCors("AllowLocalhost");
 }
 else
 {
@@ -235,6 +233,15 @@ app.UseStaticFiles();
 
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
+
+
+// CORS for Dev must come after routing
+if (app.Environment.IsDevelopment())
+{
+
+    // CORS only in dev (handy for local frontend)
+    app.UseCors("AllowLocalhost");
+}
 app.UseAuthentication();
 app.UseAuthorization();
 

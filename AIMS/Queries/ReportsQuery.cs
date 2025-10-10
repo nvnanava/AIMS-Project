@@ -32,6 +32,24 @@ public sealed class ReportsQuery
                     })
                     .ToListAsync(ct);
     }
+    public async Task<ReportsVm?> GetReportASync(int id, CancellationToken ct = default)
+    {
+        return await _db.Reports
+           .AsNoTracking()
+           .Where(r => r.ReportID == id)
+           .Select(r => new ReportsVm
+           {
+               ReportID = r.ReportID,
+               Name = r.Name,
+               Type = r.Type,
+               Description = r.Description,
+               DateCreated = r.DateCreated,
+               GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
+               GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
+               BlobUri = r.BlobUri
+           })
+           .FirstOrDefaultAsync(ct);
+    }
 
     public async Task<int> CreateReport(CreateReportDto dto, CancellationToken ct)
     {
