@@ -2,12 +2,12 @@ namespace AIMS.ViewModels;
 
 public class CustomReportOptionsDto
 {
-    public bool seeHardware { get; set; }
-    public bool seeSoftware { get; set; }
-    public bool seeUsers { get; set; }
-    public bool seeOffice { get; set; }
-    public bool seeExpiration { get; set; }
-    public bool filterByMaintenance { get; set; }
+    public bool seeHardware { get; set; } = true;
+    public bool seeSoftware { get; set; } = true;
+    public bool seeUsers { get; set; } = true;
+    public bool seeOffice { get; set; } = true;
+    public bool seeExpiration { get; set; } = false;
+    public bool filterByMaintenance { get; set; } = false;
 }
 
 public class ReportsVm
