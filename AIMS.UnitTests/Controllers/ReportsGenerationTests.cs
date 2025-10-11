@@ -65,7 +65,7 @@ namespace AIMS.UnitTests.Controllers
                     AssetKind = AssetKind.Software,
                     HardwareID = null,
                     SoftwareID = 1,
-                    AssignedAtUtc = DateTime.Now,
+                    AssignedAtUtc = DateTime.Now.AddDays(-1),
                     UnassignedAtUtc = null
                 },
                 new Assignment{
@@ -77,7 +77,7 @@ namespace AIMS.UnitTests.Controllers
                     AssetKind = AssetKind.Hardware,
                     HardwareID = 3,
                     SoftwareID = null,
-                    AssignedAtUtc =DateTime.Now,
+                    AssignedAtUtc =DateTime.Now.AddDays(-5),
                     UnassignedAtUtc = null
                 },
                 new Assignment{
@@ -89,7 +89,7 @@ namespace AIMS.UnitTests.Controllers
                     AssetKind =  AssetKind.Hardware,
                     HardwareID = 13,
                     SoftwareID = null,
-                    AssignedAtUtc =DateTime.Now,
+                    AssignedAtUtc = DateTime.Now.AddDays(-4),
                     UnassignedAtUtc = null
                 },
                 new Assignment  {
@@ -101,7 +101,7 @@ namespace AIMS.UnitTests.Controllers
                     AssetKind =  AssetKind.Hardware,
                     HardwareID = 8,
                     SoftwareID = null,
-                    AssignedAtUtc = DateTime.Now,
+                    AssignedAtUtc = DateTime.Now.AddDays(1),
                     UnassignedAtUtc = null
                 },
                 new Assignment  {
@@ -113,7 +113,7 @@ namespace AIMS.UnitTests.Controllers
                     AssetKind =  AssetKind.Hardware,
                     HardwareID = 5,
                     SoftwareID = null,
-                    AssignedAtUtc = DateTime.Now,
+                    AssignedAtUtc = DateTime.Now.AddDays(4),
                     UnassignedAtUtc = null
                 },
                 new Assignment  {
@@ -126,7 +126,7 @@ namespace AIMS.UnitTests.Controllers
                     HardwareID = 17000,
                 Hardware = new Hardware {HardwareID = 17000, AssetType = "Hardware", Status = "Marked for Survey"},
                     SoftwareID = null,
-                    AssignedAtUtc = DateTime.Now,
+                    AssignedAtUtc = DateTime.Now.AddDays(5),
                     UnassignedAtUtc = null
                 },
                 new Assignment  {
@@ -230,6 +230,30 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
             string[] actualHeaders = getCSVHeaders(csvLines);
             Assert.Equal(expectedHeaders, actualHeaders);
+
+            Assert.Single(csvLines[1..]);
+        }
+        [Fact]
+        public async Task CreateAssignmentReport_ReturnsFileContentResult_CorrectInputsDateFilter()
+        {
+            var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
+
+            var result = await controller.Create(
+                start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
+                reportName: "Test Report",
+                CreatorUserID: 1,
+                type: "Assignment"
+            ) as FileContentResult;
+            Assert.IsType<FileContentResult>(result);
+            Assert.Equal("text/csv", result.ContentType);
+
+            string[] csvLines = csv2String(result);
+            Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
+
+            string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+            string[] actualHeaders = getCSVHeaders(csvLines);
+            Assert.Equal(expectedHeaders, actualHeaders);
+            Assert.Equal(2, csvLines[1..].Length);
         }
         [Fact]
         public async Task CreateAssignmentReport_ReturnsBadRequest_InvalidOfficeID()
@@ -378,8 +402,7 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
             var result = await controller.Create(
-                 start: DateOnly.FromDateTime(DateTime.Now.AddDays(-10)),
-                 end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
+                 start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
                  reportName: "Test Report",
                  CreatorUserID: 1,
                  OfficeID: 1,
@@ -413,8 +436,7 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
             var result = await controller.Create(
-                 start: DateOnly.FromDateTime(DateTime.Now.AddDays(-10)),
-                 end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
+                 start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
                  reportName: "Test Report",
                  CreatorUserID: 1,
                  OfficeID: 1,
@@ -439,7 +461,6 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             string[] expectedHeaders = { "AssignmentID", "Asset Name", "Asset Type", "Comment" };
             string[] actualHeaders = getCSVHeaders(csvLines);
             Assert.Equal(expectedHeaders, actualHeaders);
-
 
             Assert.True(checkIfEachLineContains(csvLines[1..], 2, ["Software"]));
         }
@@ -536,8 +557,7 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
             var result = await controller.Create(
-                 start: DateOnly.FromDateTime(DateTime.Now.AddDays(-10)),
-                 end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
+                 start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
                  reportName: "Test Report",
                  CreatorUserID: 1,
                  OfficeID: 1,
