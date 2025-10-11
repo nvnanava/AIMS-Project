@@ -145,7 +145,7 @@ public class ReportsController : ControllerBase
 
 
             // get assignments, sorted by activity
-            var activeItemsFirst = await getOrderedIntermediateListAsync(ct);
+            var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct);
 
 
             await WriteToCSV(memoryStream, activeItemsFirst);
@@ -169,7 +169,7 @@ public class ReportsController : ControllerBase
             filePath = _fs.Path.Combine(dirPath, fileName);
 
             // get assignments, sorted by activity
-            var activeItemsFirst = await getOrderedIntermediateListAsync(ct, customOptions);
+            var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
 
 
             await WriteToCSV(memoryStream, activeItemsFirst, customOptions);
@@ -200,7 +200,7 @@ public class ReportsController : ControllerBase
 
             // get assignments, sorted by activity
 
-            var activeItemsFirst = await getOrderedIntermediateListAsync(ct, customOptions);
+            var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
 
 
             await WriteToCSV(memoryStream, activeItemsFirst);
@@ -244,37 +244,46 @@ public class ReportsController : ControllerBase
     }
 
 
-    private async Task<List<CSVIntermediate>> getOrderedIntermediateListAsync(CancellationToken ct, CustomReportOptionsDto? opts = null)
+    private async Task<List<CSVIntermediate>> getOrderedIntermediateListAsync(DateOnly start, DateOnly end, CancellationToken ct, CustomReportOptionsDto? opts = null)
     {
-        if (opts is not null)
-        {
-            // get assignments, sorted by activity
-            IQueryable<Assignment> activeItemsFirst =
-            _db.Assignments
+        var startUtc = start.ToDateTime(TimeOnly.MinValue).ToUniversalTime(); // UTC day of 00:00:00 (inclusive bound)
+        var endUtcExclusive = end.AddDays(1).ToDateTime(TimeOnly.MinValue).ToUniversalTime(); // UTC next day 0:00:00 (exclusive)
+
+        // base query: always apply date filtering
+        IQueryable<Assignment> query = _db.Assignments
             .AsNoTracking()
-            .OrderBy(item => item.UnassignedAtUtc)
+            .Where(a =>
+                (a.AssignedAtUtc >= startUtc && a.AssignedAtUtc < endUtcExclusive)
+                ||
+                (a.UnassignedAtUtc.HasValue &&
+                 a.UnassignedAtUtc.Value >= startUtc &&
+                 a.UnassignedAtUtc.Value < endUtcExclusive)
+            )
+            .OrderBy(a => a.UnassignedAtUtc)
             .Include(a => a.Hardware)
             .Include(a => a.Software);
 
+        // optional filters
+        if (opts is not null)
+        {
             if (opts.seeHardware && !opts.seeSoftware)
             {
-                activeItemsFirst = activeItemsFirst.Where(a => a.AssetKind == AssetKind.Hardware);
+                query = query.Where(a => a.AssetKind == AssetKind.Hardware);
             }
             else if (opts.seeSoftware && !opts.seeHardware)
             {
-                activeItemsFirst = activeItemsFirst.Where(a => a.AssetKind == AssetKind.Software);
+                query = query.Where(a => a.AssetKind == AssetKind.Software);
             }
 
             if (opts.filterByMaintenance)
             {
-                activeItemsFirst = activeItemsFirst.Where(a =>
-                // Software does not have survey or repair status, so it will implicitly be excluded from this filter
-                a.HardwareID != null ? (a.Hardware!.Status == "In Repair" || a.Hardware.Status == "Marked for Survey") : false
-                );
+                query = query.Where(a =>
+                    a.HardwareID != null &&
+                    (a.Hardware!.Status == "In Repair" || a.Hardware.Status == "Marked for Survey"));
             }
+        }
 
-            List<CSVIntermediate> list = await activeItemsFirst
-            .OrderBy(item => item.UnassignedAtUtc)
+        return await query
             .Select(a => new CSVIntermediate
             {
                 AssignmentID = a.AssignmentID,
@@ -291,43 +300,10 @@ public class ReportsController : ControllerBase
                                 ? a.Hardware!.Comment
                                 : a.Software!.Comment,
                 Expiration = a.AssetKind == AssetKind.Hardware
-                                    ? a.Hardware!.WarrantyExpiration
-                                    : a.Software!.SoftwareLicenseExpiration
-
-
+                                ? a.Hardware!.WarrantyExpiration
+                                : a.Software!.SoftwareLicenseExpiration
             })
             .ToListAsync(ct);
-
-            return list;
-        }
-        else
-        {
-            // get assignments, sorted by activity
-            var activeItemsFirst = await _db.Assignments
-            .AsNoTracking()
-            // if null, these will be put at the top of the list (meaning the assigned assets are first)
-            .OrderBy(item => item.UnassignedAtUtc)
-           .Select(a => new CSVIntermediate
-           {
-               AssignmentID = a.AssignmentID,
-               Assignee = a.User!.FullName,
-               Office = a.Office!.OfficeName,
-               AssetType = a.AssetKind,
-               AssetName = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.AssetName
-                                : a.Software!.SoftwareName,
-               Status = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.Status
-                                : string.Empty,
-               Comment = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.Comment
-                                : a.Software!.Comment
-           })
-            .ToListAsync(ct);
-
-            return activeItemsFirst;
-        }
-
     }
     private async Task WriteToCSV(MemoryStream memoryStream, List<CSVIntermediate> list, CustomReportOptionsDto? opts = null)
     {
