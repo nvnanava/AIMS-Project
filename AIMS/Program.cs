@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using System.IO.Abstractions;
 using Microsoft.Identity.Web.UI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +38,11 @@ builder.Services
         // keep enums as strings (nice for APIs)
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+
+
+// Register the concrete FileSystem class for the IFileSystem interface (ReportsController)
+// necessary for mocking in UnitTesting
+builder.Services.AddSingleton<IFileSystem, FileSystem>();
 
 // ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
 builder.Services.AddAuthorization(options =>
