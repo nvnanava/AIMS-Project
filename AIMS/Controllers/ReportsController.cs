@@ -95,11 +95,6 @@ public class ReportsController : ControllerBase
         }
 
 
-        if (customOptions is null)
-        {
-            customOptions = new CustomReportOptionsDto { };
-        }
-
         // date mismatch
         if (end < start)
         {
