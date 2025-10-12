@@ -166,8 +166,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     const option = document.createElement("option");
                     option.value = `(${asset.assetID}) ${asset.assetName}`;
                     option.text = `(${asset.assetID}) ${asset.assetName}`;
-                    option.dataset.asset_id = asset.assetID;
-                    option.dataset.asset_kind = asset.assetKind;
+                    option.dataset.asset_id = asset.assetID;      // <-- numeric ID (HardwareID or SoftwareID)
+                    option.dataset.asset_kind = asset.assetKind;  // <-- 1 = Hardware, 2 = Software
                     assetSelect.appendChild(option);
                 });
             })
@@ -198,58 +198,57 @@ document.addEventListener("DOMContentLoaded", function () {
         const selectedUserOption = userSelect.options[userSelect.selectedIndex];
         const selectedAssetOption = assetSelect.options[assetSelect.selectedIndex];
 
-        const selectedUserID = selectedUserOption.dataset.user_id;
-        const selectedAssetID = selectedAssetOption.dataset.asset_id;
-        const selectedAssetKind = selectedAssetOption.dataset.asset_kind;
+        const selectedUserID = Number(selectedUserOption.dataset.user_id);
+        const selectedAssetID = Number(selectedAssetOption.dataset.asset_id);
+        const selectedAssetKind = Number(selectedAssetOption.dataset.asset_kind);
+        const comment = (document.getElementById("commentBox").value || "").trim();
 
-        const url = '/api/assign/create'; // Replace with your API endpoint
-        let data;
+        const url = '/api/assign/create';
 
-        // hardware
-        if (selectedAssetKind == 1) {
-            data = {
-                "userID": selectedUserID,
-                "assetKind": 1,
-                "assetTag": selectedAssetID,
-            }
-            // software
-        } else if (selectedAssetKind == 2) {
-            data = {
-                "userID": selectedUserID,
-                "assetKind": 2,
-                "softwareID": selectedAssetID,
-            }
-        }
+        // Build payload with the correct ID property
+        const data = {
+            userID: selectedUserID,
+            assetKind: selectedAssetKind
+        };
+        if (selectedAssetKind === 1) data.hardwareID = selectedAssetID; // <-- was assetTag (wrong)
+        if (selectedAssetKind === 2) data.softwareID = selectedAssetID;
+
+        if (comment) data.comment = comment; // safe to include even if the API ignores it
+
         fetch(url, {
-            method: 'POST', // Specify the HTTP method as POST
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         })
             .then(response => {
                 if (!response.ok) {
-                    return response.text()
-                        .then(errorBody => {
-                            throw `Assignment Failed: ${errorBody}`;
-                        })
+                    return response.text().then(errorBody => {
+                        throw `Assignment Failed: ${errorBody}`;
+                    });
                 }
-                return response.json(); // Parse the JSON response
+                return response.json();
             })
             .then(result => {
-                const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
-                assignToast.show();
+                // Toast success
+                new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 }).show();
+
+                // Refresh the search table so the new assignment shows up
+                if (typeof window.refreshSearchTable === 'function') {
+                    window.refreshSearchTable();
+                } else {
+                    location.reload();
+                }
             })
             .catch(error => {
                 const toastElement = document.getElementById("errorToast");
                 const errorToast = new bootstrap.Toast(toastElement, { delay: 3000 });
-                const messageBody = toastElement.querySelector('.toast-body');
-                messageBody.innerHTML = error
+                toastElement.querySelector('.toast-body').innerHTML = error;
                 errorToast.show();
             });
+
         modal.hide();
     });
-
+    
     // --- Placeholder: User Agreement Upload Handler ---
     const fileInput = document.getElementById("userAgreementUpload");
     fileInput.addEventListener("change", function () {
