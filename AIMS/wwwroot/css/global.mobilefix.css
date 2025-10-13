@@ -1,0 +1,85 @@
+/* ====== Global Table Responsiveness (works for iPad and desktop) ====== */
+.table-container,
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-top: 0.75rem;
+}
+
+.table-container table,
+.table-responsive table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.table-container th,
+.table-container td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 10px 14px;
+  vertical-align: middle;
+}
+
+/* ====== iPad & Tablet Layout (768px–1024px) ====== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  html, body {
+    overflow-x: hidden !important;
+  }
+
+  /* Navbar and search spacing */
+  .navbar, .navbar-collapse {
+    flex-wrap: wrap;
+  }
+
+  .search-container {
+    display: flex !important;
+    justify-content: center !important;
+    width: 90% !important;
+    margin: 0.75rem auto !important;
+  }
+
+  /* Add breathing space below search bar */
+  main,
+  .content-wrapper,
+  .asset-details-section,
+  .report-page-size {
+    margin-top: 1rem !important;
+    padding-top: 0.5rem !important;
+  }
+
+  /* Allow scrollable tables without clipping dropdowns */
+  .table-container,
+  .table-responsive {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    position: relative !important;
+  }
+
+  /* Dropdowns above content */
+  .dropdown-menu {
+    position: absolute !important;
+    z-index: 5000 !important;
+    overflow: visible !important;
+  }
+
+  /* Prevent text cutoff */
+  table, th, td {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+  }
+}
+
+/* ====== Desktop (>1024px) ====== */
+@media (min-width: 1025px) {
+  .search-container {
+    width: 60% !important;
+    margin: 1rem auto;
+  }
+}
+

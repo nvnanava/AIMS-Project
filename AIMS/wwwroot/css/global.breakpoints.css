@@ -1,0 +1,57 @@
+/* Define standard breakpoints */
+:root {
+  --breakpoint-sm: 576px;   /* Phones */
+  --breakpoint-md: 768px;   /* Tablets */
+  --breakpoint-lg: 992px;   /* Small laptops */
+  --breakpoint-xl: 1200px;  /* Desktops */
+}
+
+/* Container spacing */
+.container-fluid, .container {
+  padding: 0 1rem;
+}
+
+/* Utility classes for layout control */
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Hide small-screen elements */
+.hide-sm {
+  display: none !important;
+}
+@media (min-width: var(--breakpoint-sm)) {
+  .hide-sm { display: inherit !important; }
+}
+
+/* Switch layout direction after medium */
+@media (min-width: var(--breakpoint-md)) {
+  .stack-sm {
+    flex-direction: row;
+  }
+}
+
+/* Responsive table wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive table {
+  min-width: 600px;
+}
+
+/* Example text resizing */
+.text-sm { font-size: 0.875rem; }
+@media (min-width: var(--breakpoint-md)) {
+  .text-md { font-size: 1rem; }
+}
+@media (min-width: var(--breakpoint-lg)) {
+  .text-lg { font-size: 1.125rem; }
+}
+@media (min-width: var(--breakpoint-xl)) {
+  .text-xl { font-size: 1.25rem; }
+}
+
