@@ -16,6 +16,11 @@
     <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/global.breakpoints.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/global.modal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/global.table.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/global.mobilefix.css" asp-append-version="true" />
+
     @RenderSection("Styles", required: false)
     @using AIMS.Utilities
 
@@ -118,12 +123,11 @@
             </div>
         </nav>
     </header>
-    <div class="container-fluid">
-        <main role="main" class="pb-3">
-            @RenderBody()
+    <div class="container-fluid px-3 px-md-4 mt-5 layout-flex">
+    	<main role="main" class="pb-3 w-100">
+        @RenderBody()
         </main>
     </div>
-
     @* <footer class="border-top footer text-muted">
         <div class="container-fluid">
             &copy; 2025 - AIMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
@@ -183,7 +187,6 @@
     <div id="global-loading-overlay" class="global-loading-overlay" aria-hidden="true">
         <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
     </div>
-
 
 </body>
 
