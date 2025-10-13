@@ -103,3 +103,106 @@ body {
     transform: rotate(360deg);
   }
 }
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Keep navbar fixed and body scrollable */
+body {
+  padding-top: 70px;
+}
+
+main {
+  overflow-y: auto;
+  height: calc(100vh - 70px);
+}
+
+/* Cards on home/dashboard pages */
+.asset-card {
+  flex: 1 1 300px;
+  max-width: 100%;
+  margin: 10px;
+}
+
+@media (max-width: 992px) {
+  .asset-card { flex: 1 1 45%; }
+}
+
+@media (max-width: 768px) {
+  .asset-card { flex: 1 1 100%; }
+  .navbar-brand img { width: 40px; }
+}
+
+/* Tables scroll horizontally on small screens */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Allow scrolling on mobile/iPad */
+@media (max-width: 1024px) {
+  html, body {
+    height: auto;
+    overflow-y: scroll;
+  }
+}
+
+/* ===============================
+   FIX 1: iPad / Tablet Responsiveness
+   =============================== */
+
+/* Allow content to scroll on iPad */
+@media (max-width: 1024px) {
+  html, body {
+    height: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main {
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .container, .card, .table-responsive {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Prevent button group wrapping weirdly */
+  .filter-bar, .btn-group {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Ensure filters and table fit in one scrollable frame */
+  .filter-bar input, .filter-bar select, .filter-bar button {
+    width: auto;
+    min-width: 120px;
+    margin: 4px;
+  }
+}
+
+
+/* ===== Dropdown visibility and position ===== */
+.dropdown {
+  position: relative;
+}
+.dropdown-menu {
+  display: none;
+  position: absolute !important;
+  inset: auto auto 0px 0px;
+  transform: translate3d(0, 38px, 0) !important;
+  z-index: 2000 !important;
+}
+.show > .dropdown-menu {
+  display: block;
+}
+
+/* Prevent parent containers from clipping */
+.card, .table-responsive, .content-wrapper {
+  overflow: visible !important;
+}
+

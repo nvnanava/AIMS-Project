@@ -1,0 +1,44 @@
+y:root {
+  --break-sm: 480px;
+  --break-md: 768px;
+  --break-lg: 1024px;
+  --break-xl: 1440px;
+}
+
+/* Desktop Default (≥ 1024px) */
+@media (min-width: 1024px) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* Tablet (481px – 1023px) */
+@media (max-width: 1023px) and (min-width: 481px) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* Mobile (≤ 480px) */
+@media (max-width: 480px) {
+  /* Only stack content and simplify layout */
+  main, .layout-content {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+
+  header, nav.navbar {
+    position: relative !important;
+    width: 100% !important;
+    z-index: 10 !important;
+  }
+
+  /* Prevent zoomed-in behavior */
+  * {
+    box-sizing: border-box;
+    max-width: 100vw !important;
+  }
+}
+

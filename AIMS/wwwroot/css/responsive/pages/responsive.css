@@ -1,0 +1,238 @@
+/* Responsive layout tweaks for AIMS */
+
+/* --- global under 1024px --- */
+@media only screen and (max-width: 1024px) {
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    background: #f5f8fc !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main, .page-body, .container {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0.8rem;
+  }
+
+  header, nav.navbar {
+    position: sticky !important;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    background: #243449 !important;
+  }
+
+  .filters-row, .filter-bar, .asset-filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f2f6fa;
+    border-radius: 8px;
+    padding: 0.6rem;
+  }
+
+  .filters-row input,
+  .filters-row select,
+  .asset-filters input,
+  .asset-filters select {
+    flex: 1 1 22%;
+    border-radius: 6px;
+    border: 1px solid rgba(36,52,73,0.15);
+    padding: 0.4rem;
+    text-align: center;
+    background: #fff;
+  }
+
+  .table, table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  thead {
+    background: #243449 !important;
+    color: #fff !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  th, td {
+    white-space: nowrap;
+    padding: 0.6rem;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .card, .asset-card, .report-management {
+    background: #f8fbff;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+  }
+
+  /* dropdowns above everything */
+  .dropdown-menu {
+    position: absolute !important;
+    z-index: 9999 !important;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border-radius: 8px;
+  }
+
+  /* home tiles layout */
+  .dashboard-container, .home-grid, .tile-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .dashboard-tile, .tile {
+    width: 45%;
+    min-width: 250px;
+    margin: 0.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    text-align: center;
+    padding: 0.8rem;
+  }
+}
+
+/* --- phones (under 768px) --- */
+@media only screen and (max-width: 768px) {
+  header, nav.navbar {
+    position: relative !important;
+  }
+
+  .filters-row, .filter-bar, .asset-filters {
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.6rem;
+  }
+
+  .filters-row input,
+  .filters-row select {
+    width: 100%;
+  }
+
+  .asset-card, .dashboard-card {
+    width: 100%;
+    margin: 0.6rem 0;
+  }
+
+  table {
+    width: max-content;
+    min-width: 650px;
+  }
+
+  th, td {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+
+  /* full scroll for small screens */
+  html, body, main {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+  }
+
+  /* make everything stack nicely */
+  .asset-list-container, .report-management {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  /* keep dropdowns visible */
+  .dropdown-menu {
+    position: absolute !important;
+    z-index: 99999 !important;
+  }
+}
+
+/* --- small phones (under 480px) --- */
+@media only screen and (max-width: 480px) {
+  header, nav.navbar {
+    position: relative !important;
+    width: 100%;
+  }
+
+  main, .layout-content, .page-body {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    overflow: visible;
+    padding: 0.6rem;
+  }
+
+  .filter-bar, .filters-row {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .asset-card {
+    width: 95%;
+    margin: 0 auto;
+    padding: 0.8rem;
+  }
+
+  h1, h2 {
+    font-size: 1.2rem;
+    text-align: center;
+  }
+
+  /* dropdowns not clipped */
+  .dropdown-menu {
+    position: absolute;
+    z-index: 9999;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-radius: 8px;
+  }
+
+  * {
+    max-width: 100vw !important;
+    box-sizing: border-box;
+  }
+}
+
+/* --- Scroll Fix: keep navbar fixed, let content scroll --- */
+@media only screen and (max-width: 1024px) {
+  html, body {
+    overflow: hidden !important; /* prevent double scroll */
+    height: 100vh !important;
+  }
+
+  header, nav.navbar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+  }
+
+  main, .page-body, .content-wrapper {
+    position: relative !important;
+    top: 90px !important; /* height of navbar */
+    height: calc(100vh - 90px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 3rem !important;
+  }
+}
+

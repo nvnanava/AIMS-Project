@@ -1,0 +1,220 @@
+
+/* ---- Design tokens (safe defaults) ---- */
+:root{
+  --sp-0: 0;
+  --sp-1: .25rem;
+  --sp-2: .5rem;
+  --sp-3: 1rem;
+  --sp-4: 1.5rem;
+  --sp-5: 2rem;
+
+  --container-px: 1rem;            /* grows with viewport (see @media below) */
+  --touch-target-min: 44px;        /* accessible minimum tap size */
+}
+
+/* Scale container padding as screen grows */
+@media (min-width: 768px){ :root{ --container-px: 1.25rem; } }
+@media (min-width: 992px){ :root{ --container-px: 1.5rem; } }
+@media (min-width: 1200px){ :root{ --container-px: 2rem; } }
+
+/* ---- Page container helper ---- */
+.aims-container{
+  padding-left: var(--container-px);
+  padding-right: var(--container-px);
+}
+
+/* ---- Visibility utilities ---- */
+.show-sm{ display: none !important; }
+@media (max-width: 575.98px){
+  .hide-xs{ display: none !important; }       /* hide on extra-small only */
+  .show-sm{ display: initial !important; }    /* show only on phones */
+}
+@media (max-width: 767.98px){
+  .hide-sm-down{ display: none !important; }  /* hide on phone & small tablet */
+}
+@media (min-width: 768px){
+  .hide-md-up{ display: none !important; }    /* hide on md and larger */
+}
+
+/* ---- Layout utilities ---- */
+.stack-xs, .stack-sm, .stack-md{ display: flex; gap: var(--sp-3); }
+.stack-xs{ flex-direction: row; } /* default desktop row */
+
+@media (max-width: 575.98px){ .stack-xs{ flex-direction: column; } }
+@media (max-width: 767.98px){ .stack-sm{ flex-direction: column; } }
+@media (max-width: 991.98px){ .stack-md{ flex-direction: column; } }
+
+/* Fluid grid that collapses cleanly without a framework */
+.grid{
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+/* ---- Action bar/buttons that stay usable ---- */
+.action-bar{
+  display: flex; align-items: center; gap: var(--sp-2);
+  flex-wrap: wrap; /* prevent awkward overflow */
+}
+@media (max-width: 575.98px){
+  .action-bar{ flex-direction: column; align-items: stretch; }
+  .action-bar .btn, .action-bar button, .action-bar a[role="button"]{
+    min-height: var(--touch-target-min);
+    width: 100%;
+  }
+}
+
+/* ---- Tables on small screens ---- */
+/* 1) Simple: horizontal scroll wrapper */
+.table-responsive{
+  width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+
+/* 2) Reflow pattern (opt-in): add .table-reflow and data-label on <td> */
+@media (max-width: 575.98px){
+  .table-reflow table, .table-reflow thead, .table-reflow tbody, 
+  .table-reflow th, .table-reflow td, .table-reflow tr{ display: block; }
+  .table-reflow thead{ display: none; }
+  .table-reflow tr{ margin-bottom: var(--sp-3); border: 1px solid #e5e7eb; border-radius: .5rem; padding: var(--sp-2); }
+  .table-reflow td{
+    display: grid; grid-template-columns: 10rem 1fr; gap: var(--sp-2);
+    padding: .25rem 0;
+  }
+  .table-reflow td::before{
+    content: attr(data-label);
+    font-weight: 600; opacity: .75;
+  }
+}
+
+/* ---- Modals that become fullscreen on mobile ---- */
+@media (max-width: 575.98px){
+  .modal-dialog{
+    width: 100vw; max-width: 100vw; margin: 0;
+    height: 100%; display: flex; align-items: stretch;
+  }
+  .modal-content{
+    height: 100%; border-radius: 0;
+    display: flex; flex-direction: column;
+  }
+  .modal-header, .modal-footer{ padding: var(--sp-2) var(--sp-3); }
+  .modal-body{ padding: var(--sp-3); overflow-y: auto; }
+}
+
+/* ---- Side panels / filters collapse to toggle on ≤lg ---- */
+.filters-inline{ display: block; }
+.filters-toggle{ display: none; }
+
+@media (max-width: 991.98px){
+  .filters-inline{ display: none; }
+  .filters-toggle{ display: inline-flex; align-items: center; gap: .5rem; }
+  .filters-drawer{
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1050;
+    display: none;
+  }
+  .filters-drawer__panel{
+    position: absolute; right: 0; top: 0; bottom: 0; width: min(92vw, 24rem);
+    background: #fff; overflow-y: auto; padding: var(--sp-3);
+    box-shadow: -2px 0 12px rgba(0,0,0,.15);
+  }
+  .filters-drawer[aria-hidden="false"]{ display: block; }
+}
+
+/* ---- Navigation safety: prevent label wrapping into icons ---- */
+.nav-safe{
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+@media (max-width: 575.98px){
+  .nav-safe{ gap: .25rem; }
+  .nav-safe a, .nav-safe button{ min-height: var(--touch-target-min); }
+}
+
+/* ---- Images & media ---- */
+img, svg, canvas, video{ max-width: 100%; height: auto; }
+
+/* Optional: stick footer to bottom without overflow issues */
+.min-h-screen{ min-height: 100vh; display: flex; flex-direction: column; }
+.main-content{ flex: 1 1 auto; }
+
+@media (max-width: 575.98px){
+  .modal-dialog{
+    width: 100vw; max-width: 100vw; margin: 0;
+    height: 100%; display: flex; align-items: stretch;
+  }
+  .modal-content{
+    height: 100%; border-radius: 0;
+    display: flex; flex-direction: column;
+  }
+  .modal-header, .modal-footer{ padding: .75rem 1rem; }
+  .modal-body{ padding: 1rem; overflow-y: auto; }
+}
+
+/* If project uses custom width classes, keep them flexible and force full width on phones */
+.modal-dialog.custom-width,
+.modal-dialog.custom-width-two{
+  max-width: min(90vw, 1000px);
+}
+@media (max-width: 575.98px){
+  .modal-dialog.custom-width,
+  .modal-dialog.custom-width-two{
+    width: 100vw; max-width: 100vw;
+  }
+}
+/* SCRUM-240 — Filters drawer shows ≤ lg (991.98px) */
+.filters-inline{ display: block; }
+.filters-toggle{ display: none; }
+
+@media (max-width: 991.98px){
+  .filters-inline{ display: none; }
+  .filters-toggle{ display: inline-flex; align-items: center; gap: .5rem; }
+  .filters-drawer{
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1050;
+    display: none;
+  }
+  .filters-drawer__panel{
+    position: absolute; right: 0; top: 0; bottom: 0; width: min(92vw, 24rem);
+    background: #fff; overflow-y: auto; padding: 1rem;
+    box-shadow: -2px 0 12px rgba(0,0,0,.15);
+  }
+  .filters-drawer[aria-hidden="false"]{ display: block; }
+}
+/* SCRUM-240 — Action bar & nav safety */
+.nav-safe{
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+@media (max-width: 575.98px){
+  .nav-safe{ gap: .25rem; }
+  .nav-safe a, .nav-safe button{ min-height: 44px; }
+}
+.action-bar{
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+@media (max-width: 575.98px){
+  .action-bar{ flex-direction: column; align-items: stretch; }
+  .action-bar .btn, .action-bar button, .action-bar a[role="button"]{
+    min-height: 44px; width: 100%;
+  }
+}
+/* SCRUM-240 — Tables */
+.table-responsive{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+@media (max-width: 575.98px){
+  .table-reflow table, .table-reflow thead, .table-reflow tbody,
+  .table-reflow th, .table-reflow td, .table-reflow tr{ display:block; }
+  .table-reflow thead{ display:none; }
+  .table-reflow tr{ margin-bottom:1rem; border:1px solid #e5e7eb; border-radius:.5rem; padding:.5rem; }
+  .table-reflow td{
+    display:grid; grid-template-columns:10rem 1fr; gap:.5rem; padding:.25rem 0;
+  }
+  .table-reflow td::before{
+    content:attr(data-label); font-weight:600; opacity:.75;
+  }
+}
+/* SCRUM-240 — Container + stack utilities */
+:root{ --container-px: 1rem; }
+@media (min-width:768px){ :root{ --container-px:1.25rem; } }
+@media (min-width:992px){ :root{ --container-px:1.5rem; } }
+@media (min-width:1200px){ :root{ --container-px:2rem; } }
+.aims-container{ padding-left:var(--container-px); padding-right:var(--container-px); }
+.stack-sm, .stack-md{ display:flex; gap:1rem; }
+@media (max-width:767.98px){ .stack-sm{ flex-direction:column; } }
+@media (max-width:991.98px){ .stack-md{ flex-direction:column; } }
+img,svg,canvas,video{ max-width:100%; height:auto; }

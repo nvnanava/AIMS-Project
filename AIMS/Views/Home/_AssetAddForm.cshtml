@@ -1,7 +1,7 @@
 <!-- Phase 1 of multi-asset addition form for hardware assets. -->
 <!-- Base asset data is entered and number of assets is selected. On submit, user is taken to a second form to enter serial/tag numbers. -->
 <div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addAssetModalLabel">Add New Assets</h5>
@@ -66,7 +66,7 @@
 
 <!-- Phase 2: On submit of above form, user is taken to a second form to enter serial/tag numbers for each asset being added. -->
 <div class="modal fade" id="itemDetailsModal" tabindex="-1" aria-labelledby="itemDetailsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="itemDetailsLabel">Enter Item Details</h5>
@@ -104,7 +104,7 @@
 
 <!-- Global Server Error Modal -->
 <div class="modal fade" id="serverErrorModal" tabindex="-1" aria-labelledby="serverErrorModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content border-danger">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="serverErrorModalLabel">Error</h5>

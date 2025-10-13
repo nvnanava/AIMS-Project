@@ -1,0 +1,54 @@
+/* AIMS Responsive Base — SCRUM-240 (desktop & shared only) */
+
+/* ---- Design tokens ---- */
+:root{
+  --sp-0: 0;
+  --sp-1: .25rem;
+  --sp-2: .5rem;
+  --sp-3: 1rem;
+  --sp-4: 1.5rem;
+  --sp-5: 2rem;
+  --container-px: 1rem;
+  --touch-target-min: 44px;
+}
+
+/* Scale container padding as screen grows (desktop-friendly) */
+@media (min-width: 768px){ :root{ --container-px: 1.25rem; } }
+@media (min-width: 992px){ :root{ --container-px: 1.5rem; } }
+@media (min-width: 1200px){ :root{ --container-px: 2rem; } }
+
+/* ---- Page container helper ---- */
+.aims-container{ padding-left: var(--container-px); padding-right: var(--container-px); }
+
+/* ---- Layout utilities (desktop defaults) ---- */
+.stack-xs, .stack-sm, .stack-md{ display: flex; gap: var(--sp-3); }
+/* Default orientation is horizontal on desktop. Mobile changes live in aims-mobile.css */
+
+/* Fluid grid */
+.grid{
+  display: grid; gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+
+/* ---- Action bar & nav (desktop defaults) ---- */
+.nav-safe{ display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.action-bar{ display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+/* ---- Tables (shared) ---- */
+.table-responsive{ width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ---- Filters defaults (desktop) ---- */
+.filters-inline{ display: block; }
+.filters-toggle{ display: none; }
+/* Drawer presentation & toggling happen on mobile in aims-mobile.css */
+
+/* ---- Custom modal widths (desktop-friendly) ---- */
+.modal-dialog.custom-width,
+.modal-dialog.custom-width-two{
+  max-width: min(90vw, 1000px);
+}
+
+/* ---- Media & layout helpers ---- */
+img, svg, canvas, video{ max-width: 100%; height: auto; }
+.min-h-screen{ min-height: 100vh; display: flex; flex-direction: column; }
+.main-content{ flex: 1 1 auto; }

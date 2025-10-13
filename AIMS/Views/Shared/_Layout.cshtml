@@ -9,13 +9,15 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - AIMS</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">  
+  <title>@ViewData["Title"] - AIMS</title>
+  <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/aims-responsive.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/aims-mobile.css" media="(max-width: 991.98px)" asp-append-version="true">
+  <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     @RenderSection("Styles", required: false)
     @using AIMS.Utilities
 
@@ -27,12 +29,11 @@
      This overrides file forces those styles globally and ensures they stick. -->
     <link rel="stylesheet" href="~/css/index.overrides.css" asp-append-version="true" />
 </head>
-
 <body>
     <header>
         <nav
             class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
-            <div class="container-fluid">
+		<div class="container-fluid px-3">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
                     <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
                         class="d-inline-block align-text-top" asp-append-version="true" />
@@ -118,6 +119,25 @@
             </div>
         </nav>
     </header>
+@* SCRUM-240: Filters toggle + drawer shows only if a page defines @section Filters *@
+@if (IsSectionDefined("Filters"))
+{
+  <div class="aims-container" style="margin-top: .5rem; margin-bottom: .75rem;">
+    <button type="button" class="btn btn-outline-secondary filters-toggle" aria-controls="filtersDrawer" aria-expanded="false">
+      <span aria-hidden="true">☰</span> Filters
+    </button>
+  </div>
+
+  <div id="filtersDrawer" class="filters-drawer" aria-hidden="true">
+    <div class="filters-drawer__panel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <strong>Filters</strong>
+        <button type="button" class="btn btn-sm btn-light" data-close-filters>Close</button>
+      </div>
+      @RenderSection("Filters", required: false)
+    </div>
+  </div>
+}
     <div class="container-fluid">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -184,7 +204,22 @@
         <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
     </div>
 
-
+<script>
+  document.addEventListener('click', function(e){
+    const drawer = document.getElementById('filtersDrawer');
+    if(!drawer) return;
+    if(e.target.closest('.filters-toggle')){
+      const open = drawer.getAttribute('aria-hidden') !== 'false';
+      drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+      e.target.setAttribute('aria-expanded', String(!open));
+    }
+    if(e.target.closest('[data-close-filters]') || e.target === drawer){
+      drawer.setAttribute('aria-hidden','true');
+      const t = document.querySelector('.filters-toggle[aria-expanded="true"]');
+      if(t) t.setAttribute('aria-expanded','false');
+    }
+  });
+</script>
 </body>
 
 </html>

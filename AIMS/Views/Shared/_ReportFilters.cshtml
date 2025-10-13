@@ -1,0 +1,27 @@
+@* Shared filters partial for Reports page (reuse anywhere) *@
+<form method="get" class="stack-sm" autocomplete="off">
+  <div>
+    <label class="form-label">Search</label>
+    <input class="form-control" type="text" name="q" value="@(Context.Request.Query["q"])" />
+  </div>
+  <div>
+    <label class="form-label">From</label>
+    <input class="form-control" type="date" name="from" value="@(Context.Request.Query["from"])" />
+  </div>
+  <div>
+    <label class="form-label">To</label>
+    <input class="form-control" type="date" name="to" value="@(Context.Request.Query["to"])" />
+  </div>
+  <div>
+    <label class="form-label">Type</label>
+    <select class="form-select" name="type">
+      <option value="">Any</option>
+      <option value="Assets">Assets</option>
+      <option value="Assignments">Assignments</option>
+      <option value="Custom">Custom</option>
+    </select>
+  </div>
+  <div class="align-self-end">
+    <button class="btn btn-primary" type="submit">Apply</button>
+  </div>
+</form>
