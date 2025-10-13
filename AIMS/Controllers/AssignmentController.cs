@@ -156,9 +156,10 @@ public class AssignmentController : ControllerBase
     }
 
     [HttpPost("close")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Close([FromQuery] int AssignmentID, CancellationToken ct = default)
+    public async Task<IActionResult> Close(
+        [FromQuery] int AssignmentID,
+        [FromQuery] string? comment = null,
+        CancellationToken ct = default)
     {
         var assignment = await _db.Assignments
             .SingleOrDefaultAsync(a => a.AssignmentID == AssignmentID, ct);
@@ -169,7 +170,6 @@ public class AssignmentController : ControllerBase
         {
             assignment.UnassignedAtUtc = DateTime.UtcNow;
 
-            // free hardware status on close
             if (assignment.AssetKind == AssetKind.Hardware && assignment.HardwareID is int hid)
             {
                 var hw = await _db.HardwareAssets.SingleOrDefaultAsync(h => h.HardwareID == hid, ct);
@@ -179,12 +179,16 @@ public class AssignmentController : ControllerBase
             await _db.SaveChangesAsync(ct);
             CacheStamp.BumpAssets();
 
-            // audit (best-effort)
+            // ---- Audit (now includes optional comment) ----
             try
             {
-                var description = assignment.AssetKind == AssetKind.Hardware
+                var baseDesc = assignment.AssetKind == AssetKind.Hardware
                     ? $"Closed assignment {AssignmentID} for HardwareID {assignment.HardwareID}."
                     : $"Closed assignment {AssignmentID} for SoftwareID {assignment.SoftwareID}.";
+
+                var description = string.IsNullOrWhiteSpace(comment)
+                    ? baseDesc
+                    : $"{baseDesc} Comment: {comment}";
 
                 await _auditQuery.CreateAuditRecordAsync(new CreateAuditRecordDto
                 {
@@ -198,6 +202,7 @@ public class AssignmentController : ControllerBase
             }
             catch { /* ignore */ }
         }
+
         return Ok();
     }
 

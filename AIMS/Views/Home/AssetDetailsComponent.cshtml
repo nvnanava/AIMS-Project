@@ -18,7 +18,6 @@
 <script>
   // Share specs with JS for the popup
   const specsData = @Html.Raw(Json.Serialize(ViewData["SpecsData"]));
-
   // Make the server category available to all functions BEFORE they run.
   const SERVER_CATEGORY = '@(ViewData["Category"] ?? "")';
 </script>
@@ -32,12 +31,13 @@
         <th>Asset Name</th>
         <th>Type</th>
         <th>Tag #</th>
-        <th>Status</th>
+        <th id="status-col-header">Status</th>
         <th>
           <div style="margin-left: auto;">
-          @if (User.IsAdmin()) { // Only show the Add button to admins
-             @await Html.PartialAsync("_AssetButton")
-             }
+            @if (User.IsAdmin())
+            { // Only show the Add button to admins
+              @await Html.PartialAsync("_AssetButton")
+            }
           </div>
         </th>
       </tr>
@@ -77,10 +77,10 @@
 
 <script>
   // --- Safety: only allow known categories to be used in the API call ---
-  const ALLOWED_TYPES = new Set(["monitor","laptop","desktop","software","headset","charging cable"]);
+  const ALLOWED_TYPES = new Set(["monitor", "laptop", "desktop", "software", "headset", "charging cable"]);
   function normalizeCategory(raw) {
     const c = String(raw || "").trim().toLowerCase();
-    const map = { monitors:"monitor", laptops:"laptop", desktops:"desktop", headsets:"headset", softwares:"software" };
+    const map = { monitors: "monitor", laptops: "laptop", desktops: "desktop", headsets: "headset", softwares: "software" };
     return (map[c] || c);
   }
 
@@ -130,6 +130,19 @@
     pager.hidden = (page === 1 && items.length === 0);
   }
 
+  // --------------- Column Header switcher ----------------
+  function setStatusHeaderFor(isSoftware) {
+    const th = document.getElementById('status-col-header');
+    if (!th) return;
+    if (isSoftware) {
+      th.textContent = 'Used / Total Seats';
+      th.title = 'License seats used / total seats';
+    } else {
+      th.textContent = 'Status';
+      th.title = '';
+    }
+  }
+
   // ---------------- Fetch one page (uses look-ahead & caches) ----------------
   async function getPage(category, page, size) {
     // Cache first
@@ -165,6 +178,9 @@
   // ---------------- Category page loader (pager-driven) ----------------
   async function loadCategoryPaged(category, page = 1) {
     try {
+      const isSoftwareCategory = normalizeCategory(category) === 'software';
+      setStatusHeaderFor(isSoftwareCategory);
+
       const { items } = await getPage(category, page, pageSize);
       currentPage = page;
       renderRows(items);
@@ -185,10 +201,14 @@
       if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
       const asset = await res.json();
 
+      // Set header based on the actual asset type when viewing a single item
+      const isSoftware = String(asset.type || '').toLowerCase() === 'software';
+      setStatusHeaderFor(isSoftware);
+
       const currentCategory = getCurrentCategory();
       const assetCategory = (asset.type || "").trim();
       if (assetCategory && currentCategory &&
-          assetCategory.toLowerCase() !== currentCategory.toLowerCase()) {
+        assetCategory.toLowerCase() !== currentCategory.toLowerCase()) {
         if (AUTO_FIX_CATEGORY) {
           redirectToCorrectCategory(assetCategory, asset.tag || tag);
           return;
@@ -226,7 +246,7 @@
   const AUTO_FIX_CATEGORY = true;
   function getCurrentCategory() {
     const urlParams = new URLSearchParams(window.location.search);
-    return (urlParams.get("category") || SERVER_CATEGORY|| "").trim();
+    return (urlParams.get("category") || SERVER_CATEGORY || "").trim();
   }
   function redirectToCorrectCategory(correctCategory, tag) {
     const url = new URL('/Home/AssetDetailsComponent', window.location.origin);
@@ -253,53 +273,84 @@
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
   }
+
+  function statusClassFor(status) {
+    switch (String(status || "").toLowerCase()) {
+      case "available": return "status-available";
+      case "assigned": return "status-assigned";
+      case "marked for survey": return "status-marked-for-survey";
+      case "in repair":
+      case "damaged": return "status-in-repair";
+      default: return "";
+    }
+  }
+
+  // ---------------- Row renderer (seats for software; status for hardware) ----------------
   function renderRow(asset) {
     const tbody = document.getElementById("assetTableBody");
     const row = document.createElement("tr");
     row.onclick = (event) => showPopup(asset.assetName, asset.tag, event);
-    let statusClass = "";
-    switch ((asset.status || "").toLowerCase()) {
-      case "available": statusClass = "status-available"; break;
-      case "assigned": statusClass = "status-assigned"; break;
-      case "marked for survey": statusClass = "status-marked-for-survey"; break;
-      case "in repair": statusClass = "status-in-repair"; break;
-      case "damaged": statusClass = "status-in-repair"; break;
+
+    const isSoftware = String(asset.type || "").toLowerCase() === "software";
+
+    // Build 4th column content:
+    let fourthCellHtml = "";
+    if (isSoftware) {
+      const used = asset.licenseSeatsUsed ?? null;
+      const total = asset.licenseTotalSeats ?? null;
+
+      if (used !== null && total !== null) {
+        const full = total > 0 && used >= total;
+        const seatClass = full ? "status-assigned" : "status-available";
+        fourthCellHtml = `<span class="status-badge ${seatClass}">${used} / ${total}</span>`;
+      } else {
+        // Fallback to status if seats not supplied
+        const sc = statusClassFor(asset.status);
+        fourthCellHtml = `<span class="status-badge ${sc}">${asset.status ?? ""}</span>`;
+      }
+    } else {
+      const sc = statusClassFor(asset.status);
+      fourthCellHtml = `<span class="status-badge ${sc}">${asset.status ?? ""}</span>`;
     }
+
     row.innerHTML = `
-      <td>${asset.assetName}</td>
-      <td>${asset.type}</td>
+      <td>${asset.assetName ?? ""}</td>
+      <td>${asset.type ?? ""}</td>
       <td>
-        <span onclick="showPopup('${asset.assetName}', '${asset.tag}', event)" style="cursor:pointer;">
-          ${asset.tag}
+        <span onclick="showPopup('${escapeHtml(asset.assetName ?? "")}', '${escapeHtml(asset.tag ?? "")}', event)" style="cursor:pointer;">
+          ${asset.tag ?? ""}
         </span>
       </td>
-      <td><span class="status-badge ${statusClass}">${asset.status}</span></td>
+      <td>${fourthCellHtml}</td>
       <td class="actions-cell text end" onclick="event.stopPropagation()">
         @if (User.IsAdmin())
         {
-          <button type="button"
-                  class="action-btn blue-pencil"
-                  aria-label="Edit ${asset.assetName}"
-                  title="Edit asset"
-                  data-bs-toggle="modal"
-                  data-hardware-id="${asset.hardwareID || ''}"
-                  data-software-id="${asset.softwareID || ''}"
-                  data-bs-target="#editAssetModal"
-                  data-name="${asset.assetName}"
-                  data-type="${asset.type}"
-                  data-tag="${asset.tag}"
-                  data-comments="${asset.comment}"
-                  data-status="${asset.status}">
-            <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
-              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
-              <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
-            </svg>
-          </button>
+            <button type="button"
+                    class="action-btn blue-pencil"
+                    aria-label="Edit ${asset.assetName}"
+                    title="Edit asset"
+                    data-bs-toggle="modal"
+                    data-hardware-id="${asset.hardwareID || ''}"
+                    data-software-id="${asset.softwareID || ''}"
+                    data-bs-target="#editAssetModal"
+                    data-name="${asset.assetName}"
+                    data-type="${asset.type}"
+                    data-tag="${asset.tag}"
+                    data-comments="${asset.comment}"
+                    data-status="${asset.status}"
+                    data-seats-used="${asset.licenseSeatsUsed ?? ''}"
+                    data-seats-total="${asset.licenseTotalSeats ?? ''}">
+              <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+                <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
+                <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
+              </svg>
+            </button>
         }
       </td>
     `;
     tbody.appendChild(row);
   }
+
   function showPopup(assetName, tagNumber, event) {
     const popup = document.getElementById("popup");
     const rect = event.target.getBoundingClientRect();
@@ -313,6 +364,7 @@
     popup.setAttribute("aria-hidden", "false");
     event.stopPropagation();
   }
+
   document.addEventListener("click", function (event) {
     const popup = document.getElementById("popup");
     if (popup && popup.style.display === "block" && !popup.contains(event.target)) {
@@ -338,6 +390,8 @@
       return;
     }
     // Otherwise, leave empty
+    // Still set header based on the URL/category if present
+    setStatusHeaderFor(normalizeCategory(category) === 'software');
     clearTable();
     applyEmpty(true);
     pager.hidden = true;
