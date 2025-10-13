@@ -15,5 +15,7 @@ public sealed class AssetRowVm
     public DateTime? AssignedAtUtc { get; set; }
 
     public string? Comment { get; set; }
+    public int? LicenseSeatsUsed { get; set; }
+    public int? LicenseTotalSeats { get; set; }
 }
 

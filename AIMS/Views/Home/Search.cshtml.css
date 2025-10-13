@@ -412,3 +412,47 @@
   color: #34495e;
   font-size: 0.9rem;
 }
+
+/* Person icon button next to assignment */
+.assign-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    margin-left: .5rem;
+    font-size: 1.05rem;
+    /* makes the emoji/icon a bit bigger */
+    line-height: 1;
+}
+
+.assign-btn:focus {
+    outline: 2px solid #005fcc;
+    border-radius: 4px;
+}
+
+/* Assignment cell: keep name + icon on one line and centered */
+.assn-cell {
+    display: inline-flex;
+    /* stay on one line inside the centered <td> */
+    align-items: center;
+    /* vertically center icon with text */
+    gap: 8px;
+    /* spacing between name and icon */
+    justify-content: center;
+    /* keep both centered in the cell */
+}
+
+.assign-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 0;
+    /* avoid pushing it to a new line */
+    vertical-align: middle;
+}
+
+.assign-btn:focus {
+    outline: 2px solid #005fcc;
+    border-radius: 4px;
+}
