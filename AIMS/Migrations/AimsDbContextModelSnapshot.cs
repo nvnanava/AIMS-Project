@@ -18,10 +18,46 @@ namespace AIMS.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("dbo")
-                .HasAnnotation("ProductVersion", "9.0.3")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("AIMS.Models.Agreement", b =>
+                {
+                    b.Property<int>("AgreementID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AgreementID"));
+
+                    b.Property<int>("AssetKind")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateAdded")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileUri")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("HardwareID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SoftwareID")
+                        .HasColumnType("int");
+
+                    b.HasKey("AgreementID");
+
+                    b.HasIndex("HardwareID");
+
+                    b.HasIndex("SoftwareID");
+
+                    b.ToTable("Agreements", "dbo", t =>
+                        {
+                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
+                        });
+                });
 
             modelBuilder.Entity("AIMS.Models.Assignment", b =>
                 {
@@ -34,11 +70,14 @@ namespace AIMS.Migrations
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AssetTag")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("AssignedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("HardwareID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OfficeID")
+                        .HasColumnType("int");
 
                     b.Property<int?>("SoftwareID")
                         .HasColumnType("int");
@@ -46,16 +85,18 @@ namespace AIMS.Migrations
                     b.Property<DateTime?>("UnassignedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserID")
+                    b.Property<int?>("UserID")
                         .HasColumnType("int");
 
                     b.HasKey("AssignmentID");
 
+                    b.HasIndex("OfficeID");
+
                     b.HasIndex("UserID");
 
-                    b.HasIndex("AssetTag", "UnassignedAtUtc")
+                    b.HasIndex("HardwareID", "UnassignedAtUtc")
                         .IsUnique()
-                        .HasFilter("[AssetTag] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
+                        .HasFilter("[HardwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
 
                     b.HasIndex("SoftwareID", "UnassignedAtUtc")
                         .IsUnique()
@@ -63,7 +104,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Assignments", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
+                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -82,8 +123,8 @@ namespace AIMS.Migrations
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AssetTag")
-                        .HasColumnType("int");
+                    b.Property<string>("BlobUri")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -94,10 +135,10 @@ namespace AIMS.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
-                    b.Property<string>("NewValue")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("HardwareID")
+                        .HasColumnType("int");
 
-                    b.Property<string>("PreviousValue")
+                    b.Property<string>("SnapshotJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SoftwareID")
@@ -111,10 +152,10 @@ namespace AIMS.Migrations
 
                     b.HasKey("AuditLogID");
 
-                    b.HasIndex("AssetTag");
-
                     b.HasIndex("ExternalId")
                         .IsUnique();
+
+                    b.HasIndex("HardwareID");
 
                     b.HasIndex("SoftwareID");
 
@@ -122,8 +163,37 @@ namespace AIMS.Migrations
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [AssetTag] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [AssetTag] IS NULL)\n                    )");
+                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
+                });
+
+            modelBuilder.Entity("AIMS.Models.AuditLogChange", b =>
+                {
+                    b.Property<int>("AuditLogChangeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AuditLogChangeID"));
+
+                    b.Property<int>("AuditLogID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("AuditLogChangeID");
+
+                    b.HasIndex("AuditLogID", "Field");
+
+                    b.ToTable("AuditLogChanges", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Hardware", b =>
@@ -136,15 +206,18 @@ namespace AIMS.Migrations
 
                     b.Property<string>("AssetName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("AssetTag")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("AssetType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Comment")
                         .IsRequired()
@@ -152,22 +225,26 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Manufacturer")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<string>("Model")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<DateOnly>("PurchaseDate")
                         .HasColumnType("date");
 
                     b.Property<string>("SerialNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<DateOnly>("WarrantyExpiration")
                         .HasColumnType("date");
@@ -175,9 +252,35 @@ namespace AIMS.Migrations
                     b.HasKey("HardwareID");
 
                     b.HasIndex("SerialNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[SerialNumber] IS NOT NULL");
 
                     b.ToTable("HardwareAssets", "dbo");
+                });
+
+            modelBuilder.Entity("AIMS.Models.Office", b =>
+                {
+                    b.Property<int>("OfficeID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OfficeID"));
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("OfficeName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("OfficeID");
+
+                    b.HasIndex("OfficeName");
+
+                    b.ToTable("Offices", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.Report", b =>
@@ -187,6 +290,10 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
+
+                    b.Property<string>("BlobUri")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
@@ -199,18 +306,30 @@ namespace AIMS.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
+                    b.Property<int?>("GeneratedByOfficeID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("GeneratedByUserID")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("Type")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.HasKey("ReportID");
 
                     b.HasIndex("ExternalId")
                         .IsUnique();
+
+                    b.HasIndex("GeneratedByOfficeID");
+
+                    b.HasIndex("GeneratedByUserID");
 
                     b.ToTable("Reports", "dbo");
                 });
@@ -225,11 +344,13 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("RoleName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.HasKey("RoleID");
 
@@ -248,6 +369,12 @@ namespace AIMS.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("LicenseSeatsUsed")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LicenseTotalSeats")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("SoftwareCost")
                         .HasColumnType("decimal(10,2)");
 
@@ -256,29 +383,57 @@ namespace AIMS.Migrations
 
                     b.Property<string>("SoftwareLicenseKey")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("SoftwareName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("SoftwareType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<long>("SoftwareUsageData")
                         .HasColumnType("bigint");
 
                     b.Property<string>("SoftwareVersion")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.HasKey("SoftwareID");
 
                     b.HasIndex("SoftwareLicenseKey")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[SoftwareLicenseKey] IS NOT NULL");
 
                     b.ToTable("SoftwareAssets", "dbo");
+                });
+
+            modelBuilder.Entity("AIMS.Models.Threshold", b =>
+                {
+                    b.Property<int>("ThresholdID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ThresholdID"));
+
+                    b.Property<string>("AssetType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("ThresholdValue")
+                        .HasColumnType("int");
+
+                    b.HasKey("ThresholdID");
+
+                    b.HasIndex("AssetType");
+
+                    b.ToTable("Thresholds", "dbo");
                 });
 
             modelBuilder.Entity("AIMS.Models.User", b =>
@@ -291,18 +446,21 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("EmployeeNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<Guid>("ExternalId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("GraphObjectID")
                         .HasColumnType("nvarchar(max)");
@@ -328,12 +486,33 @@ namespace AIMS.Migrations
                     b.ToTable("Users", "dbo");
                 });
 
+            modelBuilder.Entity("AIMS.Models.Agreement", b =>
+                {
+                    b.HasOne("AIMS.Models.Hardware", "Hardware")
+                        .WithMany()
+                        .HasForeignKey("HardwareID")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AIMS.Models.Software", "Software")
+                        .WithMany()
+                        .HasForeignKey("SoftwareID")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Hardware");
+
+                    b.Navigation("Software");
+                });
+
             modelBuilder.Entity("AIMS.Models.Assignment", b =>
                 {
                     b.HasOne("AIMS.Models.Hardware", "Hardware")
                         .WithMany()
-                        .HasForeignKey("AssetTag")
+                        .HasForeignKey("HardwareID")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("AIMS.Models.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeID");
 
                     b.HasOne("AIMS.Models.Software", "Software")
                         .WithMany()
@@ -343,10 +522,11 @@ namespace AIMS.Migrations
                     b.HasOne("AIMS.Models.User", "User")
                         .WithMany("Assignments")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Hardware");
+
+                    b.Navigation("Office");
 
                     b.Navigation("Software");
 
@@ -357,7 +537,7 @@ namespace AIMS.Migrations
                 {
                     b.HasOne("AIMS.Models.Hardware", "HardwareAsset")
                         .WithMany()
-                        .HasForeignKey("AssetTag")
+                        .HasForeignKey("HardwareID")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("AIMS.Models.Software", "SoftwareAsset")
@@ -378,6 +558,34 @@ namespace AIMS.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("AIMS.Models.AuditLogChange", b =>
+                {
+                    b.HasOne("AIMS.Models.AuditLog", "AuditLog")
+                        .WithMany("Changes")
+                        .HasForeignKey("AuditLogID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AuditLog");
+                });
+
+            modelBuilder.Entity("AIMS.Models.Report", b =>
+                {
+                    b.HasOne("AIMS.Models.Office", "GeneratedByOffice")
+                        .WithMany()
+                        .HasForeignKey("GeneratedByOfficeID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("AIMS.Models.User", "GeneratedByUser")
+                        .WithMany()
+                        .HasForeignKey("GeneratedByUserID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("GeneratedByOffice");
+
+                    b.Navigation("GeneratedByUser");
+                });
+
             modelBuilder.Entity("AIMS.Models.User", b =>
                 {
                     b.HasOne("AIMS.Models.Role", "Role")
@@ -394,6 +602,11 @@ namespace AIMS.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("Supervisor");
+                });
+
+            modelBuilder.Entity("AIMS.Models.AuditLog", b =>
+                {
+                    b.Navigation("Changes");
                 });
 
             modelBuilder.Entity("AIMS.Models.Role", b =>

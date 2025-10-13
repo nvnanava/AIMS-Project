@@ -1,5 +1,5 @@
 /* Search page client logic
-   - Uses server-rendered window.__CAN_ADMIN__ / window.__IS_SUPERVISOR__ (no whoami fetch)
+   - Uses server-rendered window.__CAN_ADMIN__ / window.__IS_SUPERVISOR__
    - Supervisors auto-load blank (server scopes to self + direct reports)
    - Admin/Helpdesk and others do NOT auto-load on blank
 */
@@ -8,12 +8,24 @@
     const tbody = document.getElementById("table-body");
     const empty = document.getElementById("search-empty");
 
+    // Optional pager DOM (safe if missing)
+    const pager = document.getElementById('search-pager');
+    const btnPrev = document.getElementById('pg-prev');
+    const btnNext = document.getElementById('pg-next');
+    const lblStatus = document.getElementById('pg-status');
+
     // Header filters
     const inputName = document.querySelector('[name="Asset Name"]');
     const selectType = document.querySelector('[name="Type"]');
     const inputTag = document.querySelector('[name="Tag #"]');
     const inputAssn = document.querySelector('[name="Assignment"]');
     const selectStat = document.querySelector('[name="Status"]');
+
+    // ---- Paging state (Search page uses PagedResult<T>) ----
+    let currentPage = 1;
+    let pageSize = 5;               // keep in sync with server default
+    let lastResultMeta = null;      // { total, page, pageSize }
+    let lastQuery = null;           // cached last server query (string or "")
 
     // Scoped CSS attr (safe if none)
     const scopeAttrName = (() => {
@@ -75,11 +87,11 @@
             const tr = document.createElement("tr");
             tr.className = "result";
             if (canDeepLink) {
-                tr.classList.add("row-clickable");     // pointer + hover for admins
+                tr.classList.add("row-clickable");
                 tr.style.cursor = "pointer";
                 tr.title = "View details";
             } else {
-                tr.setAttribute("aria-disabled", "true"); // supervisors: not clickable
+                tr.setAttribute("aria-disabled", "true");
                 tr.style.cursor = "default";
             }
             tr.setAttribute("applied-filters", "0");
@@ -123,7 +135,7 @@
     }
 
     // ---- CLICK HANDLER (delegated) ----
-    let canDeepLink = !!window.__CAN_ADMIN__; // reserved for future UI toggles
+    let canDeepLink = !!window.__CAN_ADMIN__;
     tbody.addEventListener('click', (e) => {
         if (!canDeepLink) return;
         const tr = e.target.closest('tr.result');
@@ -205,35 +217,73 @@
     (async function init() {
         // Supervisors: auto-load blank (server will scope)
         if (window.__IS_SUPERVISOR__) {
-            await fetchInitial("", 1, 25);
+            await fetchInitial("", 1, pageSize);
             applyZebra();
             return;
         }
         // Others: only fetch if there's a query
         if (initialQ.length > 0) {
-            await fetchInitial(initialQ, 1, 25);
+            await fetchInitial(initialQ, 1, pageSize);
         } else {
             clearBody();
             setEmpty(true);
+            if (pager) pager.hidden = true;
             applyZebra();
         }
     })();
 
-    // ---- Fetch ----
-    async function fetchInitial(q, page = 1, pageSize = 25) {
+    // ---- Pager helpers ----
+    function updatePager(items) {
+        if (!pager || !btnPrev || !btnNext || !lblStatus) return;
+
+        const total = lastResultMeta?.total ?? 0;     // exact now
+        const page = lastResultMeta?.page ?? currentPage;
+        const size = lastResultMeta?.pageSize ?? pageSize;
+
+        const totalPages = Math.max(1, Math.ceil(total / size));
+        const hasPrev = page > 1;
+        const hasNext = page < totalPages;
+
+        btnPrev.disabled = !hasPrev;
+        btnNext.disabled = !hasNext;
+        lblStatus.textContent = `Page ${page} of ${totalPages}`;
+
+        pager.hidden = (total === 0);
+    }
+
+    // Hook buttons
+    if (btnPrev) btnPrev.addEventListener('click', () => {
+        if (currentPage > 1) {
+            fetchInitial(lastQuery ?? activeQuery(), currentPage - 1, pageSize);
+        }
+    });
+    if (btnNext) btnNext.addEventListener('click', () => {
+        fetchInitial(lastQuery ?? activeQuery(), currentPage + 1, pageSize);
+    });
+
+    function activeQuery() {
+        const p = new URLSearchParams(window.location.search);
+        return (p.get("searchQuery") || "").trim();
+    }
+
+    // ---- Fetch (kept signature/behavior) ----
+    async function fetchInitial(q, page = 1, pageSizeArg = 25) {
         const isBlank = !q || q.trim() === "";
 
         // Only supervisors may fetch blank
         if (isBlank && !window.__IS_SUPERVISOR__) {
             clearBody();
             setEmpty(true);
+            if (pager) pager.hidden = true;
             return;
         }
+
+        lastQuery = q ?? ""; // remember the last query so Prev/Next reuse it
 
         const url = new URL("/api/assets/search", window.location.origin);
         if (!isBlank) url.searchParams.set("q", q.trim());
         url.searchParams.set("page", String(page));
-        url.searchParams.set("pageSize", String(pageSize));
+        url.searchParams.set("pageSize", String(pageSizeArg));
 
         startLoading();
 
@@ -245,12 +295,32 @@
             await waitForMinimum();
             renderRows(data.items || []);
             if (!data.items || data.items.length === 0) setEmpty(true);
+
+            // keep paging state in sync with server metadata
+            lastResultMeta = {
+                total: typeof data.total === 'number' ? data.total : -1,
+                page: typeof data.page === 'number' ? data.page : page,
+                pageSize: typeof data.pageSize === 'number' ? data.pageSize : pageSizeArg
+            };
+            currentPage = lastResultMeta.page;
+            pageSize = lastResultMeta.pageSize;
+
+            updatePager(data.items || []);
         } catch (e) {
             console.error("Search fetch failed:", e);
             clearBody();
             setEmpty(true);
+            if (pager) pager.hidden = true;
         } finally {
             GlobalSpinner.hide();
         }
     }
+
+    // expose a public refresher for other scripts (assign/unassign) to call
+    window.refreshSearchTable = () => {
+        // reuse the last query if we have it, otherwise read current querystring
+        const q = (lastQuery ?? activeQuery() ?? "").trim();
+        fetchInitial(q, currentPage, pageSize);
+    };
+
 })();

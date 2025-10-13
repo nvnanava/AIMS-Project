@@ -22,6 +22,15 @@
 
 <div class="page-fill">
     <div class="table-container">
+        @if (__CAN_ADMIN__)
+        {
+            <div style="display: flex; justify-content: flex-end; margin: 10px 0 15px 0; padding-right: 10px;">
+                <button type="button" id="assign-asset-button" class="btn btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#assignAssetModal">
+                    <i class="bi bi-person-plus"></i> Assign Asset
+                </button>
+            </div>
+        }
         <!-- Sticky table header -->
         <table class="asset-table-header">
             <thead>
@@ -89,6 +98,11 @@
     </div>
 </div>
 
+@* Include the modal markup *@
+@await Html.PartialAsync("_AssignAssetModal")
+
 @section Scripts {
     <script src="~/js/search.page.js" asp-append-version="true"></script>
+    <script src="~/js/assignAssetModal.js" asp-append-version="true"></script>
+
 }

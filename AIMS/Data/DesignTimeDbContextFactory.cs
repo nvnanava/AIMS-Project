@@ -1,58 +1,85 @@
+using System;
 using System.IO;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
 namespace AIMS.Data
 {
-
-    /*
-        Lets 'dotnet ef' create AimsDbContext without booting the whole app.
-        We choose the right connection string based on environment and whether
-        we’re running inside a container.
-    */
-    public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AimsDbContext>
+    public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AimsDbContext>
     {
         public AimsDbContext CreateDbContext(string[] args)
         {
-            // Make sure we point at the AIMS project folder even when running from solution root.
-            var basePath = Directory.GetCurrentDirectory();
-            var aimsPath = Path.Combine(basePath, "AIMS");
-            if (File.Exists(Path.Combine(aimsPath, "appsettings.json")))
-                basePath = aimsPath; // use AIMS/ if present
+            // Detect OS
+            bool isWindows = OperatingSystem.IsWindows();
+            bool isContainer = File.Exists("/.dockerenv");
 
-            var env = System.Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Development";
+            // Find the project folder that has appsettings.json
+            var cwd = Directory.GetCurrentDirectory();
+            var aimsPath = Directory.Exists(Path.Combine(cwd, "AIMS")) ? Path.Combine(cwd, "AIMS") : cwd;
+            var settingsRoot = File.Exists(Path.Combine(aimsPath, "appsettings.json")) ? aimsPath : cwd;
 
+            // Env (ASPNETCORE_ENVIRONMENT has priority, fallback to DOTNET_ENVIRONMENT, default Development)
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                      ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                      ?? "Development";
+
+            // Build config
             var cfg = new ConfigurationBuilder()
-                .SetBasePath(basePath)
+                .SetBasePath(settingsRoot)
                 .AddJsonFile("appsettings.json", optional: true)
                 .AddJsonFile($"appsettings.{env}.json", optional: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables() // supports ConnectionStrings__Name
                 .Build();
 
-            // Prefer docker in container, otherwise pick what exists
-            var isContainer = File.Exists("/.dockerenv");
-            string? cs =
-                (isContainer ? cfg.GetConnectionString("DockerConnection") : null)
-                ?? cfg.GetConnectionString("DockerConnection")
-                ?? cfg.GetConnectionString("DefaultConnection")
-                ?? cfg.GetConnectionString("CliConnection")
-                ?? System.Environment.GetEnvironmentVariable("ConnectionStrings__DockerConnection")
-                ?? System.Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-                ?? System.Environment.GetEnvironmentVariable("ConnectionStrings__CliConnection");
+            // 1) CLI override: dotnet ef ... --connection "<CS>"
+            string? cliConn = null;
+            for (int i = 0; i < args.Length - 1; i++)
+                if (string.Equals(args[i], "--connection", StringComparison.OrdinalIgnoreCase))
+                    cliConn = args[i + 1];
 
-            if (string.IsNullOrWhiteSpace(cs))
+            // 2) Env overrides (great for mac devs)
+            string? envConn =
+                   Environment.GetEnvironmentVariable("ConnectionStrings__Override")
+                ?? Environment.GetEnvironmentVariable("ConnectionStrings__CliConnection")
+                ?? Environment.GetEnvironmentVariable("ConnectionStrings__DockerConnection")
+                ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+                ?? Environment.GetEnvironmentVariable("ConnectionStrings__LocalConnection");
+
+            // 3) Config (JSON) options
+            string? jsonCompose = cfg.GetConnectionString("ComposeConnection");
+            string? jsonDocker = cfg.GetConnectionString("DockerConnection");
+            string? jsonLocal = cfg.GetConnectionString("LocalConnection");
+            string? jsonDefault = cfg.GetConnectionString("DefaultConnection");
+            string? jsonCli = cfg.GetConnectionString("CliConnection");
+
+            // Choose by OS/container with sensible priority
+            // Order of preference:
+            //   CLI > Env Override > Compose (if in container) > Docker (non-Windows) > LocalDB (Windows) > Default > Cli
+            string? chosen =
+                   cliConn
+                ?? envConn
+                ?? (isContainer ? jsonCompose : null)
+                ?? (!isWindows ? jsonDocker : null)
+                ?? (isWindows ? jsonLocal : null)
+                ?? jsonDefault
+                ?? jsonCli;
+
+            if (string.IsNullOrWhiteSpace(chosen))
             {
                 throw new InvalidOperationException(
-                    "DesignTimeDbContextFactory could not find a connection string. " +
-                    "Looked for ConnectionStrings: DockerConnection, DefaultConnection, CliConnection " +
-                    "in appsettings(.Development).json under the AIMS project folder, and in environment variables " +
-                    "(ConnectionStrings__*). Set one (e.g., export ConnectionStrings__DockerConnection=...) and retry."
+                    "No SQL connection string was resolved for design-time AimsDbContext.\n" +
+                    "Supply one via:\n" +
+                    "  1) CLI:   dotnet ef database update --connection \"Server=localhost,1433;Database=AIMS;User Id=sa;Password=...;TrustServerCertificate=True;\"\n" +
+                    "  2) ENV:   export ConnectionStrings__Override=\"<connection-string>\"\n" +
+                    "  3) JSON:  appsettings.Development.json -> ConnectionStrings.DockerConnection / LocalConnection / DefaultConnection\n"
                 );
             }
 
             var options = new DbContextOptionsBuilder<AimsDbContext>()
-                .UseSqlServer(cs)
+                .UseSqlServer(chosen)
+                .EnableSensitiveDataLogging()
                 .Options;
 
             return new AimsDbContext(options);

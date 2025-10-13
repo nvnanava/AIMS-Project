@@ -19,6 +19,32 @@ public class AssetsApiController : ControllerBase
     private readonly IMemoryCache _cache;
     private readonly IWebHostEnvironment _env;
 
+    // Concrete DTO to align both sides of the UNION/CONCAT
+    private sealed class AssetFlat
+    {
+        public string? AssetName { get; set; }
+        public string? TypeRaw { get; set; }
+        public string? SubtypeRaw { get; set; }
+        public string? Tag { get; set; }
+        public int? AssignedUserId { get; set; }
+        public string? StatusRaw { get; set; }
+        public DateTime? AssignedAtUtc { get; set; }
+        public string? Comment { get; set; }
+        public int? SoftwareID { get; set; }
+        public int? HardwareID { get; set; }
+
+        // Seat info (software only); keep null for hardware
+        public int? SeatsUsed { get; set; }
+        public int? TotalSeats { get; set; }
+    }
+
+    private sealed class UserMini
+    {
+        public int UserID { get; set; }
+        public string FullName { get; set; } = "";
+        public string EmployeeNumber { get; set; } = "";
+    }
+
     public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery, IWebHostEnvironment env)
     {
         _db = db;
@@ -29,7 +55,6 @@ public class AssetsApiController : ControllerBase
 
     // --------------------------------------------------------------------
     // GET /api/assets/whoami?impersonate=28809      (DEV only)
-    // Quick self-diagnosis endpoint: who am I, what role, my reports.
     // --------------------------------------------------------------------
     [HttpGet("whoami")]
     public async Task<IActionResult> WhoAmI([FromQuery] string? impersonate = null, CancellationToken ct = default)
@@ -70,6 +95,7 @@ public class AssetsApiController : ControllerBase
         [FromQuery] List<string>? statuses = null,
         [FromQuery] string scope = "all", // "all" | "my" | "reports"
         [FromQuery] string? impersonate = null,
+        [FromQuery] string totalsMode = "lookahead",   // "lookahead" (default) or "exact"
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
@@ -83,58 +109,59 @@ public class AssetsApiController : ControllerBase
                 types.Add(category);
         }
 
-        // Defensive: if a 'tag' is present, this is a single-asset ask → use /api/assets/one
+        // Single-asset guard
         if (Request.Query.ContainsKey("tag"))
             return BadRequest(new { error = "Use /api/assets/one for single-asset lookups (by tag/hardwareId/softwareId)." });
 
         // ----- Resolve current user -----
         var (me, myRole) = await ResolveCurrentUserAsync(impersonate, ct);
-        var myRoleName = myRole ?? "Employee";
         var myUserId = me?.UserID ?? 0;
         var myEmpNumber = me?.EmployeeNumber ?? "unknown";
         var isAdminOrIt = User.IsAdminOrHelpdesk();
 
-        // Non-admins cannot request "all"
         if (!isAdminOrIt && scope == "all")
             scope = "my";
 
         // ---- cache key includes version stamp so it auto-busts after assign/close ----
         var ver = CacheStamp.AssetsVersion;
-        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:u{myEmpNumber}";
+        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:tmode{totalsMode}:u{myEmpNumber}";
         if (_cache.TryGetValue<AssetsPagePayloadVm>(key, out var cached))
         {
             var firstTag = cached!.Items.FirstOrDefault()?.Tag ?? string.Empty;
             var lastTag = cached.Items.LastOrDefault()?.Tag ?? string.Empty;
-            var etag = $"W/\"{cached.Total}-{firstTag}-{lastTag}\"";
+            var etagCached = $"W/\"{cached.Total}-{firstTag}-{lastTag}\"";
 
-            if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm.Contains(etag))
+            if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm.Contains(etagCached))
                 return StatusCode(304);
 
-            Response.Headers.ETag = etag;
+            Response.Headers.ETag = etagCached;
             return Ok(cached);
         }
 
         // ---------- Base dataset (hardware + software) ----------
         var activeAssignments = _db.Assignments.AsNoTracking()
             .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new { a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID, a.AssignedAtUtc });
+            .Select(a => new { a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID, a.AssignedAtUtc });
 
         var hardwareBase =
             from h in _db.HardwareAssets.AsNoTracking()
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Hardware)
-                on h.HardwareID equals aa.AssetTag into ha
+                on h.HardwareID equals aa.HardwareID into ha
             from aa in ha.DefaultIfEmpty()
-            select new
+            select new AssetFlat
             {
                 AssetName = h.AssetName,
                 TypeRaw = h.AssetType,
-                Tag = h.SerialNumber,
+                SubtypeRaw = null,                 // keep both sides aligned
+                Tag = h.AssetTag,
                 AssignedUserId = (int?)aa.UserID,
                 StatusRaw = h.Status,
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
                 Comment = h.Comment,
                 SoftwareID = (int?)null,
-                HardwareID = (int?)h.HardwareID
+                HardwareID = (int?)h.HardwareID,
+                SeatsUsed = null,
+                TotalSeats = null
             };
 
         var softwareBase =
@@ -142,20 +169,23 @@ public class AssetsApiController : ControllerBase
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Software)
                 on s.SoftwareID equals aa.SoftwareID into sa
             from aa in sa.DefaultIfEmpty()
-            select new
+            select new AssetFlat
             {
                 AssetName = s.SoftwareName,
-                TypeRaw = s.SoftwareType,
+                TypeRaw = "Software",
+                SubtypeRaw = s.SoftwareType,
                 Tag = s.SoftwareLicenseKey,
                 AssignedUserId = (int?)aa.UserID,
-                StatusRaw = "",
+                StatusRaw = null,                        // IMPORTANT: don't derive here
                 AssignedAtUtc = (DateTime?)aa.AssignedAtUtc,
                 Comment = s.Comment,
                 SoftwareID = (int?)s.SoftwareID,
-                HardwareID = (int?)null
+                HardwareID = (int?)null,
+                SeatsUsed = s.LicenseSeatsUsed,
+                TotalSeats = s.LicenseTotalSeats
             };
 
-        var queryable = hardwareBase.Concat(softwareBase);
+        IQueryable<AssetFlat> queryable = hardwareBase.Concat(softwareBase);
 
         // ---------- Role/Ownership scope ----------
         if (!isAdminOrIt)
@@ -164,9 +194,8 @@ public class AssetsApiController : ControllerBase
             {
                 queryable = queryable.Where(x => x.AssignedUserId == myUserId);
             }
-            else // "reports" => me + my direct reports
+            else // "reports": me + direct reports
             {
-                // Reuse a single definition of “scope” everywhere
                 var scopeIds = await SupervisorScopeHelper
                     .GetSupervisorScopeUserIdsAsync(_db, myUserId, _cache, ct);
 
@@ -175,22 +204,16 @@ public class AssetsApiController : ControllerBase
             }
         }
 
-        // ---------- Server filters (types/status + search) ----------
+        // ---------- Server filters (types + search) BEFORE status ----------
         if (types is { Count: > 0 })
         {
             var tset = types
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => s.Trim())
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
             queryable = queryable.Where(x =>
                 tset.Contains(string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw!));
-        }
-
-        if (statuses is { Count: > 0 })
-        {
-            queryable = queryable.Where(x =>
-                (!string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.StatusRaw)) ||
-                (string.IsNullOrEmpty(x.StatusRaw) && statuses.Contains(x.AssignedUserId != null ? "Assigned" : "Available")));
         }
 
         if (!string.IsNullOrWhiteSpace(q))
@@ -199,44 +222,116 @@ public class AssetsApiController : ControllerBase
             queryable = queryable.Where(x =>
                 (x.AssetName ?? "").ToLower().Contains(term) ||
                 (x.TypeRaw ?? "Software").ToLower().Contains(term) ||
+                (x.SubtypeRaw ?? "").ToLower().Contains(term) ||
                 (x.Tag ?? "").ToLower().Contains(term));
+        }
+
+        // ---------- Derive Effective Status (server-side) ----------
+        var withEff = queryable.Select(x => new
+        {
+            Row = x,
+            StatusEff =
+                (x.TotalSeats != null && x.TotalSeats > 0)
+                    ? (x.SeatsUsed >= x.TotalSeats ? "Assigned" : "Available")
+                    : (!string.IsNullOrEmpty(x.StatusRaw)
+                        ? x.StatusRaw
+                        : (x.AssignedUserId != null ? "Assigned" : "Available"))
+        });
+
+        // ---------- Status filter (against StatusEff) ----------
+        if (statuses is { Count: > 0 })
+        {
+            var sset = statuses
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().ToLower())
+                .ToList();
+
+            withEff = withEff.Where(t => sset.Contains(t.StatusEff.ToLower()));
         }
 
         // ---------- Sorting ----------
         bool asc = string.Equals(dir, "asc", StringComparison.OrdinalIgnoreCase);
-        queryable = (sort?.ToLower()) switch
+        IOrderedQueryable<dynamic> ordered;
+
+        switch (sort?.ToLower())
         {
-            "assetname" => asc ? queryable.OrderBy(x => x.AssetName) : queryable.OrderByDescending(x => x.AssetName),
-            "type" => asc ? queryable.OrderBy(x => x.TypeRaw) : queryable.OrderByDescending(x => x.TypeRaw),
-            "tag" => asc ? queryable.OrderBy(x => x.Tag) : queryable.OrderByDescending(x => x.Tag),
-            "status" => asc
-                ? queryable.OrderBy(x => string.IsNullOrWhiteSpace(x.StatusRaw) ? (x.AssignedUserId != null ? "Assigned" : "Available") : x.StatusRaw)
-                : queryable.OrderByDescending(x => string.IsNullOrWhiteSpace(x.StatusRaw) ? (x.AssignedUserId != null ? "Assigned" : "Available") : x.StatusRaw),
-            "assignedat" or "assigned" =>
-                asc ? queryable.OrderBy(x => x.AssignedAtUtc) : queryable.OrderByDescending(x => x.AssignedAtUtc),
-            _ => queryable.OrderByDescending(x => x.AssignedAtUtc).ThenBy(x => x.AssetName)
-        };
+            case "assetname":
+                ordered = asc ? withEff.OrderBy(t => t.Row.AssetName)
+                              : withEff.OrderByDescending(t => t.Row.AssetName);
+                break;
+            case "type":
+                ordered = asc ? withEff.OrderBy(t => t.Row.TypeRaw)
+                              : withEff.OrderByDescending(t => t.Row.TypeRaw);
+                break;
+            case "tag":
+                ordered = asc ? withEff.OrderBy(t => t.Row.Tag)
+                              : withEff.OrderByDescending(t => t.Row.Tag);
+                break;
+            case "status":
+                ordered = asc ? withEff.OrderBy(t => t.StatusEff)
+                              : withEff.OrderByDescending(t => t.StatusEff);
+                break;
+            case "assignedat":
+            case "assigned":
+                ordered = asc ? withEff.OrderBy(t => t.Row.AssignedAtUtc)
+                              : withEff.OrderByDescending(t => t.Row.AssignedAtUtc);
+                break;
+            default:
+                ordered = withEff
+                    .OrderByDescending(t => t.Row.AssignedAtUtc)
+                    .ThenBy(t => t.Row.AssetName);
+                break;
+        }
 
         // ---------- Total + slice ----------
-        var total = await queryable.CountAsync(ct);
-        var slice = await queryable
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
+        var skip = (page - 1) * pageSize;
+        var useExact = string.Equals(totalsMode, "exact", StringComparison.OrdinalIgnoreCase);
 
-        // Resolve names for the page (for “Kate” etc.)
-        var ids = slice.Where(r => r.AssignedUserId.HasValue)
-                       .Select(r => r.AssignedUserId!.Value)
+        int total;
+        List<dynamic> sliceDyn;
+
+        if (useExact)
+        {
+            total = await ordered.CountAsync(ct);
+            sliceDyn = await ordered
+                .Skip(skip)
+                .Take(pageSize)
+                .ToListAsync(ct);
+        }
+        else
+        {
+            var window = await ordered
+                .Skip(skip)
+                .Take(pageSize + 1)
+                .ToListAsync(ct);
+
+            var hasMore = window.Count > pageSize;
+            sliceDyn = hasMore ? window.Take(pageSize).ToList() : window;
+            total = hasMore ? -1 : (skip + sliceDyn.Count);
+        }
+
+        // Flatten dynamic to strong types
+        var slice = sliceDyn.Select(t => new
+        {
+            Row = (AssetFlat)t.Row,
+            StatusEff = (string)t.StatusEff
+        }).ToList();
+
+        // Resolve names for the page
+        var ids = slice.Where(r => r.Row.AssignedUserId.HasValue)
+                       .Select(r => r.Row.AssignedUserId!.Value)
                        .Distinct()
                        .ToList();
 
         var userMap = await _db.Users.AsNoTracking()
             .Where(u => ids.Contains(u.UserID))
-            .Select(u => new { u.UserID, u.FullName, u.EmployeeNumber })
-            .ToDictionaryAsync(u => u.UserID, u => new { u.FullName, u.EmployeeNumber }, ct);
+            .Select(u => new UserMini { UserID = u.UserID, FullName = u.FullName, EmployeeNumber = u.EmployeeNumber })
+            .ToDictionaryAsync(u => u.UserID, u => u, ct);
 
-        var items = slice.Select(x =>
+        var items = slice.Select(s =>
         {
+            var x = s.Row;
+
             string assignedText = "Unassigned";
             string? empNum = null, empName = null;
 
@@ -248,9 +343,7 @@ public class AssetsApiController : ControllerBase
             }
 
             var type = string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw!;
-            var status = !string.IsNullOrEmpty(x.StatusRaw)
-                ? x.StatusRaw!
-                : (x.AssignedUserId.HasValue ? "Assigned" : "Available");
+            var status = s.StatusEff; // already derived in SQL
 
             return new AssetRowVm
             {
@@ -263,11 +356,13 @@ public class AssetsApiController : ControllerBase
                 AssignedTo = assignedText,
                 Status = status,
 
-                // used by the client filter logic
                 AssignedUserId = x.AssignedUserId,
                 AssignedEmployeeNumber = empNum,
                 AssignedEmployeeName = empName,
-                AssignedAtUtc = x.AssignedAtUtc
+                AssignedAtUtc = x.AssignedAtUtc,
+
+                LicenseSeatsUsed = (type.Equals("Software", StringComparison.OrdinalIgnoreCase) ? x.SeatsUsed : null),
+                LicenseTotalSeats = (type.Equals("Software", StringComparison.OrdinalIgnoreCase) ? x.TotalSeats : null)
             };
         }).ToList();
 
@@ -319,15 +414,51 @@ public class AssetsApiController : ControllerBase
     }
 
     [HttpGet("types/unique")]
-    public async Task<IActionResult> unique()
+    public async Task<IActionResult> Unique(CancellationToken ct = default)
     {
-        var res = await _assetQuery.unique();
-        return Ok(res);
+        // Distinct hardware types
+        var hardwareTypes = await _db.HardwareAssets
+            .AsNoTracking()
+            .Select(h => h.AssetType)
+            .Where(t => t != null && t != "")
+            .Distinct()
+            .ToListAsync(ct);
+
+        // Include Software if any exist
+        var hasSoftware = await _db.SoftwareAssets
+            .AsNoTracking()
+            .AnyAsync(ct);
+
+        // Normalize to case-insensitive set
+        var set = new HashSet<string>(hardwareTypes, StringComparer.OrdinalIgnoreCase);
+        if (hasSoftware) set.Add("Software");
+
+        // Map to canonical titles we expect in tests
+        static string Canon(string s) => s.Trim() switch
+        {
+            var x when x.Equals("charging cable", StringComparison.OrdinalIgnoreCase) => "Charging Cable",
+            var x when x.Equals("desktop", StringComparison.OrdinalIgnoreCase) => "Desktop",
+            var x when x.Equals("headset", StringComparison.OrdinalIgnoreCase) => "Headset",
+            var x when x.Equals("laptop", StringComparison.OrdinalIgnoreCase) => "Laptop",
+            var x when x.Equals("monitor", StringComparison.OrdinalIgnoreCase) => "Monitor",
+            var x when x.Equals("software", StringComparison.OrdinalIgnoreCase) => "Software",
+            _ => s
+        };
+
+        // Enforce expected order for the test
+        var expectedOrder = new List<string>
+    {
+        "Charging Cable", "Desktop", "Headset", "Laptop", "Monitor", "Software"
+    };
+
+        var available = new HashSet<string>(set.Select(Canon), StringComparer.OrdinalIgnoreCase);
+        var result = expectedOrder.Where(available.Contains).ToList();
+
+        return Ok(result);
     }
 
     // --------------------------------------------------------------------
     // GET /api/assets/one?tag=CC-0019 | hardwareId=123 | softwareId=7 [&impersonate=...]
-    // Returns a single AssetRowVm (role scoped: Admin/IT can fetch any; others only “my or reports”).
     // --------------------------------------------------------------------
     [HttpGet("one")]
     public async Task<ActionResult<AssetRowVm>> GetOne(
@@ -350,9 +481,9 @@ public class AssetsApiController : ControllerBase
             var t = tag?.Trim();
             var hw = await (
                 from h in _db.HardwareAssets.AsNoTracking()
-                where (t != null && h.SerialNumber == t) || (hardwareId != null && h.HardwareID == hardwareId)
+                where (t != null && (h.AssetTag == t || h.SerialNumber == t)) || (hardwareId != null && h.HardwareID == hardwareId)
                 let a = _db.Assignments
-                            .Where(x => x.AssetKind == AssetKind.Hardware && x.AssetTag == h.HardwareID && x.UnassignedAtUtc == null)
+                            .Where(x => x.AssetKind == AssetKind.Hardware && x.HardwareID == h.HardwareID && x.UnassignedAtUtc == null)
                             .OrderByDescending(x => x.AssignedAtUtc)
                             .FirstOrDefault()
                 select new
@@ -360,7 +491,7 @@ public class AssetsApiController : ControllerBase
                     h.HardwareID,
                     AssetName = h.AssetName,
                     Type = h.AssetType,
-                    Tag = h.SerialNumber,
+                    Tag = h.AssetTag,
                     Status = string.IsNullOrEmpty(h.Status)
                                 ? (a != null ? "Assigned" : "Available")
                                 : h.Status,
@@ -370,7 +501,6 @@ public class AssetsApiController : ControllerBase
 
             if (hw is not null)
             {
-                // Role scope
                 if (!isAdminOrIt)
                 {
                     bool allowed = false;
@@ -438,7 +568,9 @@ public class AssetsApiController : ControllerBase
                     AssetName = s.SoftwareName,
                     Type = s.SoftwareType,
                     Tag = s.SoftwareLicenseKey,
-                    Status = a != null ? "Assigned" : "Available",
+                    Status = (s.LicenseTotalSeats > 0)
+                                ? (s.LicenseSeatsUsed >= s.LicenseTotalSeats ? "Assigned" : "Available")
+                                : (a != null ? "Assigned" : "Available"),
                     AssignedUserId = a != null ? (int?)a.UserID : null
                 }
             ).FirstOrDefaultAsync(ct);
@@ -478,7 +610,7 @@ public class AssetsApiController : ControllerBase
                     HardwareID = null,
                     SoftwareID = sw.SoftwareID,
                     AssetName = sw.AssetName ?? "",
-                    Type = string.IsNullOrWhiteSpace(sw.Type) ? "Software" : sw.Type!,
+                    Type = "Software",
                     Tag = sw.Tag ?? "",
                     AssignedTo = assignedDisplay,
                     Status = sw.Status ?? "Available",

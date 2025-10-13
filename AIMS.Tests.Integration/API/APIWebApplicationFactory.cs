@@ -1,13 +1,19 @@
+using System.Linq;
 using AIMS.Data;
 using AIMS.Tests.Integration;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
 public class APIWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint>, IAsyncLifetime
@@ -24,9 +30,27 @@ public class APIWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntr
     }
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseEnvironment("Development");
+
+        builder.ConfigureAppConfiguration((context, conf) =>
+        {
+            conf.Sources.Clear();
+            conf.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), optional: true);
+            conf.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:DefaultConnection"] = _harness?.ConnectionString
+            });
+        });
+
+
         // service replacements go here. This is called before the host is built.
         builder.ConfigureServices(services =>
         {
+            // Remove the app's real OIDC registration so it never validates ClientId/etc.
+            services.RemoveAll<IConfigureOptions<OpenIdConnectOptions>>();
+            services.RemoveAll<IPostConfigureOptions<OpenIdConnectOptions>>();
+            services.RemoveAll<IValidateOptions<OpenIdConnectOptions>>();
+
             // Replace production DbContext with a test version
             var dbContextDescriptor = services.SingleOrDefault(d =>
                 d.ServiceType == typeof(DbContextOptions<AimsDbContext>));
@@ -40,6 +64,33 @@ public class APIWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntr
             {
                 options.UseSqlServer(_harness?.ConnectionString);
             });
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
+                options.DefaultChallengeScheme = TestAuthHandler.Scheme;
+                options.DefaultScheme = TestAuthHandler.Scheme;
+            })
+            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, _ => { });
+
+            services.AddAuthorization();
+
+            // Make OIDC inert so validation won't throw if it's ever resolved
+            services.PostConfigureAll<OpenIdConnectOptions>(o =>
+            {
+                // Required fields so Validate() passes
+                o.ClientId ??= "test-client";
+                o.Authority ??= "https://login.microsoftonline.com/common";
+                o.CallbackPath = "/signin-oidc";
+                o.TokenValidationParameters ??= new TokenValidationParameters();
+
+                // Make it as no-op as possible
+                o.DisableTelemetry = true;
+                o.SaveTokens = false;
+                // (optional) If something challenges explicitly with OIDC, map sign-in to our test scheme
+                o.SignInScheme ??= TestAuthHandler.Scheme;
+            });
+
         });
     }
 

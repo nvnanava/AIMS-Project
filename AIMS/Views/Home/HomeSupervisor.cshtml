@@ -1,6 +1,7 @@
 @using System.Text.Json;
-@model AIMS.Controllers.HomeIndexViewModel
 @using AIMS.Utilities;
+@using AIMS.ViewModels
+@model object
 
 @{
     ViewData["Title"] = "Home Page";
@@ -19,7 +20,7 @@
 
 <!-- Welcome Message (shown for Supervisor view) -->
 <section class="welcome-section">
-<h1 class="welcome-title">Hello, @User.Identity.Name!</h1>
+<h1 class="welcome-title">Hello, @(User?.Identity?.Name)!</h1>
 <h2 class="welcome-subtitle">Here are your assets and reports.</h2>
 </section>
 
@@ -132,7 +133,7 @@
         { *@
             <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
 
-                @if (User.IsAdmin())
+                @if (User != null && User.IsAdmin())
                 {
                 <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
                     data-bs-target="#assignAssetModal">

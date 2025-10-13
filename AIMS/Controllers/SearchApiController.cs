@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using AIMS.Data;
 using AIMS.Queries;
 using AIMS.Utilities; // IsSupervisor()
@@ -22,7 +21,7 @@ public sealed class SearchApiController : ControllerBase
         _env = env;
     }
 
-    // GET /api/assets/search?q=&type=&status=&page=&pageSize=&impersonate=28809   (impersonate is DEV-only helper)
+    // GET /api/assets/search?q=&type=&status=&page=&pageSize=&impersonate=...
     [HttpGet("/api/assets/search")]
     public async Task<ActionResult<PagedResult<AssetRowVm>>> Get(
         [FromQuery] string? q,
@@ -32,12 +31,13 @@ public sealed class SearchApiController : ControllerBase
         [FromQuery] int pageSize = 25,
         [FromQuery] string? impersonate = null)
     {
-        // ----- DEV impersonation support -----
+        // DEV impersonation support
         if (!string.IsNullOrWhiteSpace(impersonate) && _env.IsDevelopment())
         {
             var key = impersonate.Trim();
             var impUser = await _db.Users.AsNoTracking()
                 .FirstOrDefaultAsync(u => u.EmployeeNumber == key || u.Email == key);
+
             if (impUser is not null)
             {
                 HttpContext.Items["ImpersonatedUserId"] = impUser.UserID;
@@ -45,17 +45,14 @@ public sealed class SearchApiController : ControllerBase
             }
         }
 
-        // ----- If ALL filters are blank: only allow auto-load for Supervisors -----
+        // If ALL filters are blank: only allow auto-load for Supervisors
         var isBlank = string.IsNullOrWhiteSpace(q)
                       && string.IsNullOrWhiteSpace(type)
                       && string.IsNullOrWhiteSpace(status);
 
         if (isBlank)
         {
-            // Ask the query helper to resolve the DB role
             var (_, roleName) = await _search.ResolveCurrentUserAsync(HttpContext.RequestAborted);
-
-            // Only DB "Supervisor" gets auto-load on blank; everyone else (including Admin/Helpdesk) = empty
             if (!string.Equals(roleName, "Supervisor", StringComparison.OrdinalIgnoreCase))
                 return Ok(PagedResult<AssetRowVm>.Empty());
         }
@@ -63,7 +60,9 @@ public sealed class SearchApiController : ControllerBase
         var result = await _search.SearchAsync(
             q: q, type: type, status: status,
             page: page, pageSize: pageSize,
-            ct: HttpContext.RequestAborted);
+            ct: HttpContext.RequestAborted,
+            category: null,
+            totalsMode: PagingTotals.Exact);       // <— SEARCH = EXACT TOTALS
 
         return Ok(result);
     }

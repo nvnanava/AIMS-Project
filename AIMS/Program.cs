@@ -1,14 +1,14 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using AIMS.Data;
 using AIMS.Queries;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;   // for UseForwardedHeaders
 using Microsoft.AspNetCore.Mvc.Filters;
-// ★ NEW usings (for route constraint + policies)
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +18,6 @@ using Microsoft.Identity.Web.UI;
 var builder = WebApplication.CreateBuilder(args);
 
 // -------------------- Services --------------------
-builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();   // dev/test
 builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
@@ -30,6 +29,14 @@ builder.Services.Configure<RouteOptions>(o =>
 {
     o.ConstraintMap["allowedAssetType"] = typeof(AIMS.Routing.AllowedAssetTypeConstraint);
 });
+
+builder.Services
+    .AddControllersWithViews()
+    .AddJsonOptions(o =>
+    {
+        // keep enums as strings (nice for APIs)
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
 builder.Services.AddAuthorization(options =>

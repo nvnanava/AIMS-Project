@@ -1,4 +1,6 @@
+using System;
 using System.Data;
+using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -35,17 +37,14 @@ public sealed class DbTestHarness : IAsyncLifetime
         // Start each test class from a known-clean state
         await ResetDatabaseAsync();
 
-        // Optional: seed minimal baseline data needed by tests
+        // Seed minimal baseline data needed by tests
         await SeedBaselineAsync();
     }
 
     public async Task DisposeAsync()
     {
-        // Clean up after the test class finishes (keeps DB tidy across runs)
         if (AutoDelete)
-        {
             await ResetDatabaseAsync();
-        }
     }
 
     private async Task ResetDatabaseAsync()
@@ -67,6 +66,16 @@ public sealed class DbTestHarness : IAsyncLifetime
         await tx.CommitAsync();
     }
 
+    private static string NewSerial() =>
+        $"SN-{Guid.NewGuid():N}".Substring(0, 18);
+
+    private static string NewTag(string prefix = "TST") =>
+        // keep within VARCHAR(16)
+        $"{prefix}-{Guid.NewGuid():N}".Substring(0, 16).ToUpperInvariant();
+
+    private static string NewSwKey() =>
+        $"KEY-{Guid.NewGuid():N}".ToUpperInvariant();
+
     private async Task SeedBaselineAsync()
     {
         using var con = new SqlConnection(ConnectionString);
@@ -76,9 +85,44 @@ public sealed class DbTestHarness : IAsyncLifetime
         // Minimal roles so tests can create Users (RoleID is NOT NULL)
         await con.ExecuteAsync(@"
             INSERT INTO Roles (RoleName, Description) VALUES
-                (N'Employee', N'Default employee role'),
-                (N'Admin',    N'Administrator role');
+            (N'Employee', N'Default employee role'),
+            (N'Admin',    N'Administrator role');
         ", transaction: tx);
+
+        // Seed baseline hardware rows — include AssetTag (NOT NULL)
+        var types = new[] { "Charging Cable", "Desktop", "Headset", "Laptop", "Monitor" };
+        foreach (var t in types)
+        {
+            await con.ExecuteAsync(@"
+                INSERT INTO HardwareAssets
+                (AssetName, AssetType, AssetTag, Status, Manufacturer, Model, SerialNumber, WarrantyExpiration, PurchaseDate, Comment)
+                VALUES
+                (@name, @type, @tag, 'Available', 'Brand', 'ModelX', @sn, '2030-01-01', '2025-01-01', N'Baseline seed');
+            ",
+            new
+            {
+                name = $"{t} A",
+                type = t,
+                tag = NewTag(t switch
+                {
+                    "Charging Cable" => "CAB",
+                    "Desktop" => "DTP",
+                    "Headset" => "HDS",
+                    "Laptop" => "LTP",
+                    "Monitor" => "MON",
+                    _ => "TST"
+                }),
+                sn = NewSerial()
+            }, tx);
+        }
+
+        // Seed one software row so 'Software' exists
+        await con.ExecuteAsync(@"
+            INSERT INTO SoftwareAssets
+            (SoftwareName, SoftwareType, SoftwareVersion, SoftwareLicenseKey, SoftwareUsageData, SoftwareCost, SoftwareLicenseExpiration, Comment)
+            VALUES
+            (N'App A', N'Software', N'1.0', @key, 0, 12.34, NULL, N'Baseline seed');
+        ", new { key = NewSwKey() }, tx);
 
         await tx.CommitAsync();
     }

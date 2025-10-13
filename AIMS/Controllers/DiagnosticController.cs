@@ -1,5 +1,6 @@
 #if DEBUG
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
@@ -42,7 +43,6 @@ public class DiagnosticsController : ControllerBase
             Hardware = await _db.HardwareAssets.CountAsync(),
             Software = await _db.SoftwareAssets.CountAsync(),
             Assignments = await _db.Assignments.CountAsync(),
-            // Feedback = await _db.FeedbackEntries.CountAsync(), # Scaffolded
             AuditLogs = await _db.AuditLogs.CountAsync(),
             LatestAssignment = await _db.Assignments
                 .AsNoTracking()
@@ -51,9 +51,9 @@ public class DiagnosticsController : ControllerBase
                 {
                     a.AssignmentID,
                     a.UserID,
-                    User = a.User.FullName,
+                    User = a.User != null ? a.User.FullName : null,
                     a.AssetKind,
-                    a.AssetTag,
+                    a.HardwareID,          // <— was AssetTag
                     a.SoftwareID,
                     a.AssignedAtUtc,
                     a.UnassignedAtUtc
@@ -88,12 +88,12 @@ public class DiagnosticsController : ControllerBase
 
         var active = _db.Assignments.AsNoTracking()
             .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new { AssetKind = (int)a.AssetKind, a.AssetTag, a.SoftwareID, a.UserID });
+            .Select(a => new { AssetKind = (int)a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID }); // <— was AssetTag
 
         var hardware =
             from h in _db.HardwareAssets.AsNoTracking()
             join aa in active.Where(x => x.AssetKind == HardwareKind)
-                on h.HardwareID equals aa.AssetTag into ha
+                on h.HardwareID equals aa.HardwareID into ha             // <— was aa.AssetTag
             from aa in ha.DefaultIfEmpty()
             select new
             {
@@ -135,9 +135,8 @@ public class DiagnosticsController : ControllerBase
         }));
     }
 
-    // ---------- 5) Search assets ----------
-
-    // GET /api/diag/assets?searchString=foo
+    // ---------- 5) Search available assets ----------
+    // GET /api/diag/assets?q=foo
     [HttpGet("assets")]
     [Produces("application/json")]
     public async Task<IActionResult> GetAvailableAssets(
@@ -152,7 +151,7 @@ public class DiagnosticsController : ControllerBase
             .Where(h => !_db.Assignments.Any(a =>
                 a.UnassignedAtUtc == null &&
                 a.AssetKind == AssetKind.Hardware &&
-                a.AssetTag == h.HardwareID))
+                a.HardwareID == h.HardwareID))               // <— was a.AssetTag
             .Select(h => new AssetLookupItem
             {
                 AssetID = h.HardwareID,
@@ -189,6 +188,5 @@ public class DiagnosticsController : ControllerBase
 
         return Ok(results);
     }
-
 }
 #endif

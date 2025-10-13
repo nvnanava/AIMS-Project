@@ -1,10 +1,17 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;
+using AIMS.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AIMS.Controllers;
 
@@ -54,10 +61,12 @@ public class HomeController : Controller
     }
 
     public IActionResult Reports() => View();
+    public IActionResult AuditLog() => View();
+    public IActionResult Privacy() => View();
 
     // Search page: blank query renders empty; otherwise view can still fetch via /api/assets.
     [HttpGet]
-    public async Task<IActionResult> Search(string? searchQuery)
+    public IActionResult Search(string? searchQuery)
     {
         var q = string.IsNullOrWhiteSpace(searchQuery) ? null : searchQuery.Trim();
         ViewBag.SearchQuery = q;
@@ -77,13 +86,8 @@ public class HomeController : Controller
             _logger.LogError(ex, "Search failed for query '{Query}'", q);
             ViewBag.Results = new List<Dictionary<string, string>>();
         }
-
         return View();
     }
-
-    public IActionResult AuditLog() => View();
-
-    public IActionResult Privacy() => View();
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
@@ -92,6 +96,7 @@ public class HomeController : Controller
     // ----------------------------------------------------------------------------
     // Details page with a server-side guard:
     // ----------------------------------------------------------------------------
+    [AllowAnonymous] // dev only; public access, but Supervisors get redirected
     public async Task<IActionResult> AssetDetailsComponent(string? category, string? tag)
     {
         // 🔒 Supervisors are not allowed here — bounce to Search
@@ -100,7 +105,6 @@ public class HomeController : Controller
 
         // Normalize requested category (used when no tag)
         var requestedCategory = string.IsNullOrWhiteSpace(category) ? "Laptop" : category.Trim();
-        var requestedKey = requestedCategory.ToLowerInvariant();
 
         ViewData["Category"] = requestedCategory;
         ViewData["Title"] = $"{requestedCategory} Asset Details";
@@ -152,10 +156,4 @@ public class HomeController : Controller
         ViewData["Title"] = $"{detectedType} Asset Details";
         return View();
     }
-}
-
-public class HomeIndexViewModel
-{
-    public List<GetHardwareDto> Hardware { get; set; } = new();
-    public List<GetSoftwareDto> Software { get; set; } = new();
 }

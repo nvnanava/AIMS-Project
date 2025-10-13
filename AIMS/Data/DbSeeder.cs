@@ -164,8 +164,8 @@ public static class DbSeeder
             var openToClose = await db.Assignments
                 .Where(a => a.AssetKind == AssetKind.Hardware
                          && a.UnassignedAtUtc == null
-                         && a.AssetTag != null
-                         && mustBeUnassignedIds.Contains(a.AssetTag.Value))
+                         && a.HardwareID != null
+                         && mustBeUnassignedIds.Contains(a.HardwareID.Value))
                 .ToListAsync(ct);
 
             foreach (var a in openToClose)
@@ -353,7 +353,7 @@ public static class DbSeeder
     {
         var open = await db.Assignments
             .Where(a => a.AssetKind == AssetKind.Hardware
-                     && a.AssetTag == hardwareId
+                     && a.HardwareID == hardwareId
                      && a.UnassignedAtUtc == null
                      && a.UserID != keepUserId)
             .ToListAsync(ct);
@@ -387,18 +387,18 @@ public static class DbSeeder
         CancellationToken ct)
     {
         // Normalize: enforce exactly one side is set
-        int? assetTag;
-        int? softId;
+        int? hardwareIdToAssign;
+        int? softwareIdToAssign;
 
         if (assetKind == AssetKind.Hardware)
         {
-            assetTag = hardwareId ?? throw new ArgumentNullException(nameof(hardwareId));
-            softId = null;
+            hardwareIdToAssign = hardwareId ?? throw new ArgumentNullException(nameof(hardwareId));
+            softwareIdToAssign = null;
         }
         else if (assetKind == AssetKind.Software)
         {
-            assetTag = null;
-            softId = softwareId ?? throw new ArgumentNullException(nameof(softwareId));
+            hardwareIdToAssign = null;
+            softwareIdToAssign = softwareId ?? throw new ArgumentNullException(nameof(softwareId));
         }
         else
         {
@@ -409,8 +409,8 @@ public static class DbSeeder
         var assetHasOpen = await db.Assignments.AnyAsync(a =>
             a.AssetKind == assetKind &&
             a.UnassignedAtUtc == null &&
-            ((assetKind == AssetKind.Hardware && a.AssetTag == assetTag) ||
-             (assetKind == AssetKind.Software && a.SoftwareID == softId)), ct);
+            ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign) ||
+             (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)), ct);
         if (assetHasOpen)
         {
             // If the open assignment is to the intended user, we are done; if not, the callers
@@ -419,8 +419,8 @@ public static class DbSeeder
                 a.AssetKind == assetKind &&
                 a.UnassignedAtUtc == null &&
                 a.UserID == userId &&
-                ((assetKind == AssetKind.Hardware && a.AssetTag == assetTag) ||
-                 (assetKind == AssetKind.Software && a.SoftwareID == softId)), ct);
+                ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign) ||
+                 (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)), ct);
             if (intendedOpen) return;
             // Else fall through to idempotency check to avoid duplicate historical rows.
         }
@@ -429,8 +429,8 @@ public static class DbSeeder
         var exists = await db.Assignments.AnyAsync(a =>
             a.UserID == userId &&
             a.AssetKind == assetKind &&
-            a.AssetTag == assetTag &&
-            a.SoftwareID == softId &&
+            a.HardwareID == hardwareIdToAssign &&
+            a.SoftwareID == softwareIdToAssign &&
             a.AssignedAtUtc.Date == assignedAtUtc.Date, ct);
 
         if (!exists)
@@ -439,8 +439,8 @@ public static class DbSeeder
             {
                 UserID = userId,
                 AssetKind = assetKind,
-                AssetTag = assetTag,
-                SoftwareID = softId,
+                HardwareID = hardwareIdToAssign,
+                SoftwareID = softwareIdToAssign,
                 AssignedAtUtc = assignedAtUtc,
                 UnassignedAtUtc = null
             });

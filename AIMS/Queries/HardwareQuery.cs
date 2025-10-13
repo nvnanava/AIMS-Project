@@ -1,7 +1,9 @@
-using System.ComponentModel.DataAnnotations;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
+
+namespace AIMS.Queries;
 
 public class HardwareQuery
 {
@@ -15,6 +17,7 @@ public class HardwareQuery
             .Select(h => new GetHardwareDto
             {
                 HardwareID = h.HardwareID,
+                AssetTag = h.AssetTag,
                 AssetName = h.AssetName,
                 AssetType = h.AssetType,
                 Status = h.Status,
@@ -24,65 +27,12 @@ public class HardwareQuery
                 WarrantyExpiration = h.WarrantyExpiration,
                 PurchaseDate = h.PurchaseDate,
 
-                // Is there an OPEN assignment?
+                // Is there an OPEN assignment? (keyed by HardwareID)
                 IsAssigned = _db.Assignments.Any(a =>
                     a.AssetKind == AssetKind.Hardware &&
-                    a.AssetTag == h.HardwareID &&
+                    a.HardwareID == h.HardwareID &&
                     a.UnassignedAtUtc == null)
             })
             .ToListAsync(ct);
     }
-}
-
-public class GetHardwareDto
-{
-    // PK
-    public int HardwareID { get; set; }
-
-    // Columns
-    public string AssetName { get; set; } = string.Empty;
-    public string AssetType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Manufacturer { get; set; } = string.Empty;
-    public string Model { get; set; } = string.Empty;
-    public string SerialNumber { get; set; } = string.Empty; // unique
-    public DateOnly WarrantyExpiration { get; set; }
-    public DateOnly PurchaseDate { get; set; }
-    public string Comment { get; set; } = string.Empty;
-
-    public bool IsAssigned { get; set; }
-
-    // derive effective status if Status is blank
-    public string EffectiveStatus =>
-        string.IsNullOrWhiteSpace(Status)
-            ? (IsAssigned ? "Assigned" : "Available")
-            : Status;
-}
-
-public class CreateHardwareDto
-{
-    [Required]
-    public string AssetTag { get; set; } = string.Empty;
-    public string AssetName { get; set; } = string.Empty;
-    public string AssetType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Manufacturer { get; set; } = string.Empty;
-    public string Model { get; set; } = string.Empty;
-    [Required]
-    public string SerialNumber { get; set; } = string.Empty; // unique
-    public DateOnly WarrantyExpiration { get; set; }
-    public DateOnly PurchaseDate { get; set; }
-    public string Comment { get; set; } = string.Empty;
-}
-
-public class UpdateHardwareDto
-{
-    public string? AssetTag { get; set; }
-    public string? AssetName { get; set; }
-    public string? AssetType { get; set; }
-    public string? Status { get; set; }
-    public string? Manufacturer { get; set; }
-    public string? Model { get; set; }
-    public string? Comment { get; set; }
-
 }

@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 using AIMS.Controllers;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Queries;
+using AIMS.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -13,7 +15,7 @@ namespace AIMS.UnitTests
     public class HardwareBulkEndpointTests
     {
         // Helper method for creating controller with in-memory db
-        private HardwareController CreateControllerWithDb(string dbName, List<Hardware> seedHardware = null)
+        private HardwareController CreateControllerWithDb(string dbName, List<Hardware>? seedHardware = null)
         {
             var options = new DbContextOptionsBuilder<AimsDbContext>()
                 .UseInMemoryDatabase(databaseName: dbName) // unique per test
@@ -33,6 +35,8 @@ namespace AIMS.UnitTests
             return new HardwareController(db, hardwareQuery);
         }
 
+        private static BulkHardwareRequest Wrap(List<CreateHardwareDto>? dtos)
+            => new BulkHardwareRequest { Dtos = dtos };
 
         [Fact]
         public async Task AddBulkHardware_ReturnsBadRequest_WhenDuplicateSerialNumber()
@@ -58,7 +62,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -86,7 +90,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -110,7 +114,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -134,7 +138,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -147,18 +151,18 @@ namespace AIMS.UnitTests
             {
                 new CreateHardwareDto
                 {
-                    AssetTag = null,
-                    Manufacturer = null,
-                    Model = null,
-                    AssetType = null,
-                    Status = null,
-                    SerialNumber = null,
+                    AssetTag = null!,
+                    Manufacturer = null!,
+                    Model = null!,
+                    AssetType = null!,
+                    Status = null!,
+                    SerialNumber = null!,
                     PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)),
                     WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -182,7 +186,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
 
             var created = Assert.IsType<CreatedAtActionResult>(result);
             var returned = Assert.IsAssignableFrom<List<Hardware>>(created.Value);
@@ -221,7 +225,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
 
             var created = Assert.IsType<CreatedAtActionResult>(result);
             var returned = Assert.IsAssignableFrom<List<Hardware>>(created.Value);
@@ -236,30 +240,31 @@ namespace AIMS.UnitTests
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString());
             var dtos = new List<CreateHardwareDto>();
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.True(result is BadRequestObjectResult || result is CreatedAtActionResult);
         }
+
         [Fact]
         public async Task AddBulkHardware_TrimsValues_BeforeSaving()
         {
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString());
 
             var dtos = new List<CreateHardwareDto>
-    {
-        new CreateHardwareDto
-        {
-            AssetTag = "  BULK-314  ",
-            Manufacturer = "  Dell  ",
-            Model = "  Latitude  ",
-            AssetType = "  Laptop  ",
-            Status = "  Available  ",
-            SerialNumber = "  SN-BULK-314  ",
-            PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
-            WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
-        }
-    };
+            {
+                new CreateHardwareDto
+                {
+                    AssetTag = "  BULK-314  ",
+                    Manufacturer = "  Dell  ",
+                    Model = "  Latitude  ",
+                    AssetType = "  Laptop  ",
+                    Status = "  Available  ",
+                    SerialNumber = "  SN-BULK-314  ",
+                    PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
+                    WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
+                }
+            };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
 
             var created = Assert.IsType<CreatedAtActionResult>(result);
             var returned = Assert.IsAssignableFrom<List<Hardware>>(created.Value);
@@ -277,9 +282,9 @@ namespace AIMS.UnitTests
         public async Task AddBulkHardware_ReturnsBadRequest_WhenNullList()
         {
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString());
-            List<CreateHardwareDto> dtos = null;
+            List<CreateHardwareDto>? dtos = null;
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -303,7 +308,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -327,7 +332,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -351,7 +356,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -375,7 +380,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -399,7 +404,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
@@ -423,14 +428,14 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
+
         [Fact]
         public async Task AddBulkHardware_OneItem_RobustnessTest()
         {
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString());
-
 
             var dto = new CreateHardwareDto
             {
@@ -446,16 +451,14 @@ namespace AIMS.UnitTests
 
             var dtos = new List<CreateHardwareDto> { dto };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
 
-            // Assert result is Created
             var created = Assert.IsType<CreatedAtActionResult>(result);
             var returned = Assert.IsAssignableFrom<List<Hardware>>(created.Value);
             Assert.Single(returned);
 
             var hardware = returned[0];
 
-            // Assert all fields are correctly mapped and trimmed
             Assert.Equal("BULK-ONE-001", hardware.AssetTag);
             Assert.Equal("Dell", hardware.Manufacturer);
             Assert.Equal("Latitude", hardware.Model);
@@ -463,11 +466,9 @@ namespace AIMS.UnitTests
             Assert.Equal("Available", hardware.Status);
             Assert.Equal("SN-ONE-001", hardware.SerialNumber);
 
-            // Assert dates are correctly mapped
             Assert.Equal(dto.PurchaseDate, hardware.PurchaseDate);
             Assert.Equal(dto.WarrantyExpiration, hardware.WarrantyExpiration);
 
-            // Assert no unexpected nulls
             Assert.False(string.IsNullOrWhiteSpace(hardware.AssetTag));
             Assert.False(string.IsNullOrWhiteSpace(hardware.Manufacturer));
             Assert.False(string.IsNullOrWhiteSpace(hardware.Model));
@@ -497,7 +498,7 @@ namespace AIMS.UnitTests
                 });
             }
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
 
             var created = Assert.IsType<CreatedAtActionResult>(result);
             var returned = Assert.IsAssignableFrom<List<Hardware>>(created.Value);
@@ -528,7 +529,7 @@ namespace AIMS.UnitTests
                 }
             };
 
-            var result = await controller.AddHardwareBulk(dtos);
+            var result = await controller.AddHardwareBulk(Wrap(dtos));
             Assert.IsType<BadRequestObjectResult>(result);
         }
     }
