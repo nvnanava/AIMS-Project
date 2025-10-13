@@ -1,75 +1,108 @@
+@using AIMS.Controllers
 @using AIMS.Utilities
+
 @{
     ViewData["Title"] = "Search";
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
+
+    // Server-rendered role flag (avoids fetching whoami just to infer roles)
     var __CAN_ADMIN__ = User.IsAdminOrHelpdesk();
     var __IS_SUPERVISOR__ = User.IsSupervisor();
 }
+
 @section Styles {
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
 }
+
+<!-- Expose role to JS (keeps client hints in sync with Entra/policy/claims) -->
 <script>
     window.__CAN_ADMIN__ = @(__CAN_ADMIN__ ? "true" : "false");
     window.__IS_SUPERVISOR__ = @(__IS_SUPERVISOR__ ? "true" : "false");
 </script>
 
 <div class="page-fill">
-  <div class="table-container">
-    <!-- Sticky table header -->
-    <table class="asset-table-header">
-      <thead>
-        <tr>
-          @foreach (var header in tableHeaders) { <th>@header</th> }
-        </tr>
-      </thead>
-    </table>
+    <div class="table-container">
+        @if (__CAN_ADMIN__)
+        {
+            <div style="display: flex; justify-content: flex-end; margin: 10px 0 15px 0; padding-right: 10px;">
+                <button type="button" id="assign-asset-button" class="btn btn-primary" data-bs-toggle="modal"
+                    data-bs-target="#assignAssetModal">
+                    <i class="bi bi-person-plus"></i> Assign Asset
+                </button>
+            </div>
+        }
+        <!-- Sticky table header -->
+        <table class="asset-table-header">
+            <thead>
+                <tr>
+                    @foreach (var header in tableHeaders)
+                    {
+                        <th>@header</th>
+                    }
+                </tr>
+            </thead>
+        </table>
 
-    <!-- Sticky toolbar -->
-    <div class="table-toolbar">
-      <div class="toolbar-grid">
-        <div class="toolbar-cell">
-          <input class="search-input filter-input" type="text" name="Asset Name" placeholder="Filter by Asset Name" />
+        <!-- Sticky toolbar (filters) -->
+        <div class="table-toolbar">
+            <div class="toolbar-grid">
+                <!-- Asset Name -->
+                <div class="toolbar-cell">
+                    <input class="search-input filter-input" type="text" name="Asset Name" id="asset-name"
+                        placeholder="Filter by Asset Name" />
+                </div>
+                <!-- Type -->
+                <div class="toolbar-cell">
+                    <select id="type" name="Type" class="filter-input form-select">
+                        <option value="">All Devices</option>
+                        <option value="Desktop">Desktop</option>
+                        <option value="Laptop">Laptop</option>
+                        <option value="Headset">Headset</option>
+                        <option value="Charging Cable">Charging Cable</option>
+                        <option value="Monitor">Monitor</option>
+                        <option value="Software">Software</option>
+                    </select>
+                </div>
+                <!-- Tag # -->
+                <div class="toolbar-cell">
+                    <input class="filter-input search-input" type="text" name="Tag #" id="tag"
+                        placeholder="Filter by Tag #" />
+                </div>
+                <!-- Assignment -->
+                <div class="toolbar-cell">
+                    <input class="filter-input search-input" type="text" name="Assignment" id="assignment"
+                        placeholder="Filter by Assignment" />
+                </div>
+                <!-- Status -->
+                <div class="toolbar-cell">
+                    <select id="status" name="Status" class="filter-input form-select">
+                        <option value="">All Status</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Available">Available</option>
+                        <option value="In Repair">In Repair</option>
+                        <option value="Damaged">Damaged</option>
+                    </select>
+                </div>
+            </div>
         </div>
-        <div class="toolbar-cell">
-          <select name="Type" class="filter-input form-select">
-            <option value="">All Devices</option>
-            <option>Desktop</option><option>Laptop</option><option>Headset</option>
-            <option>Charging Cable</option><option>Monitor</option><option>Software</option>
-          </select>
+
+        <!-- Scrolling table body -->
+        <div class="table-body-scroll">
+            <table class="asset-table-body">
+                <tbody id="table-body"><!-- rows populated by JS --></tbody>
+            </table>
         </div>
-        <div class="toolbar-cell">
-          <input class="filter-input search-input" type="text" name="Tag #" placeholder="Filter by Tag #" />
-        </div>
-        <div class="toolbar-cell">
-          <input class="filter-input search-input" type="text" name="Assignment" placeholder="Filter by Assignment" />
-        </div>
-        <div class="toolbar-cell">
-          <select name="Status" class="filter-input form-select">
-            <option value="">All Status</option>
-            <option>Assigned</option><option>Available</option><option>In Repair</option><option>Damaged</option>
-          </select>
-        </div>
-      </div>
+
+        <!-- Keep empty-state -->
+        <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
     </div>
-
-    <!-- Scrolling table body -->
-    <div class="table-body-scroll">
-      <table class="asset-table-body">
-        <tbody id="table-body"><!-- rows populated by JS --></tbody>
-      </table>
-    </div>
-
-    <!-- Pager -->
-    <div class="search-pager" id="search-pager" hidden>
-      <button type="button" id="pg-prev" class="pager-btn">Prev</button>
-      <span id="pg-status" class="pager-status"></span>
-      <button type="button" id="pg-next" class="pager-btn">Next</button>
-    </div>
-
-    <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
-  </div>
 </div>
 
+@* Include the modal markup *@
+@await Html.PartialAsync("_AssignAssetModal")
+
 @section Scripts {
-  <script src="~/js/search.page.js" asp-append-version="true"></script>
+    <script src="~/js/search.page.js" asp-append-version="true"></script>
+    <script src="~/js/assignAssetModal.js" asp-append-version="true"></script>
+
 }

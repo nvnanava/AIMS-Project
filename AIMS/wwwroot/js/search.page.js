@@ -315,4 +315,12 @@
             GlobalSpinner.hide();
         }
     }
+
+    // expose a public refresher for other scripts (assign/unassign) to call
+    window.refreshSearchTable = () => {
+        // reuse the last query if we have it, otherwise read current querystring
+        const q = (lastQuery ?? activeQuery() ?? "").trim();
+        fetchInitial(q, currentPage, pageSize);
+    };
+
 })();
