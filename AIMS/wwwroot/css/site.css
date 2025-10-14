@@ -71,6 +71,11 @@ body {
   display: flex;
   justify-content: space-around;
 }
+.readonly-field {
+    background-color: #f5f5f5;
+    color: #6c757d;
+    cursor: not-allowed;
+}
 
 .global-loading-overlay {
   position: fixed;

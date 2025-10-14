@@ -134,6 +134,7 @@
 
       await populateAssetTypes();
 
+
       // Fill values from data-* on the trigger button
       editId.value = button.getAttribute('data-hardware-id') || button.getAttribute('data-software-id') || '';
       editId.dataset.defaultValue = editId.value;
@@ -257,4 +258,5 @@
       }
     });
   });
+
 </script>

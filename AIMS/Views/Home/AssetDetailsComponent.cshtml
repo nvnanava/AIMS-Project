@@ -31,7 +31,7 @@
       <tr>
         <th>Asset Name</th>
         <th>Type</th>
-        <th>Tag #</th>
+        <th>Seat #</th>
         <th>Status</th>
         <th>
           <div style="margin-left: auto;">
@@ -102,11 +102,18 @@
     const tbody = document.getElementById("assetTableBody");
     tbody.innerHTML = "";
   }
-  function renderRows(rows) {
-    clearTable();
-    const tbody = document.getElementById("assetTableBody");
-    (rows || []).forEach(renderRow);
-  }
+    function renderRows(rows) {
+        clearTable();
+        const tbody = document.getElementById("assetTableBody");
+        const totalSeats = rows.length;
+
+        (rows || []).forEach((asset, index) => {
+            // Inject seat info before rendering
+            asset.seatNumber = `Seat ${index + 1} of ${totalSeats}`;
+            renderRow(asset, index + 1, totalSeats);
+        });
+    }
+
   function updatePager(items) {
     if (!pager || !btnPrev || !btnNext || !lblStatus) return;
     const total = lastMeta?.total ?? -1;
@@ -269,9 +276,9 @@
       <td>${asset.assetName}</td>
       <td>${asset.type}</td>
       <td>
-        <span onclick="showPopup('${asset.assetName}', '${asset.tag}', event)" style="cursor:pointer;">
-          ${asset.tag}
-        </span>
+        <span onclick="showPopup('${asset.assetName}', '${asset.seatNumber}', event)" style="cursor:pointer;">
+    ${asset.seatNumber}
+  </span>
       </td>
       <td><span class="status-badge ${statusClass}">${asset.status}</span></td>
       <td class="actions-cell text end" onclick="event.stopPropagation()">
@@ -300,14 +307,14 @@
     `;
     tbody.appendChild(row);
   }
-  function showPopup(assetName, tagNumber, event) {
+  function showPopup(assetName, seatNumber, event) {
     const popup = document.getElementById("popup");
     const rect = event.target.getBoundingClientRect();
     popup.style.top = (rect.top + window.scrollY + 20) + "px";
     popup.style.left = (rect.left + window.scrollX + 20) + "px";
     popup.innerHTML = `
       <strong>Asset Name:</strong> ${escapeHtml(assetName ?? "")}<br>
-      <strong>Tag Number:</strong> ${escapeHtml(tagNumber ?? "")}<br>
+      <strong>Seat Number:</strong> ${escapeHtml(seatNumber ?? "")}<br>
     `;
     popup.style.display = "block";
     popup.setAttribute("aria-hidden", "false");
@@ -342,4 +349,5 @@
     applyEmpty(true);
     pager.hidden = true;
   });
+
 </script>
