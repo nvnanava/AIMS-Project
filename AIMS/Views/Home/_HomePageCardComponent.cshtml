@@ -1,59 +1,113 @@
-<a href="/Home/AssetDetailsComponent?category=Monitor&source=card" class="card-link" aria-label="Monitors">
-  <div class="card">
-    <span class="status-dot green" aria-hidden="true"></span>
-    <h3 class="card-title">Monitors</h3>
-    <img src="@Url.Content("~/images/asset-icons/monitor-icon.png")" alt="Monitors" class="card-icon"/>
-    <p class="total">150 total</p>
-    <p class="available-percentage">Available: 64%</p>
-  </div>
-</a>
+@using AIMS.ViewModels.Home
+@using System.Text.RegularExpressions
 
-<a href="/Home/AssetDetailsComponent?category=Laptop&source=card" class="card-link" aria-label="Laptops">
-  <div class="card">
-    <span class="status-dot red" aria-hidden="true"></span>
-        <h3 class="card-title">Laptops</h3>
-        <img src="@Url.Content("~/images/asset-icons/laptop-icon.png")" alt="Laptops" class="card-icon" />
-    <p class="total">120 total</p>
-    <p class="runningLow">Low: 8%</p>
-  </div>
-</a>
+@functions {
+    private static readonly HashSet<string> Known = new(StringComparer.OrdinalIgnoreCase)
+{
+"monitor","laptop","desktop","software",
+"headset","charging-cable","tablet",
+"docking-station","3d-printer","accesspad",
+"conferencing","copier","document-scanner",
+"ethernet","harddrive","keyboard","label-printer",
+"landline","misc-cables","mouse","networking",
+"printer","projector","scanner-gun","security-camera",
+"server","smart-sensor","smartboard","smartphone",
+"smartwatch","standing-desk","television","ups",
+"vr-headset","wap","webcam"
+};
 
-<a href="/Home/AssetDetailsComponent?category=Desktop&source=card" class="card-link" aria-label="Desktops">
-  <div class="card">
-    <span class="status-dot green" aria-hidden="true"></span>
-        <h3 class="card-title">Desktops</h3>
-        <img src="@Url.Content("~/images/asset-icons/desktop-icon.png")" alt="Desktops" class="card-icon" />
-    <p class="total">100 total</p>
-    <p class="available-percentage">Available: 64%</p>
-  </div>
-</a>
+    private static readonly Dictionary<string, string> Alias = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["3d-printers"] = "3d-printer",
+        ["document-scanners"] = "document-scanner",
+        ["label-printers"] = "label-printer",
+        ["scanner-guns"] = "scanner-gun",
+        ["security-cameras"] = "security-camera",
+        ["smart-sensors"] = "smart-sensor",
+        ["standing-desks"] = "standing-desk",
+        ["vr-headsets"] = "vr-headset",
+        ["charging-cables"] = "charging-cable",
+        ["docking-stations"] = "docking-station",
+        ["headphones"] = "headset"
+    };
 
-<a href="/Home/AssetDetailsComponent?category=Software&source=card" class="card-link" aria-label="Software Licenses">
-  <div class="card">
-    <span class="status-dot red" aria-hidden="true"></span>
-        <h3 class="card-title">Software Licenses</h3>
-        <img src="@Url.Content("~/images/asset-icons/software-icon.png")" alt="Software" class="card-icon" />
-    <p class="total">200 total</p>
-    <p class="runningLow">Low: 16%</p>
-  </div>
-</a>
+    private static string Slugify(string s)
+    {
+        s = (s ?? "").Trim().ToLowerInvariant();
+        s = Regex.Replace(s, @"\s+", "-");
+        s = Regex.Replace(s, @"[^a-z0-9\-]", "");
+        if (Alias.TryGetValue(s, out var mapped)) return mapped;
+        return s;
+    }
 
-<a href="/Home/AssetDetailsComponent?category=Headset&source=card" class="card-link" aria-label="Headsets">
-  <div class="card">
-    <span class="status-dot green" aria-hidden="true"></span>
-        <h3 class="card-title">Headsets</h3>
-        <img src="@Url.Content("~/images/asset-icons/headphone-icon.png")" alt="Headsets" class="card-icon" />
-    <p class="total">80 total</p>
-    <p class="available-percentage">Available: 64%</p>
-  </div>
-</a>
+    private static string IconFileFor(string assetType)
+    {
+        var slug = Slugify(assetType);
+        return Known.Contains(slug) ? $"{slug}-icon.png" : "blank-icon.png";
+    }
 
-<a href="/Home/AssetDetailsComponent?category=Charging Cable&source=card" class="card-link" aria-label="Charging Cables">
-  <div class="card">
-    <span class="status-dot green" aria-hidden="true"></span>
-        <h3 class="card-title">Charging Cables</h3>
-        <img src="@Url.Content("~/images/asset-icons/charging-cable-icon.png")" alt="Charging Cables" class="card-icon" />
-    <p class="total">90 total</p>
-    <p class="available-percentage">Available: 64%</p>
-  </div>
-</a>
+    private static string Norm(string s) => (s ?? "").Trim().ToLowerInvariant();
+}
+
+@{
+    var serverSnap = (IEnumerable<AIMS.ViewModels.SummaryCards.SummaryCardDto>?)ViewData["CardSnapshot"];
+    var byType = serverSnap?.ToDictionary(r => Norm(r.AssetType), r => r, StringComparer.OrdinalIgnoreCase)
+    ?? new Dictionary<string, AIMS.ViewModels.SummaryCards.SummaryCardDto>(StringComparer.OrdinalIgnoreCase);
+
+    var cards = ViewData["AssetTypes"] as IEnumerable<AssetCardVm>;
+    if (cards == null || !cards.Any())
+    {
+        var fallback = new[]
+        {
+new AssetCardVm { AssetType = "Monitor", DisplayName = "Monitors", IconUrl =
+Url.Content("~/images/asset-icons/monitor-icon.png"), DetailsHref =
+"/Home/AssetDetailsComponent?category=Monitor&source=card" },
+new AssetCardVm { AssetType = "Laptop", DisplayName = "Laptops", IconUrl =
+Url.Content("~/images/asset-icons/laptop-icon.png"), DetailsHref =
+"/Home/AssetDetailsComponent?category=Laptop&source=card" },
+new AssetCardVm { AssetType = "Desktop", DisplayName = "Desktops", IconUrl =
+Url.Content("~/images/asset-icons/desktop-icon.png"), DetailsHref =
+"/Home/AssetDetailsComponent?category=Desktop&source=card" },
+new AssetCardVm { AssetType = "Software", DisplayName = "Software Licenses", IconUrl =
+Url.Content("~/images/asset-icons/software-icon.png"), DetailsHref =
+"/Home/AssetDetailsComponent?category=Software&source=card" },
+new AssetCardVm { AssetType = "Headset", DisplayName = "Headsets", IconUrl =
+Url.Content("~/images/asset-icons/headset-icon.png"), DetailsHref =
+"/Home/AssetDetailsComponent?category=Headset&source=card" },
+new AssetCardVm { AssetType = "Charging Cable", DisplayName = "Charging Cables", IconUrl =
+Url.Content("~/images/asset-icons/charging-cable-icon.png"), DetailsHref =
+"/Home/AssetDetailsComponent?category=Charging%20Cable&source=card" }
+};
+        cards = fallback;
+    }
+}
+
+@foreach (var c in cards)
+{
+    var fileName = IconFileFor(c.AssetType);
+
+    var key = Norm(c.AssetType);
+    byType.TryGetValue(key, out var row);
+    var total = row?.Total ?? 0;
+    var available = row?.Available ?? 0;
+    var threshold = row?.Threshold ?? 0;
+    var pct = total > 0 ? (int)Math.Round((available * 100.0) / total) : 0;
+    var dotClass = (total == 0) ? "yellow" :
+    (threshold > 0 && available < threshold) ? "red" : "green";
+
+    <a href="@c.DetailsHref" class="card-link" aria-label="@c.DisplayName">
+        <div class="card" data-asset-type="@c.AssetType">
+            <span class="status-dot @dotClass" aria-hidden="true"></span>
+            <h3 class="card-title">@c.DisplayName</h3>
+
+            <img src="~/images/asset-icons/@fileName" asp-append-version="true" alt="@c.DisplayName" class="card-icon"
+                width="72" height="72" decoding="async" loading="eager" />
+
+            <p class="total"><span class="js-total">@(row is null ? "—" : total.ToString())</span> total</p>
+            <p class="availability">
+                <span class="js-available">@(row is null ? "—" : available.ToString())</span> available
+                (<span class="js-percent">@(row is null ? "—" : pct.ToString())</span>%)
+            </p>
+        </div>
+    </a>
+}
