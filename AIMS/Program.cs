@@ -14,8 +14,17 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Graph.Users.Item.MemberOf;
+using Microsoft.Graph.Authentication;
+using Azure.Identity;
 
-var builder = WebApplication.CreateBuilder(args);
+
+
+var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+
 
 // -------------------- Services --------------------
 builder.Services.AddEndpointsApiExplorer();   // dev/test
@@ -99,15 +108,34 @@ builder.Services
     .AddMicrosoftIdentityWebApp(options =>
     {
         builder.Configuration.Bind("AzureAd", options);
-        options.AccessDeniedPath = "/error/not-authorized"; // ★ corrected to use your error page
+        options.AccessDeniedPath = "/error/not-authorized";
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
+
+//Microsoft Graph setup
+builder.Services.AddSingleton<GraphServiceClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var tenantID = configuration["AzureAd:TenantId"];
+    var clientId = configuration["AzureAd:ClientId"];
+    var clientSecret = configuration["AzureAd:ClientSecret"];
+
+    var scopes = new[] { "https://graph.microsoft.com/.default" };
+    var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
+    return new GraphServiceClient(credential, scopes);
+
+
+});
+
+// Register GraphUserService and its interface for DI
+builder.Services.AddScoped<IGraphUserService, GraphUserService>();
+
 builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
-// keep your existing custom policies
+
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
       policy.RequireAssertion(context =>

@@ -1,7 +1,7 @@
 body {
     margin: 0;
     font-family: "Segoe UI", sans-serif;
-    background-color: #ECF0F1;
+    background-color: #ecf0f1;
     padding-top: 89px;
 }
 
@@ -14,7 +14,6 @@ body {
     padding: 1rem 2rem;
     border-bottom: 3px solid #ecf0f1;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-
 }
 
 .logo h2 {
@@ -26,7 +25,6 @@ body {
     font-size: 0.75rem;
     margin: 0;
     color: #bdc3c7;
-
 }
 
 .nav-links {
@@ -83,7 +81,6 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     margin-top: 30px;
-
 }
 
 .admin-table-controls {
@@ -103,9 +100,7 @@ body {
     background-color: #2c3e50;
     color: white;
     text-align: left;
-=======
 }
-
 
 .add-btn,
 .assign-btn,
@@ -139,7 +134,6 @@ body {
     padding: 16px 20px;
     text-align: left;
     font-size: 0.95rem;
-
 }
 
 .table th,
@@ -156,9 +150,8 @@ body {
     cursor: pointer;
     font-size: 16px;
     color: #2c3e50;
-    transition: color 0,2 ease;
+    transition: color 0, 2 ease;
 }
-
 
 .badge {
     padding: 6px 12px;
@@ -178,7 +171,6 @@ body {
     background-color: red;
 }
 
-
 .edit-btn:hover,
 .add-btn:hover,
 .assign-btn:hover {
@@ -187,7 +179,6 @@ body {
     transition: all 0.2s ease-in-out;
     transform: translateY(-1px);
 }
-
 
 .edit-btn,
 .add-btn,
@@ -214,7 +205,6 @@ body {
     pointer-events: none;
 }
 
-
 .badge:hover {
     filter: brightness(1.1);
     transition: filter 0.2s ease-in-out;
@@ -230,14 +220,13 @@ body {
 }
 .toggle-container {
     font-size: 14px;
-    color:#2c3e50;
+    color: #2c3e50;
     display: flex;
     align-items: center;
     gap: 2rem;
     margin-top: 1rem;
     cursor: pointer;
     margin-bottom: 1rem;
-
 }
 .toggle-container input {
     display: none;
@@ -275,9 +264,11 @@ body {
 .admin-modal {
     display: none;
     position: fixed;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background:rgba(0, 0, 0, 0.5);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -298,14 +289,14 @@ body {
     font-family: "Arial", sans-serif;
     transform: translateY(-60px) scale(0.95);
     opacity: 0;
-    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.35s ease;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+        opacity 0.35s ease;
     position: relative;
     overflow: hidden;
-
 }
 .admin-modal-header {
     background-color: #2c3e50;
-    border-bottom: 3px solid #34495E;
+    border-bottom: 3px solid #34495e;
     color: white;
     padding: 16px 20px;
     display: flex;
@@ -370,4 +361,54 @@ form {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+#aadUserResults {
+    margin-top: 0.25rem;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+}
+#aadUserResults {
+    margin-top: 0.25rem;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+}
+#aadUserResults:empty {
+    display: none;
+}
+.aad-user-item {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-bottom: 1px solid #eee;
+    background: transparent;
+    cursor: pointer;
+}
+.aad-user-item:last-child {
+    border-bottom: 0;
+}
+.aad-user-item:hover,
+.aad-user-item:focus {
+    background: #f7f9fc;
+    outline: none;
+}
+.aad-hint,
+.aad-error {
+    padding: 0.5rem 0.75rem;
+    color: #666;
+}
+mark {
+    background: #ffef99;
+    padding: 0 0.1em;
 }
