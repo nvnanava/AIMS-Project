@@ -1,4 +1,39 @@
 
+/* iPad + small laptops */
+@media (max-width: 1366px) {
+  .navbar, .navbar-collapse {
+    flex-wrap: wrap !important;
+  }
+
+  /* Navbar reorder for tablets */
+  .navbar .container-fluid {
+    display: flex;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .search-container {
+    order: 2 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  .navbar-nav {
+    order: 3 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Search input sizing */
+  .search-input {
+    width: 90% !important;
+    max-width: 560px !important;
+  }
+}
+
+
 /* General mobile layout fix */
 @media (max-width: 992px) {
   html, body {
@@ -7,8 +42,8 @@
   }
 
   /* Navbar should wrap and remain visible */
-  .navbar, .navbar-collapse {
-    flex-wrap: wrap;
+   .navbar, .navbar-collapse {
+    flex-wrap: wrap !important;
   }
 
   /* Search bar fix */
@@ -121,6 +156,32 @@
   /* Prevent modal-body from hiding dropdowns */
   .modal.show .modal-body {
     overflow: visible !important;
+  }
+}
+
+/* ====== Desktop Full Search Bar (final enforced) ====== */
+@media screen and (min-width: 1025px) {
+  #search-container.search-container {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  #search-input.search-input {
+    width: 600px !important;
+    max-width: 640px !important;
+    min-width: 580px !important;
+    padding: 10px 18px !important;
+    border-radius: 25px !important;
+    font-size: 1rem !important;
+    box-sizing: border-box !important;
+  }
+
+  #search-container input[type="text"]::placeholder,
+  #search-container input[type="search"]::placeholder {
+    font-size: 1rem !important;
+    opacity: 0.9 !important;
   }
 }
 

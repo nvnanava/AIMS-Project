@@ -91,11 +91,22 @@
 
                 <div class="navbar-right">
                     <form asp-controller="Home" asp-action="Search" method="get">
-                        <div id="search-container" class="search-container">
+		<div id="search-container" class="search-container"
+     			style="display:flex;justify-content:center;align-items:center;width:100%;">
+    			<button type="submit" id="search-addon" class="input-group-text search-icon"
+            		style="padding:10px;font-size:1rem;">🔍</button>
+    			<input name="searchQuery" type="text" id="search-input" class="form-control search-input"
+           		style="width:600px;max-width:640px;min-width:580px;padding:10px 18px;
+                  	border-radius:25px;font-size:1rem;box-sizing:border-box;"
+           		placeholder="Search for assets or employees..." aria-label="Search"
+           		aria-describedby="search-addon"	>
+		</div>
+                        
+			@*<div id="search-container" class="search-container">
                             <button type="submit" id="search-addon" class="input-group-text search-icon">🔍</button>
                             <input name="searchQuery" type="text" id="search-input" class="form-control search-input"
                                    placeholder="Search for assets or employees..." aria-label="Search" aria-describedby="search-addon">
-                        </div>
+                        </div>*@
                     </form>
                 </div>
             </div>
