@@ -2,6 +2,8 @@
 @using AIMS.ViewModels
 @{
     ViewData["Title"] = "Home";
+    // pick up the server snapshot the controller put in ViewData
+    var snap = ViewData["CardSnapshot"];
 }
 
 @section Styles {
@@ -9,7 +11,17 @@
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Views/Home/Index.cshtml.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/_DashboardSettings.css" asp-append-version="true" />
 }
+
+<!-- One unified settings trigger (fixed at top-right, opens the modal) -->
+<button
+  class="settings-btn"
+  type="button"
+  data-bs-toggle="modal"
+  data-bs-target="#dashboardSettingsModal"
+  aria-label="Open dashboard settings">
+</button>
 
 <!--
   Cards viewport
@@ -18,12 +30,8 @@
 -->
 <section class="cards-viewport" role="region" aria-label="Asset categories">
     <div class="cards-gutter">
-        <!--
-          Strict grid modes are applied via JS:
-          - mode-3x2 (default), mode-2x2, mode-2x1
-          - Pagination shows only the current page’s cards
-        -->
-        <div class="cards-grid mode-3x2" id="cards-grid" data-testid="cards-grid">
+        <!-- Strict grid modes via JS (.mode-3x2 / .mode-2x2 / .mode-2x1) -->
+        <div class="cards-grid mode-3x2 hydrating" id="cards-grid" data-testid="cards-grid">
             @await Html.PartialAsync("~/Views/Home/_HomePageCardComponent.cshtml")
         </div>
 
@@ -36,7 +44,32 @@
     </div>
 </section>
 
+@await Html.PartialAsync("~/Views/Shared/_DashboardSettings.cshtml")
+
 @section Scripts {
-    <script src="~/js/unassignAssetModal.js" defer></script>
     <script src="~/js/home.index.js" asp-append-version="true"></script>
+    <script src="~/js/dashboard-settings.js" asp-append-version="true"></script>
+    <script src="~/js/summary-cards.js" asp-append-version="true"></script>
+
+    @* IMPORTANT: write the server snapshot OUTSIDE the grid so it’s not a grid item *@
+    @if (snap is IEnumerable<AIMS.ViewModels.SummaryCards.SummaryCardDto> ss)
+    {
+        <script>
+        (function(){
+            try {
+                const rows = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                    ss.Select(r => new {
+                        assetType = r.AssetType,
+                        total = r.Total,
+                        available = r.Available,
+                        threshold = r.Threshold,
+                        isLow = (r.Threshold > 0 && r.Available < r.Threshold),
+                        availablePercent = (r.Total > 0 ? (int)Math.Round((r.Available * 100.0)/r.Total) : 0)
+                    })
+                ));
+                localStorage.setItem('dashboard:snapshot:v1', JSON.stringify({ ts: Date.now(), rows }));
+            } catch {}
+        })();
+        </script>
+    }
 }
