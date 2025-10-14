@@ -58,7 +58,7 @@ public sealed class AssetSearchQuery
 
                 Status = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Any()
                         ? "Assigned"
@@ -66,35 +66,35 @@ public sealed class AssetSearchQuery
 
                 AssignedTo = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => a.User != null ? a.User.FullName : null)
                     .FirstOrDefault() ?? "Unassigned",
 
                 AssignedUserId = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => (int?)a.UserID)
                     .FirstOrDefault(),
 
                 AssignedEmployeeNumber = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => a.User != null ? a.User.EmployeeNumber : null)
                     .FirstOrDefault(),
 
                 AssignedEmployeeName = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => a.User != null ? a.User.FullName : null)
                     .FirstOrDefault(),
 
                 AssignedAtUtc = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => (DateTime?)a.AssignedAtUtc)
                     .FirstOrDefault()
@@ -214,7 +214,12 @@ public sealed class AssetSearchQuery
 
         // ----- Cache key base -----
         var scopeKey = await GetScopeCacheKeyAsync(ct);
-        var cacheKeyBase = $"assets:search:scope={scopeKey}:q={norm.ToLower()}|type={type?.ToLower() ?? ""}|status={status?.ToLower() ?? ""}";
+
+        // pull a version number from our cache stamp
+        var ver = CacheStamp.AssetsVersion;
+
+        var cacheKeyBase =
+            $"assets:search:v={ver}:scope={scopeKey}:q={norm.ToLower()}|type={type?.ToLower() ?? ""}|status={status?.ToLower() ?? ""}";
 
         return totalsMode == PagingTotals.Exact
             ? await Paging.PageExactCachedAsync(_cache, cacheKeyBase, finalQ, page, pageSize, ct)
