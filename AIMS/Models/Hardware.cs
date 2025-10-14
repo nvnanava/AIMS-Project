@@ -1,25 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIMS.Models;
 
-public partial class Hardware
+public class Hardware
 {
-    public int AssetTag { get; set; }
+    // PK
+    public int HardwareID { get; set; }
 
-    public string AssetName { get; set; } = null!;
+    // Human-facing tag (client standard): VARCHAR(16)
+    [Required, MaxLength(16)]
+    public string AssetTag { get; set; } = string.Empty; // unique
 
-    public string AssetType { get; set; } = null!;
+    [MaxLength(128)]
+    public string AssetName { get; set; } = string.Empty;
 
-    public string Status { get; set; } = null!;
+    [Required, MaxLength(32)]
+    public string AssetType { get; set; } = string.Empty;
 
-    public string Manufacturer { get; set; } = null!;
+    [MaxLength(32)]
+    public string Status { get; set; } = string.Empty;
 
-    public string Model { get; set; } = null!;
+    [Required, MaxLength(64)]
+    public string Manufacturer { get; set; } = string.Empty;
 
-    public string SerialNumber { get; set; } = null!;
+    [Required, MaxLength(64)]
+    public string Model { get; set; } = string.Empty;
 
+    // Physical/device serial # (unique per hardware)
+    [Required, MaxLength(128)]
+    public string SerialNumber { get; set; } = string.Empty; // unique
+
+    [Required]
     public DateOnly WarrantyExpiration { get; set; }
 
+    [Required]
     public DateOnly PurchaseDate { get; set; }
+
+    public string Comment { get; set; } = string.Empty;
 }

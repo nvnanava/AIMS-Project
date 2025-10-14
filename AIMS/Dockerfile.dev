@@ -1,0 +1,24 @@
+# .NET SDK for dev + hot-reload
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+
+# Install dotnet-ef globally so scripts can run migrations inside the container
+RUN dotnet tool install --global dotnet-ef --version 9.* \
+    && echo 'export PATH="$PATH:/root/.dotnet/tools"' >> /root/.bashrc
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+# Work in /src (we’ll bind-mount the repo there)
+WORKDIR /src
+
+# (Optional) prime NuGet cache so first run is faster
+# Copy only the csproj to leverage Docker layer caching
+COPY AIMS/*.csproj AIMS/
+RUN dotnet restore AIMS/AIMS.csproj
+
+# We won’t copy the rest of the source here — in dev we use the bind mount.
+# The container will see your live files from the host.
+
+# Clear default ENTRYPOINT so our CMD runs as-is
+ENTRYPOINT []
+
+# Run with hot reload and bind to all interfaces for port mapping
+CMD ["dotnet", "watch", "run", "--project", "AIMS/AIMS.csproj", "--urls", "http://0.0.0.0:5119", "--non-interactive"]

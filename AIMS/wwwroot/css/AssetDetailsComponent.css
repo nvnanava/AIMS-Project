@@ -1,87 +1,130 @@
-.asset-table {
-    width: 70%; /* Balanced width */
-    margin: 20px auto;
-    border-collapse: collapse;
-    font-family: "Segoe UI", sans-serif;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    table-layout: fixed; /* Fixed layout to minimize extra space */
+.asset-table-wrapper{
+  width:70%;
+  margin:20px auto;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  position:relative;
+  overflow:visible;
 }
 
-.asset-table thead {
-    background-color: #2c3e50;
-    color: #fff;
+.asset-table{
+  width:100%;
+  border-collapse:collapse;
+  font-family:"Segoe UI",sans-serif;
+  table-layout:fixed;
 }
 
-.asset-table th,
-.asset-table td {
-    padding: 12px 15px; /* Standard padding to keep consistency */
-    text-align: left;
+.asset-table thead{background:#2c3e50;color:#fff}
+.asset-table th,.asset-table td{padding:12px 15px;font-size:16px}
+.asset-table th{font-weight:bold;text-align:left}
 
-    font-size: 16px; /* Better readability */
+.asset-table tbody tr{background:#f9f9f9;transition:background-color .2s}
+.asset-table tbody tr:nth-child(even){background:#eef2f5}
+.asset-table tbody tr:hover{background:#dcefff}
+
+.status-badge{padding:5px 12px;border-radius:8px;font-size:14px;font-weight:600;display:inline-block}
+.status-available{background:#e0f8e9;color:#2ecc71}
+.status-assigned{background:#fbeaea;color:#e74c3c}
+.status-marked-for-survey{background:#fff4e5;color:#f39c12}
+.status-in-repair{background:#f0f0f0;color:#7f8c8d}
+.status-surveyed{background:#eef6ff;color:#2d7cf6}
+
+.actions-header,
+.asset-table th:last-child,
+.asset-table td:last-child{
+  width:120px;
+  position:relative;
+  text-align:center;
+  vertical-align:top;
 }
 
-.asset-table th {
-    font-weight: bold;
+.actions-title{display:inline-block}
+
+.actions-header .asset-toolbar-top{
+  position:absolute;
+  top:-40px;
+  right:0;
+  z-index:3;
 }
 
-.asset-table tbody tr {
-    background-color: #f9f9f9;
-    transition: background-color 0.2s ease;
+.actions-header .asset-toolbar-top .btn,
+.asset-toolbar-top .btn,
+.actions-header .asset-toolbar-top .btn-success,
+.asset-toolbar-top .btn-success{
+  background-color:#2c3e50!important;
+  border-color:#2c3e50!important;
+  color:#fff!important;
+  font-weight:600;
 }
 
-.asset-table tbody tr:nth-child(even) {
-    background-color: #eef2f5;
+.actions-header .asset-toolbar-top .btn:hover{
+  background:#1e2f3d!important;
+  border-color:#1e2f3d!important;
 }
 
-.asset-table tbody tr:hover {
-    background-color: #dcefff;
+.actions-cell{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:48px;
 }
 
-/* Status badge styles */
-.status-badge {
-    padding: 5px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    display: inline-block;
+.action-btn{
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent;
+  padding:4px;
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  cursor:pointer;
 }
 
-.status-available {
-    background-color: #e0f8e9;
-    color: #2ecc71;
+.action-btn:hover{background:rgba(0,0,0,.06)}
+.action-btn:focus{outline:2px solid #9cc9ff;outline-offset:2px}
+.action-btn:active{transform:translateY(1px)}
+.pencil-svg{fill:#2c3e50;display:block}
+
+.asset-specs-popup{
+  display:none;
+  position:fixed;
+  background:#fff;
+  padding:12px 16px;
+  border:1.5px solid #ccc;
+  border-radius:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.15);
+  font-size:.85rem;
+  max-width:260px;
+  width:max-content;
+  word-wrap:break-word;
+  line-height:1.4;
+  z-index:1000;
 }
 
-.status-assigned {
-    background-color: #fbeaea;
-    color: #e74c3c;
+.search-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+  background: transparent;
 }
 
-.status-marked-for-survey {
-    background-color: #fff4e5;
-    color: #f39c12;
+.search-pager .pager-btn {
+  border: 1px solid #2c3e50;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.status-in-repair {
-    background-color: #f0f0f0;
-    color: #7f8c8d;
+.search-pager .pager-btn[disabled] {
+  opacity: .5;
+  cursor: default;
 }
 
-.asset-table th:last-child {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-}
-
-.asset-table th:last-child span {
-    padding-left: 10px; /* Adjust this value as needed */
-}
-
-.asset-table th span {
-    margin-right: auto;
-}
-
-.asset-table th .add-button {
-    margin-left: 10px;
+.pager-status {
+  color: #34495e;
+  font-size: 0.9rem;
 }

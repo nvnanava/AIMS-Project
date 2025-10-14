@@ -2,13 +2,19 @@
 for details on configuring this project to bundle and minify static web assets. */
 
 a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
 }
 
 a {
   color: #0077cc;
+}
+
+.navbar {
+  padding: 0.5rem 0.5rem;
+}
+
+.navbar-right {
+  padding-top: 15px;
 }
 
 .btn-primary {
@@ -99,3 +105,67 @@ button.accept-policy {
   font-weight: bold;
   border-bottom: 2px solid #007bff;
 }
+
+/* alert message */
+.assign-toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+.assign-toast {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  min-width: 280px;
+}
+
+.error-toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+.error-toast {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  min-width: 280px;
+}
+
+/* alert message */
+.edit-toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+}
+
+.edit-toast {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  min-width: 280px;
+}
+
+/* Override navbar bottom margin */
+.custom-navbar.box-shadow.mb-3 {
+  margin-bottom: 0 !important;
+  margin-top: 0px;
+}
+
+/* Override main padding */
+main.pb-3 {
+  padding-bottom: 0 !important;
+}
+
+:root { --nav-h: 96px; }       /* update if design changes */
+body { padding-top: var(--nav-h); }

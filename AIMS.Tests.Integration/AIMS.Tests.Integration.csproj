@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+
+    <!-- Keep test discovery fast & reproducible -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)'!=''">true</ContinuousIntegrationBuild>
+    
+    <!-- xUnit can also control this via [assembly: CollectionBehavior] attribute -->
+    <ParallelizeTestCollections>false</ParallelizeTestCollections>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Test-only packages should be private so they don't flow transitively -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" PrivateAssets="all" />
+    <PackageReference Include="xunit" Version="2.9.2" PrivateAssets="all" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Coverage collector (used by 'dotnet test ––collect:"XPlat Code Coverage"') -->
+    <PackageReference Include="coverlet.collector" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Test helpers -->
+    <PackageReference Include="FluentAssertions" Version="8.6.0" PrivateAssets="all" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+
+    <!-- Web/EF bits used by integration tests -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AIMS\AIMS.csproj" />
+  </ItemGroup>
+
+  <!-- Keep test config alongside the dll -->
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

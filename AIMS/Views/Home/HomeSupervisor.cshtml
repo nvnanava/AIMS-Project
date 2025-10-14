@@ -1,0 +1,165 @@
+@using System.Text.Json;
+@using AIMS.Utilities;
+@using AIMS.ViewModels
+@model object
+
+@{
+    ViewData["Title"] = "Home Page";
+
+    // Define Table Headers
+    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
+
+    // Empty placeholders; the JS will fetch real data from /api/assets
+    var tableData = new List<Dictionary<string, string>>();
+    var users = new List<Dictionary<string, string>>();
+
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
+}
+
+<!-- Welcome Message (shown for Supervisor view) -->
+<section class="welcome-section">
+<h1 class="welcome-title">Hello, @(User?.Identity?.Name)!</h1>
+<h2 class="welcome-subtitle">Here are your assets and reports.</h2>
+</section>
+
+<!-- Asset Table Section -->
+<section id="asset-management" class="asset-management">
+    <header id="asset-header" class="asset-header">
+        <div id="header-left-section" class="left-section">
+            <!-- Search Bar -->
+            <div id="asset-search-container" class="search-container">
+                <button id="asset-search-addon" class="input-group-text search-icon" type="button"
+                    aria-label="Run Search">🔍</button>
+                <input type="text" id="asset-search-input" class="form-control search-input"
+                    placeholder="Search for assets or employees..." aria-label="Search">
+            </div>
+
+            <!-- View Full List Button -->
+            <a id="view-full-list-button" class="standard-button" data-testid="view-full-list-button"
+                href="@Url.Action("Search", "Home")" style="text-decoration: none;">
+                View Full List
+            </a>
+
+            <!-- Filter Button -->
+            <div id="filter-button-container" class="dropdown" data-testid="filter-button">
+                <button id="filter-button-toggle" class="standard-button dropdown-toggle" type="button"
+                    aria-controls="filterDropdown" aria-expanded="false">
+                    Filter
+                </button>
+
+                <div id="filterDropdown" class="dropdown-menu" hidden role="menu" aria-label="Asset filters">
+                    <!-- My Assets -->
+                    <div id="filter-my-assets-container" class="filter-section">
+                        <label class="assets-parent">
+                            <input type="checkbox" id="filter-my-assets">
+                            My Assets
+                        </label>
+                    </div>
+
+                    <!-- All My Direct Reports' Assets -->
+                    <div id="filter-direct-reports-container" class="filter-section">
+                        <button id="toggle-direct-reports" class="expandable" type="button"
+                            aria-controls="reports-panel" aria-expanded="false">
+                            Filter By Direct Report
+                        </button>
+
+                        <div id="reports-panel" class="nested-panel" hidden>
+                            <!-- Parent -->
+                            <label class="reports-parent">
+                                <input type="checkbox" id="filter-all-reports">
+                                All My Reports
+                            </label>
+
+                            <!-- Children populated by JS -->
+                            <div id="reports-list" class="reports-children" role="group"
+                                aria-labelledby="filter-all-reports">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Type -->
+                    <div id="filter-type-container" class="filter-section">
+                        <button id="toggle-type-dropdown" class="expandable" type="button"
+                            aria-controls="types-dropdown" aria-expanded="false">
+                            Filter By Type
+                        </button>
+
+                        <div id="types-dropdown" class="mt-2" hidden>
+                            <label class="type-parent">
+                                <input type="checkbox" id="filter-all-types"> All Types
+                            </label>
+
+                            <div id="types-list" class="type-children" role="group" aria-labelledby="filter-all-types">
+                                <label><input type="checkbox" class="filter-type" value="Monitor"> Monitors</label>
+                                <label><input type="checkbox" class="filter-type" value="Laptop"> Laptops</label>
+                                <label><input type="checkbox" class="filter-type" value="Desktop"> Desktops</label>
+                                <label><input type="checkbox" class="filter-type" value="Software"> Software</label>
+                                <label><input type="checkbox" class="filter-type" value="Headset"> Headsets</label>
+                                <label><input type="checkbox" class="filter-type" value="Charging Cable"> Charging
+                                    Cables</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter by Status -->
+                    <div id="filter-status-container" class="filter-section">
+                        <button id="toggle-status-dropdown" class="expandable" type="button"
+                            aria-controls="status-dropdown" aria-expanded="false">
+                            Filter By Status
+                        </button>
+
+                        <div id="status-dropdown" class="mt-2" hidden>
+                            <label class="status-parent">
+                                <input type="checkbox" id="filter-all-status"> All Statuses
+                            </label>
+
+                            <div id="status-list" class="status-children" role="group"
+                                aria-labelledby="filter-all-status">
+                                <label><input type="checkbox" class="filter-status" value="Assigned"> Assigned</label>
+                                <label><input type="checkbox" class="filter-status" value="Available"> Available</label>
+                                <label><input type="checkbox" class="filter-status" value="In Repair"> In Repair</label>
+                                <label><input type="checkbox" class="filter-status" value="Damaged"> Damaged</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+         @* Conditional, Entra-based display code*@
+        @* @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+        { *@
+            <div id="header-right-section" class="right-section" data-testid="assign-asset-section">
+
+                @if (User != null && User.IsAdmin())
+                {
+                <button id="assign-asset-button" class="assign-asset-button" type="button" data-bs-toggle="modal"
+                    data-bs-target="#assignAssetModal">
+                    Assign Asset
+                </button>
+                }
+            </div>
+        @* } *@
+
+    </header>
+
+    <!-- Include Table Component -->
+    @if (tableHeaders == null || tableData == null)
+    {
+        <p style="color: red;">Table Data is Missing!</p>
+    }
+    @await Html.PartialAsync("~/Views/Shared/_TableComponent.cshtml", Tuple.Create(tableHeaders, tableData))
+    <!-- Include Modal HTML -->
+    @await Html.PartialAsync("~/Views/Shared/_AssignAssetModal.cshtml", Model)
+
+</section>
+
+@section Scripts {
+    <script> window.__USERS__ = @Html.Raw(JsonSerializer.Serialize(users));</script>
+
+    <script src="~/js/assignAssetModal.js" defer></script>
+    <script src="~/js/home.index.js" asp-append-version="true" defer></script>
+}
+

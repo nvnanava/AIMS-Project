@@ -1,0 +1,320 @@
+using System.Security.Claims;
+using AIMS.Data;
+using AIMS.Utilities;                 // ClaimsPrincipalExtensions (IsAdminOrHelpdesk / IsSupervisor)
+using AIMS.ViewModels;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+
+namespace AIMS.Queries;
+
+public sealed class AssetSearchQuery
+{
+    private readonly AimsDbContext _db;
+    private readonly IMemoryCache _cache;
+    private readonly IHttpContextAccessor _http;
+    private readonly IHostEnvironment _env;
+
+    public AssetSearchQuery(
+        AimsDbContext db,
+        IMemoryCache cache,
+        IHttpContextAccessor http,
+        IHostEnvironment env)
+    {
+        _db = db;
+        _cache = cache;
+        _http = http;
+        _env = env;
+    }
+
+    public async Task<PagedResult<AssetRowVm>> SearchAsync(
+        string? q,
+        string? type,
+        string? status,
+        int page,
+        int pageSize,
+        CancellationToken ct = default,
+        string? category = null,
+        PagingTotals totalsMode = PagingTotals.Exact)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 5, 50);
+
+        var norm = (q ?? string.Empty).Trim();
+        var hasQ = norm.Length > 0;
+
+        if (string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(category))
+            type = category;
+
+        // ---------------- Base projection (Hardware ∪ Software) ----------------
+        IQueryable<AssetRowVm> baseQ =
+            _db.HardwareAssets.AsNoTracking().Select(h => new AssetRowVm
+            {
+                HardwareID = h.HardwareID,
+                SoftwareID = null,
+                AssetName = h.AssetName ?? "",
+                Type = h.AssetType ?? "",
+                Tag = h.SerialNumber ?? "",
+
+                Status = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.UnassignedAtUtc == null)
+                    .Any()
+                        ? "Assigned"
+                        : (string.IsNullOrWhiteSpace(h.Status) ? "Available" : h.Status),
+
+                AssignedTo = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => a.User != null ? a.User.FullName : null)
+                    .FirstOrDefault() ?? "Unassigned",
+
+                AssignedUserId = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => (int?)a.UserID)
+                    .FirstOrDefault(),
+
+                AssignedEmployeeNumber = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => a.User != null ? a.User.EmployeeNumber : null)
+                    .FirstOrDefault(),
+
+                AssignedEmployeeName = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => a.User != null ? a.User.FullName : null)
+                    .FirstOrDefault(),
+
+                AssignedAtUtc = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => (DateTime?)a.AssignedAtUtc)
+                    .FirstOrDefault()
+            })
+            .Concat(
+            _db.SoftwareAssets.AsNoTracking().Select(s => new AssetRowVm
+            {
+                HardwareID = null,
+                SoftwareID = s.SoftwareID,
+                AssetName = s.SoftwareName ?? "",
+                Type = s.SoftwareType ?? "",
+                Tag = s.SoftwareLicenseKey ?? "",
+
+                Status = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Software
+                             && a.SoftwareID == s.SoftwareID
+                             && a.UnassignedAtUtc == null)
+                    .Any() ? "Assigned" : "Available",
+
+                AssignedTo = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Software
+                             && a.SoftwareID == s.SoftwareID
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => a.User != null ? a.User.FullName : null)
+                    .FirstOrDefault() ?? "Unassigned",
+
+                AssignedUserId = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Software
+                             && a.SoftwareID == s.SoftwareID
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => (int?)a.UserID)
+                    .FirstOrDefault(),
+
+                AssignedEmployeeNumber = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Software
+                             && a.SoftwareID == s.SoftwareID
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => a.User != null ? a.User.EmployeeNumber : null)
+                    .FirstOrDefault(),
+
+                AssignedEmployeeName = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Software
+                             && a.SoftwareID == s.SoftwareID
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => a.User != null ? a.User.FullName : null)
+                    .FirstOrDefault(),
+
+                AssignedAtUtc = _db.Assignments
+                    .Where(a => a.AssetKind == Models.AssetKind.Software
+                             && a.SoftwareID == s.SoftwareID
+                             && a.UnassignedAtUtc == null)
+                    .Select(a => (DateTime?)a.AssignedAtUtc)
+                    .FirstOrDefault()
+            }));
+
+        // ----- Role scoping (ALWAYS APPLIED) -----
+        baseQ = await ScopeByRoleAsync(baseQ, ct);
+
+        // ----- Facets -----
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            var t = type.Trim().ToLower();
+            baseQ = baseQ.Where(a => a.Type != null && a.Type.ToLower() == t);
+        }
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            var s = status.Trim().ToLower();
+            baseQ = baseQ.Where(a => a.Status != null && a.Status.ToLower() == s);
+        }
+
+        // ----- LIKE patterns (when q present) -----
+        IQueryable<AssetRowVm> finalQ;
+        if (hasQ)
+        {
+            var likeExact = EscapeLike(norm);
+            var likePrefix = EscapeLike(norm) + "%";
+            var likeContains = "%" + EscapeLike(norm) + "%";
+
+            var exactQ = baseQ.Where(a =>
+                EF.Functions.Like(a.AssetName ?? "", likeExact) ||
+                EF.Functions.Like(a.Tag ?? "", likeExact) ||
+                EF.Functions.Like(a.Type ?? "", likeExact) ||
+                EF.Functions.Like(a.Status ?? "", likeExact) ||
+                EF.Functions.Like(a.AssignedEmployeeName ?? "", likeExact) ||
+                EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likeExact));
+
+            var prefixQ = baseQ.Where(a =>
+                EF.Functions.Like(a.AssetName ?? "", likePrefix) ||
+                EF.Functions.Like(a.Tag ?? "", likePrefix) ||
+                EF.Functions.Like(a.Type ?? "", likePrefix) ||
+                EF.Functions.Like(a.Status ?? "", likePrefix) ||
+                EF.Functions.Like(a.AssignedEmployeeName ?? "", likePrefix) ||
+                EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likePrefix));
+
+            var containsQ = baseQ.Where(a =>
+                EF.Functions.Like(a.AssetName ?? "", likeContains) ||
+                EF.Functions.Like(a.Tag ?? "", likeContains) ||
+                EF.Functions.Like(a.Type ?? "", likeContains) ||
+                EF.Functions.Like(a.Status ?? "", likeContains) ||
+                EF.Functions.Like(a.AssignedEmployeeName ?? "", likeContains) ||
+                EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likeContains));
+
+            finalQ = exactQ.Union(prefixQ).Union(containsQ);
+        }
+        else
+        {
+            finalQ = baseQ;
+        }
+
+        // ----- Consistent ordering -----
+        finalQ = finalQ
+            .OrderBy(a => a.AssetName)
+            .ThenBy(a => a.Type)
+            .ThenBy(a => a.Tag)
+            .ThenBy(a => a.HardwareID)
+            .ThenBy(a => a.SoftwareID);
+
+        // ----- Cache key base -----
+        var scopeKey = await GetScopeCacheKeyAsync(ct);
+        var cacheKeyBase = $"assets:search:scope={scopeKey}:q={norm.ToLower()}|type={type?.ToLower() ?? ""}|status={status?.ToLower() ?? ""}";
+
+        return totalsMode == PagingTotals.Exact
+            ? await Paging.PageExactCachedAsync(_cache, cacheKeyBase, finalQ, page, pageSize, ct)
+            : await Paging.PageLookAheadCachedAsync(_cache, cacheKeyBase, finalQ, page, pageSize, ct);
+    }
+
+    private static string EscapeLike(string input) =>
+        input.Replace("\\", "\\\\").Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
+
+    private async Task<IQueryable<AssetRowVm>> ScopeByRoleAsync(IQueryable<AssetRowVm> q, CancellationToken ct)
+    {
+        var http = _http.HttpContext;
+
+        if (http?.User != null && http.User.IsAdminOrHelpdesk())
+            return q;
+
+        var (user, roleName) = await ResolveCurrentUserAsync(ct);
+        if (user is null) return q.Where(_ => false);
+
+        if (roleName is "Admin" or "IT Help Desk")
+            return q;
+
+        if (roleName is "Supervisor")
+        {
+            var scopeIds = await AIMS.Utilities.SupervisorScopeHelper
+                .GetSupervisorScopeUserIdsAsync(_db, user.UserID, _cache, ct);
+
+            return q.Where(a => a.AssignedUserId.HasValue && scopeIds.Contains(a.AssignedUserId.Value));
+        }
+
+        return q.Where(_ => false);
+    }
+
+    private async Task<string> GetScopeCacheKeyAsync(CancellationToken ct)
+    {
+        var http = _http.HttpContext;
+        if (http?.User != null && http.User.IsAdminOrHelpdesk())
+            return "admin";
+
+        var (user, roleName) = await ResolveCurrentUserAsync(ct);
+        if (user is null) return "anon";
+
+        if (roleName is "Admin" or "IT Help Desk") return "admin";
+
+        if (roleName is "Supervisor")
+        {
+            var ids = await AIMS.Utilities.SupervisorScopeHelper
+                .GetSupervisorScopeUserIdsAsync(_db, user.UserID, _cache, ct);
+
+            var min = ids.DefaultIfEmpty(0).Min();
+            var max = ids.DefaultIfEmpty(0).Max();
+            return $"sup:{user.UserID}:{ids.Count}:{min}-{max}";
+        }
+
+        return $"user:{user.UserID}";
+    }
+
+    public async Task<(AIMS.Models.User? user, string? roleName)> ResolveCurrentUserAsync(CancellationToken ct)
+    {
+        var http = _http.HttpContext;
+        if (http is null) return (null, null);
+
+        var impUserId = http.Items["ImpersonatedUserId"] as int?;
+        var impEmail = http.Items["ImpersonatedEmail"] as string;
+
+        AIMS.Models.User? user = null;
+
+        if (impUserId is not null)
+        {
+            user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserID == impUserId.Value, ct);
+        }
+        else if (!string.IsNullOrWhiteSpace(impEmail))
+        {
+            user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == impEmail, ct);
+        }
+        else
+        {
+            var email =
+                http.User.FindFirst("preferred_username")?.Value
+                ?? http.User.FindFirstValue(ClaimTypes.Email)
+                ?? http.User.Identity?.Name;
+
+            var emp =
+                http.User.FindFirst("employee_number")?.Value
+                ?? http.User.FindFirst("employeeNumber")?.Value;
+
+            if (!string.IsNullOrWhiteSpace(email))
+                user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
+
+            if (user is null && !string.IsNullOrWhiteSpace(emp))
+                user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.EmployeeNumber == emp, ct);
+        }
+
+        if (user is null) return (null, null);
+
+        var roleName = await _db.Roles.AsNoTracking()
+            .Where(r => r.RoleID == user.RoleID)
+            .Select(r => r.RoleName)
+            .FirstOrDefaultAsync(ct);
+
+        return (user, roleName);
+    }
+}

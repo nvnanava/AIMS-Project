@@ -1,25 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AIMS.Models;
 
-public partial class Software
+public class Software
 {
-    public int SoftwareId { get; set; }
+    public int SoftwareID { get; set; }
 
-    public string SoftwareName { get; set; } = null!;
+    [Required, MaxLength(128)]
+    public string SoftwareName { get; set; } = string.Empty;
 
-    public string SoftwareType { get; set; } = null!;
+    [Required, MaxLength(64)]
+    public string SoftwareType { get; set; } = string.Empty;
 
-    public string SoftwareVersion { get; set; } = null!;
+    [MaxLength(64)]
+    public string SoftwareVersion { get; set; } = string.Empty;
 
-    public string SoftwareDeploymentLocation { get; set; } = null!;
-
-    public string SoftwareLicenseKey { get; set; } = null!;
+    // License key is the human tag for software (unique)
+    [Required, MaxLength(128)]
+    public string SoftwareLicenseKey { get; set; } = string.Empty; // unique
 
     public DateOnly? SoftwareLicenseExpiration { get; set; }
 
     public long SoftwareUsageData { get; set; }
 
     public decimal SoftwareCost { get; set; }
+
+    public int LicenseTotalSeats { get; set; }
+    public int LicenseSeatsUsed { get; set; }
+
+    public string Comment { get; set; } = string.Empty;
 }
