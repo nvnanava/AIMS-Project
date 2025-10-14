@@ -29,7 +29,8 @@
             </div>
             <form id="addUserForm" onsubmit="addUser(event)">
                 <label for="userName">Name</label>
-                <input type="text" id="userName" required>
+                <input type ="text" id="userName" placeholder = "Start typing a name.." autocomplete = "off">
+                <div id="aadUserResults" class="aad-user-results"></div>
 
                 <label for="userEmail">Email</label>
                 <input type="email" id="userEmail" required>
@@ -114,54 +115,8 @@
         </div>
     </div>
 </div>
-
-<script>
-function sortTable(n) {
-    const table = document.getElementById("adminTable");
-    const tbody = table.tBodies[0];
-    const rows = Array.from(tbody.rows);
-    const asc = table.getAttribute("data-sort-dir") !== "asc";
-
-    rows.sort((a, b) => {
-        const x = a.cells[n].innerText.toLowerCase();
-        const y = b.cells[n].innerText.toLowerCase();
-        return asc ? x.localeCompare(y) : y.localeCompare(x);
-    });
-
-    rows.forEach(r => tbody.appendChild(r));
-    table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
+@section Scripts {
+    <script src="~/js/admin.js" asp-append-version="true"></script>
 }
 
-// Inactive user toggle
-function toggleInactiveUsers() {
-    const showInactive = document.getElementById("showInactive").checked;
-    document.querySelectorAll(".user-row.inactive").forEach(row => {
-        row.style.display = showInactive ? "" : "none";
-    });
-}
-window.onload = toggleInactiveUsers;
 
-// Filter by role
-function filterByRole() {
-    const role = document.getElementById("roleFilter").value;
-    document.querySelectorAll("#adminTable tbody tr").forEach(row => {
-        const userRole = row.cells[3].innerText.trim();
-        row.style.display = (role === "All" || userRole === role) ? "" : "none";
-    });
-}
-
-// Add User Modal (open/close)
-function openAddUserModal() {
-    document.getElementById("addUserModal").classList.add("show");
-}
-function closeAddUserModal() {
-    document.getElementById("addUserModal").classList.remove("show");
-}
-
-// Stub: handle add user
-function addUser(e) {
-    e.preventDefault();
-    // TODO: wire to backend
-    closeAddUserModal();
-}
-</script>

@@ -14,9 +14,19 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using System.IO.Abstractions;
 using Microsoft.Identity.Web.UI;
+using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Graph.Users.Item.MemberOf;
+using Microsoft.Graph.Authentication;
+using Azure.Identity;
 
-var builder = WebApplication.CreateBuilder(args);
+
+
+var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+
 
 // -------------------- Services --------------------
 builder.Services.AddEndpointsApiExplorer();   // dev/test
@@ -42,6 +52,11 @@ builder.Services
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+
+// Register the concrete FileSystem class for the IFileSystem interface (ReportsController)
+// necessary for mocking in UnitTesting
+builder.Services.AddSingleton<IFileSystem, FileSystem>();
+
 // ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
 builder.Services.AddAuthorization(options =>
 {
@@ -58,6 +73,7 @@ builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
+builder.Services.AddScoped<ReportsQuery>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -103,15 +119,34 @@ builder.Services
     .AddMicrosoftIdentityWebApp(options =>
     {
         builder.Configuration.Bind("AzureAd", options);
-        options.AccessDeniedPath = "/error/not-authorized"; // ★ corrected to use your error page
+        options.AccessDeniedPath = "/error/not-authorized";
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
+
+//Microsoft Graph setup
+builder.Services.AddSingleton<GraphServiceClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var tenantID = configuration["AzureAd:TenantId"];
+    var clientId = configuration["AzureAd:ClientId"];
+    var clientSecret = configuration["AzureAd:ClientSecret"];
+
+    var scopes = new[] { "https://graph.microsoft.com/.default" };
+    var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
+    return new GraphServiceClient(credential, scopes);
+
+
+});
+
+// Register GraphUserService and its interface for DI
+builder.Services.AddScoped<IGraphUserService, GraphUserService>();
+
 builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
-// keep your existing custom policies
+
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
       policy.RequireAssertion(context =>
@@ -207,8 +242,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // CORS only in dev (handy for local frontend)
-    app.UseCors("AllowLocalhost");
 }
 else
 {
@@ -245,8 +278,22 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
+// TODO: Remove when we add proper Azure Blob storage
+// allow saving to wwwroot folder
+app.UseStaticFiles();
+
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
+
+
+// CORS for Dev must come after routing
+if (app.Environment.IsDevelopment())
+{
+
+    // CORS only in dev (handy for local frontend)
+    app.UseCors("AllowLocalhost");
+}
 app.UseAuthentication();
 app.UseAuthorization();
 
