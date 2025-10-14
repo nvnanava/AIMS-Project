@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Services;
 using AIMS.Utilities;
 using AIMS.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -22,11 +23,18 @@ public class AssignmentController : ControllerBase
     private readonly AssignmentsQuery _assignQuery;
     private readonly AuditLogQuery _auditQuery;
 
-    public AssignmentController(AimsDbContext db, AssignmentsQuery assignQuery, AuditLogQuery auditQuery)
+    private readonly SummaryCardService _summaryCardService;
+
+    public AssignmentController(
+        AimsDbContext db,
+        AssignmentsQuery assignQuery,
+        AuditLogQuery auditQuery,
+        SummaryCardService summaryCardService)
     {
         _db = db;
         _assignQuery = assignQuery;
         _auditQuery = auditQuery;
+        _summaryCardService = summaryCardService;
     }
 
     [HttpPost("create")]
@@ -112,6 +120,7 @@ public class AssignmentController : ControllerBase
 
         await _db.SaveChangesAsync(ct);
         CacheStamp.BumpAssets();
+        _summaryCardService.InvalidateSummaryCache();
 
         // audit (best-effort)
         try
@@ -178,6 +187,7 @@ public class AssignmentController : ControllerBase
 
             await _db.SaveChangesAsync(ct);
             CacheStamp.BumpAssets();
+            _summaryCardService.InvalidateSummaryCache();
 
             // ---- Audit (now includes optional comment) ----
             try
