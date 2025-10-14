@@ -1,4 +1,4 @@
-/* ====== Global Table Responsiveness (works for iPad and desktop) ====== */
+/*Global Table Responsiveness (works for iPad and desktop) */
 .table-container,
 .table-responsive {
   width: 100%;
@@ -26,7 +26,7 @@
   vertical-align: middle;
 }
 
-/* ====== iPad & Tablet Layout (768px–1024px) ====== */
+/*  iPad & Tablet Layout (768px–1024px) */
 @media (min-width: 768px) and (max-width: 1024px) {
   html, body {
     overflow-x: hidden !important;
@@ -75,11 +75,19 @@
   }
 }
 
-/* ====== Desktop (>1024px) ====== */
+/*  Desktop (>1024px) */
 @media (min-width: 1025px) {
   .search-container {
-    width: 60% !important;
-    margin: 1rem auto;
+    width: auto !important;
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+  }
+
+  .search-input {
+    width: auto !important;
+    max-width: 250px !important;
   }
 }
 
