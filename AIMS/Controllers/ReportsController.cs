@@ -456,7 +456,7 @@ public class ReportsController : ControllerBase
         return PhysicalFile(fullPath, "text/csv", fileDownloadName: _fs.Path.GetFileName(fullPath));
     }
 
-    [HttpGet("/list")]
+    [HttpGet("list")]
     public async Task<IActionResult> GetAll()
     {
         var res = await _reports.GetAllReportsAsync(ct: HttpContext.RequestAborted);
