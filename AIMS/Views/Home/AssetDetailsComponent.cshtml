@@ -38,10 +38,6 @@
             { // Only show the Add button to admins
               @await Html.PartialAsync("_AssetButton")
             }
-            @if (User.IsAdmin())
-            { // Only show the Add button to admins
-              @await Html.PartialAsync("_AssetButton")
-            }
           </div>
         </th>
       </tr>
@@ -379,7 +375,6 @@
     } else {
       const sc = statusClassFor(asset.status);
       fourthCellHtml = `<span class="status-badge ${sc}">${asset.status ?? ""}</span>`;
-      case "archived": statusClass = "status-archived"; break;
     }
 
     const isArchived = asset.isArchived === true || (asset.status || "").toLowerCase().includes("archived");
