@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentIndex = 0; // how many *slots* we have advanced through (1..itemCount)
     let items = [];
     let inTransition = false;
+    let editIndex = null; // which item is being edited, null if none
 
     // ---------------- helpers ----------------
 
@@ -284,10 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         //update preview list
-        const li = document.createElement("li");
-        li.classList.add("list-group-item");
-        li.textContent = `${serial} | ${tag}`;
-        previewList.appendChild(li);
+        renderPreviewList();
 
         return true;
     }
@@ -411,11 +409,117 @@ document.addEventListener('DOMContentLoaded', function () {
             catch {
                 data = { title: `HTTP ${res.status}`, detail: await res.text() };
             }
-            showServerErrors(data);
+            showServerErrorsInline(data);
         } catch (err) {
-            showServerErrors({ title: err.name || "Client error", detail: err.message || "Unexpected error" });
+            showErrorMessages({ title: err.name || "Client error", detail: err.message || "Unexpected error" }, errorBox);
         }
     });
+
+    function renderPreviewList() {
+        previewList.innerHTML = "";
+        items.forEach((item, index) => {
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center";
+            li.dataset.index = index;
+
+            const span = document.createElement("span");
+            span.textContent = `${item.SerialNumber} | ${item.AssetTag}`;
+            li.appendChild(span);
+
+            // Edit button
+            const editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "action-btn blue-pencil";
+            editBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#032447ff" class="bi bi-pencil" viewBox="0 0 16 16">
+                <path d="M12.146.854a.5.5 0 0 1 .708 0l2.292 2.292a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-4 1a.5.5 0 0 1-.62-.62l1-4a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 12.5 5.793 10.207 3.5l1-1zm1.586 1.586-1-1L3 11.293V12h.707L12.793 4.086z"/>
+            </svg>
+        `;
+            editBtn.addEventListener("click", () => startEditItem(index));
+            li.appendChild(editBtn);
+
+            previewList.appendChild(li);
+        });
+    }
+
+    // Start editing an existing item
+    function startEditItem(index) {
+        editIndex = index;
+        //on click of edit button, load item data into form
+        const item = items[index];
+        document.getElementById('editSerialNumber').value = item.SerialNumber;
+        document.getElementById('editTagNumber').value = item.AssetTag;
+        //show slim modal
+
+        const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+        editModal.show();
+
+    }
+    document.getElementById('saveEditBtn').addEventListener("click", function () {
+        if (editIndex !== null) {
+            items[editIndex].SerialNumber = document.getElementById('editSerialNumber').value.trim();
+            items[editIndex].AssetTag = document.getElementById('editTagNumber').value.trim();
+            renderPreviewList();
+
+            // Close modal
+            const editModalEl = document.getElementById('editItemModal');
+            const modalInstance = bootstrap.Modal.getInstance(editModalEl);
+            modalInstance.hide();
+
+            editIndex = null;
+        }
+    });
+
+    function showServerErrorsInline(data) { //different from Software inline error message with the way the payloads are currently returned.
+        const list = document.getElementById("previewList");
+        if (!list) return;
+
+        // Clear old errors
+        list.querySelectorAll("li").forEach(li => {
+            li.classList.remove("list-group-item-danger");
+            const existing = li.querySelector(".inline-error");
+            if (existing) existing.remove();
+        });
+
+        const errors = data?.errors || data;
+        if (!errors) return;
+
+        let anyShown = false;
+
+        for (const key in errors) {
+            const messages = Array.isArray(errors[key]) ? errors[key] : [errors[key]];
+
+            // get numeric index from keys like "Dtos[0]" or "[0]"
+            const match = key.match(/\[(\d+)\]/);
+            const index = match ? parseInt(match[1], 10) : NaN;
+
+            if (!isNaN(index) && list.children[index]) {
+                const li = list.children[index];
+                li.classList.add("list-group-item-danger");
+                const div = document.createElement("div");
+                div.className = "inline-error text-danger small mt-1";
+                div.textContent = messages.join(", ");
+                li.appendChild(div);
+
+                li.scrollIntoView({ behavior: "smooth", block: "center" });
+                anyShown = true;
+            }
+        }
+
+        // Fallback if no inline match (e.g., no [index] found)
+        if (!anyShown) {
+            const modal = new bootstrap.Modal(document.getElementById("serverErrorModal"));
+            const listEl = document.getElementById("serverErrorList");
+            listEl.innerHTML = "";
+            for (const key in errors) {
+                const li = document.createElement("li");
+                li.className = "list-group-item text-danger";
+                li.textContent = `${key}: ${Array.isArray(errors[key]) ? errors[key].join(", ") : errors[key]}`;
+                listEl.appendChild(li);
+            }
+            modal.show();
+        }
+    }
 
     //helper to show error messages in the server error modal
     function showServerErrors(data) {

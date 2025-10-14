@@ -1,0 +1,187 @@
+
+/* iPad + small laptops */
+@media (max-width: 1366px) {
+  .navbar, .navbar-collapse {
+    flex-wrap: wrap !important;
+  }
+
+  /* Navbar reorder for tablets */
+  .navbar .container-fluid {
+    display: flex;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .search-container {
+    order: 2 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  .navbar-nav {
+    order: 3 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Search input sizing */
+  .search-input {
+    width: 90% !important;
+    max-width: 560px !important;
+  }
+}
+
+
+/* General mobile layout fix */
+@media (max-width: 992px) {
+  html, body {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+  }
+
+  /* Navbar should wrap and remain visible */
+   .navbar, .navbar-collapse {
+    flex-wrap: wrap !important;
+  }
+
+  /* Search bar fix */
+  .search-container {
+    width: 100% !important;
+    margin: 0.5rem auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  .search-input {
+    width: 100% !important;
+  }
+
+  /* --- Reports Page Layout --- */
+  .report-page-size {
+    width: 100%;
+    padding: 0 0.5rem;
+    overflow-x: auto;
+  }
+
+  /* Flex container for header items */
+  .report-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  /* Left: search bar | Right: buttons */
+  .report-header .left-section,
+  .report-header .right-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  /* Ensure buttons stack neatly */
+  .download-csv-button,
+  .new-report-button,
+  .dropdown button {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Table responsiveness */
+  .table-container,
+  .table-responsive {
+    overflow-x: scroll !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .report-table,
+  .other-table {
+    min-width: 800px !important;
+  }
+
+  /* Search/Asset Page Fixes */
+  .filter-bar,
+  .assign-section,
+  .asset-card {
+    width: 100% !important;
+    margin-bottom: 1rem;
+  }
+
+  .assign-section textarea {
+    width: 100%;
+  }
+
+  /* Avoid elements overlapping top navbar */
+  main {
+    padding-top: 4rem !important;
+  }
+}
+
+
+@media (max-width: 1200px) {
+  /* Allow dropdowns to overflow from any scrollable region */
+  .table-container,
+  .table-responsive,
+  .asset-details-table,
+  .modal-body,
+  .report-page-size,
+  .report-table {
+    overflow: visible !important;
+    position: relative !important;
+  }
+
+  /* Keep dropdown menus visible and above all other elements */
+  .dropdown-menu {
+    position: absolute !important;
+    z-index: 9999 !important;
+    transform: none !important;
+    will-change: auto !important;
+    inset: auto !important;
+  }
+
+  /* Ensure parents don't clip dropdowns */
+  .content-wrapper,
+  .main-content,
+  body,
+  html {
+    overflow: visible !important;
+  }
+
+  /* Prevent modal-body from hiding dropdowns */
+  .modal.show .modal-body {
+    overflow: visible !important;
+  }
+}
+
+/* ====== Desktop Full Search Bar (final enforced) ====== */
+@media screen and (min-width: 1025px) {
+  #search-container.search-container {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  #search-input.search-input {
+    width: 600px !important;
+    max-width: 640px !important;
+    min-width: 580px !important;
+    padding: 10px 18px !important;
+    border-radius: 25px !important;
+    font-size: 1rem !important;
+    box-sizing: border-box !important;
+  }
+
+  #search-container input[type="text"]::placeholder,
+  #search-container input[type="search"]::placeholder {
+    font-size: 1rem !important;
+    opacity: 0.9 !important;
+  }
+}
+

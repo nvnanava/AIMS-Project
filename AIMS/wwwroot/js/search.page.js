@@ -27,6 +27,10 @@
     let lastResultMeta = null;      // { total, page, pageSize }
     let lastQuery = null;           // cached last server query (string or "")
 
+    // Role flags
+    const CAN_ADMIN = (window.__CAN_ADMIN__ === true || window.__CAN_ADMIN__ === "true");
+    const IS_SUPERVISOR = (window.__IS_SUPERVISOR__ === true || window.__IS_SUPERVISOR__ === "true");
+
     // Scoped CSS attr (safe if none)
     const scopeAttrName = (() => {
         const host = document.querySelector(".asset-table") || document.body;
@@ -44,6 +48,12 @@
     // Helpers
     const clearBody = () => { while (tbody.firstChild) tbody.removeChild(tbody.firstChild); };
     const setEmpty = e => { empty.hidden = !e; };
+    const escapeHtml = (s) => String(s ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 
     // Zebra striping
     function applyZebra() {
@@ -81,6 +91,58 @@
         return r;
     }
 
+    // ---- render Assignment cell with 👤 button (admin/supervisor only) ----
+    function renderAssignmentCell(row) {
+        const displayName = (row.assignedEmployeeNumber && row.assignedTo)
+            ? `${row.assignedTo} (${row.assignedEmployeeNumber})`
+            : (row.assignedTo || "Unassigned");
+
+        const currentUserId = (row.assignedUserId ?? row.assignedEmployeeNumber ?? '') + '';
+
+        const span = document.createElement("span");
+        span.className = "assigned-name";
+        span.dataset.userId = currentUserId;
+        span.textContent = displayName;
+        applyScope(span);
+
+        const canShowButton = CAN_ADMIN || IS_SUPERVISOR;
+        if (!canShowButton) {
+            const frag = document.createDocumentFragment();
+            frag.appendChild(span);
+            return frag;
+        }
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "assign-btn";
+        btn.setAttribute("data-testid", "assign-user-btn");
+
+        // Normalize the IDs coming from the API (System.Text.Json -> camelCase by default)
+        const swId = row.softwareID ?? row.SoftwareID ?? row.softwareId ?? null;
+        const hwId = row.hardwareID ?? row.HardwareID ?? row.hardwareId ?? null;
+        const numericId = swId ?? hwId;
+        const kind = (swId != null) ? 2 : 1;
+
+        // IMPORTANT:
+        // - Use Tag # for UI targeting (row lookup)
+        // - Use numeric asset ID for API (HardwareID or SoftwareID)
+        btn.dataset.assetTag = (row.tag ?? '') + '';
+        btn.dataset.assetNumericId = (numericId != null ? String(numericId) : '');
+        btn.dataset.assetKind = String(kind);
+        btn.dataset.currentUserId = currentUserId;
+
+        btn.title = "Assign / change user";
+        btn.setAttribute("aria-label", `Assign user to ${row.assetName ? escapeHtml(row.assetName) : 'asset'}`);
+        btn.textContent = "👤";
+        applyScope(btn);
+
+        const wrapper = document.createDocumentFragment();
+        wrapper.appendChild(span);
+        wrapper.appendChild(document.createTextNode(" "));
+        wrapper.appendChild(btn);
+        return wrapper;
+    }
+
     function renderRows(items) {
         clearBody();
         for (const row of (items || [])) {
@@ -95,8 +157,14 @@
                 tr.style.cursor = "default";
             }
             tr.setAttribute("applied-filters", "0");
-            tr.dataset.tag = row.tag || "";
+
+            // dataset used by click handlers and inline updates
+            tr.dataset.tag = row.tag || "";                            // Tag # (string)
             tr.dataset.type = row.type || "";
+            const swId = row.softwareID ?? row.SoftwareID ?? row.softwareId ?? null;
+            const hwId = row.hardwareID ?? row.HardwareID ?? row.hardwareId ?? null;
+            tr.dataset.assetId = String(swId ?? hwId ?? "");
+            tr.dataset.status = (row.status || "-");
             applyScope(tr);
 
             const tdName = document.createElement("td");
@@ -116,10 +184,7 @@
 
             const tdAssn = document.createElement("td");
             tdAssn.className = "col-assignment";
-            const assnText = (row.assignedEmployeeNumber && row.assignedTo)
-                ? `${row.assignedTo} (${row.assignedEmployeeNumber})`
-                : (row.assignedTo || "Unassigned");
-            tdAssn.textContent = assnText;
+            tdAssn.appendChild(renderAssignmentCell(row));
             applyScope(tdAssn);
 
             const tdStat = document.createElement("td");
@@ -136,7 +201,54 @@
 
     // ---- CLICK HANDLER (delegated) ----
     let canDeepLink = !!window.__CAN_ADMIN__;
+
+    // Intercept clicks on the person icon to open assign or unassign modal
     tbody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.assign-btn');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation(); // don't trigger row deep-link
+
+            const rowEl = btn.closest('tr');
+            const tag = rowEl?.dataset.tag || ""; // Tag #
+            const numericId = btn.dataset.assetNumericId || ""; // numeric id for API
+            const assetKind = Number(btn.dataset.assetKind || "1"); // 1 hw, 2 sw
+
+            const currentUserId = btn.dataset.currentUserId || '';
+            const nameEl = rowEl ? rowEl.querySelector('.assigned-name') : null;
+            const currentDisplayName = (nameEl?.textContent || 'Unassigned').trim();
+
+            // If this row is assigned, open the UNASSIGN modal (client wants unassign before changes)
+            const isAssigned = (rowEl?.dataset.status || '').toLowerCase() === 'assigned'
+                || (currentUserId && currentUserId !== '');
+
+            if (isAssigned) {
+                window.dispatchEvent(new CustomEvent('unassign:open', {
+                    detail: {
+                        // Provide enough context for the unassign modal to pre-filter
+                        currentUserId: currentUserId || null,
+                        assetTag: tag || null,
+                        assetNumericId: numericId || null,
+                        assetKind
+                    }
+                }));
+                return;
+            }
+
+            // Else open the ASSIGN modal, locked to this asset
+            window.dispatchEvent(new CustomEvent('assign:open', {
+                detail: {
+                    assetTag: tag,                 // Tag # (UI)
+                    assetNumericId: numericId,     // numeric ID (API)
+                    assetKind,
+                    currentUserId,
+                    currentDisplayName
+                }
+            }));
+            return;
+        }
+
+        // Existing behavior: deep-link when clicking the row (but not the icon)
         if (!canDeepLink) return;
         const tr = e.target.closest('tr.result');
         if (!tr) return;
@@ -215,13 +327,11 @@
 
     // ---- INIT ----
     (async function init() {
-        // Supervisors: auto-load blank (server will scope)
         if (window.__IS_SUPERVISOR__) {
             await fetchInitial("", 1, pageSize);
             applyZebra();
             return;
         }
-        // Others: only fetch if there's a query
         if (initialQ.length > 0) {
             await fetchInitial(initialQ, 1, pageSize);
         } else {
@@ -236,7 +346,7 @@
     function updatePager(items) {
         if (!pager || !btnPrev || !btnNext || !lblStatus) return;
 
-        const total = lastResultMeta?.total ?? 0;     // exact now
+        const total = lastResultMeta?.total ?? 0;
         const page = lastResultMeta?.page ?? currentPage;
         const size = lastResultMeta?.pageSize ?? pageSize;
 
@@ -270,7 +380,6 @@
     async function fetchInitial(q, page = 1, pageSizeArg = 25) {
         const isBlank = !q || q.trim() === "";
 
-        // Only supervisors may fetch blank
         if (isBlank && !window.__IS_SUPERVISOR__) {
             clearBody();
             setEmpty(true);
@@ -278,17 +387,24 @@
             return;
         }
 
-        lastQuery = q ?? ""; // remember the last query so Prev/Next reuse it
+        lastQuery = q ?? "";
 
         const url = new URL("/api/assets/search", window.location.origin);
         if (!isBlank) url.searchParams.set("q", q.trim());
         url.searchParams.set("page", String(page));
         url.searchParams.set("pageSize", String(pageSizeArg));
 
+        // ---- Cache-bust: include server-stamped assets version (or a timestamp) ----
+        const ver = (window.__ASSETS_VER__ ? String(window.__ASSETS_VER__) : String(Date.now()));
+        url.searchParams.set("_v", ver);
+
         startLoading();
 
         try {
-            const res = await fetch(url.toString(), { cache: "no-store" });
+            const res = await fetch(url.toString(), {
+                cache: "no-store",
+                headers: { "Cache-Control": "no-cache, no-store" } // belt & suspenders
+            });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
 
@@ -296,7 +412,6 @@
             renderRows(data.items || []);
             if (!data.items || data.items.length === 0) setEmpty(true);
 
-            // keep paging state in sync with server metadata
             lastResultMeta = {
                 total: typeof data.total === 'number' ? data.total : -1,
                 page: typeof data.page === 'number' ? data.page : page,
@@ -315,4 +430,75 @@
             GlobalSpinner.hide();
         }
     }
+
+    // expose a public refresher for other scripts (assign/unassign) to call
+    window.refreshSearchTable = () => {
+        // reuse the last query if we have it, otherwise read current querystring
+        const q = (lastQuery ?? activeQuery() ?? "").trim();
+        fetchInitial(q, currentPage, pageSize);
+    };
+
+
+    // expose a public refresher for other scripts (assign/unassign) to call
+    window.refreshSearchTable = () => {
+        // reuse the last query if we have it, otherwise read current querystring
+        const q = (lastQuery ?? activeQuery() ?? "").trim();
+        fetchInitial(q, currentPage, pageSize);
+    };
+
 })();
+
+/* ===== Inline UI refresh after successful assignment ===== */
+window.addEventListener('assign:saved', (ev) => {
+    const { assetId /* Tag # or numeric fallback */, userId, userDisplay } = ev.detail || {};
+    if (!assetId) return;
+
+    // Row lookup prefers Tag #; if not found, try numeric id
+    let row = document.querySelector(`tr[data-tag="${CSS.escape(String(assetId))}"]`);
+    if (!row) {
+        row = Array.from(document.querySelectorAll('tr.result'))
+            .find(r => (r.dataset.assetId || '') === String(assetId));
+    }
+    if (!row) return;
+
+    // Update assignment cell
+    const nameSpan = row.querySelector('.assigned-name');
+    if (nameSpan) {
+        nameSpan.textContent = userDisplay || 'Unassigned';
+        nameSpan.dataset.userId = userId || '';
+    }
+    const iconBtn = row.querySelector('.assign-btn');
+    if (iconBtn) {
+        iconBtn.dataset.currentUserId = userId || '';
+    }
+
+    // Update status → Assigned
+    const statusCell = row.querySelector('.col-status');
+    if (statusCell) statusCell.textContent = 'Assigned';
+    row.dataset.status = 'Assigned';
+
+    // If the Status filter is currently "Available", hide this row immediately (no full refresh needed)
+    const selectStat = document.querySelector('[name="Status"]');
+    if (selectStat && (selectStat.value || '').toLowerCase() === 'available') {
+        row.style.display = "none";
+    }
+
+    // Re-apply zebra striping after potential hide
+    (function applyZebra() {
+        const tbody = document.getElementById("table-body");
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll(':scope > tr'));
+        let i = 0;
+        rows.forEach(tr => {
+            const hidden = tr.hidden || tr.style.display === 'none';
+            tr.classList.remove('zebra-even', 'zebra-odd');
+            if (hidden) return;
+            tr.classList.add((i++ % 2 === 0) ? 'zebra-even' : 'zebra-odd');
+        });
+    })();
+
+    // Keep pager/total honest with a lightweight refresh
+    if (typeof window.refreshSearchTable === 'function') {
+        window.refreshSearchTable();
+    }
+});

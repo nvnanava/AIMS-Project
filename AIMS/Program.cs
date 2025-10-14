@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using AIMS.Data;
 using AIMS.Queries;
+using AIMS.Services;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -15,8 +16,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using System.IO.Abstractions;
 using Microsoft.Identity.Web.UI;
+using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Graph.Users.Item.MemberOf;
+using Microsoft.Graph.Authentication;
+using Azure.Identity;
 
-var builder = WebApplication.CreateBuilder(args);
+
+
+var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
+
 
 // -------------------- Services --------------------
 builder.Services.AddEndpointsApiExplorer();   // dev/test
@@ -24,6 +34,8 @@ builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SummaryCardService>();
+builder.Services.AddScoped<AssetTypeCatalogService>();
 
 // ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
@@ -35,7 +47,8 @@ builder.Services
     .AddControllersWithViews()
     .AddJsonOptions(o =>
     {
-        // keep enums as strings (nice for APIs)
+        o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
@@ -106,15 +119,34 @@ builder.Services
     .AddMicrosoftIdentityWebApp(options =>
     {
         builder.Configuration.Bind("AzureAd", options);
-        options.AccessDeniedPath = "/error/not-authorized"; // ★ corrected to use your error page
+        options.AccessDeniedPath = "/error/not-authorized";
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
+
+//Microsoft Graph setup
+builder.Services.AddSingleton<GraphServiceClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var tenantID = configuration["AzureAd:TenantId"];
+    var clientId = configuration["AzureAd:ClientId"];
+    var clientSecret = configuration["AzureAd:ClientSecret"];
+
+    var scopes = new[] { "https://graph.microsoft.com/.default" };
+    var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
+    return new GraphServiceClient(credential, scopes);
+
+
+});
+
+// Register GraphUserService and its interface for DI
+builder.Services.AddScoped<IGraphUserService, GraphUserService>();
+
 builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
-// keep your existing custom policies
+
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
       policy.RequireAssertion(context =>
@@ -166,6 +198,20 @@ builder.Services.AddCors(options =>
 
 // -------------------- App pipeline --------------------
 var app = builder.Build();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Normalize path so the check is robust across OSes
+        var path = ctx.File.PhysicalPath?.Replace('\\', '/').ToLowerInvariant() ?? "";
+        if (path.Contains("/images/asset-icons/"))
+        {
+            // 1 year + immutable: browsers will keep icons across refreshes
+            ctx.Context.Response.Headers["Cache-Control"] =
+                "public, max-age=31536000, immutable";
+        }
+    }
+});
 
 app.UseResponseCaching();
 

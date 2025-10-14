@@ -231,28 +231,50 @@
         }
 
 
-        /* Table Styles */
-        .table-container {
-            max-height: 100%;
-            max-width: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
-            border-radius: 0;
-        }
+/* --- Responsive Table Layout --- */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-top: 0.5rem;
+    position: relative;
+}
 
-        .report-table {
-            table-layout: fixed;
-            width: 100%;
-            background-color: #FFFFFF;
-        }
+/* Make sure the table fits screen width and scrolls cleanly */
+.report-table {
+    width: 100%;
+    min-width: 700px;
+    border-collapse: collapse;
+    table-layout: auto;
+}
 
-        .report-table th, .report-table td {
-            padding: 12px;
-            text-align: left;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+/* Auto-fit and prevent text clipping */
+.report-table th,
+.report-table td {
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Narrow first column for checkbox */
+.report-table th:first-child,
+.report-table td:first-child {
+    width: 40px;
+    min-width: 40px;
+}
+
+/* Sticky header on scroll */
+.report-table thead {
+    position: sticky;
+    top: 0;
+    background: #CFDCDF;
+    z-index: 5;
+}
 
         /*Updated column widths to account for Office*/
         .report-table th:nth-child(1),
@@ -414,9 +436,7 @@
                 </div>
             </div>
         </div>
-
-
-        <div class="table-container">
+       <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
             <table class="report-table">
                 <thead>
                     <tr>
@@ -877,7 +897,7 @@ document.getElementById("generateCustomReportBtn").addEventListener("click", asy
             </div>
             <div class="modal-body">
                 <!-- Content for Asset Report -->
-                    <div class="table-container">
+                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
                         <table class="other-table">
                             <thead>
                                 <tr>
@@ -924,7 +944,7 @@ document.getElementById("generateCustomReportBtn").addEventListener("click", asy
             </div>
             <div class="modal-body">
                 <!-- Content for Custom Report -->
-                    <div class="table-container"></div>
+                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
                         <table class="other-table">
                             <thead>
                                 <tr>
@@ -969,7 +989,7 @@ document.getElementById("generateCustomReportBtn").addEventListener("click", asy
             </div>
             <div class="modal-body">
                 <!-- Content for Asset Assignments to Users -->
-                    <div class="table-container"></div>
+                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
                         <table class="other-table">
                             <thead>
                                 <tr>
@@ -1014,7 +1034,7 @@ document.getElementById("generateCustomReportBtn").addEventListener("click", asy
             </div>
             <div class="modal-body">
                 <!-- Content for Assets Assigned to an Office -->
-                    <div class="table-container"></div>
+                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
                         <table class="other-table">
                             <thead>
                                 <tr>
