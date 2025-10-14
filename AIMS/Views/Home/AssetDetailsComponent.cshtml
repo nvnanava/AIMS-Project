@@ -277,7 +277,7 @@
             class="action-btn red-archive"
             aria-label="Archive ${asset.assetName}"
             title="Archive asset"
-            onclick="archiveAsset('${asset.hardwareID || asset.softwareID}', '${asset.assetName}', '${asset.type}')">
+            onclick="archiveAsset('${asset.hardwareID ?? asset.softwareID}', '${asset.assetName}', '${asset.type}')">
       <svg xmlns="http://www.w3.org/2000/svg"
            width="16" height="16"
            fill="currentColor"
@@ -295,7 +295,7 @@
             class="action-btn green-unarchive"
             aria-label="Unarchive ${asset.assetName}"
             title="Unarchive asset"
-            onclick="unarchiveAsset('${asset.hardwareID || asset.softwareID}', '${asset.assetName}', '${asset.type}')">
+            onclick="unarchiveAsset('${asset.hardwareID ?? asset.softwareID}', '${asset.assetName}', '${asset.type}')">
       <svg xmlns="http://www.w3.org/2000/svg"
            width="16" height="16"
            fill="currentColor"

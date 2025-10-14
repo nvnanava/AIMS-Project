@@ -50,7 +50,6 @@ public sealed class AssetSearchQuery
 
         var countFiltered = await _db.HardwareAssets.CountAsync();
         var countIgnored = await _db.HardwareAssets.IgnoreQueryFilters().CountAsync();
-        Console.WriteLine($"Filtered: {countFiltered}, Ignored: {countIgnored}");
 
         // ----- building base IQueryable based on Archived filter ---------------
         var hardwareQuery = showArchived
@@ -237,7 +236,6 @@ public sealed class AssetSearchQuery
         var stamp = CacheStamp.AssetsVersion;
         var cacheKeyBase =
             $"assets:search:v={stamp}:scope={scopeKey}:q={norm.ToLower()}|type={type?.ToLower() ?? ""}|status={status?.ToLower() ?? ""}|archived={showArchived}";
-        Console.WriteLine($"[AssetSearchQuery] Using cache key: {cacheKeyBase}");
 
         return totalsMode == PagingTotals.Exact
             ? await Paging.PageExactCachedAsync(_cache, cacheKeyBase, finalQ, page, pageSize, ct)
