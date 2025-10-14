@@ -279,4 +279,98 @@ public class HardwareController : ControllerBase
 
         return Ok(hardware);
     }
+
+    [HttpPut("archive/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ArchiveHardware(int id, CancellationToken ct = default)
+    {
+        var hardware = await _db.HardwareAssets
+            .IgnoreQueryFilters()
+            .Where(h => h.HardwareID == id)
+            .SingleOrDefaultAsync(ct);
+
+        if (hardware == null)
+            return NotFound();
+
+        hardware.IsArchived = true;
+        hardware.Status = "Archived";
+
+        // unassign if assigned
+        var assignment = await _db.Assignments
+            .Where(a => a.HardwareID == id && a.UnassignedAtUtc == null)
+            .SingleOrDefaultAsync(ct);
+        if (assignment != null)
+        {
+            assignment.UnassignedAtUtc = DateTime.UtcNow;
+        }
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        var Asset = await _db.HardwareAssets
+        .IgnoreQueryFilters()
+        .Where(a => a.HardwareID == id)
+        .Select(a => new AssetRowVm
+        {
+            HardwareID = a.HardwareID,
+            AssetName = a.AssetName,
+            Type = a.AssetType,
+            Tag = a.AssetTag,
+            Status = "Archived",
+            IsArchived = true,
+            AssignedUserId = null,
+            AssignedTo = "Unassigned"
+        })
+    .SingleOrDefaultAsync();
+        if (Asset == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(Asset);
+    }
+
+    [HttpPut("unarchive/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnarchiveHardware(int id, CancellationToken ct = default)
+    {
+        var hardware = await _db.HardwareAssets
+            .IgnoreQueryFilters()
+            .Where(h => h.HardwareID == id)
+            .SingleOrDefaultAsync(ct);
+
+        if (hardware == null)
+            return NotFound();
+
+        hardware.IsArchived = false;
+        hardware.Status = "Available";
+
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        var Asset = await _db.HardwareAssets
+        .Where(a => a.HardwareID == id)
+        .Select(a => new AssetRowVm
+        {
+            HardwareID = a.HardwareID,
+            AssetName = a.AssetName,
+            Type = a.AssetType,
+            Tag = a.AssetTag,
+            Status = "Available",
+            IsArchived = false,
+            AssignedUserId = null,
+            AssignedTo = "Unassigned"
+        })
+    .SingleOrDefaultAsync();
+
+        if (Asset == null)
+            return NotFound();
+
+        return Ok(Asset);
+
+    }
 }

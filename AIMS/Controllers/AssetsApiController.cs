@@ -480,7 +480,7 @@ public class AssetsApiController : ControllerBase
         {
             var t = tag?.Trim();
             var hw = await (
-                from h in _db.HardwareAssets.AsNoTracking()
+                from h in _db.HardwareAssets.AsNoTracking().IgnoreQueryFilters()
                 where (t != null && (h.AssetTag == t || h.SerialNumber == t)) || (hardwareId != null && h.HardwareID == hardwareId)
                 let a = _db.Assignments
                             .Where(x => x.AssetKind == AssetKind.Hardware && x.HardwareID == h.HardwareID && x.UnassignedAtUtc == null)
@@ -518,7 +518,7 @@ public class AssetsApiController : ControllerBase
                 string? empNum = null, empName = null;
                 if (hw.AssignedUserId is int uid2)
                 {
-                    var u = await _db.Users.AsNoTracking()
+                    var u = await _db.Users.AsNoTracking().IgnoreQueryFilters()
                         .Where(x => x.UserID == uid2)
                         .Select(x => new { x.FullName, x.EmployeeNumber })
                         .FirstOrDefaultAsync(ct);
@@ -556,7 +556,7 @@ public class AssetsApiController : ControllerBase
         {
             var t = tag?.Trim();
             var sw = await (
-                from s in _db.SoftwareAssets.AsNoTracking()
+                from s in _db.SoftwareAssets.AsNoTracking().IgnoreQueryFilters()
                 where (t != null && s.SoftwareLicenseKey == t) || (softwareId != null && s.SoftwareID == softwareId)
                 let a = _db.Assignments
                             .Where(x => x.AssetKind == AssetKind.Software && x.SoftwareID == s.SoftwareID && x.UnassignedAtUtc == null)
@@ -571,7 +571,8 @@ public class AssetsApiController : ControllerBase
                     Status = (s.LicenseTotalSeats > 0)
                                 ? (s.LicenseSeatsUsed >= s.LicenseTotalSeats ? "Assigned" : "Available")
                                 : (a != null ? "Assigned" : "Available"),
-                    AssignedUserId = a != null ? (int?)a.UserID : null
+                    AssignedUserId = a != null ? (int?)a.UserID : null,
+                    isArchived = s.IsArchived
                 }
             ).FirstOrDefaultAsync(ct);
 
@@ -594,7 +595,7 @@ public class AssetsApiController : ControllerBase
                 string? empNum = null, empName = null;
                 if (sw.AssignedUserId is int uid2)
                 {
-                    var u = await _db.Users.AsNoTracking()
+                    var u = await _db.Users.AsNoTracking().IgnoreQueryFilters()
                         .Where(x => x.UserID == uid2)
                         .Select(x => new { x.FullName, x.EmployeeNumber })
                         .FirstOrDefaultAsync(ct);
@@ -613,7 +614,8 @@ public class AssetsApiController : ControllerBase
                     Type = "Software",
                     Tag = sw.Tag ?? "",
                     AssignedTo = assignedDisplay,
-                    Status = sw.Status ?? "Available",
+                    Status = sw.isArchived ? "Archived" : sw.Status ?? "Available",
+                    IsArchived = sw.isArchived,
                     AssignedUserId = sw.AssignedUserId,
                     AssignedEmployeeNumber = empNum,
                     AssignedEmployeeName = empName,

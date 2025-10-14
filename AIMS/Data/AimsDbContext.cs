@@ -278,6 +278,14 @@ namespace AIMS.Data
 
             modelBuilder.Entity<Threshold>()
                 .HasIndex(t => t.AssetType);
+
+
+            // -------------------------
+            // ARCHIVE FILTERS
+            // -------------------------
+            modelBuilder.Entity<User>().HasQueryFilter(u => !u.IsArchived);
+            modelBuilder.Entity<Hardware>().HasQueryFilter(h => !h.IsArchived);
+            modelBuilder.Entity<Software>().HasQueryFilter(s => !s.IsArchived);
         }
     }
 }

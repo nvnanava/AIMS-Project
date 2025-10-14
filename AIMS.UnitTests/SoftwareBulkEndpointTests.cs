@@ -1,13 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AIMS.Controllers;
-using AIMS.Data;
-using AIMS.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
+using FluentAssertions;
+using AIMS.Data;
+using AIMS.Queries;
+using AIMS.ViewModels;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using AIMS.Models;
+using AIMS.Controllers;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AIMS.UnitTests
 {

@@ -29,7 +29,8 @@ public sealed class SearchApiController : ControllerBase
         [FromQuery] string? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25,
-        [FromQuery] string? impersonate = null)
+        [FromQuery] string? impersonate = null,
+        [FromQuery] bool showArchived = false)
     {
         // DEV impersonation support
         if (!string.IsNullOrWhiteSpace(impersonate) && _env.IsDevelopment())
@@ -62,6 +63,7 @@ public sealed class SearchApiController : ControllerBase
             page: page, pageSize: pageSize,
             ct: HttpContext.RequestAborted,
             category: null,
+            showArchived: showArchived,
             totalsMode: PagingTotals.Exact);       // <— SEARCH = EXACT TOTALS
 
         return Ok(result);
