@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
+using System.IO.Abstractions;
 using Microsoft.Identity.Web.UI;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
@@ -51,6 +52,11 @@ builder.Services
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+
+// Register the concrete FileSystem class for the IFileSystem interface (ReportsController)
+// necessary for mocking in UnitTesting
+builder.Services.AddSingleton<IFileSystem, FileSystem>();
+
 // ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
 builder.Services.AddAuthorization(options =>
 {
@@ -67,6 +73,7 @@ builder.Services.AddScoped<AssetQuery>();
 builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
+builder.Services.AddScoped<ReportsQuery>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -235,8 +242,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // CORS only in dev (handy for local frontend)
-    app.UseCors("AllowLocalhost");
 }
 else
 {
@@ -273,8 +278,22 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
+// TODO: Remove when we add proper Azure Blob storage
+// allow saving to wwwroot folder
+app.UseStaticFiles();
+
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
+
+
+// CORS for Dev must come after routing
+if (app.Environment.IsDevelopment())
+{
+
+    // CORS only in dev (handy for local frontend)
+    app.UseCors("AllowLocalhost");
+}
 app.UseAuthentication();
 app.UseAuthorization();
 
