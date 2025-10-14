@@ -1,44 +1,41 @@
-<!-- Unassign Asset Modal -->
+@* Unassign Asset Modal (summary + comment only) *@
 <div class="modal fade" id="unassignAssetModal" tabindex="-1" aria-labelledby="unassignAssetLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
+            <!-- Header -->
             <div class="modal-header">
-                <h5 class="modal-title" id="unassignAssetLabel">Unassign an Asset</h5>
+                <h5 class="modal-title" id="unassignAssetLabel">Unassign Asset</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
+            <!-- Body -->
             <div class="modal-body">
+                <div id="unSelectedAssetBox" class="mb-3">
+                    <label class="form-label mb-1">Asset to Unassign</label>
+                    <div class="p-2 border rounded bg-white">
+                        <div><strong>Name:</strong> <span id="unSelAssetName">—</span></div>
+                        <div><strong>Tag #:</strong> <span id="unSelAssetTag">—</span></div>
+                        <div><strong>Kind:</strong> <span id="unSelAssetKind">—</span></div>
+                        <div><strong>Assignment ID:</strong> <span id="unSelAssignmentId">—</span></div>
+                    </div>
+                    <input type="hidden" id="unassignAssignmentId" value="" />
+                </div>
+
                 <form id="unassignAssetForm">
                     <div class="mb-3">
-                        <label for="userSelect2" class="form-label">Select User</label>
-                        <select class="form-select" id="userSelect2" required>
-                            <option selected disabled value="">Choose a user...</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="assetSelect2" class="form-label">Select Asset</label>
-                        <select class="form-select" id="assetSelect2" required>
-                            <option selected disabled value="">Choose an asset...</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="commentBox" class="form-label">Unassignment Comment</label>
-                        <textarea id="commentBox" class="form-control" rows="3" placeholder="Reason for unassignment..."
-                            ></textarea>
+                        <label for="unassignCommentBox" class="form-label">Unassignment Comment</label>
+                        <textarea id="unassignCommentBox" class="form-control" rows="3"
+                            placeholder="Reason for unassignment (optional)..."></textarea>
                     </div>
                 </form>
             </div>
+
+            <!-- Footer -->
             <div class="modal-footer justify-content-center gap-3">
-                
-                <button type="submit" form="unassignAssetForm" class="btn custom-modal-btn custom-submit-btn">Unassign
-                    Asset</button>
+                <button type="submit" form="unassignAssetForm" class="btn custom-modal-btn custom-submit-btn">
+                    Unassign Asset
+                </button>
             </div>
         </div>
     </div>
 </div>
-
-
-
-<script>
-     document.addEventListener("DOMContentLoaded", function () {
-        });
-</script>
