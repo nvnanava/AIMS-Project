@@ -18,19 +18,12 @@
 <script>
     window.__CAN_ADMIN__ = @(__CAN_ADMIN__ ? "true" : "false");
     window.__IS_SUPERVISOR__ = @(__IS_SUPERVISOR__ ? "true" : "false");
+    // Expose the current assets version so client can cache-bust search calls
+    window.__ASSETS_VER__ = @CacheStamp.AssetsVersion;
 </script>
 
 <div class="page-fill">
     <div class="table-container">
-        @if (__CAN_ADMIN__)
-        {
-            <div style="display: flex; justify-content: flex-end; margin: 10px 0 15px 0; padding-right: 10px;">
-                <button type="button" id="assign-asset-button" class="btn btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#assignAssetModal">
-                    <i class="bi bi-person-plus"></i> Assign Asset
-                </button>
-            </div>
-        }
         <!-- Sticky table header -->
         <table class="asset-table-header">
             <thead>
@@ -43,44 +36,38 @@
             </thead>
         </table>
 
-        <!-- Sticky toolbar (filters) -->
+        <!-- Sticky toolbar -->
         <div class="table-toolbar">
             <div class="toolbar-grid">
-                <!-- Asset Name -->
                 <div class="toolbar-cell">
-                    <input class="search-input filter-input" type="text" name="Asset Name" id="asset-name"
+                    <input class="search-input filter-input" type="text" name="Asset Name"
                         placeholder="Filter by Asset Name" />
                 </div>
-                <!-- Type -->
                 <div class="toolbar-cell">
-                    <select id="type" name="Type" class="filter-input form-select">
+                    <select name="Type" class="filter-input form-select">
                         <option value="">All Devices</option>
-                        <option value="Desktop">Desktop</option>
-                        <option value="Laptop">Laptop</option>
-                        <option value="Headset">Headset</option>
-                        <option value="Charging Cable">Charging Cable</option>
-                        <option value="Monitor">Monitor</option>
-                        <option value="Software">Software</option>
+                        <option>Desktop</option>
+                        <option>Laptop</option>
+                        <option>Headset</option>
+                        <option>Charging Cable</option>
+                        <option>Monitor</option>
+                        <option>Software</option>
                     </select>
                 </div>
-                <!-- Tag # -->
                 <div class="toolbar-cell">
-                    <input class="filter-input search-input" type="text" name="Tag #" id="tag"
-                        placeholder="Filter by Tag #" />
+                    <input class="filter-input search-input" type="text" name="Tag #" placeholder="Filter by Tag #" />
                 </div>
-                <!-- Assignment -->
                 <div class="toolbar-cell">
-                    <input class="filter-input search-input" type="text" name="Assignment" id="assignment"
+                    <input class="filter-input search-input" type="text" name="Assignment"
                         placeholder="Filter by Assignment" />
                 </div>
-                <!-- Status -->
                 <div class="toolbar-cell">
-                    <select id="status" name="Status" class="filter-input form-select">
+                    <select name="Status" class="filter-input form-select">
                         <option value="">All Status</option>
-                        <option value="Assigned">Assigned</option>
-                        <option value="Available">Available</option>
-                        <option value="In Repair">In Repair</option>
-                        <option value="Damaged">Damaged</option>
+                        <option>Assigned</option>
+                        <option>Available</option>
+                        <option>In Repair</option>
+                        <option>Damaged</option>
                     </select>
                 </div>
             </div>
@@ -93,16 +80,23 @@
             </table>
         </div>
 
-        <!-- Keep empty-state -->
+        <!-- Pager -->
+        <div class="search-pager" id="search-pager" hidden>
+            <button type="button" id="pg-prev" class="pager-btn">Prev</button>
+            <span id="pg-status" class="pager-status"></span>
+            <button type="button" id="pg-next" class="pager-btn">Next</button>
+        </div>
+
         <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
     </div>
 </div>
 
 @* Include the modal markup *@
 @await Html.PartialAsync("_AssignAssetModal")
+@await Html.PartialAsync("_UnassignAssetModal") @* <-- ensure this exists *@
 
 @section Scripts {
     <script src="~/js/search.page.js" asp-append-version="true"></script>
     <script src="~/js/assignAssetModal.js" asp-append-version="true"></script>
-
+    <script src="~/js/unassignAssetModal.js" asp-append-version="true"></script> @* <-- register *@
 }

@@ -1,0 +1,54 @@
+<div class="modal fade" id="dashboardSettingsModal" tabindex="-1" aria-labelledby="dashboardSettingsTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+        <div class="modal-content aimsds-shell">
+
+            <div class="modal-header aimsds-header">
+                <h5 class="modal-title" id="dashboardSettingsTitle">Dashboard Settings</h5>
+                <button type="button" class="btn-close aimsds-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body aimsds-body">
+
+                <!-- Filter + reset row -->
+                <div class="aimsds-controls">
+                    <input id="ds-filter" type="text" class="aimsds-input" placeholder="Filter asset types…">
+                    <button id="ds-reset" type="button" class="aimsds-btn">Reset</button>
+                </div>
+
+                <!-- Table -->
+                <div class="aimsds-table-wrap">
+                    <table id="ds-table" class="aimsds-table">
+                        <thead>
+                            <tr>
+                                <th style="width:84px;">Show</th>
+                                <th>Asset Type</th>
+                                <th style="width:160px;">Threshold</th>
+                                <th style="width:120px;" class="num">Available</th>
+                                <th style="width:100px;" class="num">Total</th>
+                                <th style="width:120px;" class="num">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- rows injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="aimsds-tip">
+                    Only types that exist in inventory appear here. When new types are added,
+                    they’ll show up automatically.
+                </div>
+            </div>
+
+            <div class="modal-footer aimsds-footer">
+                <span id="ds-message" class="aimsds-msg" role="status" aria-live="polite"></span>
+                <div class="aimsds-footer-right">
+                    <button type="button" class="aimsds-btn" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="aimsds-btn aimsds-primary" id="ds-save">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
