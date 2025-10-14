@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using AIMS.Data;
 using AIMS.Queries;
+using AIMS.Services;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -23,6 +24,8 @@ builder.Services.AddSwaggerGen();             // dev/test
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SummaryCardService>();
+builder.Services.AddScoped<AssetTypeCatalogService>();
 
 // ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
@@ -34,7 +37,8 @@ builder.Services
     .AddControllersWithViews()
     .AddJsonOptions(o =>
     {
-        // keep enums as strings (nice for APIs)
+        o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
@@ -159,6 +163,20 @@ builder.Services.AddCors(options =>
 
 // -------------------- App pipeline --------------------
 var app = builder.Build();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Normalize path so the check is robust across OSes
+        var path = ctx.File.PhysicalPath?.Replace('\\', '/').ToLowerInvariant() ?? "";
+        if (path.Contains("/images/asset-icons/"))
+        {
+            // 1 year + immutable: browsers will keep icons across refreshes
+            ctx.Context.Response.Headers["Cache-Control"] =
+                "public, max-age=31536000, immutable";
+        }
+    }
+});
 
 app.UseResponseCaching();
 

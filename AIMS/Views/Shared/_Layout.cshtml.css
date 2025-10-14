@@ -14,7 +14,10 @@ a {
 }
 
 .navbar-right {
-  padding-top: 15px;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  transform: translateY(-1px);
 }
 
 .btn-primary {

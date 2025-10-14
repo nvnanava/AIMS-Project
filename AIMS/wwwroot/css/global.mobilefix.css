@@ -6,7 +6,7 @@
   -webkit-overflow-scrolling: touch;
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-top: 0.75rem;
 }
 
@@ -28,12 +28,15 @@
 
 /* ====== iPad & Tablet Layout (768px–1024px) ====== */
 @media (min-width: 768px) and (max-width: 1024px) {
-  html, body {
+
+  html,
+  body {
     overflow-x: hidden !important;
   }
 
   /* Navbar and search spacing */
-  .navbar, .navbar-collapse {
+  .navbar,
+  .navbar-collapse {
     flex-wrap: wrap;
   }
 
@@ -69,7 +72,9 @@
   }
 
   /* Prevent text cutoff */
-  table, th, td {
+  table,
+  th,
+  td {
     white-space: normal !important;
     word-wrap: break-word !important;
   }
@@ -77,9 +82,16 @@
 
 /* ====== Desktop (>1024px) ====== */
 @media (min-width: 1025px) {
-  .search-container {
-    width: 60% !important;
-    margin: 1rem auto;
+
+  /* Keep search in the navbar, right-aligned, and comfortably wide */
+  .navbar .search-container {
+    width: clamp(22rem, 32vw, 36rem) !important;
+    margin: 0 0 0 auto !important;
+    /* push to the right within navbar row */
+  }
+
+  .navbar .search-input {
+    min-width: 16rem;
+    /* ensure placeholder text fits cleanly */
   }
 }
-
