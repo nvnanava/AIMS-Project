@@ -1,45 +1,33 @@
 using System.Linq;
+using System.Threading.Tasks;
 using AIMS.Data;
-using AIMS.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AIMS.Controllers;
-
-// Commented out for now, enable when we have entraID
-// [Authorize(Roles = "Admin")]
-[ApiController]
-[Route("api/user")]
-public class UserController : ControllerBase
+namespace AIMS.Controllers
 {
-    private readonly AimsDbContext _db;
-    private readonly UserQuery _userQuery;
-    public UserController(AimsDbContext db, UserQuery userQuery)
+    // [Authorize(Roles = "Admin")] 
+    [ApiController]
+    [Route("api/office")]
+    public class OfficeController : ControllerBase
     {
-        _db = db;
-        _userQuery = userQuery;
-    }
+        private readonly AimsDbContext _db;
 
-    [HttpGet("get-all")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAllUsers()
-    {
-        var users = await _userQuery.GetAllUsersAsync();
-        return Ok(users);
-    }
-
-    [HttpGet]
-    public async Task<IActionResult> SearchUsersByName([FromQuery] string? searchString)
-    {
-        if (searchString == null)
+        public OfficeController(AimsDbContext db)
         {
-            return Ok(await _userQuery.GetFirstNUsers(20));
+            _db = db;
         }
-        var users = await _userQuery.SearchUserByName(searchString);
-        return Ok(users);
+
+        // Temporary debug endpoint to view valid office IDs and names
+        [HttpGet("list")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetOffices()
+        {
+            var offices = await _db.Offices
+                .Select(o => new { o.OfficeID, o.OfficeName })
+                .ToListAsync();
+
+            return Ok(offices);
+        }
     }
-
-
 }
