@@ -53,6 +53,49 @@
   border-top-right-radius: 8px;
 }
 
+/* ==== Show Archived Toggle ==== */
+
+.show-archived-toggle .form-check-input {
+  width: 2rem;
+  height: 1rem;
+  border-radius: 1rem;
+  border-color: #34495e;
+  border: 2px solid #34495e;
+  background-color: #e0e4e5;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease-in-out;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.show-archived-toggle {
+  color: #34495e;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.75rem;
+  margin-top: 0.25rem;
+  gap: 0.5rem;
+
+}
+
+.form-check-input {
+  vertical-align: middle;
+  margin-top: .25em;
+}
+
+.show-archived-toggle .form-check-input {
+  margin-top: 0 !important;
+  vertical-align: middle !important;
+}
+
+.show-archived-toggle label {
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
 /* ===== Toolbar ===== */
 .table-toolbar {
   z-index: 10;
@@ -396,19 +439,83 @@
 }
 
 .search-pager .pager-btn {
-  border: 1px solid #2c3e50;
-  background: #fff;
-  padding: 6px 12px;
-  border-radius: 6px;
+  height: 41px;
+  padding: 0 16px;
+  background: #ecf0f1;
+  color: #34495e;
+  border: 3px solid #34495e;
+  box-shadow: 0 4px 4px #0000003e;
+  border-radius: 20px;
   cursor: pointer;
+  font-weight: 600;
+  transition: border-color .15s ease-out, box-shadow .15s ease-out, transform .15s ease-out;
+}
+
+.search-pager .pager-btn:hover:not([disabled]) {
+  border-color: #1abc9c;
+}
+
+.search-pager .pager-btn:focus-visible {
+  outline: 3px solid #1abc9c;
+  outline-offset: 3px;
+}
+
+.search-pager .pager-btn:active:not([disabled]) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 3px #0000003e;
 }
 
 .search-pager .pager-btn[disabled] {
-  opacity: .5;
+  opacity: 0.5;
   cursor: default;
+  box-shadow: none;
 }
 
 .pager-status {
   color: #34495e;
   font-size: 0.9rem;
+}
+
+/* Person icon button next to assignment */
+.assign-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    margin-left: .5rem;
+    font-size: 1.05rem;
+    /* makes the emoji/icon a bit bigger */
+    line-height: 1;
+}
+
+.assign-btn:focus {
+    outline: 2px solid #005fcc;
+    border-radius: 4px;
+}
+
+/* Assignment cell: keep name + icon on one line and centered */
+.assn-cell {
+    display: inline-flex;
+    /* stay on one line inside the centered <td> */
+    align-items: center;
+    /* vertically center icon with text */
+    gap: 8px;
+    /* spacing between name and icon */
+    justify-content: center;
+    /* keep both centered in the cell */
+}
+
+.assign-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1.05rem;
+    line-height: 1;
+    padding: 0;
+    /* avoid pushing it to a new line */
+    vertical-align: middle;
+}
+
+.assign-btn:focus {
+    outline: 2px solid #005fcc;
+    border-radius: 4px;
 }

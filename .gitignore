@@ -412,3 +412,6 @@ TestResults/
 *.html
 *.coverage
 *.log
+
+# wwwroot saved reposed
+AIMS/wwwroot/reports

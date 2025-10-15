@@ -1,17 +1,35 @@
-/* .button {
-  background-color: #1abc9c;
-  color: #fff;
-  border: none;
-  padding: 5px 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  font-size: 14px;
+.action-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin-left: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.button:hover {
-  background-color: #0a6855;
-} */
+.red-archive {
+    background-color: transparent;
+    color: rgba(175, 16, 16, 0.89);
+}
+
+.red-archive:hover {
+    background-color: transparent;
+    transform: scale(1.25);
+}
+
+.green-unarchive {
+    background-color: transparent;
+    color: #157347;
+}
+
+.green-unarchive:hover {
+    background-color: transparent;
+    transform: scale(1.25);
+}
+
+.bi-archive-fill {
+    vertical-align: middle;
+}
 
 .dropbtn {
     background-color: #1abc9c;
@@ -23,6 +41,7 @@
     cursor: pointer;
     transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
+
 /* Dropdown button on hover & focus */
 
 .dropbtn:hover,
@@ -55,10 +74,12 @@
     text-decoration: none;
     display: block;
 }
+
 /* Change color of dropdown links on hover */
 .assetManage-content a:hover {
     background-color: #f1f1f1;
 }
+
 /* Show the dropdown menu on hover */
 .assetManage:hover .assetManage-content {
     display: block;

@@ -6,6 +6,7 @@
 #     dev|prod  -> which compose file to use (default: dev)
 #     ensure    -> create DB if missing (default)
 #     reseed    -> DROP and CREATE DB AIMS (DANGEROUS in prod)
+#     --hard    -> (optional) with reseed, fully tear down stack and volumes first
 #
 # QUICK DEBUG:
 #   docker compose ps
@@ -31,6 +32,7 @@ fi
 
 ENV="${1:-dev}"        # dev | prod
 ACTION="${2:-ensure}"  # ensure | reseed
+HARD_FLAG="${3:-}"     # optional: --hard | hard | --volumes | -v
 
 # Compose command
 if docker compose version >/dev/null 2>&1; then
@@ -57,6 +59,14 @@ SA_USER="sa"
 SA_PASS='StrongP@ssword!'   # keep single quotes to protect '!'
 
 compose() { "${COMPOSE[@]}" -f "$FILE" "$@"; }
+
+# Optional hard reseed: fully tear down stack (including volumes) and start SQL fresh
+if [[ "$ACTION" == "reseed" ]] && [[ "$HARD_FLAG" =~ ^(--hard|hard|--volumes|-v)$ ]]; then
+  warn "Hard reseed requested — bringing stack down and removing volumes…"
+  compose down --volumes --remove-orphans || true
+  info "Starting SQL service fresh…"
+  compose up -d "$SQL_SVC"
+fi
 
 # Quick health check before we proceed
 SQL_CID="$(compose ps -q "$SQL_SVC")"
@@ -87,6 +97,14 @@ else
   run_sql "IF DB_ID('AIMS') IS NULL CREATE DATABASE [AIMS];" \
     || fail "Ensure DB failed."
   info "Database present."
+fi
+
+# If we did a hard reseed in dev, make sure the web container is up before migrations
+if [[ "$ENV" != "prod" ]] && [[ "$ACTION" == "reseed" ]] && [[ "$HARD_FLAG" =~ ^(--hard|hard|--volumes|-v)$ ]]; then
+  info "Starting web service after hard reseed…"
+  compose up -d "$WEB_SVC"
+  # brief grace period to let Kestrel boot before exec
+  sleep 5
 fi
 
 # Dev only: run EF migrations in the web container

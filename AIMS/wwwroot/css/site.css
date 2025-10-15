@@ -71,11 +71,6 @@ body {
   display: flex;
   justify-content: space-around;
 }
-.readonly-field {
-    background-color: #f5f5f5;
-    color: #6c757d;
-    cursor: not-allowed;
-}
 
 .global-loading-overlay {
   position: fixed;
@@ -107,4 +102,8 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+.d-none {
+  display: none !important;
 }

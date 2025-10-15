@@ -35,7 +35,8 @@ public sealed class AssetSearchQuery
         int pageSize,
         CancellationToken ct = default,
         string? category = null,
-        PagingTotals totalsMode = PagingTotals.Exact)
+        PagingTotals totalsMode = PagingTotals.Exact,
+        bool showArchived = false)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 5, 50);
@@ -46,19 +47,34 @@ public sealed class AssetSearchQuery
         if (string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(category))
             type = category;
 
+
+        var countFiltered = await _db.HardwareAssets.CountAsync();
+        var countIgnored = await _db.HardwareAssets.IgnoreQueryFilters().CountAsync();
+
+        // ----- building base IQueryable based on Archived filter ---------------
+        var hardwareQuery = showArchived
+        ? _db.HardwareAssets.AsNoTracking().IgnoreQueryFilters()
+        : _db.HardwareAssets.AsNoTracking();
+
+        var softwareQuery = showArchived
+        ? _db.SoftwareAssets.AsNoTracking().IgnoreQueryFilters()
+        : _db.SoftwareAssets.AsNoTracking();
+
+
         // ---------------- Base projection (Hardware ∪ Software) ----------------
         IQueryable<AssetRowVm> baseQ =
-            _db.HardwareAssets.AsNoTracking().Select(h => new AssetRowVm
+            hardwareQuery.Select(h => new AssetRowVm
             {
                 HardwareID = h.HardwareID,
                 SoftwareID = null,
                 AssetName = h.AssetName ?? "",
                 Type = h.AssetType ?? "",
                 Tag = h.SerialNumber ?? "",
+                IsArchived = h.IsArchived,
 
                 Status = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Any()
                         ? "Assigned"
@@ -66,53 +82,56 @@ public sealed class AssetSearchQuery
 
                 AssignedTo = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => a.User != null ? a.User.FullName : null)
                     .FirstOrDefault() ?? "Unassigned",
 
                 AssignedUserId = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => (int?)a.UserID)
                     .FirstOrDefault(),
 
                 AssignedEmployeeNumber = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => a.User != null ? a.User.EmployeeNumber : null)
                     .FirstOrDefault(),
 
                 AssignedEmployeeName = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => a.User != null ? a.User.FullName : null)
                     .FirstOrDefault(),
 
                 AssignedAtUtc = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID           // <— was a.AssetTag
+                             && a.HardwareID == h.HardwareID
                              && a.UnassignedAtUtc == null)
                     .Select(a => (DateTime?)a.AssignedAtUtc)
                     .FirstOrDefault()
             })
             .Concat(
-            _db.SoftwareAssets.AsNoTracking().Select(s => new AssetRowVm
+            softwareQuery.Select(s => new AssetRowVm
             {
                 HardwareID = null,
                 SoftwareID = s.SoftwareID,
                 AssetName = s.SoftwareName ?? "",
                 Type = s.SoftwareType ?? "",
                 Tag = s.SoftwareLicenseKey ?? "",
+                IsArchived = s.IsArchived,
 
-                Status = _db.Assignments
-                    .Where(a => a.AssetKind == Models.AssetKind.Software
-                             && a.SoftwareID == s.SoftwareID
-                             && a.UnassignedAtUtc == null)
-                    .Any() ? "Assigned" : "Available",
+                Status = s.IsArchived
+                    ? "Archived"
+                    : _db.Assignments
+                        .Where(a => a.AssetKind == Models.AssetKind.Software
+                                 && a.SoftwareID == s.SoftwareID
+                                 && a.UnassignedAtUtc == null)
+                        .Any() ? "Assigned" : "Available",
 
                 AssignedTo = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Software
@@ -214,7 +233,9 @@ public sealed class AssetSearchQuery
 
         // ----- Cache key base -----
         var scopeKey = await GetScopeCacheKeyAsync(ct);
-        var cacheKeyBase = $"assets:search:scope={scopeKey}:q={norm.ToLower()}|type={type?.ToLower() ?? ""}|status={status?.ToLower() ?? ""}";
+        var stamp = CacheStamp.AssetsVersion;
+        var cacheKeyBase =
+            $"assets:search:v={stamp}:scope={scopeKey}:q={norm.ToLower()}|type={type?.ToLower() ?? ""}|status={status?.ToLower() ?? ""}|archived={showArchived}";
 
         return totalsMode == PagingTotals.Exact
             ? await Paging.PageExactCachedAsync(_cache, cacheKeyBase, finalQ, page, pageSize, ct)

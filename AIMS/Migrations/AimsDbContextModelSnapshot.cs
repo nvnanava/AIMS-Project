@@ -55,7 +55,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Agreements", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
+                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
                         });
                 });
 
@@ -104,7 +104,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Assignments", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
+                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
                         });
                 });
 
@@ -163,7 +163,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
+                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
                         });
                 });
 
@@ -222,6 +222,9 @@ namespace AIMS.Migrations
                     b.Property<string>("Comment")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Manufacturer")
                         .IsRequired()
@@ -369,6 +372,9 @@ namespace AIMS.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("bit");
+
                     b.Property<int>("LicenseSeatsUsed")
                         .HasColumnType("int");
 
@@ -466,6 +472,9 @@ namespace AIMS.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsArchived")
                         .HasColumnType("bit");
 
                     b.Property<int>("RoleID")

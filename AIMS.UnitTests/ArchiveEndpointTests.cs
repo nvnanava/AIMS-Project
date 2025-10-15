@@ -1,0 +1,240 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using AIMS.Controllers;
+using AIMS.Data;
+using AIMS.Models;
+using AIMS.ViewModels;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using AIMS.Queries;
+using Xunit;
+
+namespace AIMS.UnitTests
+{
+    public class ArchiveEndpointTests
+    {
+        private AimsDbContext CreateContext()
+        {
+            var options = new DbContextOptionsBuilder<AimsDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            return new AimsDbContext(options);
+        }
+
+        private HardwareController CreateController(AimsDbContext db)
+        {
+            // HardwareQuery dependency is not used in archive/unarchive endpoints
+            return new HardwareController(db, hardwareQuery: null!);
+        }
+
+        // ------------------------------------------------------
+        //  Archive should mark archived + unassign
+        // ------------------------------------------------------
+        [Fact]
+        public async Task ArchiveHardware_SetsIsArchivedTrue_AndUnassigns()
+        {
+            // Arrange
+            var options = new DbContextOptionsBuilder<AimsDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString()) 
+                .Options;
+
+            await using var db = new AimsDbContext(options);
+
+            // Seed a hardware record
+            var hardware = new Hardware
+            {
+                AssetTag = "PC-001",
+                AssetName = "Dell Optiplex",
+                AssetType = "Desktop",
+                Status = "Available",
+                Manufacturer = "Dell",
+                Model = "Optiplex 7050",
+                SerialNumber = "ABC123",
+                PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
+                WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1))
+            };
+
+            db.HardwareAssets.Add(hardware);
+            await db.SaveChangesAsync();
+            Console.WriteLine($"Seeded HardwareID = {hardware.HardwareID}");
+            Console.WriteLine($"Count before archive = {await db.HardwareAssets.CountAsync()}");
+            Assert.True(hardware.HardwareID > 0);
+
+            // Seed an active assignment (optional)
+            db.Assignments.Add(new Assignment
+            {
+                AssetKind = AssetKind.Hardware,
+                HardwareID = hardware.HardwareID,
+                UserID = 1,
+                AssignedAtUtc = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+
+            var controller = new HardwareController(db, new HardwareQuery(db));
+
+            // Act
+            var result = await controller.ArchiveHardware(hardware.HardwareID);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var dto = Assert.IsType<AssetRowVm>(ok.Value);
+            Assert.True(dto.IsArchived);
+            Assert.Equal("Archived", dto.Status);
+
+            var reloaded = await db.HardwareAssets.IgnoreQueryFilters().SingleOrDefaultAsync(); // 
+            Assert.NotNull(reloaded);
+            Assert.True(reloaded.IsArchived);
+            Assert.Equal("Archived", reloaded.Status);
+
+            var assignment = await db.Assignments.SingleOrDefaultAsync();
+            Assert.NotNull(assignment.UnassignedAtUtc);
+        }
+
+
+        // ------------------------------------------------------
+        //  Unarchive should flip IsArchived = false
+        // ------------------------------------------------------
+        [Fact]
+        public async Task UnarchiveHardware_SetsIsArchivedFalse()
+        {
+            var db = CreateContext();
+            db.HardwareAssets.Add(new Hardware
+            {
+                HardwareID = 2,
+                AssetName = "Monitor",
+                AssetTag = "MN-002",
+                AssetType = "Display",
+                IsArchived = true,
+                Status = "Archived"
+            });
+            await db.SaveChangesAsync();
+
+            var controller = CreateController(db);
+
+            var result = await controller.UnarchiveHardware(2) as OkObjectResult;
+
+            Assert.NotNull(result);
+            var dto = Assert.IsType<AssetRowVm>(result.Value);
+            Assert.False(dto.IsArchived);
+            Assert.Equal("Available", dto.Status);
+
+            var reloaded = await db.HardwareAssets.FirstAsync();
+            Assert.False(reloaded.IsArchived);
+            Assert.Equal("Available", reloaded.Status);
+        }
+
+        // ------------------------------------------------------
+        //  Archive invalid ID → 404
+        // ------------------------------------------------------
+        [Fact]
+        public async Task ArchiveHardware_ReturnsNotFound_ForInvalidId()
+        {
+            var db = CreateContext();
+            var controller = CreateController(db);
+
+            var result = await controller.ArchiveHardware(999);
+
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // ------------------------------------------------------
+        //  Unarchive invalid ID → 404
+        // ------------------------------------------------------
+        [Fact]
+        public async Task UnarchiveHardware_ReturnsNotFound_ForInvalidId()
+        {
+            var db = CreateContext();
+            var controller = CreateController(db);
+
+            var result = await controller.UnarchiveHardware(999);
+
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        // ------------------------------------------------------
+        //  Archive twice (idempotent)
+        // ------------------------------------------------------
+        [Fact]
+        public async Task ArchiveHardware_Idempotent_WhenAlreadyArchived()
+        {
+            var db = CreateContext();
+            db.HardwareAssets.Add(new Hardware
+            {
+                HardwareID = 3,
+                AssetName = "Docking Station",
+                AssetTag = "DS-300",
+                AssetType = "Accessory",
+                IsArchived = true,
+                Status = "Archived"
+            });
+            await db.SaveChangesAsync();
+
+            var controller = CreateController(db);
+
+            var result = await controller.ArchiveHardware(3) as OkObjectResult;
+
+            Assert.NotNull(result);
+            var dto = Assert.IsType<AssetRowVm>(result.Value);
+            Assert.True(dto.IsArchived);
+        }
+
+        // ------------------------------------------------------
+        //  Unarchive twice (idempotent)
+        // ------------------------------------------------------
+        [Fact]
+        public async Task UnarchiveHardware_Idempotent_WhenAlreadyActive()
+        {
+            var db = CreateContext();
+            db.HardwareAssets.Add(new Hardware
+            {
+                HardwareID = 4,
+                AssetName = "Keyboard",
+                AssetTag = "KB-400",
+                AssetType = "Peripheral",
+                IsArchived = false,
+                Status = "Available"
+            });
+            await db.SaveChangesAsync();
+
+            var controller = CreateController(db);
+
+            var result = await controller.UnarchiveHardware(4) as OkObjectResult;
+
+            Assert.NotNull(result);
+            var dto = Assert.IsType<AssetRowVm>(result.Value);
+            Assert.False(dto.IsArchived);
+            Assert.Equal("Available", dto.Status);
+        }
+        // ------------------------------------------------------
+        //  Archive should work when no assignment exists
+        // ------------------------------------------------------
+        [Fact]
+        public async Task ArchiveHardware_Works_WhenNoAssignmentExists()
+        {
+            var db = CreateContext();
+            var hw = new Hardware { AssetTag = "NOASSIGN", AssetType = "Desktop", Status = "Available" };
+            db.HardwareAssets.Add(hw);
+            await db.SaveChangesAsync();
+
+            var controller = CreateController(db);
+            var result = await controller.ArchiveHardware(hw.HardwareID) as OkObjectResult;
+
+            Assert.NotNull(result);
+            var dto = Assert.IsType<AssetRowVm>(result.Value);
+            Assert.True(dto.IsArchived);
+        }
+        // ------------------------------------------------------
+        //  Returns not found when id is long random number not in db
+        // ------------------------------------------------------
+        [Fact]
+        public async Task ArchiveHardware_ReturnsNotFound_ForLargeId()
+        {
+            var db = CreateContext();
+            var controller = CreateController(db);
+            var result = await controller.ArchiveHardware(int.MaxValue);
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+    }
+}

@@ -188,4 +188,177 @@ public class SoftwareController : ControllerBase
 
         return Ok(software);
     }
+
+    //add bulk software licenses 
+    [HttpPost("add-bulk")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> AddBulkSoftware([FromBody] List<CreateSoftwareDto> dtos, CancellationToken ct = default)
+    {
+        //check empty lists
+        if (dtos == null || dtos.Count == 0)
+        {
+            ModelState.AddModelError("Dtos", "Input list cannot be empty.");
+            return BadRequest(ModelState);
+        }
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        //collecting error messages to send back to client
+        var errors = new Dictionary<int, List<string>>();
+
+        // Validate each DTO in the list
+        for (int i = 0; i < dtos.Count; i++)
+        {
+            var dto = dtos[i];
+            var itemErrors = new List<string>();
+            //validate unique SoftwareLicenseKey
+
+            // required fields
+            if (string.IsNullOrWhiteSpace(dto.SoftwareName) ||
+                string.IsNullOrWhiteSpace(dto.SoftwareVersion) ||
+                string.IsNullOrWhiteSpace(dto.SoftwareLicenseKey) ||
+                string.IsNullOrWhiteSpace(dto.Comment))
+            {
+                itemErrors.Add("All fields are required for each software asset, except License Expiration.");
+            }
+            else
+            {
+                if (await _db.SoftwareAssets.AnyAsync(s => s.SoftwareLicenseKey.ToLower() == dto.SoftwareLicenseKey.ToLower(), ct))
+                {
+                    itemErrors.Add($"A software asset with this license key '{dto.SoftwareLicenseKey}' already exists.");
+                }
+            }
+
+            //validate SoftwareCost is non-negative
+            if (dto.SoftwareCost < 0)
+            {
+                itemErrors.Add("Software cost cannot be negative.");
+            }
+
+            //validate license expiration is not in the past
+            if (dto.SoftwareLicenseExpiration.HasValue && dto.SoftwareLicenseExpiration < DateOnly.FromDateTime(DateTime.UtcNow))
+            {
+                itemErrors.Add("License expiration cannot be in the past.");
+            }
+
+            if (itemErrors.Count > 0)
+            {
+                errors[i] = itemErrors;
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return BadRequest(errors);
+        }
+
+        var newSoftwareAssets = dtos.Select(dto => new Software
+        {
+            SoftwareName = dto.SoftwareName,
+            SoftwareVersion = dto.SoftwareVersion,
+            SoftwareLicenseKey = dto.SoftwareLicenseKey,
+            SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration,
+            SoftwareUsageData = dto.SoftwareUsageData,
+            SoftwareCost = dto.SoftwareCost,
+            Comment = dto.Comment
+        }).ToList();
+
+        _db.SoftwareAssets.AddRange(newSoftwareAssets);
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        return CreatedAtAction(nameof(GetAllSoftware), null, newSoftwareAssets);
+
+    }
+
+    [HttpPut("archive/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ArchiveSoftware(int id, CancellationToken ct = default)
+    {
+        var software = await _db.SoftwareAssets
+            .Where(s => s.SoftwareID == id)
+            .SingleOrDefaultAsync(ct);
+
+        if (software == null)
+            return NotFound();
+
+        software.IsArchived = true;
+
+
+
+
+        // unassign if assigned
+        var assignment = await _db.Assignments
+            .Where(s => s.SoftwareID == id && s.UnassignedAtUtc == null)
+            .SingleOrDefaultAsync(ct);
+        if (assignment != null)
+        {
+            assignment.UnassignedAtUtc = DateTime.UtcNow;
+        }
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        var Asset = await _db.SoftwareAssets
+        .IgnoreQueryFilters()
+        .Where(s => s.SoftwareID == id)
+        .Select(s => new AssetRowVm
+        {
+            SoftwareID = s.SoftwareID,
+            AssetName = s.SoftwareName,
+            Type = s.SoftwareType,
+            Tag = s.SoftwareLicenseKey,
+            Status = "Archived",
+            IsArchived = true,
+            AssignedUserId = null,
+            AssignedTo = "Unassigned"
+        })
+    .FirstOrDefaultAsync();
+
+        return Ok(Asset);
+    }
+
+    [HttpPut("unarchive/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnarchiveSoftware(int id, CancellationToken ct = default)
+    {
+        var software = await _db.SoftwareAssets
+            .IgnoreQueryFilters()
+            .Where(s => s.SoftwareID == id)
+            .SingleOrDefaultAsync(ct);
+
+        if (software == null)
+            return NotFound();
+
+        software.IsArchived = false;
+
+
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        var Asset = await _db.SoftwareAssets
+        .Where(s => s.SoftwareID == id)
+        .Select(s => new AssetRowVm
+        {
+            SoftwareID = s.SoftwareID,
+            AssetName = s.SoftwareName,
+            Type = s.SoftwareType,
+            Tag = s.SoftwareLicenseKey,
+            Status = "Available",
+            IsArchived = false,
+            AssignedUserId = null,
+            AssignedTo = "Unassigned"
+        })
+    .FirstOrDefaultAsync();
+
+        return Ok(Asset);
+
+    }
 }

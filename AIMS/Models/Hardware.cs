@@ -38,4 +38,6 @@ public class Hardware
     public DateOnly PurchaseDate { get; set; }
 
     public string Comment { get; set; } = string.Empty;
+
+    public bool IsArchived { get; set; } = false;
 }

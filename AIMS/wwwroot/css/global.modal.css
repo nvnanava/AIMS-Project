@@ -1,0 +1,55 @@
+
+/* Default mobile-first: full-screen modal */
+.modal-dialog {
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  border-radius: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Tablet (≥768px): centered medium modal */
+@media (min-width: 768px) {
+  .modal-dialog {
+    height: auto;
+    max-width: 700px;
+    margin: 1.75rem auto;
+  }
+  .modal-content {
+    border-radius: 8px;
+  }
+}
+
+/* Laptop / Desktop (≥992px): wider modal */
+@media (min-width: 992px) {
+  .modal-dialog {
+    max-width: 900px;
+  }
+}
+
+
+/* For responsive sections that stack vertically on mobile */
+.layout-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.layout-flex > * {
+  flex: 1 1 100%;
+}
+
+/* Two-column layout on tablets+ */
+@media (min-width: 768px) {
+  .layout-flex > * {
+    flex: 1;
+  }
+}
+
