@@ -76,6 +76,11 @@
 </div>
 
 <script>
+  const IS_ADMIN = @(User.IsAdmin().ToString().ToLower());
+</script>
+
+
+<script>
   // --- Safety: only allow known categories to be used in the API call ---
   const ALLOWED_TYPES = new Set(["monitor", "laptop", "desktop", "software", "headset", "charging cable"]);
   function normalizeCategory(raw) {
@@ -242,6 +247,65 @@
     await loadCategoryPaged(category, currentPage + 1);
   });
 
+
+  // -------------- Admin buttons ----------------
+  function makeEditButton(asset) {
+    return `
+    <button type="button"
+            class="action-btn blue-pencil"
+            aria-label="Edit ${asset.assetName}"
+            title="Edit asset"
+            data-bs-toggle="modal"
+            data-hardware-id="${asset.hardwareID || ''}"
+            data-software-id="${asset.softwareID || ''}"
+            data-bs-target="#editAssetModal"
+            data-name="${asset.assetName}"
+            data-type="${asset.type}"
+            data-tag="${asset.tag}"
+            data-comments="${asset.comment || ''}"
+            data-status="${asset.status}">
+      <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+        <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
+        <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
+      </svg>
+    </button>`;
+  }
+
+  function makeArchiveButton(asset) {
+    return `
+    <button type="button"
+            class="action-btn red-archive"
+            aria-label="Archive ${asset.assetName}"
+            title="Archive asset"
+            onclick="archiveAsset('${asset.hardwareID ?? asset.softwareID}', '${asset.assetName}', '${asset.type}')">
+      <svg xmlns="http://www.w3.org/2000/svg"
+           width="16" height="16"
+           fill="currentColor"
+           viewBox="0 0 16 16"
+           class="bi bi-archive-fill">
+        <path d="M12.643 15C13.979 15 15 13.845 15 12.5V5H1v7.5C1 13.845 2.021 15 3.357 15zM5.5 7h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1M.8 1a.8.8 0 0 0-.8.8V3a.8.8 0 0 0 .8.8h14.4A.8.8 0 0 0 16 3V1.8a.8.8 0 0 0-.8-.8z"/>
+      </svg>
+    </button>`;
+  }
+
+
+  function makeUnarchiveButton(asset) {
+    return `
+    <button type="button"
+            class="action-btn green-unarchive"
+            aria-label="Unarchive ${asset.assetName}"
+            title="Unarchive asset"
+            onclick="unarchiveAsset('${asset.hardwareID ?? asset.softwareID}', '${asset.assetName}', '${asset.type}')">
+      <svg xmlns="http://www.w3.org/2000/svg"
+           width="16" height="16"
+           fill="currentColor"
+           viewBox="0 0 16 16"
+           class="bi bi-archive-fill">
+        <path d="M12.643 15C13.979 15 15 13.845 15 12.5V5H1v7.5C1 13.845 2.021 15 3.357 15zM5.5 7h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1M.8 1a.8.8 0 0 0-.8.8V3a.8.8 0 0 0 .8.8h14.4A.8.8 0 0 0 16 3V1.8a.8.8 0 0 0-.8-.8z"/>
+      </svg>
+    </button>`;
+  }
+
   // ---------------- Boot ----------------
   const AUTO_FIX_CATEGORY = true;
   function getCurrentCategory() {
@@ -313,6 +377,15 @@
       fourthCellHtml = `<span class="status-badge ${sc}">${asset.status ?? ""}</span>`;
     }
 
+    const isArchived = asset.isArchived === true || (asset.status || "").toLowerCase().includes("archived");
+
+    let adminButtons = "";
+    if (IS_ADMIN) {
+      const editButton = makeEditButton(asset);
+      const archiveButton = isArchived ? makeUnarchiveButton(asset) : makeArchiveButton(asset);
+      adminButtons = editButton + archiveButton;
+    }
+
     row.innerHTML = `
       <td>${asset.assetName ?? ""}</td>
       <td>${asset.type ?? ""}</td>
@@ -323,29 +396,7 @@
       </td>
       <td>${fourthCellHtml}</td>
       <td class="actions-cell text end" onclick="event.stopPropagation()">
-        @if (User.IsAdmin())
-        {
-            <button type="button"
-                    class="action-btn blue-pencil"
-                    aria-label="Edit ${asset.assetName}"
-                    title="Edit asset"
-                    data-bs-toggle="modal"
-                    data-hardware-id="${asset.hardwareID || ''}"
-                    data-software-id="${asset.softwareID || ''}"
-                    data-bs-target="#editAssetModal"
-                    data-name="${asset.assetName}"
-                    data-type="${asset.type}"
-                    data-tag="${asset.tag}"
-                    data-comments="${asset.comment}"
-                    data-status="${asset.status}"
-                    data-seats-used="${asset.licenseSeatsUsed ?? ''}"
-                    data-seats-total="${asset.licenseTotalSeats ?? ''}">
-              <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
-                <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3z"></path>
-                <path d="M.146 13.854a.5.5 0 0 0 .168.11l4.39 1.464a.5.5 0 0 0 .498-.13l9-9L10.5 1.793l-9 9a.5.5 0 0 0-.13.498L.854 15.854a.5.5 0 0 0-.708-.708L.146 13.854z"></path>
-              </svg>
-            </button>
-        }
+        ${adminButtons}
       </td>
     `;
     tbody.appendChild(row);
@@ -358,8 +409,8 @@
     popup.style.left = (rect.left + window.scrollX + 20) + "px";
     popup.innerHTML = `
       <strong>Asset Name:</strong> ${escapeHtml(assetName ?? "")}<br>
-      <strong>Tag Number:</strong> ${escapeHtml(tagNumber ?? "")}<br>
-    `;
+        <strong>Tag Number:</strong> ${escapeHtml(tagNumber ?? "")}<br>
+          `;
     popup.style.display = "block";
     popup.setAttribute("aria-hidden", "false");
     event.stopPropagation();
@@ -372,6 +423,101 @@
       popup.setAttribute("aria-hidden", "true");
     }
   });
+  async function archiveAsset(id, name, type) {
+    if (!id) return;
+    const confirm = window.confirm(`Are you sure you want to archive "${name}"? `);
+    if (!confirm) return;
+
+    const isSoftware = (type || "").toLowerCase() === "software";
+    const endpoint = isSoftware
+      ? `/api/software/archive/${id}`
+      : `/api/hardware/archive/${id}`;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed to archive: ${res.status} - ${errText}`);
+      }
+
+      const updated = await res.json();
+      console.log("Archived:", updated);
+      alert(`"${name}" was successfully archived.`);
+
+      UpdateRowInUIAndCache(updated);
+    } catch (err) {
+      console.error("Error archiving asset:", err); //debugging errors for now. will change later
+      alert(`Failed to archive "${name}".`);
+    }
+  }
+
+  async function unarchiveAsset(id, name, type) {
+    if (!id) return;
+    const confirm = window.confirm(`Are you sure you want to unarchive "${name}"? `);
+    if (!confirm) return;
+
+    const isSoftware = (type || "").toLowerCase() === "software";
+    const endpoint = isSoftware
+      ? `/api/software/unarchive/${id}`
+      : `/api/hardware/unarchive/${id}`;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" }
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed to unarchive: ${res.status} - ${errText}`);
+      }
+
+      const updated = await res.json();
+      console.log("Unarchived:", updated);
+      alert(`"${name}" was successfully unarchived.`);
+
+      UpdateRowInUIAndCache(updated);
+    } catch (err) {
+      console.error("Error unarchiving asset:", err); //debugging errors for now. will change later to look more clean
+      alert(`Failed to unarchive "${name}".`);
+    }
+  }
+
+  // ---------------- Load updated row in UI by accessing paged cache ----------------
+
+  async function UpdateRowInUIAndCache(update) {
+    const id = update.hardwareID || update.softwareID;
+    const items = pageCache.get(currentPage) || [];
+
+    // if we are viewing only a single asset
+    const urlParams = new URLSearchParams(window.location.search);
+    const tag = urlParams.get("tag");
+    if (tag) {
+      clearTable();
+      renderRow(update);
+      pager.hidden = true;
+      return;
+    }
+
+    // otherwise we re-render the current page and update the item in the cache
+    if (items) {
+      const index = items.findIndex(a => (a.hardwareID || a.softwareID) === id);
+      if (index !== -1) {
+        items[index] = update;
+        renderRows(items); // hits the current paged cache and re-renders to avoid hitting db
+        return;
+      }
+    }
+    //if we reach here we just reload the current page
+    const currentCategory = getCurrentCategory();
+    pageCache.clear();
+    loadCategoryPaged(currentCategory, currentPage);
+
+  }
 
   // ---------------- Startup routing ----------------
   document.addEventListener("DOMContentLoaded", async () => {
