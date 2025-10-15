@@ -30,8 +30,9 @@
       <tr>
         <th>Asset Name</th>
         <th>Type</th>
-        <th>Tag #</th>
+        <th id="seatOrTagHeader">Tag #</th>
         <th id="status-col-header">Status</th>
+
         <th>
           <div style="margin-left: auto;">
             @if (User.IsAdmin())
@@ -107,11 +108,22 @@
     const tbody = document.getElementById("assetTableBody");
     tbody.innerHTML = "";
   }
-  function renderRows(rows) {
-    clearTable();
-    const tbody = document.getElementById("assetTableBody");
-    (rows || []).forEach(renderRow);
+    function renderRows(rows) {
+        clearTable();
+        const tbody = document.getElementById("assetTableBody");
+        const totalSeats = rows.length;
+
+        (rows || []).forEach((asset, index) => {
+            // Inject seat info before rendering
+            if(asset.type?.toLowerCase().includes("software")) {
+                asset.displaySeatOrTag = `Seat ${index + 1} of ${totalSeats}`;
+            } else {
+                asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
+            }
+        renderRow(asset, index + 1, totalSeats);
+    });
   }
+
   function updatePager(items) {
     if (!pager || !btnPrev || !btnNext || !lblStatus) return;
     const total = lastMeta?.total ?? -1;
@@ -353,7 +365,16 @@
   function renderRow(asset) {
     const tbody = document.getElementById("assetTableBody");
     const row = document.createElement("tr");
-    row.onclick = (event) => showPopup(asset.assetName, asset.tag, event);
+    row.onclick = (event) => showPopup(asset.assetName, asset.displaySeatOrTag, event, asset.type);
+
+    let statusClass = "";
+    switch ((asset.status || "").toLowerCase()) {
+      case "available": statusClass = "status-available"; break;
+      case "assigned": statusClass = "status-assigned"; break;
+      case "marked for survey": statusClass = "status-marked-for-survey"; break;
+      case "in repair": statusClass = "status-in-repair"; break;
+      case "damaged": statusClass = "status-in-repair"; break;
+
 
     const isSoftware = String(asset.type || "").toLowerCase() === "software";
 
@@ -390,9 +411,10 @@
       <td>${asset.assetName ?? ""}</td>
       <td>${asset.type ?? ""}</td>
       <td>
-        <span onclick="showPopup('${escapeHtml(asset.assetName ?? "")}', '${escapeHtml(asset.tag ?? "")}', event)" style="cursor:pointer;">
-          ${asset.tag ?? ""}
-        </span>
+        <span onclick="showPopup('${asset.assetName}', '${asset.displaySeatOrTag}', event, '${asset.type}')" style="cursor:pointer;">
+    ${asset.displaySeatOrTag}
+  </span>
+
       </td>
       <td>${fourthCellHtml}</td>
       <td class="actions-cell text end" onclick="event.stopPropagation()">
@@ -401,16 +423,18 @@
     `;
     tbody.appendChild(row);
   }
+  function showPopup(assetName, seatOrTag, event, type) {
 
-  function showPopup(assetName, tagNumber, event) {
     const popup = document.getElementById("popup");
     const rect = event.target.getBoundingClientRect();
+    const label = (type?.toLowerCase().includes("software") ? "Seat Number" : "Tag Number");
     popup.style.top = (rect.top + window.scrollY + 20) + "px";
     popup.style.left = (rect.left + window.scrollX + 20) + "px";
     popup.innerHTML = `
       <strong>Asset Name:</strong> ${escapeHtml(assetName ?? "")}<br>
-        <strong>Tag Number:</strong> ${escapeHtml(tagNumber ?? "")}<br>
-          `;
+      <strong>${label}:</strong> ${escapeHtml(seatOrTag ?? "")}<br>
+    `;
+
     popup.style.display = "block";
     popup.setAttribute("aria-hidden", "false");
     event.stopPropagation();
@@ -526,6 +550,11 @@
     const source = (urlParams.get("source") || "").toLowerCase(); // "card" when clicked from cards
     const category = getCurrentCategory();
 
+    const th = document.getElementById("seatOrTagHeader");
+    if (th) {
+        th.textContent = (category.toLowerCase().includes("software") ? "Seat #" : "Tag #");
+    }
+
     if (tag) {
       await loadOneByTag(tag);
       return;
@@ -542,4 +571,5 @@
     applyEmpty(true);
     pager.hidden = true;
   });
+
 </script>
