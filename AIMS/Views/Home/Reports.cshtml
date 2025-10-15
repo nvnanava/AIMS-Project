@@ -1,58 +1,12 @@
+
+
+
 @{
     ViewData["Title"] = "Reports";
 
 
     // Define Table Headers
     var tableHeaders = new List<string> { "Name", "Type", "Description","Office", "Date Created"};
-
-    // Define Table Data
-  var tableData = new List<Dictionary<string, string>> {
-    new Dictionary<string, string> { {"Name", "Monthly Report for Jan"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "231ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Check for Daisy"},
-        {"Type", "Asset Report"}, {"Description", "Daisy wanted to see what assets we have"},
-        {"Office", "214ISB"}, {"Date Created", "12 Dec 2024 03:41:04 PT"} },
-    new Dictionary<string, string> { {"Name", "Send to Higher-ups"},
-        {"Type", "Custom Report"}, {"Description", "They asked for all the information we have"},
-        {"Office", "3A-17"}, {"Date Created", "11 Dec 2024 06:32:51 PT"} },
-    new Dictionary<string, string> { {"Name", "Monthly Report for Dec"},
-        {"Type", "Asset Assignments to Users"}, {"Description", ""},
-        {"Office", "2B-05"}, {"Date Created", "02 Dec 2024 11:05:25 PT"} },
-    new Dictionary<string, string> { {"Name", "Report for Dan"},
-        {"Type", "Custom Report"}, {"Description", "Dan asked for report will users and office"},
-        {"Office", "231ISB"}, {"Date Created", "25 Nov 2024 09:38:31 PT"} },
-    new Dictionary<string, string> { {"Name", "Checking something"},
-        {"Type", "Assets Assigned to an Office"}, {"Description", "Needed to do some analysis on how many assets per office"},
-        {"Office", "1C-28"}, {"Date Created", "07 Nov 2024 04:34:11 PT"} },
-    new Dictionary<string, string> { {"Name", "Monthly Report for Nov"},
-        {"Type", "Assets Assigned to an Office"}, {"Description", ""},
-        {"Office", "214ISB"}, {"Date Created", "01 Nov 2024 10:25:57 PT"} },
-    new Dictionary<string, string> { {"Name", "Print for Wall"},
-        {"Type", "Asset Report"}, {"Description", "need to put on wall so everyone can see what assets are where"},
-        {"Office", "3A-02"}, {"Date Created", "26 Sept 2024 01:28:58 PT"} },
-    new Dictionary<string, string> { {"Name", "Send our reminders"},
-        {"Type", "Asset Assignments to Users"}, {"Description", "sending out reminders who has what in case missing items"},
-        {"Office", "2B-12"}, {"Date Created", "15 Sept 2024 07:15:47 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 1"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "231ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 2"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "214ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 3"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "1C-28"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 4"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "3A-17"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 5"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "2B-05"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 6"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "3A-02"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} }
-};
 
 
     // Define User Table Headers
@@ -322,48 +276,30 @@
     z-index: 5;
 }
 
-/* Subtle fade shadow on right edge for mobile scroll */
-.table-container::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 2rem;
-    pointer-events: none;
-    background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
-    display: none;
-}
-
-@@media (max-width: 768px) {
-    .table-container::after {
-        display: block;
-    }
-}
-
-/*Updated column widths to account for Office
-.report-table th:nth-child(1),
-.report-table td:nth-child(1) { width: 16px; }
+        /*Updated column widths to account for Office*/
+        .report-table th:nth-child(1),
+        .report-table td:nth-child(1) { width: 16px; }
 
 
-.report-table th:nth-child(2),
-.report-table td:nth-child(2) { width: 122px; }
+        .report-table th:nth-child(2),
+        .report-table td:nth-child(2) { width: 122px; }
 
 
-.report-table th:nth-child(3),
-.report-table td:nth-child(3) { width: 145px; }
+        .report-table th:nth-child(3),
+        .report-table td:nth-child(3) { width: 145px; }
 
 
-.report-table th:nth-child(4),
-.report-table td:nth-child(4) { width: 265px; }
+        .report-table th:nth-child(4),
+        .report-table td:nth-child(4) { width: 265px; }
 
 
-.report-table th:nth-child(5),
-.report-table td:nth-child(5) { width: 120px; }
+        .report-table th:nth-child(5),
+        .report-table td:nth-child(5) { width: 120px; }
 
 
-.report-table th:nth-child(6),
-.report-table td:nth-child(6) { width: 118px; } */
+        .report-table th:nth-child(6),
+        .report-table td:nth-child(6) { width: 118px; }
+
 
         .report-table th {
             height: 55px;
@@ -493,10 +429,9 @@
                         New Report
                     </button>
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Assignments Users</button></li>
-                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Assets Assigned to an Office</button></li>
-                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Reports</button></li>
-                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom Report (IT Admin Only)</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateAssignmentReport">Assignment</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateOfficeReport">Office</button></li>
+                        <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom</button></li>
                     </ul>
                 </div>
             </div>
@@ -515,66 +450,305 @@
                         }
                     </tr>
                 </thead>
-                <tbody id="table-body"> <!--class="table-body"-->
-                    @if (tableData.Count == 0) {
-                        <tr><td colspan="tableHeaders.Count" style="text-align: center;">No data available</td></tr>
-                    } else {
-                        @foreach (var row in tableData) {
-                            <tr>
-                                <td>
-                                    <input class="form-check-input" type="checkbox" id="checkboxNoLabel" value="" aria-label="...">
-                                </td>
-                                @foreach (var header in tableHeaders) {
-                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                }
-                            </tr>
-                        }
-                        <!-- "No results" row (hidden if data in table) -->
-                        <tr id="no-results-row" style="display: none;">
-                            <td colspan="@tableHeaders.Count + 1" class="no-results-cell">No matching results found</td>
-                        </tr>
-                    }
+                <tbody id="table-body">
+                    <tr><td colspan="@tableHeaders.Count + 1" style="text-align: center;">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const tableBody = document.getElementById("table-body");
+
+    try {
+        const response = await fetch("/api/reports/list"); // Adjust path if your API route differs
+        if (!response.ok) throw new Error("Failed to fetch reports");
+
+        const reports = await response.json();
+
+        // Clear loading row
+        tableBody.innerHTML = "";
+
+        if (reports.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No reports available</td></tr>`;
+            return;
+        }
+
+        reports.forEach(report => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td><input class="form-check-input report-checkbox" type="checkbox" data-id="${report.reportID}"></td>
+                <td><span class="cell-text">${report.name || "-"}</span></td>
+                <td><span class="cell-text">${report.type || "-"}</span></td>
+                <td><span class="cell-text">${report.description || "-"}</span></td>
+                <td><span class="cell-text">${report.generatedByOfficeString || "-"}</span></td>
+                <td><span class="cell-text">${new Date(report.dateCreated).toLocaleString()}</span></td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } catch (err) {
+        console.error(err);
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">Error loading reports</td></tr>`;
+    }
+});
+
+document.querySelector(".download-csv-button").addEventListener("click", async () => {
+    const selectedCheckboxes = document.querySelectorAll(".report-checkbox:checked");
+
+    if (selectedCheckboxes.length === 0) {
+        alert("Please select at least one report to download.");
+        return;
+    }
+
+    for (const checkbox of selectedCheckboxes) {
+        const id = checkbox.dataset.id;
+
+        try {
+            const response = await fetch(`/download/${id}`);
+            if (!response.ok) throw new Error(`Failed to download report ${id}`);
+
+            // Extract filename from Content-Disposition header, or default to something
+            const disposition = response.headers.get("Content-Disposition");
+            let filename = `report_${id}.csv`;
+
+            if (disposition) {
+                // Prefer UTF-8 encoded form if present
+                const utf8Match = disposition.match(/filename\*\=UTF-8''([^;]+)/i);
+                if (utf8Match) {
+                    filename = decodeURIComponent(utf8Match[1]);
+                } else {
+                    const asciiMatch = disposition.match(/filename="?([^"]+)"?/i);
+                    if (asciiMatch) filename = asciiMatch[1];
+                }
+            }
+
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+            alert(`Error downloading report ${id}: ${err.message}`);
+        }
+    }
+});
+
+</script>
+
+
 </body>
 
-
-
-<!-- Generate Report Modal -->
-<div class="modal fade" id="generateReport" tabindex="-1" aria-labelledby="generateReportLabel" aria-hidden="true">
+<!-- Generate Assignment Report Modal -->
+<div class="modal fade" id="generateAssignmentReport" tabindex="-1" aria-labelledby="generateAssignmentReportLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="generateReportLabel">Generate a Report</h5>
+        <h5 class="modal-title" id="generateAssignmentReportLabel">Generate an Assignment Report</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+
       <div class="modal-body">
-            <form class="row g-3">
-                <div class="col-md-6">
-                    <label for="dateRange1" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="dateRange1" name="dateRange1">
-                </div>
-                <div class="col-md-6">
-                    <label for="dateRange2" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="dateRange2" name="dateRange2">
-                </div>
-                <div class="col-12">
-                    <label for="inputDescription" class="form-label">Description (optional)</label>
-                    <input type="text" class="form-control" id="inputDescription">
-                </div>
-            </form>
+        <form class="row g-3" id="assignmentReportForm">
+          <div class="col-12">
+            <label for="reportName" class="form-label">Report Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="reportName" name="reportName" required>
+          </div>
+          <div class="col-md-6">
+            <label for="dateRange1" class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="dateRange1" name="dateRange1" required>
+          </div>
+          <div class="col-md-6">
+            <label for="dateRange2" class="form-label">End Date (optional)</label>
+            <input type="date" class="form-control" id="dateRange2" name="dateRange2">
+          </div>
+          <div class="col-12">
+            <label for="inputDescription" class="form-label">Description (optional)</label>
+            <input type="text" class="form-control" id="inputDescription">
+          </div>
+        </form>
       </div>
+
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary"data-bs-dismiss="modal">Generate Report</button>
+        <button type="button" class="btn btn-primary" id="generateAssignmentReportBtn">Generate Report</button>
       </div>
     </div>
   </div>
 </div>
+
+
+<script>
+document.getElementById("generateAssignmentReportBtn").addEventListener("click", async () => {
+  const startDate = document.getElementById("dateRange1").value;
+  const endDate = document.getElementById("dateRange2").value;
+  const description = document.getElementById("inputDescription").value.trim();
+  const reportName = document.getElementById("reportName").value.trim();
+
+  // Use your existing variable
+  const CreatorUserID = 1;  
+
+  // Basic validation
+  if (!reportName) {
+    alert("Please enter a report name.");
+    return;
+  }
+  if (!startDate) {
+    alert("Please select a start date.");
+    return;
+  }
+
+  // Build query params for the API
+  const params = new URLSearchParams({
+    start: startDate,
+    reportName,
+    CreatorUserID,
+    type: "Assignment"
+  });
+
+  if (endDate) params.append("end", endDate);
+  if (description) params.append("desc", description);
+
+  try {
+    const response = await fetch(`/?${params.toString()}`, {
+      method: "POST"
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Error:", errText);
+      alert("Failed to generate report: " + errText);
+      return;
+    }
+
+    // Success — you can now refresh the report list, close modal, etc.
+    console.log("Report generated successfully!");
+    
+    // Example: close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("generateAssignmentReport"));
+    modal.hide();
+
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    alert("An unexpected error occurred.");
+  }
+});
+</script>
+
+
+<!-- Generate Office Report Modal -->
+<div class="modal fade" id="generateOfficeReport" tabindex="-1" aria-labelledby="generateOfficeReportLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateOfficeReportLabel">Generate an Office Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form class="row g-3" id="officeReportForm">
+          <div class="col-12">
+            <label for="2reportName" class="form-label">Report Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="2reportName" name="2reportName" required>
+          </div>
+          <div class="col-12">
+            <label for="officeName" class="form-label">Office Number <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="officeName" name="officeName" required>
+          </div>
+          <div class="col-md-6">
+            <label for="2dateRange1" class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="2dateRange1" name="2dateRange1" required>
+          </div>
+          <div class="col-md-6">
+            <label for="2dateRange2" class="form-label">End Date (optional)</label>
+            <input type="date" class="form-control" id="2dateRange2" name="2dateRange2">
+          </div>
+          <div class="col-12">
+            <label for="2inputDescription" class="form-label">Description (optional)</label>
+            <input type="text" class="form-control" id="2inputDescription">
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="generateOfficeReportBtn">Generate Report</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.getElementById("generateOfficeReportBtn").addEventListener("click", async () => {
+  const startDate = document.getElementById("2dateRange1").value;
+  const endDate = document.getElementById("2dateRange2").value;
+  const description = document.getElementById("2inputDescription").value.trim();
+  const reportName = document.getElementById("2reportName").value.trim();
+  const OfficeID = document.getElementById("officeName").value.trim();
+
+  // Use your existing variable
+  const CreatorUserID = 1;  
+
+  // Basic validation
+  if (!reportName) {
+    alert("Please enter a report name.");
+    return;
+  }
+  if (!OfficeID) {
+    alert("Please select an office number.");
+    return;
+  }
+  if (!startDate) {
+    alert("Please select a start date.");
+    return;
+  }
+
+  // Build query params for the API
+  const params = new URLSearchParams({
+    start: startDate,
+    reportName,
+    CreatorUserID,
+    type: "Office",
+    OfficeID
+  });
+
+  if (endDate) params.append("end", endDate);
+  if (description) params.append("desc", description);
+
+  try {
+    const response = await fetch(`/?${params.toString()}`, {
+      method: "POST"
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Error:", errText);
+      alert("Failed to generate report: " + errText);
+      return;
+    }
+
+    // Success — you can now refresh the report list, close modal, etc.
+    console.log("Report generated successfully!");
+    
+    // Example: close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("generateOfficeReport"));
+    modal.hide();
+
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    alert("An unexpected error occurred.");
+  }
+});
+</script>
 
 <!-- Generate Custom Report Modal -->
 <div class="modal fade" id="generateCustomReport" tabindex="-1" aria-labelledby="generateCustomReportLabel" aria-hidden="true">
@@ -584,67 +758,134 @@
         <h5 class="modal-title" id="generateCustomReportLabel">Generate a Custom Report</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+
       <div class="modal-body">
-            <form class="row g-3">
-                <div class="col-md-6">
-                    <label for="dateRange1" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="dateRange1" name="dateRange1">
-                </div>
-                <div class="col-md-6">
-                    <label for="dateRange2" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="dateRange2" name="dateRange2">
-                </div>
-                <div class="col-12">
-                    <label for="inputDescription" class="form-label">Description (optional)</label>
-                    <input type="text" class="form-control" id="inputDescription">
-                </div>
-                <div class="col-12">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="gridCheck">
-                        <label class="form-check-label" for="gridCheck">
-                            See Hardware
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="gridCheck2">
-                        <label class="form-check-label" for="gridCheck2">
-                            See Software
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="gridCheck3">
-                        <label class="form-check-label" for="gridCheck3">
-                            See Users
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="gridCheck4">
-                        <label class="form-check-label" for="gridCheck4">
-                            See Office
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="gridCheck5">
-                        <label class="form-check-label" for="gridCheck5">
-                            See when software and/or warranty expires
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="gridCheck6">
-                        <label class="form-check-label" for="gridCheck6">
-                            See what requires maintenance or replacements
-                        </label>
-                    </div>
-                </div>
-            </form>
+        <form class="row g-3" id="customReportForm">
+          <div class="col-12">
+            <label for="customReportName" class="form-label">Report Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="customReportName" name="customReportName" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="customStartDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="customStartDate" name="customStartDate" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="customEndDate" class="form-label">End Date (optional)</label>
+            <input type="date" class="form-control" id="customEndDate" name="customEndDate">
+          </div>
+
+          <div class="col-12">
+            <label for="customDescription" class="form-label">Description (optional)</label>
+            <input type="text" class="form-control" id="customDescription">
+          </div>
+
+          <div class="col-12">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="seeHardware" checked>
+              <label class="form-check-label" for="seeHardware">See Hardware</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="seeSoftware" checked>
+              <label class="form-check-label" for="seeSoftware">See Software</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="seeUsers" checked>
+              <label class="form-check-label" for="seeUsers">See Users</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="seeOffice" checked>
+              <label class="form-check-label" for="seeOffice">See Office</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="seeExpiration">
+              <label class="form-check-label" for="seeExpiration">See when software and/or warranty expires</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="filterByMaintenance">
+              <label class="form-check-label" for="filterByMaintenance">See what requires maintenance or replacements</label>
+            </div>
+          </div>
+        </form>
       </div>
+
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary"data-bs-dismiss="modal">Generate Report</button>
+        <button type="button" class="btn btn-primary" id="generateCustomReportBtn">Generate Report</button>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+document.getElementById("generateCustomReportBtn").addEventListener("click", async () => {
+  const reportName = document.getElementById("customReportName").value.trim();
+  const startDate = document.getElementById("customStartDate").value;
+  const endDate = document.getElementById("customEndDate").value;
+  const description = document.getElementById("customDescription").value.trim();
+
+  // use your variable for logged-in user
+  const CreatorUserID = 1;
+
+  // checkboxes
+  const customOptions = {
+    seeHardware: document.getElementById("seeHardware").checked,
+    seeSoftware: document.getElementById("seeSoftware").checked,
+    seeUsers: document.getElementById("seeUsers").checked,
+    seeOffice: document.getElementById("seeOffice").checked,
+    seeExpiration: document.getElementById("seeExpiration").checked,
+    filterByMaintenance: document.getElementById("filterByMaintenance").checked
+  };
+
+  // basic validation
+  if (!reportName) {
+    alert("Please enter a report name.");
+    return;
+  }
+  if (!startDate) {
+    alert("Please select a start date.");
+    return;
+  }
+
+  // build query params
+  const params = new URLSearchParams({
+    start: startDate,
+    reportName,
+    CreatorUserID,
+    type: "Custom"
+  });
+
+  if (endDate) params.append("end", endDate);
+  if (description) params.append("desc", description);
+
+  // attach customOptions as JSON
+  params.append("customOptions", JSON.stringify(customOptions));
+
+  try {
+    const response = await fetch(`/?${params.toString()}`, { method: "POST" });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Error:", errText);
+      alert("Failed to generate report: " + errText);
+      return;
+    }
+
+    console.log("Custom report generated successfully!");
+    
+    // close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("generateCustomReport"));
+    modal.hide();
+
+    // TODO: refresh report list or update UI here
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    alert("An unexpected error occurred.");
+  }
+});
+</script>
+
 
 <!-- Modal for Asset Report -->
 <div class="modal" id="assetReportModal" tabindex="-1" aria-labelledby="assetReportModalLabel" aria-hidden="true">
@@ -690,6 +931,8 @@
         </div>
     </div>
 </div>
+
+
 
 <!-- Modal for Custom Report -->
 <div class="modal" id="customReportModal" tabindex="-1" aria-labelledby="customReportModalLabel" aria-hidden="true">
@@ -845,33 +1088,23 @@
         const rows = tableBody.getElementsByTagName("tr");
         const noResultsRow = document.getElementById("no-results-row");
 
-
-        searchInput.addEventListener("input", function () {
-            const query = this.value.toLowerCase();
-            let shownRows = 0;
-
-            Array.from(rows).forEach(row => {
-                const cells = row.getElementsByTagName("td");
-                if (row.id === "no-results-row") return; // Skip the "No results" row
-                let match = false;
-
-                // Skip checkbox cell
-                for (let i = 1; i < cells.length; i++) {
-                    if (cells[i].textContent.toLowerCase().includes(query)) {
-                        match = true;
-                        shownRows++;
-                        break;
-                    }
-                }
-
-                row.style.display = match ? "" : "none";
-                noResultsRow.style.display = shownRows === 0 ? "" : "none";
+        searchInput.addEventListener("input", () => {
+            const term = searchInput.value.toLowerCase();
+            const rows = tableBody.querySelectorAll("tr");
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? "" : "none";
+                if (text.includes(term)) visibleCount++;
             });
+            document.getElementById("no-results-row")?.remove();
+            if (visibleCount === 0) {
+                const noResultsRow = document.createElement("tr");
+                noResultsRow.id = "no-results-row";
+                noResultsRow.innerHTML = `<td colspan="6" style="text-align:center;">No matching results found</td>`;
+                tableBody.appendChild(noResultsRow);
+            }
         });
-
-
-
-
 
 
 
@@ -917,10 +1150,15 @@
 
         // Toast on generate report
         document.addEventListener("DOMContentLoaded", function () {
-            const generateBtn = document.querySelector("#generateReport .btn.btn-primary");
+            const officeReportBtn = document.querySelector("#generateOfficeReport .btn.btn-primary");
             const reportToast = new bootstrap.Toast(document.getElementById("reportToast"), { delay: 3000 });
 
-            generateBtn.addEventListener("click", function () {
+            officeReportBtn.addEventListener("click", function () {
+                reportToast.show();
+            });
+
+            const assignmentReportBtn = document.querySelector("#generateAssignmentReport .btn.btn-primary");
+            assignmentReportBtn.addEventListener("click", function () {
                 reportToast.show();
             });
 
