@@ -31,6 +31,18 @@
     const CAN_ADMIN = (window.__CAN_ADMIN__ === true || window.__CAN_ADMIN__ === "true");
     const IS_SUPERVISOR = (window.__IS_SUPERVISOR__ === true || window.__IS_SUPERVISOR__ === "true");
 
+    // ---- Archival state ----
+    const showArchivedSwitch = document.getElementById("showArchivedSwitch");
+    let showArchived = false;
+
+    // ---- Archival switch handler ----
+    if (showArchivedSwitch) {
+        showArchivedSwitch.addEventListener("change", async () => {
+            showArchived = showArchivedSwitch.checked;
+            await fetchInitial(activeQuery(), 1, pageSize);
+        });
+    }
+
     // Scoped CSS attr (safe if none)
     const scopeAttrName = (() => {
         const host = document.querySelector(".asset-table") || document.body;
@@ -393,6 +405,7 @@
         if (!isBlank) url.searchParams.set("q", q.trim());
         url.searchParams.set("page", String(page));
         url.searchParams.set("pageSize", String(pageSizeArg));
+        url.searchParams.set("showArchived", showArchived ? "true" : "false");
 
         // ---- Cache-bust: include server-stamped assets version (or a timestamp) ----
         const ver = (window.__ASSETS_VER__ ? String(window.__ASSETS_VER__) : String(Date.now()));

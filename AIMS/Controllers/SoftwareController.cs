@@ -274,4 +274,91 @@ public class SoftwareController : ControllerBase
 
     }
 
+    [HttpPut("archive/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ArchiveSoftware(int id, CancellationToken ct = default)
+    {
+        var software = await _db.SoftwareAssets
+            .Where(s => s.SoftwareID == id)
+            .SingleOrDefaultAsync(ct);
+
+        if (software == null)
+            return NotFound();
+
+        software.IsArchived = true;
+
+
+
+
+        // unassign if assigned
+        var assignment = await _db.Assignments
+            .Where(s => s.SoftwareID == id && s.UnassignedAtUtc == null)
+            .SingleOrDefaultAsync(ct);
+        if (assignment != null)
+        {
+            assignment.UnassignedAtUtc = DateTime.UtcNow;
+        }
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        var Asset = await _db.SoftwareAssets
+        .IgnoreQueryFilters()
+        .Where(s => s.SoftwareID == id)
+        .Select(s => new AssetRowVm
+        {
+            SoftwareID = s.SoftwareID,
+            AssetName = s.SoftwareName,
+            Type = s.SoftwareType,
+            Tag = s.SoftwareLicenseKey,
+            Status = "Archived",
+            IsArchived = true,
+            AssignedUserId = null,
+            AssignedTo = "Unassigned"
+        })
+    .FirstOrDefaultAsync();
+
+        return Ok(Asset);
+    }
+
+    [HttpPut("unarchive/{id}")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnarchiveSoftware(int id, CancellationToken ct = default)
+    {
+        var software = await _db.SoftwareAssets
+            .IgnoreQueryFilters()
+            .Where(s => s.SoftwareID == id)
+            .SingleOrDefaultAsync(ct);
+
+        if (software == null)
+            return NotFound();
+
+        software.IsArchived = false;
+
+
+        await _db.SaveChangesAsync(ct);
+        CacheStamp.BumpAssets();
+
+        var Asset = await _db.SoftwareAssets
+        .Where(s => s.SoftwareID == id)
+        .Select(s => new AssetRowVm
+        {
+            SoftwareID = s.SoftwareID,
+            AssetName = s.SoftwareName,
+            Type = s.SoftwareType,
+            Tag = s.SoftwareLicenseKey,
+            Status = "Available",
+            IsArchived = false,
+            AssignedUserId = null,
+            AssignedTo = "Unassigned"
+        })
+    .FirstOrDefaultAsync();
+
+        return Ok(Asset);
+
+    }
 }
