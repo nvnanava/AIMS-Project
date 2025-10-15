@@ -60,6 +60,8 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="button" class="btn btn-warning reset-fields-btn">Reset Fields</button>
+
           </div>
         </form>
       </div>
@@ -214,11 +216,14 @@
           HardwareID: parseInt(editId.value, 10),
           AssetName: valueToSend(nameInput),
           AssetType: valueToSend(typeSelect),
-          AssetTag: valueToSend(tagInput),
           Status: valueToSend(statusSel),
           Comment: valueToSend(commentsInput),
           MarkForSurvey: mfs.checked
         };
+        const newTag = valueToSend(tagInput);
+        if (newTag !== null) {
+            dto.AssetTag = newTag;
+        }
       }
 
       try {
@@ -259,4 +264,31 @@
     });
   });
 
+    modalEl.addEventListener('show.bs.modal', function () {
+        const savedData = sessionStorage.getItem("addAssetData");
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                const form = modalEl.querySelector("#editAssetForm");
+                form.querySelectorAll("input, select, textarea").forEach(input => {
+                    const field = input.name;
+                    if (data[field]) {
+                        input.value = data[field];
+                        input.readOnly = true;
+                        input.classList.add("prefilled");
+                    }
+                });
+            } catch (err) {
+                console.warn("Failed to parse addAssetData:", err);
+            }
+        }
+    });
+
+document.querySelector("#editAssetForm .reset-fields-btn")?.addEventListener("click", () => {
+    const form = document.querySelector("#editAssetForm");
+    form.querySelectorAll("input, select, textarea").forEach(input => {
+        input.readOnly = false;
+        input.classList.remove("prefilled");
+    });
+});
 </script>
