@@ -105,13 +105,14 @@ body {
 .add-btn,
 .assign-btn,
 .edit-btn {
-    background-color: #46b29d;
-    border: 1px solid #333;
+    background-color: #1abc9c;
+    border: none;
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
+    transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+
 }
 
 .admin-table {
@@ -187,9 +188,9 @@ body {
 }
 
 .icon-btn {
-    background: #3498db;
     border: none;
-    color: white;
+    background: none;
+    color: #2c3e50;
     padding: 6px 10px;
     border-radius: 6px;
     cursor: pointer;
@@ -198,11 +199,22 @@ body {
     align-items: center;
     justify-content: center;
 }
+
 .icon-btn:hover {
-    background-color: #2980b9;
+    background-color: #ecf0f1;
+    transition: all 0.2s ease-in-out;
+    transform: translateY(-1px);
 }
+
 .pencil-svg {
+    width: 16px;
+    height: 16px;
     pointer-events: none;
+
+}
+.pencil-svg path {
+    fill: currentColor;
+
 }
 
 .badge:hover {
@@ -282,7 +294,7 @@ body {
     pointer-events: auto;
 }
 .admin-modal-content {
-    background: white;
+    background: #ECF0F1;
     border-radius: 12px;
     width: 450px;
     max-width: 95%;

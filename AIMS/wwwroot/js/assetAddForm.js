@@ -1,4 +1,8 @@
-// Function to handle the form submission and shows werror message if any fields are missing.a 
+window.assetFormCache = {};
+
+
+
+// Function to handle the form submission and shows werror message if any fields are missing.a
 document.addEventListener('DOMContentLoaded', function () {
     const categoryStore = document.getElementById('categoryStore');
     const assetForm = document.getElementById('AssetAddForm');
@@ -6,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const assetFormError = document.getElementById('assetFormError');
     const errorBox = document.getElementById('serverErrorMessage');
 
-    //reset the modal when closed    
+    //reset the modal when closed
     addAssetModal.addEventListener('hidden.bs.modal', function () {
         assetForm.reset();
         assetFormError.style.display = "none";
@@ -89,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const urlParams = new URLSearchParams(window.location.search);
                     const category = urlParams.get("category") || categoryStore.value
 
-                    await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms. 
+                    await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms.
                     await loadCategoryPaged(category, 1); //optimistically reload assets. Hardware controller now bumps cache stamp.
                     return;
                 }
@@ -102,6 +106,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+if (res.ok) {
+    // Save data locally for Edit modal prefill
+    localStorage.setItem("lastAddedAsset", JSON.stringify(CreateHardwareDto));
+
+    errorBox.style.display = 'none';
+    const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+    assignToast.show();
+
+    $('#addAssetModal').modal('hide');
+}
 
 function showErrorMessages(data, container) {
     let message = "";
