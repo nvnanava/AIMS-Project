@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using AIMS.Data;
+using AIMS.Dtos.Assets;
+using AIMS.Dtos.Common;
 using AIMS.Utilities;                 // ClaimsPrincipalExtensions (IsAdminOrHelpdesk / IsSupervisor)
-using AIMS.ViewModels;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -27,7 +27,7 @@ public sealed class AssetSearchQuery
         _env = env;
     }
 
-    public async Task<PagedResult<AssetRowVm>> SearchAsync(
+    public async Task<PagedResult<AssetRowDto>> SearchAsync(
         string? q,
         string? type,
         string? status,
@@ -62,8 +62,8 @@ public sealed class AssetSearchQuery
 
 
         // ---------------- Base projection (Hardware ∪ Software) ----------------
-        IQueryable<AssetRowVm> baseQ =
-            hardwareQuery.Select(h => new AssetRowVm
+        IQueryable<AssetRowDto> baseQ =
+            hardwareQuery.Select(h => new AssetRowDto
             {
                 HardwareID = h.HardwareID,
                 SoftwareID = null,
@@ -116,7 +116,7 @@ public sealed class AssetSearchQuery
                     .FirstOrDefault()
             })
             .Concat(
-            softwareQuery.Select(s => new AssetRowVm
+            softwareQuery.Select(s => new AssetRowDto
             {
                 HardwareID = null,
                 SoftwareID = s.SoftwareID,
@@ -185,7 +185,7 @@ public sealed class AssetSearchQuery
         }
 
         // ----- LIKE patterns (when q present) -----
-        IQueryable<AssetRowVm> finalQ;
+        IQueryable<AssetRowDto> finalQ;
         if (hasQ)
         {
             var likeExact = EscapeLike(norm);
@@ -245,7 +245,7 @@ public sealed class AssetSearchQuery
     private static string EscapeLike(string input) =>
         input.Replace("\\", "\\\\").Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
 
-    private async Task<IQueryable<AssetRowVm>> ScopeByRoleAsync(IQueryable<AssetRowVm> q, CancellationToken ct)
+    private async Task<IQueryable<AssetRowDto>> ScopeByRoleAsync(IQueryable<AssetRowDto> q, CancellationToken ct)
     {
         var http = _http.HttpContext;
 

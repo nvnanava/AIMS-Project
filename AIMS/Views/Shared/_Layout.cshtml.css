@@ -14,7 +14,10 @@ a {
 }
 
 .navbar-right {
-  padding-top: 15px;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  transform: translateY(-1px);
 }
 
 .btn-primary {
@@ -167,5 +170,4 @@ main.pb-3 {
   padding-bottom: 0 !important;
 }
 
-:root { --nav-h: 96px; }       /* update if design changes */
-body { padding-top: var(--nav-h); }
+

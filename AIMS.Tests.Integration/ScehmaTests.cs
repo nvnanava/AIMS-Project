@@ -1,10 +1,6 @@
-using System;
-using System.Data;
-using System.Linq;
 using Dapper;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
-using Xunit;
 
 namespace AIMS.Tests.Integration
 {
@@ -258,7 +254,7 @@ namespace AIMS.Tests.Integration
         }
 
         // -----------------------------------------------------------------------------------------
-        // NEW: Agreements — XOR + FileUri NOT NULL + DateAdded NOT NULL (skip if table absent)
+        // Agreements — XOR + FileUri NOT NULL + DateAdded NOT NULL (skip if table absent)
         // -----------------------------------------------------------------------------------------
         [Fact]
         public void Agreements_XOR_And_FileUri_NotNull()
@@ -273,7 +269,7 @@ namespace AIMS.Tests.Integration
 
             using var tx = con.BeginTransaction();
 
-            // Minimal role + user (in case you add FKs later)
+            // Minimal role + user
             var roleId = con.QuerySingle<int>(@"
                 INSERT INTO Roles(RoleName, Description) VALUES ('Tester','Temp');
                 SELECT CAST(SCOPE_IDENTITY() AS int);", transaction: tx);
@@ -330,7 +326,7 @@ namespace AIMS.Tests.Integration
         }
 
         // -----------------------------------------------------------------------------------------
-        // Optional: If you enforce unique AssetTag on Hardware, verify it (silently pass otherwise)
+        // Enforce unique AssetTag on Hardware, verify it (silently pass otherwise)
         // -----------------------------------------------------------------------------------------
         [Fact]
         public void Hardware_AssetTag_Is_Unique_When_Enforced()
@@ -372,7 +368,6 @@ namespace AIMS.Tests.Integration
         }
 
         // -----------------------------------------------------------------------------------------
-        // Your original behavioral test (fixed to respect AssetTag length)
         // Ensures CK rejects when BOTH HardwareID and SoftwareID are set
         // -----------------------------------------------------------------------------------------
         [Fact]

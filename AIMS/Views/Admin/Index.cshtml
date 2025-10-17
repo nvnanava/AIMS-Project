@@ -1,78 +1,129 @@
+@* ======================================================================
+   AIMS View: Admin/Index
+   ----------------------------------------------------------------------
+   Purpose
+   - Displays and manages AAD users (add/edit/filter/sort).
+   - Uses mock data for front-end UX testing (replace with real DB/Graph calls).
+
+   Conventions
+   1) Layout
+      - Inherits global layout from: ~/Views/Shared/_Layout.cshtml
+      - Loads base/global CSS automatically via layout.
+
+   2) Styles
+      - Page CSS: ~/css/pages/admin.index.css
+      - Component CSS (modals, tables): ~/css/components/*.css
+      - Add page CSS in @section Styles {...} using asp-append-version.
+
+   3) Scripts
+      - Page JS: ~/js/pages/admin.js
+      - Shared/global JS (site, spinner) loaded in layout.
+      - Add page JS in @section Scripts {...} using asp-append-version.
+
+   4) Routing
+      - Controller: Controllers/Mvc/AdminController.cs
+      - Action:     Index()
+      - Route:      /Admin or /Admin/Index
+
+   5) Notes
+      - Indentation: 4 spaces (no tabs)
+      - Keep modals and tables modular for future partial extraction.
+      - Replace demo `users` array with live data once backend integration is ready.
+   ====================================================================== *@
+
+@using AIMS.Utilities
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Mvc
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 
     var users = new[]
     {
-        new { Name = "John Smith",    Email = "john.smith@email.com",   Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Jane Doe",      Email = "jane.doe@email.com",     Role = "User",  Status = "Inactive", SeparationDate = "12/01/2024" },
-        new { Name = "Max Taylor",    Email = "max.taylor@email.com",   Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Zara Khan",     Email = "zara.khan@email.com",    Role = "User",  Status = "Inactive", SeparationDate = "11/16/2023" },
-        new { Name = "Leo Clark",     Email = "leo.clark@email.com",    Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Sophie Lee",    Email = "sophie.lee@email.com",   Role = "User",  Status = "Active",   SeparationDate = " " },
-        new { Name = "Nina Patel",    Email = "nina.patel@email.com",   Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Andrew Jackson",Email = "andrew.jackson@email.com",Role = "User", Status = "Inactive", SeparationDate = "10/31/2024" },
-        new { Name = "Taylor Jackson",Email = "taylor.jackson@email.com",Role = "Admin",Status = "Active",   SeparationDate = " " },
-        new { Name = "Michael Dawson",Email = "michael.dawson@email.com",Role = "User", Status = "Inactive", SeparationDate = "09/15/2025" },
-        new { Name = "Clint Clark",   Email = "clint.clark@email.com",  Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Tobi Brown",    Email = "tobi.brown@email.com",   Role = "User",  Status = "Active",   SeparationDate = " " }
+        new { Name = "John Smith",     Email = "john.smith@email.com",     Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Jane Doe",       Email = "jane.doe@email.com",       Role = "User",  Status = "Inactive", SeparationDate = "12/01/2024" },
+        new { Name = "Max Taylor",     Email = "max.taylor@email.com",     Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Zara Khan",      Email = "zara.khan@email.com",      Role = "User",  Status = "Inactive", SeparationDate = "11/16/2023" },
+        new { Name = "Leo Clark",      Email = "leo.clark@email.com",      Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Sophie Lee",     Email = "sophie.lee@email.com",     Role = "User",  Status = "Active",   SeparationDate = " " },
+        new { Name = "Nina Patel",     Email = "nina.patel@email.com",     Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Andrew Jackson", Email = "andrew.jackson@email.com", Role = "User",  Status = "Inactive", SeparationDate = "10/31/2024" },
+        new { Name = "Taylor Jackson", Email = "taylor.jackson@email.com", Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Michael Dawson", Email = "michael.dawson@email.com", Role = "User",  Status = "Inactive", SeparationDate = "09/15/2025" },
+        new { Name = "Clint Clark",    Email = "clint.clark@email.com",    Role = "Admin", Status = "Active",   SeparationDate = " " },
+        new { Name = "Tobi Brown",     Email = "tobi.brown@email.com",     Role = "User",  Status = "Active",   SeparationDate = " " }
     };
 }
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
+}
+
 <div class="table-wrapper">
-    <!-- Add & Edit Modals -->
-    @* Add User Modal *@
+    <!-- Add User Modal -->
     <div id="addUserModal" class="admin-modal">
         <div class="admin-modal-content">
             <div class="admin-modal-header">
                 <h2>Add New User</h2>
-                <button class="admin-modal-close" onclick="closeAddUserModal()">&times;</button>
+                <button class="admin-modal-close" onclick="AIMS.Admin.closeAddUserModal()">&times;</button>
             </div>
-            <form id="addUserForm" onsubmit="addUser(event)">
+            <form id="addUserForm" onsubmit="AIMS.Admin.addUser(event)">
                 <label for="userName">Name</label>
-                <input type ="text" id="userName" placeholder = "Start typing a name.." autocomplete = "off">
+                <input type="text" id="userName" placeholder="Start typing a name.." autocomplete="off" />
                 <div id="aadUserResults" class="aad-user-results"></div>
 
                 <label for="userEmail">Email</label>
-                <input type="email" id="userEmail" required>
+                <input type="email" id="userEmail" required />
+
                 <label for="userRole">Role</label>
                 <select id="userRole" required>
                     <option value="Admin">Admin</option>
                     <option value="User">User</option>
                 </select>
+
                 <label for="userStatus">Status</label>
                 <select id="userStatus" required>
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                 </select>
+
                 <button type="submit" class="add-btn">Add User</button>
             </form>
         </div>
     </div>
 
-    @* Edit User Modal *@
+    <!-- Edit User Modal -->
     <div id="editUserModal" class="admin-modal">
         <div class="admin-modal-content">
             <div class="admin-modal-header">
                 <h2>Edit User</h2>
-                <button class="admin-modal-close" onclick="closeEditUserModal()">&times;</button>
+                <button class="admin-modal-close" onclick="AIMS.Admin.closeEditUserModal()">&times;</button>
             </div>
-            <form id="editUserForm" onsubmit="saveUserEdit(event)">
-                <input type="hidden" id="editUserIndex">
+            <form id="editUserForm" onsubmit="AIMS.Admin.saveUserEdit(event)">
+                <input type="hidden" id="editUserIndex" />
                 <label for="editUserName">Name</label>
-                <input type="text" id="editUserName" required>
+                <input type="text" id="editUserName" required />
+
                 <label for="editUserEmail">Email</label>
-                <input type="email" id="editUserEmail" required>
+                <input type="email" id="editUserEmail" required />
+
                 <label for="editUserRole">Role</label>
                 <select id="editUserRole" required>
                     <option value="Admin">Admin</option>
                     <option value="User">User</option>
                 </select>
+
                 <label for="editUserStatus">Status</label>
                 <select id="editUserStatus" required>
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                 </select>
+
                 <label for="editUserSeparationDate">Separation Date</label>
-                <input type="text" id="editUserSeparationDate" placeholder="MM/DD/YYYY">
+                <input type="text" id="editUserSeparationDate" placeholder="MM/DD/YYYY" />
+
                 <button type="submit" class="add-btn">Save Changes</button>
             </form>
         </div>
@@ -80,14 +131,16 @@
 
     <!-- Table Controls -->
     <div class="admin-table-controls">
-        <div><button class="add-btn" onclick="openAddUserModal()">Add User</button></div>
+        <div>
+            <button class="add-btn" onclick="AIMS.Admin.openAddUserModal()">Add User</button>
+        </div>
         <div class="admin-table-controls-right">
             <label class="toggle-container">
-                <input type="checkbox" id="showInactive">
+                <input type="checkbox" id="showInactive" onchange="AIMS.Admin.toggleInactiveUsers()" />
                 <span class="slider"></span>
                 Show Inactive Users
             </label>
-            <select id="roleFilter">
+            <select id="roleFilter" onchange="AIMS.Admin.filterByRole()">
                 <option value="All">All Roles</option>
                 <option value="Admin">Admin</option>
                 <option value="User">User</option>
@@ -103,7 +156,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th onclick="sortTable(4)" style="cursor:pointer;">Status ⬍</th>
+                <th onclick="AIMS.Admin.sortTable(4)" style="cursor:pointer;">Status ⬍</th>
                 <th>Separation Date</th>
             </tr>
         </thead>
@@ -112,110 +165,25 @@
             {
                 var user = users[i];
                 var statusClass = user.Status?.ToLowerInvariant() ?? "active";
-                    <tr class="user-row @statusClass">
-                        <td>
-                            <button class="icon-btn" title="Edit" onclick="openEditUserModal(this)">
-                                <svg viewBox="0 0 16 16" width="16" height="16">
-                                    <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
-                                </svg>
-                            </button>
-                        </td>
-                        <td>@user.Name</td>
-                        <td>@user.Email</td>
-                        <td>@user.Role</td>
-                        <td><span class="badge @statusClass">@user.Status</span></td>
-                        <td>@user.SeparationDate</td>
-                    </tr>
+                <tr class="user-row @statusClass">
+                    <td>
+                        <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
+                            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+                                <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
+                            </svg>
+                        </button>
+                    </td>
+                    <td>@user.Name</td>
+                    <td>@user.Email</td>
+                    <td>@user.Role</td>
+                    <td><span class="badge @statusClass">@user.Status</span></td>
+                    <td>@user.SeparationDate</td>
+                </tr>
             }
         </tbody>
     </table>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const showInactiveCheckbox = document.getElementById("showInactive");
-    const roleFilter = document.getElementById("roleFilter");
-    const table = document.getElementById("adminTable");
-
-    function toggleInactiveUsers() {
-        const showInactive = showInactiveCheckbox.checked;
-        document.querySelectorAll(".user-row.inactive").forEach(row => {
-            row.style.display = showInactive ? "" : "none";
-        });
-    }
-
-    function filterByRole() {
-        const role = roleFilter.value;
-        document.querySelectorAll(".user-row").forEach(row => {
-            const userRole = row.cells[3].innerText.trim();
-            row.style.display = (role === "All" || userRole === role) ? "" : "none";
-        });
-        toggleInactiveUsers();
-    }
-
-    function sortTable(n) {
-        const tbody = table.tBodies[0];
-        const rows = Array.from(tbody.rows);
-        const asc = table.getAttribute("data-sort-dir") !== "asc";
-
-        rows.sort((a, b) => {
-            const x = a.cells[n].innerText.toLowerCase();
-            const y = b.cells[n].innerText.toLowerCase();
-            return asc ? x.localeCompare(y) : y.localeCompare(x);
-        });
-
-        rows.forEach(r => tbody.appendChild(r));
-        table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
-    }
-
-    // Event listeners
-    showInactiveCheckbox.addEventListener("change", toggleInactiveUsers);
-    roleFilter.addEventListener("change", filterByRole);
-
-    // Modals
-    window.openAddUserModal = () => document.getElementById("addUserModal").classList.add("show");
-    window.closeAddUserModal = () => document.getElementById("addUserModal").classList.remove("show");
-    window.addUser = (e) => { e.preventDefault(); closeAddUserModal(); };
-
-    window.openEditUserModal = (button) => {
-        const row = button.closest("tr");
-        const index = Array.from(row.parentNode.children).indexOf(row);
-        document.getElementById("editUserIndex").value = index;
-
-        const cells = row.getElementsByTagName("td");
-        document.getElementById("editUserName").value = cells[1].innerText.trim();
-        document.getElementById("editUserEmail").value = cells[2].innerText.trim();
-        document.getElementById("editUserRole").value = cells[3].innerText.trim();
-        document.getElementById("editUserStatus").value = cells[4].innerText.trim();
-        document.getElementById("editUserSeparationDate").value = cells[5].innerText.trim();
-
-        document.getElementById("editUserModal").classList.add("show");
-    };
-
-    window.closeEditUserModal = () => document.getElementById("editUserModal").classList.remove("show");
-
-    window.saveUserEdit = (event) => {
-        event.preventDefault();
-        const idx = document.getElementById("editUserIndex").value;
-        const row = document.querySelectorAll(".user-row")[idx];
-
-        row.cells[1].innerText = document.getElementById("editUserName").value;
-        row.cells[2].innerText = document.getElementById("editUserEmail").value;
-        row.cells[3].innerText = document.getElementById("editUserRole").value;
-        const status = document.getElementById("editUserStatus").value;
-        row.cells[4].innerHTML = `<span class="badge ${status.toLowerCase()}">${status}</span>`;
-        row.cells[5].innerText = document.getElementById("editUserSeparationDate").value || " ";
-
-        closeEditUserModal();
-    };
-
-    toggleInactiveUsers();
-});
-</script>
-
 @section Scripts {
-    <script src="~/js/admin.js" asp-append-version="true"></script>
+    <script src="~/js/pages/admin.index.js" asp-append-version="true" defer></script>
 }
-
-
-
