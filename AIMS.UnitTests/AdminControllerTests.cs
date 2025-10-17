@@ -1,16 +1,15 @@
-using Xunit;
-using Moq;
+using AIMS.Controllers.Mvc;
+using AIMS.Services;
 using Microsoft.AspNetCore.Mvc;
-using AIMS.Controllers;
-using AIMS.Utilities;
 using Microsoft.Graph.Models;
+using Moq;
 
 public class AdminControllerTests // Unit tests for AdminController
 {
     [Fact]
     public async Task GetAzureAdUsers_ReturnsOk_WithUsers() // Test for GetAzureAdUsers method
     {
-        var mockService = new Mock<AIMS.Utilities.IGraphUserService>(); // Mock the IGraphUserService
+        var mockService = new Mock<IGraphUserService>(); // Mock the IGraphUserService
         mockService.Setup(s => s.GetUsersAsync(It.IsAny<string>())) // Mock the GetUsersAsync method
                    .ReturnsAsync(new List<User> { new User { DisplayName = "Jane Doe" } }); // Return a sample user
 
@@ -26,7 +25,7 @@ public class AdminControllerTests // Unit tests for AdminController
     [Fact]
     public async Task GetAzureAdUsers_ForwardsSearchParameter_ToService() // Test that search parameter is forwarded
     {
-        var mockService = new Mock<AIMS.Utilities.IGraphUserService>(); // Mock the IGraphUserService
+        var mockService = new Mock<IGraphUserService>(); // Mock the IGraphUserService
         mockService.Setup(s => s.GetUsersAsync("query")) // Expect the search parameter "query"
                    .ReturnsAsync(new List<User> { new User { DisplayName = "Jane Doe" } }); // Return a sample user
 
@@ -43,7 +42,7 @@ public class AdminControllerTests // Unit tests for AdminController
     [Fact]
     public async Task GetAzureAdUsers_ReturnsOk_EmptyListWhenNoUsers() // Test for empty user list
     {
-        var mockService = new Mock<AIMS.Utilities.IGraphUserService>(); // Mock the IGraphUserService
+        var mockService = new Mock<IGraphUserService>(); // Mock the IGraphUserService
         mockService.Setup(s => s.GetUsersAsync(It.IsAny<string>())) // Mock the GetUsersAsync method
                    .ReturnsAsync(new List<User>()); // Return an empty list
 
@@ -59,7 +58,7 @@ public class AdminControllerTests // Unit tests for AdminController
     [Fact]
     public async Task GetAzureAdUsers_PropagatesServiceExceptions() // Test exception propagation
     {
-        var mockService = new Mock<AIMS.Utilities.IGraphUserService>(); // Mock the IGraphUserService
+        var mockService = new Mock<IGraphUserService>(); // Mock the IGraphUserService
         mockService.Setup(s => s.GetUsersAsync(It.IsAny<string>())) //  Mock the GetUsersAsync method
                    .ThrowsAsync(new InvalidOperationException("Graph failure")); // Simulate an exception
 
@@ -71,7 +70,7 @@ public class AdminControllerTests // Unit tests for AdminController
     [Fact]
     public async Task GetUserRoles_ReturnsOk_WithRoles() // Test for GetUserRoles method
     {
-        var mockService = new Mock<AIMS.Utilities.IGraphUserService>(); // Mock the IGraphUserService
+        var mockService = new Mock<IGraphUserService>(); // Mock the IGraphUserService
         mockService.Setup(s => s.GetUserRolesAsync("uid")) // Mock the GetUserRolesAsync method
                    .ReturnsAsync(new List<DirectoryObject> { new DirectoryRole { DisplayName = "Admin" } }); // Return a sample role
 
@@ -88,7 +87,7 @@ public class AdminControllerTests // Unit tests for AdminController
     [Fact]
     public void Index_ReturnsView() // Test for Index method
     {
-    var controller = new AdminController(Mock.Of<AIMS.Utilities.IGraphUserService>()); // Use a mock service
+        var controller = new AdminController(Mock.Of<IGraphUserService>()); // Use a mock service
         var result = controller.Index(); // Call the method
         Assert.IsType<ViewResult>(result); // Assert the result is a ViewResult
     }

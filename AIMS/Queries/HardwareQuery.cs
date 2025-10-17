@@ -1,6 +1,6 @@
 using AIMS.Data;
+using AIMS.Dtos.Hardware;
 using AIMS.Models;
-using AIMS.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Queries;

@@ -1,6 +1,5 @@
 using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace AIMS.Data;
 

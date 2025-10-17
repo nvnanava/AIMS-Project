@@ -1,33 +1,75 @@
+@* ======================================================================
+   AIMS View: Home/Index
+   ----------------------------------------------------------------------
+   Purpose
+   - Landing page showing asset category cards with pagination.
+   - Loads Dashboard Settings modal and hydrates summary cards from server snapshot.
+
+   Conventions
+   1) Layout
+      - Uses ~/Views/Shared/_Layout.cshtml (global CSS/JS).
+
+   2) Styles
+      - Component CSS:
+          ~/css/components/_HomeCardComponent.css
+          ~/css/components/_DashboardSettings.css
+      - Page CSS:
+          ~/css/pages/home.index.css
+      - Keep order: AIMS.styles.css → base → components → page.
+        (AIMS.styles.css must load before component/page CSS for scoped styles.)
+
+   3) Scripts
+      - Page script:            ~/js/pages/home.index.js
+      - Component scripts:      ~/js/components/dashboard-settings.js
+                                ~/js/components/summary-cards.js
+      - No inline JS, except the server snapshot bootstrap block (below).
+
+   4) Snapshot
+      - Controller provides ViewData["CardSnapshot"] with SummaryCardDto rows.
+      - We persist a small snapshot to localStorage for first-paint numbers.
+
+   5) Accessibility
+      - Cards region is announced via role="region" + aria-label.
+      - Pager buttons have aria-labels.
+
+   6) Indentation
+      - 4 spaces, no tabs.
+
+   ====================================================================== *@
+
 @using System.Text.Json
 @using AIMS.ViewModels
+
 @{
     ViewData["Title"] = "Home";
-    // pick up the server snapshot the controller put in ViewData
     var snap = ViewData["CardSnapshot"];
 }
 
 @section Styles {
-    <!-- Order matters: base site styles, component styles, then page-local styles -->
-    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/_HomeCardComponent.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Views/Home/Index.cshtml.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/_DashboardSettings.css" asp-append-version="true" />
+  <!-- Order matters: base → shared components → page -->
+  <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/base/site.css" asp-append-version="true" />
+
+  <!-- Components -->
+  <link rel="stylesheet" href="~/css/components/_HomeCardComponent.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/components/_Pager.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/components/_SettingsFab.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/components/_DashboardSettings.css" asp-append-version="true" />
+
+  <!-- Page-local -->
+  <link rel="stylesheet" href="~/css/pages/home.index.css" asp-append-version="true" />
 }
 
-<!-- One unified settings trigger (fixed at top-right, opens the modal) -->
+<!-- Single settings trigger (opens the modal) -->
 <button
-  class="settings-btn"
-  type="button"
-  data-bs-toggle="modal"
-  data-bs-target="#dashboardSettingsModal"
-  aria-label="Open dashboard settings">
+    class="settings-btn"
+    type="button"
+    data-bs-toggle="modal"
+    data-bs-target="#dashboardSettingsModal"
+    aria-label="Open dashboard settings">
 </button>
 
-<!--
-  Cards viewport
-  - Fixed-height window under the navbar
-  - Holds the gutter (outer padding) and the grid (2 rows; 3/2/1 columns)
--->
+<!-- Cards viewport -->
 <section class="cards-viewport" role="region" aria-label="Asset categories">
     <div class="cards-gutter">
         <!-- Strict grid modes via JS (.mode-3x2 / .mode-2x2 / .mode-2x1) -->
@@ -44,32 +86,32 @@
     </div>
 </section>
 
-@await Html.PartialAsync("~/Views/Shared/_DashboardSettings.cshtml")
+@await Html.PartialAsync("~/Views/Home/_DashboardSettings.cshtml")
 
 @section Scripts {
-    <script src="~/js/home.index.js" asp-append-version="true"></script>
-    <script src="~/js/dashboard-settings.js" asp-append-version="true"></script>
-    <script src="~/js/summary-cards.js" asp-append-version="true"></script>
+    <script src="~/js/pages/home.index.js" asp-append-version="true"></script>
+    <script src="~/js/components/dashboard-settings.js" asp-append-version="true"></script>
+    <script src="~/js/components/summary-cards.js" asp-append-version="true"></script>
 
     @* IMPORTANT: write the server snapshot OUTSIDE the grid so it’s not a grid item *@
-    @if (snap is IEnumerable<AIMS.ViewModels.SummaryCards.SummaryCardDto> ss)
+    @if (snap is IEnumerable<AIMS.Dtos.Dashboard.SummaryCardDto> ss)
     {
         <script>
-        (function(){
-            try {
-                const rows = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                    ss.Select(r => new {
-                        assetType = r.AssetType,
-                        total = r.Total,
-                        available = r.Available,
-                        threshold = r.Threshold,
-                        isLow = (r.Threshold > 0 && r.Available < r.Threshold),
-                        availablePercent = (r.Total > 0 ? (int)Math.Round((r.Available * 100.0)/r.Total) : 0)
-                    })
-                ));
-                localStorage.setItem('dashboard:snapshot:v1', JSON.stringify({ ts: Date.now(), rows }));
-            } catch {}
-        })();
+            (function () {
+                try {
+                    const rows = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+                        ss.Select(r => new {
+                            assetType = r.AssetType,
+                            total = r.Total,
+                            available = r.Available,
+                            threshold = r.Threshold,
+                            isLow = (r.Threshold > 0 && r.Available < r.Threshold),
+                            availablePercent = (r.Total > 0 ? (int)Math.Round((r.Available * 100.0)/r.Total) : 0)
+                        })
+                    ));
+                    localStorage.setItem('dashboard:snapshot:v1', JSON.stringify({ ts: Date.now(), rows }));
+                } catch { /* no-op */ }
+            })();
         </script>
     }
 }

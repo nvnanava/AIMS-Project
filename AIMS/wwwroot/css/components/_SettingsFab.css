@@ -1,0 +1,30 @@
+/* Floating settings button (shared) */
+.settings-btn {
+    position: fixed;
+    top: clamp(100px, 2vw, 0px);
+    right: clamp(12px, 2vw, 0px);
+    width: clamp(36px, 4vw, 52px);
+    height: clamp(36px, 4vw, 52px);
+    border-radius: 50%;
+    border: 3px solid #1e2b3b;
+    background-color: var(--primary, #1e2b3b);
+    background-image: url('/images/settings-icon.png');
+    background-size: 75%;
+    background-repeat: no-repeat;
+    background-position: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+    cursor: pointer;
+    transition: transform .2s ease, background-color .2s ease;
+    z-index: 1050;
+}
+
+.settings-btn:hover {
+    border-color: #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, .45);
+    transform: translateY(-1px);
+}
+
+.settings-btn:focus-visible {
+    outline: 3px solid #2ecc71;
+    outline-offset: 3px;
+}

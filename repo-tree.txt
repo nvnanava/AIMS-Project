@@ -1,0 +1,334 @@
+.
+├── . aims_bin
+│   └── Debug
+│       ...
+├── . aims_obj
+│   ...
+├── .DS_Store
+├── .config
+│   └── dotnet-tools.json
+├── .dockerignore
+├── .editorconfig
+├── .githooks
+│   ├── pre-commit
+│   └── pre-commit.ps1
+├── .gitignore
+├── AIMS
+│   ├── .DS_Store
+│   ├── AIMS
+│   │   └── wwwroot
+│   │       └── css
+│   │           └── global.mobilefix.css
+│   ├── AIMS.csproj
+│   ├── Controllers
+│   │   ├── Api
+│   │   │   ├── AssetsApiController.cs
+│   │   │   ├── AssignmentController.cs
+│   │   │   ├── AuditLogApiController.cs
+│   │   │   ├── HardwareController.cs
+│   │   │   ├── OfficeController.cs
+│   │   │   ├── ReportsController.cs
+│   │   │   ├── SearchApiController.cs
+│   │   │   ├── SoftwareController.cs
+│   │   │   ├── SummaryCardsController.cs
+│   │   │   ├── ThresholdsController.cs
+│   │   │   └── UserController.cs
+│   │   ├── Auth
+│   │   │   ├── AuthDebugController.cs
+│   │   │   └── AuthenticationController.cs
+│   │   ├── Diagnostics
+│   │   │   └── DiagnosticController.cs
+│   │   └── Mvc
+│   │       ├── AdminController.cs
+│   │       ├── AssetDetailsController.cs
+│   │       ├── AssetsRouteController.cs
+│   │       ├── AuditLogController.cs
+│   │       ├── ErrorController.cs
+│   │       ├── HomeController.cs
+│   │       ├── ManageController.cs
+│   │       ├── ReportsController.cs
+│   │       └── SearchController.cs
+│   ├── Data
+│   │   ├── AimsDbContext.cs
+│   │   ├── DbSeeder.cs
+│   │   └── DesignTimeDbContextFactory.cs
+│   ├── Dockerfile.dev
+│   ├── Dockerfile.prod
+│   ├── Dtos
+│   │   ├── Assets
+│   │   │   ├── AssetLiteDto.cs
+│   │   │   ├── AssetLookupItemDto.cs
+│   │   │   ├── AssetRowDto.cs
+│   │   │   └── AssetsPagePayloadDto.cs
+│   │   ├── Assignments
+│   │   │   └── AssignmentsDtos.cs
+│   │   ├── Audit
+│   │   │   └── AuditDtos.cs
+│   │   ├── Common
+│   │   │   ├── PagedResult.cs
+│   │   │   └── PagingTotals.cs
+│   │   ├── Dashboard
+│   │   │   ├── SummaryCardDto.cs
+│   │   │   └── ThresholdDtos.cs
+│   │   ├── Hardware
+│   │   │   └── HardwareDtos.cs
+│   │   ├── Reports
+│   │   │   ├── CreateReportDto.cs
+│   │   │   └── CustomReportOptionsDto.cs
+│   │   ├── Software
+│   │   │   └── SoftwareDtos.cs
+│   │   └── Users
+│   │       └── PersonDto.cs
+│   ├── Legacy
+│   │   ├── .DS_Store
+│   │   └── Scaffolded
+│   │       ├── .DS_Store
+│   │       ├── Controllers
+│   │       │   ├── AimsDbController.cs
+│   │       │   ├── AssetsController.cs
+│   │       │   └── FeedbackController.cs
+│   │       ├── Data
+│   │       │   └── AimsDbContext.cs
+│   │       ├── Dtos
+│   │       │   ├── AddHardwareDto.cs
+│   │       │   └── AddSoftwareDto.cs
+│   │       ├── Models
+│   │       │   ├── Feedback.cs
+│   │       │   ├── Hardware.cs
+│   │       │   └── Software.cs
+│   │       ├── Queries
+│   │       │   └── FeedbackQuery.cs
+│   │       ├── Views
+│   │       │   └── Home
+│   │       │       ├── Feedback.cshtml
+│   │       │       ├── Feedback.cshtml.css
+│   │       │       ├── Index.cshtml
+│   │       │       ├── Index.cshtml.css
+│   │       │       ├── _HomeCardComponent.css
+│   │       │       └── _HomePageCardComponent.cshtml
+│   │       └── js
+│   │           └── home.index.js
+│   ├── Migrations
+│   │   ├── 20250910074527_InitialCreate.Designer.cs
+│   │   ├── 20250910074527_InitialCreate.cs
+│   │   ├── 20250916020724_AddTagNumberToHardware.Designer.cs
+│   │   ├── 20250916020724_AddTagNumberToHardware.cs
+│   │   ├── 20250925225006_AddCommentsField.Designer.cs
+│   │   ├── 20250925225006_AddCommentsField.cs
+│   │   ├── 20250928091928_RemoveFeedbackFeature.Designer.cs
+│   │   ├── 20250928091928_RemoveFeedbackFeature.cs
+│   │   ├── 20251006212232_SchemaV2_Refactor.Designer.cs
+│   │   ├── 20251006212232_SchemaV2_Refactor.cs
+│   │   ├── 20251008042924_FixAssignments_HardwareId.Designer.cs
+│   │   ├── 20251008042924_FixAssignments_HardwareId.cs
+│   │   ├── 20251010204016_AddIsArchivedToEntities.Designer.cs
+│   │   ├── 20251010204016_AddIsArchivedToEntities.cs
+│   │   ├── AimsDbContextModelSnapshot.cs
+│   │   └── _local_sync
+│   │       ├── 20251015140117__LocalSync.Designer.cs
+│   │       └── 20251015140117__LocalSync.cs
+│   ├── Models
+│   │   ├── Agreement.cs
+│   │   ├── AssetKind.cs
+│   │   ├── Assignment.cs
+│   │   ├── AuditLog.cs
+│   │   ├── ErrorViewModel.cs
+│   │   ├── Hardware.cs
+│   │   ├── Office.cs
+│   │   ├── Report.cs
+│   │   ├── Role.cs
+│   │   ├── Software.cs
+│   │   ├── Threshold.cs
+│   │   └── User.cs
+│   ├── Program.cs
+│   ├── Properties
+│   │   ├── launchSettings.backup.json
+│   │   └── launchSettings.json
+│   ├── Queries
+│   │   ├── AssetQuery.cs
+│   │   ├── AssetSearchQuery.cs
+│   │   ├── AssignmentsQuery.cs
+│   │   ├── AuditLogQuery.cs
+│   │   ├── GetAssetDto.cs
+│   │   ├── HardwareQuery.cs
+│   │   ├── Paging.cs
+│   │   ├── ReportsQuery.cs
+│   │   ├── SoftwareQuery.cs
+│   │   └── UserQuery.cs
+│   ├── Routing
+│   │   └── AllowedAssetTypeConstraint.cs
+│   ├── Services
+│   │   ├── AssetTypeCatalogService.cs
+│   │   ├── GraphUserService.cs
+│   │   ├── IGraphUserService.cs
+│   │   └── SummaryCardService.cs
+│   ├── Utilities
+│   │   ├── AuthRoleHelper.cs
+│   │   ├── CacheStamp.cs
+│   │   ├── ClaimsPrincipalExtensions.cs
+│   │   └── SupervisorScopeHelper.cs
+│   ├── ViewModels
+│   │   ├── AssetCardVm.cs
+│   │   ├── HomeIndexViewModel.cs
+│   │   ├── Reports.cs
+│   │   └── ThresholdVm.cs
+│   ├── Views
+│   │   ├── .DS_Store
+│   │   ├── Admin
+│   │   │   └── Index.cshtml
+│   │   ├── AssetDetails
+│   │   │   ├── Index.cshtml
+│   │   │   ├── _AddCategoryForm.cshtml
+│   │   │   ├── _AssetAddForm.cshtml
+│   │   │   ├── _AssetButton.cshtml
+│   │   │   ├── _EditAssetForm.cshtml
+│   │   │   └── _SoftwareAddForm.cshtml
+│   │   ├── AuditLog
+│   │   │   └── Index.cshtml
+│   │   ├── Error
+│   │   │   ├── Generic.cshtml
+│   │   │   ├── NotAuthorized.cshtml
+│   │   │   └── NotFound.cshtml
+│   │   ├── Home
+│   │   │   ├── Index.cshtml
+│   │   │   ├── _DashboardSettings.cshtml
+│   │   │   └── _HomePageCardComponent.cshtml
+│   │   ├── Manage
+│   │   │   └── BulkUpload.cshtml
+│   │   ├── Reports
+│   │   │   ├── Index.cshtml
+│   │   │   └── ReportTableComponent.cshtml
+│   │   ├── Search
+│   │   │   ├── HomeSupervisor.cshtml
+│   │   │   ├── Index.cshtml
+│   │   │   ├── _AssignAssetModal.cshtml
+│   │   │   └── _UnassignAssetModal.cshtml
+│   │   ├── Shared
+│   │   │   ├── Error.cshtml
+│   │   │   ├── Privacy.cshtml
+│   │   │   ├── _Layout.cshtml
+│   │   │   ├── _Layout.cshtml.css
+│   │   │   ├── _TableComponent.cshtml
+│   │   │   └── _ValidationScriptsPartial.cshtml
+│   │   ├── _ViewImports.cshtml
+│   │   └── _ViewStart.cshtml
+│   ├── appsettings.Development.json
+│   ├── appsettings.json
+│   └── wwwroot
+│       ├── .DS_Store
+│       ├── css
+│       │   ├── base
+│       │   │   ├── global.breakpoints.css
+│       │   │   ├── global.mobilefix.css
+│       │   │   ├── global.modal.css
+│       │   │   ├── global.table.css
+│       │   │   ├── index.overrides.css
+│       │   │   ├── modal.css
+│       │   │   └── site.css
+│       │   ├── components
+│       │   │   ├── ReportTableComponent.css
+│       │   │   ├── _AssetAddForm.css
+│       │   │   ├── _AssetButton.css
+│       │   │   ├── _AssignAssetModal.css
+│       │   │   ├── _DashboardSettings.css
+│       │   │   ├── _HomeCardComponent.css
+│       │   │   ├── _TableComponent.css
+│       │   │   └── _UnassignAssetModal.css
+│       │   └── pages
+│       │       ├── HomeSupervisor.css
+│       │       ├── admin.index.css
+│       │       ├── assetdetails.index.css
+│       │       ├── auditlog.index.css
+│       │       ├── home.index.css
+│       │       ├── reports.index.css
+│       │       └── search.index.css
+│       ├── favicon.ico
+│       ├── images
+|       |   ...
+│       ├── js
+│       │   ├── base
+│       │   │   └── site.js
+│       │   ├── components
+│       │   │   ├── asset-add.js
+│       │   │   ├── assetAddForm.js
+│       │   │   ├── assignAssetModal.js
+│       │   │   ├── dashboard-settings.js
+│       │   │   ├── global-spinner.js
+│       │   │   ├── softwareAddForm.js
+│       │   │   ├── summary-cards.js
+│       │   │   └── unassignAssetModal.js
+│       │   └── pages
+│       │       ├── admin.index.js
+│       │       ├── assetdetails.index.js
+│       │       ├── auditlog.index.js
+│       │       ├── home.index.js
+│       │       ├── reports.index.js
+│       │       └── search.page.js
+│       └── lib
+│           ├── bootstrap
+|           |   ...
+│           ├── jquery
+│           |   ...
+├── AIMS.Tests.Integration
+│   ├── AIMS.Tests.Integration.csproj
+│   ├── API
+│   │   ├── APITestCollection.cs
+│   │   ├── APITestFixture.cs
+│   │   ├── APIWebApplicationFactory.cs
+│   │   ├── AssetsAPITests.cs
+│   │   └── SummaryCardsApiTests.cs
+│   ├── DBTestHarness.cs
+│   ├── MigrateDb.cs
+│   ├── ScehmaTests.cs
+│   ├── TestAuthHandler.cs
+│   ├── TestResults
+│   │   └── TestResults.trx
+│   └── appsettings.json
+├── AIMS.UnitTests
+│   ├── AIMS.UnitTests.csproj
+│   ├── AdminControllerTests.cs
+│   ├── ArchiveEndpointTests.cs
+│   ├── AuthenticationControllerTests.cs
+│   ├── Controllers
+│   │   └── ReportsGenerationTests.cs
+│   ├── Db.cs
+│   ├── HardwareBulkEndpointTests.cs
+│   ├── Queries
+│   │   └── AssetQueryTests.cs
+│   ├── Services
+│   │   └── SummaryCardServiceTests.cs
+│   └── SoftwareBulkEndpointTests.cs
+├── AIMS.sln
+├── CODE_STYLE.md
+├── DatabaseSetup.md
+├── Images
+│   ├── AIMSLOGO.png
+│   ├── ERDImage.png
+│   └── Homepage.png
+├── README.md
+├── css
+│   └── custom.css
+├── docker-compose.dev.yml
+├── docker-compose.prod.yml
+├── docs
+│   └── AIMS.postman_collection.json
+├── dotnet-install.sh
+├── global.json
+├── repo-tree.txt
+├── schemas
+│   ├── hardware.sql
+│   └── software.sql
+├── scripts
+│   ├── README.md
+│   ├── build_containers.sh
+│   ├── db_ready.sh
+│   ├── fix_format.sh
+│   ├── stop_containers.sh
+│   ├── test-class.sh
+│   ├── up_containers.sh
+│   └── up_stack.sh
+├── smoke.out
+└── sql
+    └── aims_smoke.sql
+
+132 directories, 619 files

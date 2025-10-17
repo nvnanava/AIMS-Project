@@ -1,5 +1,5 @@
 using AIMS.Data;
-using AIMS.ViewModels;
+using AIMS.Dtos.Software;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Queries;

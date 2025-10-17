@@ -1,0 +1,70 @@
+/* Cards pager (shared) */
+.cards-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    min-height: 41px;
+}
+
+.pager-btn {
+    height: 41px;
+    padding: 0 16px;
+    background: #ecf0f1;
+    color: #34495e;
+    border: 3px solid #34495e;
+    border-radius: 20px;
+    box-shadow: 0 4px 4px #0000003e;
+    cursor: pointer;
+    font-weight: 600;
+    transition: border-color .15s ease-out, box-shadow .15s ease-out, transform .15s ease-out;
+}
+
+.pager-btn:hover {
+    border-color: #1abc9c;
+}
+
+.pager-btn:focus-visible {
+    outline: 3px solid #1abc9c;
+    outline-offset: 3px;
+}
+
+.pager-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 3px #0000003e;
+}
+
+.pager-btn[disabled] {
+    opacity: .5;
+    cursor: default;
+    box-shadow: none;
+}
+
+.pager-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.pager-dot {
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    line-height: 0;
+    font-size: 0;
+    text-indent: -9999px;
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid #34495e;
+    background: #ecf0f1;
+    box-shadow: 0 2px 2px #0000002a;
+    cursor: pointer;
+}
+
+.pager-dot.active {
+    background: #1abc9c;
+}

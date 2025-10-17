@@ -1,9 +1,7 @@
-using System.Runtime.CompilerServices;
 using AIMS.Data;
+using AIMS.Dtos.Reports;
 using AIMS.Models;
 using AIMS.ViewModels;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Queries;

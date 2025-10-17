@@ -50,9 +50,9 @@
 }
 
 @{
-    var serverSnap = (IEnumerable<AIMS.ViewModels.SummaryCards.SummaryCardDto>?)ViewData["CardSnapshot"];
+    var serverSnap = (IEnumerable<AIMS.Dtos.Dashboard.SummaryCardDto>?)ViewData["CardSnapshot"];
     var byType = serverSnap?.ToDictionary(r => Norm(r.AssetType), r => r, StringComparer.OrdinalIgnoreCase)
-    ?? new Dictionary<string, AIMS.ViewModels.SummaryCards.SummaryCardDto>(StringComparer.OrdinalIgnoreCase);
+    ?? new Dictionary<string, AIMS.Dtos.Dashboard.SummaryCardDto>(StringComparer.OrdinalIgnoreCase);
 
     var cards = ViewData["AssetTypes"] as IEnumerable<AssetCardVm>;
     if (cards == null || !cards.Any())
@@ -61,22 +61,22 @@
         {
 new AssetCardVm { AssetType = "Monitor", DisplayName = "Monitors", IconUrl =
 Url.Content("~/images/asset-icons/monitor-icon.png"), DetailsHref =
-"/Home/AssetDetailsComponent?category=Monitor&source=card" },
+"/AssetDetails/Index?category=Monitor&source=card" },
 new AssetCardVm { AssetType = "Laptop", DisplayName = "Laptops", IconUrl =
 Url.Content("~/images/asset-icons/laptop-icon.png"), DetailsHref =
-"/Home/AssetDetailsComponent?category=Laptop&source=card" },
+"/AssetDetails/Index?category=Laptop&source=card" },
 new AssetCardVm { AssetType = "Desktop", DisplayName = "Desktops", IconUrl =
 Url.Content("~/images/asset-icons/desktop-icon.png"), DetailsHref =
-"/Home/AssetDetailsComponent?category=Desktop&source=card" },
+"/AssetDetails/Index?category=Desktop&source=card" },
 new AssetCardVm { AssetType = "Software", DisplayName = "Software Licenses", IconUrl =
 Url.Content("~/images/asset-icons/software-icon.png"), DetailsHref =
-"/Home/AssetDetailsComponent?category=Software&source=card" },
+"/AssetDetails/Index?category=Software&source=card" },
 new AssetCardVm { AssetType = "Headset", DisplayName = "Headsets", IconUrl =
 Url.Content("~/images/asset-icons/headset-icon.png"), DetailsHref =
-"/Home/AssetDetailsComponent?category=Headset&source=card" },
+"/AssetDetails/Index?category=Headset&source=card" },
 new AssetCardVm { AssetType = "Charging Cable", DisplayName = "Charging Cables", IconUrl =
 Url.Content("~/images/asset-icons/charging-cable-icon.png"), DetailsHref =
-"/Home/AssetDetailsComponent?category=Charging%20Cable&source=card" }
+"/AssetDetails/Index?category=Charging%20Cable&source=card" }
 };
         cards = fallback;
     }

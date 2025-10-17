@@ -1,11 +1,4 @@
-using System;
-using System.Data;
-using System.Linq;
 using System.Text.Json;
-using Dapper;
-using FluentAssertions;
-using Microsoft.Data.SqlClient;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace AIMS.Tests.Integration;

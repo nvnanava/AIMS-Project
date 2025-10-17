@@ -1,27 +1,15 @@
-using System.Security.Claims;
+using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using AIMS.Data;
 using AIMS.Queries;
 using AIMS.Services;
-using AIMS.Utilities;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;   // for UseForwardedHeaders
-using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Web;
-using System.IO.Abstractions;
-using Microsoft.Identity.Web.UI;
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
-using Microsoft.Graph.Models.ODataErrors;
-using Microsoft.Graph.Users.Item.MemberOf;
-using Microsoft.Graph.Authentication;
-using Azure.Identity;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
 
 
 

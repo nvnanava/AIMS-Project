@@ -1,0 +1,66 @@
+.table-responsive {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+}
+
+/* Force scrollable width instead of overlapping columns */
+.table-responsive table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 800px;
+  table-layout: auto;
+}
+
+/* Cell behavior */
+.table-responsive th,
+.table-responsive td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hint shadow on right edge */
+.table-responsive::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2rem;
+  background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+  pointer-events: none;
+  display: none;
+}
+
+/* --- MOBILE FIX --- */
+@@media (max-width: 992px) {
+  html, body {
+    overflow-x: hidden;
+  }
+
+  .table-responsive {
+    overflow-x: auto !important;
+    overflow-y: hidden;
+  }
+
+  .table-responsive table {
+    min-width: 900px !important;
+  }
+
+  .table-responsive th,
+  .table-responsive td {
+    white-space: nowrap;
+  }
+}
+

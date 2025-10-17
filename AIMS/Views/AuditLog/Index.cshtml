@@ -1,26 +1,57 @@
+@* ======================================================================
+   AIMS View: AuditLog/Index
+   ----------------------------------------------------------------------
+   Purpose
+   - Read-only audit table with client-side filtering (search + action).
+
+   Conventions
+   1) Layout
+      - Inherits global layout: ~/Views/Shared/_Layout.cshtml
+
+   2) Styles
+      - Page CSS: ~/css/pages/auditlog.index.css
+      - Component CSS (dropdowns, etc.): ~/css/components/*.css (add as needed)
+      - Add page CSS in @section Styles {...} using asp-append-version.
+
+   3) Scripts
+      - Page JS: ~/js/pages/auditlog.index.js
+      - No inline JS. All event wiring lives in the page script.
+      - Add page JS in @section Scripts {...} using asp-append-version.
+
+   4) Routing
+      - Controller: Controllers/Mvc/AuditLogController.cs
+      - Action:     Index()
+      - Route:      /AuditLog or /AuditLog/Index
+
+   5) Notes
+      - Indentation: 4 spaces (no tabs)
+      - Table body is currently static demo data; replace with server model when ready.
+   ====================================================================== *@
+
 @{
     ViewData["Title"] = "Audit Log";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/AuditLog.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/auditlog.index.css" asp-append-version="true" />
 }
 
 <div class="audit-log-container">
     <h1 class="audit-log-title">Audit Log</h1>
 
-   <div id="filter-button-container" class="dropdown">
-        <button id="filter-button-toggle" class="standard-button" type="button">
+    <div id="filter-button-container" class="dropdown">
+        <button id="filter-button-toggle" class="standard-button" type="button" aria-haspopup="true" aria-expanded="false">
             Filter
         </button>
-        <div id="filterDropdown" class="dropdown-menu">
-            <input type="text" id="filterSearchInput" placeholder="Search logs..." class="dropdown-search"/>
-            <a href="#" class="dropdown-item" data-action="All">All</a>
-            <a href="#" class="dropdown-item" data-action="Assign">Assign</a>
-            <a href="#" class="dropdown-item" data-action="Create">Create</a>
-            <a href="#" class="dropdown-item" data-action="Update">Update</a>
-            <a href="#" class="dropdown-item" data-action="Delete">Delete</a>
-            <a href="#" class="dropdown-item" data-action="Unassign">Unassign</a>
+        <div id="filterDropdown" class="dropdown-menu" role="menu" aria-hidden="true">
+            <input type="text" id="filterSearchInput" placeholder="Search logs..." class="dropdown-search" aria-label="Search logs" />
+            <a href="#" class="dropdown-item" data-action="All" role="menuitem">All</a>
+            <a href="#" class="dropdown-item" data-action="Assign" role="menuitem">Assign</a>
+            <a href="#" class="dropdown-item" data-action="Create" role="menuitem">Create</a>
+            <a href="#" class="dropdown-item" data-action="Update" role="menuitem">Update</a>
+            <a href="#" class="dropdown-item" data-action="Delete" role="menuitem">Delete</a>
+            <a href="#" class="dropdown-item" data-action="Unassign" role="menuitem">Unassign</a>
         </div>
     </div>
 
@@ -37,8 +68,8 @@
                 <th>Description</th>
             </tr>
         </thead>
-
         <tbody>
+            @* Demo rows; replace with server-rendered rows or client fetch *@
             <tr>
                 <td>1</td>
                 <td>2025-04-16 10:12 AM</td>
@@ -139,165 +170,10 @@
                 <td>Unassigned</td>
                 <td>User returned monitor to IT</td>
             </tr>
-
-            <tr>
-                <td>1</td>
-                <td>2025-04-16 10:12 AM</td>
-                <td>U001</td>
-                <td>Assign</td>
-                <td>A101</td>
-                <td>Unassigned</td>
-                <td>Laptop-001</td>
-                <td>Assigned Laptop to John Smith</td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>2025-04-16 09:50 AM</td>
-                <td>U002</td>
-                <td>Create</td>
-                <td>A102</td>
-                <td>N/A</td>
-                <td>Monitor-003</td>
-                <td>Created new monitor asset</td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>2025-04-15 05:30 PM</td>
-                <td>U003</td>
-                <td>Update</td>
-                <td>A103</td>
-                <td>Monitor-001</td>
-                <td>Monitor-003</td>
-                <td>Updated asset name and status</td>
-            </tr>
-            <tr>
-                <td>4</td>
-                <td>2025-04-15 04:17 PM</td>
-                <td>U001</td>
-                <td>Unassign</td>
-                <td>A104</td>
-                <td>Mouse-002</td>
-                <td>Unassigned</td>
-                <td>Removed asset from user Ava</td>
-            </tr>
-            <tr>
-                <td>5</td>
-                <td>2025-04-15 03:42 PM</td>
-                <td>U004</td>
-                <td>Delete</td>
-                <td>A105</td>
-                <td>Keyboard-001</td>
-                <td>Deleted</td>
-                <td>Deleted broken keyboard asset</td>
-            </tr>
-            <tr>
-                <td>6</td>
-                <td>2025-04-15 01:29 PM</td>
-                <td>U005</td>
-                <td>Assign</td>
-                <td>A106</td>
-                <td>Unassigned</td>
-                <td>Headset-004</td>
-                <td>Assigned to user Zara Khan</td>
-            </tr>
-            <tr>
-                <td>7</td>
-                <td>2025-04-15 11:10 AM</td>
-                <td>U002</td>
-                <td>Update</td>
-                <td>A107</td>
-                <td>Inactive</td>
-                <td>Active</td>
-                <td>Reactivated asset due to repair</td>
-            </tr>
-            <tr>
-                <td>8</td>
-                <td>2025-04-15 10:45 AM</td>
-                <td>U003</td>
-                <td>Create</td>
-                <td>A108</td>
-                <td>N/A</td>
-                <td>Webcam-002</td>
-                <td>Added new webcam to inventory</td>
-            </tr>
-            <tr>
-                <td>9</td>
-                <td>2025-04-14 04:30 PM</td>
-                <td>U001</td>
-                <td>Assign</td>
-                <td>A109</td>
-                <td>Unassigned</td>
-                <td>Dock-Station</td>
-                <td>Assigned docking station to Max</td>
-            </tr>
-            <tr>
-                <td>10</td>
-                <td>2025-04-14 03:20 PM</td>
-                <td>U005</td>
-                <td>Unassign</td>
-                <td>A110</td>
-                <td>Monitor-005</td>
-                <td>Unassigned</td>
-                <td>User returned monitor to IT</td>
-            </tr>
-
-
-            <tr>
-                <td>1</td>
-                <td>2025-04-16 10:12 AM</td>
-                <td>U001</td>
-                <td>Assign</td>
-                <td>A001</td>
-                <td>Unassigned</td>
-                <td>Laptop-001</td>
-                <td>Assigned asset to user John</td>
-            </tr>
-
         </tbody>
-
-
     </table>
 </div>
 
 @section Scripts {
-    <script>
-// Toggle dropdown visibility
-document.getElementById("filter-button-toggle").addEventListener("click", function () {
-    document.getElementById("filterDropdown").classList.toggle("show");
-});
-
-document.getElementById("filterSearchInput").addEventListener("keyup", function () {
-    const term = this.value.toLowerCase();
-    const rows = document.querySelectorAll(".audit-log-table tbody tr");
-
-    rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(term) ? "" : "none";
-    });
-});
-
-// Filter rows when clicking an option
-document.querySelectorAll(".dropdown-item").forEach(item => {
-    item.addEventListener("click", function (e) {
-        e.preventDefault();
-        const filter = this.getAttribute("data-action");
-        filterTable(filter);
-        document.getElementById("filterDropdown").classList.remove("show");
-    });
-});
-
-
-function filterTable(filter) {
-    const rows = document.querySelectorAll(".audit-log-table tbody tr");
-    rows.forEach(row => {
-        const action = row.cells[3].innerText.trim();
-        if (filter === "All" || action === filter) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-        }
-    });
+    <script src="~/js/pages/auditlog.index.js" asp-append-version="true" defer></script>
 }
-</script>
-}
-

@@ -64,6 +64,6 @@ public class AssetsController : Controller
         this.ViewData["TableHeaders"] = tableHeaders;
         this.ViewData["FilteredData"] = filteredData;
 
-        return View("AssetDetailsComponent");
+        return View("AssetDetails");
     }
 }

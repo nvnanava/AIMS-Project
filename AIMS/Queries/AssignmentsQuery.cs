@@ -1,8 +1,5 @@
-using System.Threading;
-using System.Threading.Tasks;
 using AIMS.Data;
-using AIMS.Models;
-using AIMS.ViewModels;
+using AIMS.Dtos.Assignments;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Queries;

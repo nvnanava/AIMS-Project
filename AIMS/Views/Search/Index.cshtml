@@ -1,0 +1,138 @@
+@* ======================================================================
+   AIMS View: Search/Index
+   ----------------------------------------------------------------------
+   Purpose
+   - Unified asset search with sticky header, toolbar filters, paging,
+     and admin/supervisor assign/unassign actions via modals.
+
+   Conventions
+   1) Layout & Styles
+      - Global layout: ~/Views/Shared/_Layout.cshtml
+      - Base/global CSS via layout (AIMS.styles.css + site/base).
+      - Page-specific CSS (if needed) goes in: ~/css/pages/search.index.css
+
+   2) Scripts
+      - Page JS: ~/js/pages/search.index.js  (all logic moved out of inline)
+      - Assign modal: ~/js/assignAssetModal.js
+      - Unassign modal: ~/js/unassignAssetModal.js
+      - GlobalSpinner provided globally (loaded in layout/base).
+
+   3) Security/Roles
+      - Server renders role flags (__CAN_ADMIN__, __IS_SUPERVISOR__) to window
+        to keep client behavior in sync with policy/claims.
+
+   4) Paging
+      - Server API returns PagedResult<T> (total/page/pageSize/items).
+      - Client keeps page state and updates pager accordingly.
+
+   5) Notes
+      - Indentation: 4 spaces (no tabs)
+      - Avoid inline JS; keep only tiny bootstrap variables if needed.
+   ====================================================================== *@
+
+@using AIMS.Utilities
+
+@{
+    ViewData["Title"] = "Search";
+    var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
+
+    // Server-rendered role flags
+    var __CAN_ADMIN__ = User.IsAdminOrHelpdesk();
+    var __IS_SUPERVISOR__ = User.IsSupervisor();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/search.index.css" asp-append-version="true" />
+}
+
+<!-- Expose tiny bootstrap vars to JS -->
+<script>
+  window.__CAN_ADMIN__     = @(__CAN_ADMIN__ ? "true" : "false");
+  window.__IS_SUPERVISOR__ = @(__IS_SUPERVISOR__ ? "true" : "false");
+  window.__ASSETS_VER__    = @CacheStamp.AssetsVersion;
+</script>
+
+<div class="page-fill">
+  <div class="table-container">
+    <!-- Sticky table header -->
+    <table class="asset-table-header">
+      <thead>
+        <tr>
+          @foreach (var header in tableHeaders)
+          {
+              <th>@header</th>
+          }
+        </tr>
+      </thead>
+    </table>
+
+    <!-- Sticky toolbar -->
+    <div class="table-toolbar">
+      <div class="toolbar-grid">
+        <div class="toolbar-cell">
+          <input class="search-input filter-input" type="text" name="Asset Name" placeholder="Filter by Asset Name" />
+        </div>
+        <div class="toolbar-cell">
+          <select name="Type" class="filter-input form-select">
+            <option value="">All Devices</option>
+            <option>Desktop</option>
+            <option>Laptop</option>
+            <option>Headset</option>
+            <option>Charging Cable</option>
+            <option>Monitor</option>
+            <option>Software</option>
+          </select>
+        </div>
+        <div class="toolbar-cell">
+          <input class="filter-input search-input" type="text" name="Tag #" placeholder="Filter by Tag #" />
+        </div>
+        <div class="toolbar-cell">
+          <input class="filter-input search-input" type="text" name="Assignment" placeholder="Filter by Assignment" />
+        </div>
+        <div class="toolbar-cell">
+          <select name="Status" class="filter-input form-select">
+            <option value="">All Status</option>
+            <option>Assigned</option>
+            <option>Available</option>
+            <option>In Repair</option>
+            <option>Damaged</option>
+            <option>Archived</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Show Archived Toggle -->
+    <div class="form-check form-switch show-archived-toggle">
+      <input class="form-check-input" type="checkbox" id="showArchivedSwitch">
+      <label class="form-check-label" for="showArchivedSwitch">Show Archived</label>
+    </div>
+
+    <!-- Scrolling table body -->
+    <div class="table-body-scroll">
+      <table class="asset-table-body">
+        <tbody id="table-body"><!-- rows populated by JS --></tbody>
+      </table>
+    </div>
+
+    <!-- Pager -->
+    <div class="search-pager" id="search-pager" hidden>
+      <button type="button" id="pg-prev" class="pager-btn">Prev</button>
+      <span id="pg-status" class="pager-status"></span>
+      <button type="button" id="pg-next" class="pager-btn">Next</button>
+    </div>
+
+    <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
+  </div>
+</div>
+
+@* Assign/Unassign modals *@
+@await Html.PartialAsync("_AssignAssetModal")
+@await Html.PartialAsync("_UnassignAssetModal")
+
+@section Scripts {
+    <script src="~/js/pages/search.index.js" asp-append-version="true" defer></script>
+    <script src="~/js/assignAssetModal.js" asp-append-version="true" defer></script>
+    <script src="~/js/unassignAssetModal.js" asp-append-version="true" defer></script>
+}

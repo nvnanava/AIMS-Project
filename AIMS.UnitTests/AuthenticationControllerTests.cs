@@ -1,15 +1,10 @@
-using Microsoft.AspNetCore.Authentication;
+//using Microsoft.Identity.Web;
+//using AIMS.Helpers; // For ClaimsPrincipalExtensions
+using AIMS.Controllers.Auth;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Moq; // For mocking URL logic
-using Xunit;
-//using Microsoft.Identity.Web;
-//using AIMS.Helpers; // For ClaimsPrincipalExtensions
-
-namespace AIMS.Controllers;
 
 public class AuthenticationControllerTests
 {

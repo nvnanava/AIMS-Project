@@ -1,4 +1,4 @@
-using AIMS.ViewModels;
+using AIMS.Dtos.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 

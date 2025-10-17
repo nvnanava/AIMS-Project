@@ -1,5 +1,4 @@
 using AIMS.Data;
-using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 
 public class UserQuery

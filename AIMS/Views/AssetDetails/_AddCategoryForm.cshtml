@@ -1,0 +1,67 @@
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCategoryModalLabel">Add New Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="addCategoryForm">
+
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Enter a New Asset Category:</label>
+                        <input type="text" id="categoryName" name="categoryName" class="form-control" placeholder="e.g., Projector, Tablet, Camera">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Add Category</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        
+        const form = document.getElementById("addCategoryForm");
+        const nameInput = document.getElementById("categoryName");
+        const toast = new bootstrap.Toast(document.getElementById("categoryToast"));
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault(); // prevent actual form submission
+
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                nameInput.classList.add("is-invalid");
+                nameInput.placeholder = "Category Name is required";
+                return;
+            }
+
+            // Clear error styles
+            nameInput.classList.remove("is-invalid");
+            nameInput.placeholder = "Enter Category Name";
+
+            // Show success toast
+            toast.show();
+
+            // Reset form & close modal
+            form.reset();
+            bootstrap.Modal.getInstance(document.getElementById("addCategoryModal")).hide();
+        });
+
+        // Clear error on input
+        nameInput.addEventListener("input", function () {
+            this.classList.remove("is-invalid");
+            this.placeholder = "Enter Category Name";
+        });
+    });
+</script>
