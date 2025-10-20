@@ -1,0 +1,441 @@
+/* ======================================================================
+   AIMS Component Styles: Admin Modals
+   ----------------------------------------------------------------------
+   Purpose
+   - Theme Bootstrap 5 modals for Add/Edit User to match AIMS design.
+   - Style inputs and custom selects consistently with the app.
+   - Accessible focus states with AIMS teal (no default blue rings).
+
+   Notes
+   - Backdrop behavior (no close on outside click) is in markup:
+       data-bs-backdrop="static" data-bs-keyboard="false"
+   ====================================================================== */
+
+/* -------- CSS Variables (AIMS palette) -------- */
+:root {
+    --aims-bg: #ecf0f1;
+    /* page bg */
+    --aims-bg-contrast: #f7f9fa;
+    /* cards/inputs */
+    --aims-ink: #34495e;
+    /* text/borders */
+    --aims-navy: #2c3e50;
+    /* headers/nav */
+    --aims-accent: #1abc9c;
+    /* accent teal */
+    --aims-shadow: rgba(0, 0, 0, .15);
+    --aims-focus: rgba(26, 188, 156, .35);
+    /* teal focus ring */
+}
+
+/* -------- Modal shell / header -------- */
+#addUserModal .aimsds-shell,
+#editUserModal .aimsds-shell {
+    background: var(--aims-bg);
+    border: 3px solid #34495e;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px var(--aims-shadow);
+    overflow: hidden;
+    /* menu is portaled to avoid clipping */
+}
+
+#addUserModal .aimsds-header,
+#editUserModal .aimsds-header {
+    background: var(--aims-navy);
+    color: var(--aims-bg);
+    border-bottom: 3px solid #34495e;
+}
+
+/* Close “X” */
+#addUserModal .btn-close.aimsds-close,
+#editUserModal .btn-close.aimsds-close {
+    opacity: .85;
+    transition: all .15s ease-out;
+    outline: none;
+    box-shadow: none;
+}
+
+#addUserModal .btn-close.aimsds-close:hover,
+#editUserModal .btn-close.aimsds-close:hover {
+    border: 3px solid red;
+    opacity: 1;
+}
+
+#addUserModal .btn-close.aimsds-close:focus,
+#addUserModal .btn-close.aimsds-close:focus-visible,
+#editUserModal .btn-close.aimsds-close:focus,
+#editUserModal .btn-close.aimsds-close:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.6);
+    border-radius: 50%;
+    opacity: 1;
+    filter: brightness(1.1);
+}
+
+/* -------- Form layout & labels -------- */
+#addUserModal .modal-body form,
+#editUserModal .modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+#addUserModal .modal-body label,
+#editUserModal .modal-body label {
+    font-weight: 700;
+    /* requested bold labels */
+    color: var(--aims-ink);
+}
+
+/* -------- Inputs (text/email) -------- */
+#addUserModal input[type="text"].form-control,
+#addUserModal input[type="email"].form-control,
+#editUserModal input[type="text"].form-control,
+#editUserModal input[type="email"].form-control,
+#addUserModal input[type="text"],
+#addUserModal input[type="email"],
+#editUserModal input[type="text"],
+#editUserModal input[type="email"] {
+    background: var(--aims-bg-contrast);
+    color: var(--aims-ink);
+    border: 2px solid rgba(52, 73, 94, .35);
+    border-radius: 8px;
+    padding: 10px 12px;
+    outline: none;
+    box-shadow: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#addUserModal input[type="text"]:focus,
+#addUserModal input[type="email"]:focus,
+#editUserModal input[type="text"]:focus,
+#editUserModal input[type="email"]:focus {
+    border-color: var(--aims-accent);
+    box-shadow: 0 0 8px var(--aims-focus);
+}
+
+/* -------- Native selects baseline (fallback, when not enhanced) -------- */
+#addUserModal .form-select,
+#editUserModal .form-select,
+#addUserModal select,
+#editUserModal select {
+    background: var(--aims-bg-contrast);
+    color: var(--aims-ink);
+    border: 2px solid rgba(52, 73, 94, .35);
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 40px 10px 12px;
+    /* room for caret */
+    box-shadow: 0 4px 4px rgba(0, 0, 0, .12);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%2334495e' d='M4.646 6.646a.5.5 0 01.708 0L8 9.293l2.646-2.647a.5.5 0 01.708.708l-3 3a.5.5 0 01-.708 0l-3-3a.5.5 0 010-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+#addUserModal .form-select:focus,
+#editUserModal .form-select:focus,
+#addUserModal select:focus,
+#editUserModal select:focus {
+    border-color: var(--aims-accent);
+    box-shadow: 0 0 0 3px var(--aims-focus);
+    background-color: var(--aims-bg-contrast);
+}
+
+#addUserModal .form-select:hover,
+#editUserModal .form-select:hover,
+#addUserModal select:hover,
+#editUserModal select:hover {
+    background-color: var(--aims-bg-contrast);
+    /* kill hover flash */
+}
+
+#addUserModal .form-select:disabled,
+#editUserModal .form-select:disabled,
+#addUserModal select:disabled,
+#editUserModal select:disabled {
+    opacity: .7;
+    cursor: not-allowed;
+}
+
+/* -------- AAD typeahead box (Add modal) -------- */
+#addUserModal #aadUserResults {
+    margin-top: .25rem;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: .5rem;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+    z-index: 1056;
+    /* above modal content */
+}
+
+#addUserModal #aadUserResults:empty {
+    display: none;
+}
+
+#addUserModal .aad-user-item {
+    width: 100%;
+    text-align: left;
+    padding: .5rem .75rem;
+    border: 0;
+    border-bottom: 1px solid #eee;
+    background: transparent;
+    cursor: pointer;
+}
+
+#addUserModal .aad-user-item:last-child {
+    border-bottom: 0;
+}
+
+#addUserModal .aad-user-item:hover,
+#addUserModal .aad-user-item:focus {
+    background: #f7f9fc;
+    outline: none;
+}
+
+#addUserModal .aad-hint,
+#addUserModal .aad-error {
+    padding: .5rem .75rem;
+    color: #666;
+}
+
+/* ----------------------------------------------------------------------
+   Buttons (Add / Save)
+   ---------------------------------------------------------------------- */
+#addUserModal .add-btn,
+#editUserModal .add-btn {
+    background-color: var(--aims-accent);
+    border: none;
+    color: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+    transition: transform .1s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+#addUserModal .add-btn:hover,
+#editUserModal .add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .22);
+    filter: brightness(1.02);
+}
+
+#addUserModal .add-btn:focus,
+#addUserModal .add-btn:focus-visible,
+#editUserModal .add-btn:focus,
+#editUserModal .add-btn:focus-visible {
+    outline: none;
+    transform: translateY(-1px);
+    box-shadow:
+        0 4px 10px rgba(0, 0, 0, .22),
+        0 0 0 3px var(--aims-focus);
+    filter: brightness(1.02);
+}
+
+#addUserModal .add-btn:active,
+#editUserModal .add-btn:active {
+    filter: brightness(0.98);
+    transform: translateY(0);
+}
+
+/* -------- Legacy Bootstrap dropdown menus on the page -------- */
+.dropdown-menu {
+    background: #f7f9fa;
+    border: 3px solid #34495e;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .12);
+    padding: 6px;
+    min-width: 220px;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: transparent;
+    color: inherit;
+}
+
+.dropdown-item.active,
+.dropdown-item:active {
+    background: var(--aims-accent);
+    color: #fff;
+}
+
+.dropdown-item.disabled,
+.dropdown-item:disabled {
+    color: #8aa0b2;
+    opacity: .7;
+}
+
+.dropdown-divider {
+    border-top: 2px solid rgba(52, 73, 94, .25);
+    margin: 6px 0;
+}
+
+.dropdown-header {
+    font-size: .85rem;
+    color: #6b7d90;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    padding: 6px 8px 4px;
+}
+
+.dropdown-menu.show {
+    margin-top: 8px !important;
+}
+
+/* =========================================================
+   AIMS Custom Select (progressive enhancement)
+   - Portal menu avoids clipping within modal shells.
+   ========================================================= */
+
+/* Visually hide the native select, keep it submittable (but not tabbable) */
+.aims-select.is-enhanced {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Wrapper */
+.aims-select-wrap {
+    position: relative;
+    display: block;
+}
+
+/* The visible button */
+.aims-select-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    background: var(--aims-bg-contrast);
+    color: var(--aims-ink);
+    border: 2px solid rgba(52, 73, 94, .35);
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 10px 12px;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, .12);
+    cursor: pointer;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+    outline: none;
+}
+
+.aims-select-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, .16);
+}
+
+.aims-select-toggle:focus,
+.aims-select-toggle:focus-visible {
+    outline: none;
+    box-shadow:
+        0 6px 8px rgba(0, 0, 0, .16),
+        0 0 0 3px var(--aims-focus);
+    border-color: var(--aims-accent);
+}
+
+/* Caret */
+.aims-select-caret {
+    pointer-events: none;
+    font-size: .95rem;
+    line-height: 1;
+}
+
+/* Popup menu (default) */
+.aims-select-menu {
+    position: absolute;
+    inset-inline: 0;
+    top: calc(100% + 6px);
+    z-index: 1060;
+    display: none;
+    background: #f7f9fa;
+    color: var(--aims-ink);
+    border: 3px solid #34495e;
+    border-radius: 8px;
+    box-shadow: 0 8px 14px rgba(0, 0, 0, .14);
+    padding: 6px;
+    max-height: 260px;
+    overflow: auto;
+}
+
+.aims-select-wrap[data-open="true"] .aims-select-menu {
+    display: block;
+}
+
+/* When portaled to body (visibility toggled in JS) */
+.aims-select-menu[data-portal="true"] {
+    position: fixed;
+    left: 0;
+    top: 0;
+    /* JS positions */
+    z-index: 2000;
+}
+
+/* Items */
+.aims-select-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .12s ease, transform .06s ease, box-shadow .12s ease;
+    outline: none;
+}
+
+.aims-select-item:hover,
+.aims-select-item[data-active="true"] {
+    background: rgba(26, 188, 156, .12);
+}
+
+.aims-select-item:focus,
+.aims-select-item:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 3px var(--aims-focus);
+    background: rgba(26, 188, 156, .12);
+}
+
+.aims-select-item[aria-selected="true"]::after {
+    content: "✓";
+    margin-inline-start: auto;
+    font-weight: 700;
+}
+
+/* After a selection has been made at least once, suppress hover flash */
+.aims-select-wrap[data-chosen="true"] .aims-select-item:hover {
+    background: transparent;
+}
+
+.aims-select-wrap[data-chosen="true"] .aims-select-item:focus,
+.aims-select-wrap[data-chosen="true"] .aims-select-item:focus-visible {
+    background: rgba(26, 188, 156, .12);
+}
+
+@media (max-width: 480px) {
+    .aims-select-menu {
+        max-height: 48vh;
+    }
+}

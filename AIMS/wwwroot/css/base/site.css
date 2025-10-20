@@ -233,3 +233,16 @@ body {
     height: auto;
   }
 }
+
+.container-fluid.layout-flex {
+  margin-top: 0 !important;
+  padding-top: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+.table-wrapper {
+  background: var(--aims-bg-contrast);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 89vh;
+}

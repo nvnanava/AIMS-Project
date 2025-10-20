@@ -3,25 +3,30 @@
    ----------------------------------------------------------------------
    Purpose
    - Client-side logic for Admin/Index:
-     * AAD user typeahead (via /aad-users)
-     * Add/Edit user modals
-     * Table filtering (role / inactive)
+     * AAD user typeahead (via /aad-users, debounced with abort support)
+     * Add/Edit user modals (Bootstrap)
+     * Table filtering (role / show inactive)
      * Column sorting
      * Demo row insert (until backend integration)
+     * Re-apply zebra striping after sort/filter/insert
 
    How it works
-   - Uses inline IDs/classes from Admin/Index.cshtml.
+   - Uses IDs/classes rendered by Admin/Index.cshtml.
    - All handlers are exposed under AIMS.Admin for razor attributes:
        onclick="AIMS.Admin.openEditUserModal(this)"
        onchange="AIMS.Admin.toggleInactiveUsers()"
+       onchange="AIMS.Admin.filterByRole()"
        ...
-   - Any future server integration can swap the mock data insert with real calls.
+   - Table uses a fixed header + scrollable body; JS only manipulates
+     #adminTable tbody (rows), not the header markup.
+   - When backend integration is ready, swap mock inserts/typeahead with real calls.
 
    Conventions
    - No inline JS other than calling AIMS.Admin.* from the markup.
-   - Keep DOM IDs stable: addUserModal, editUserModal, aadUserResults, adminTable,
-     showInactive, roleFilter, addUserForm, editUserForm.
+   - Keep DOM IDs stable: addUserModal, editUserModal, addUserForm, editUserForm,
+     adminTable, showInactive, roleFilter, aadUserResults.
    - 4-space indentation, no tabs.
+   - After any state change that affects visible rows, call stripeAdminTable().
 
    Public API (AIMS.Admin)
    - openAddUserModal(), closeAddUserModal()
@@ -30,7 +35,6 @@
    - toggleInactiveUsers(), filterByRole(), sortTable(colIdx)
 
    ====================================================================== */
-
 (() => {
     "use strict";
 
@@ -43,25 +47,30 @@
     let aadAbortCtrl = null;
 
     // ----- Utils ---------------------------------------------------------
-    function escapeHtml(s) {
-        return (s || "").replace(/[&<>"']/g, m => ({
-            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-        })[m]);
-    }
-
-    function escapeRegExp(s) {
-        return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
-    function highlight(text, q) {
+    const escapeHtml = (s) =>
+        (s || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const highlight = (text, q) => {
         const safe = escapeHtml(text ?? "");
         if (!q) return safe;
         const re = new RegExp(`(${escapeRegExp(q)})`, "ig");
         return safe.replace(re, "<mark>$1</mark>");
-    }
+    };
+    const text = (node, value) => (node.textContent = value ?? "");
 
-    function text(node, value) {
-        node.textContent = value ?? "";
+    // ----- Bootstrap modal helpers -----
+    function showModalById(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const m = bootstrap.Modal.getOrCreateInstance(el);
+        m.show();
+        return m;
+    }
+    function hideModalById(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const m = bootstrap.Modal.getOrCreateInstance(el);
+        m.hide();
     }
 
     // ----- AAD search ----------------------------------------------------
@@ -99,7 +108,7 @@
         }
 
         const frag = document.createDocumentFragment();
-        items.forEach(u => {
+        items.forEach((u) => {
             const name = u.displayName || "";
             const email = u.mail || u.userPrincipalName || "";
             const btn = document.createElement("button");
@@ -107,8 +116,7 @@
             btn.className = "aad-user-item";
             btn.innerHTML = `
                 <div class="aad-line"><strong>${highlight(name, query)}</strong></div>
-                <div class="aad-sub">${highlight(email, query)}</div>
-            `;
+                <div class="aad-sub">${highlight(email, query)}</div>`;
             btn.onclick = () => {
                 const nameInput = document.getElementById("userName");
                 const emailInput = document.getElementById("userEmail");
@@ -123,20 +131,14 @@
 
     // ----- Modals --------------------------------------------------------
     function openAddUserModal() {
-        const modal = document.getElementById("addUserModal");
-        if (!modal) return;
-        modal.classList.add("show");
-        const name = document.getElementById("userName");
-        const email = document.getElementById("userEmail");
-        const results = document.getElementById("aadUserResults");
-        if (name) name.value = "";
-        if (email) email.value = "";
-        if (results) results.innerHTML = "";
-        if (name) name.focus();
+        const form = document.getElementById("addUserForm");
+        form?.reset();
+        document.getElementById("aadUserResults")?.replaceChildren();
+        showModalById("addUserModal");
+        document.getElementById("userName")?.focus();
     }
-
     function closeAddUserModal() {
-        document.getElementById("addUserModal")?.classList.remove("show");
+        hideModalById("addUserModal");
     }
 
     function openEditUserModal(button) {
@@ -151,11 +153,10 @@
         document.getElementById("editUserStatus").value = cells[4].innerText.trim();
         document.getElementById("editUserSeparationDate").value = cells[5].innerText.trim();
 
-        document.getElementById("editUserModal").classList.add("show");
+        showModalById("editUserModal");
     }
-
     function closeEditUserModal() {
-        document.getElementById("editUserModal")?.classList.remove("show");
+        hideModalById("editUserModal");
     }
 
     // ----- Table Filters / Sorting --------------------------------------
@@ -163,7 +164,7 @@
         const showInactive = document.getElementById("showInactive")?.checked ?? true;
         const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
 
-        document.querySelectorAll("#adminTable tbody tr.user-row").forEach(row => {
+        document.querySelectorAll("#adminTable tbody tr.user-row").forEach((row) => {
             const isInactive = row.classList.contains("inactive");
             const userRole = row.cells[3]?.innerText.trim() || "";
             let visible = true;
@@ -191,6 +192,35 @@
 
         rows.forEach(r => tbody.appendChild(r));
         table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
+
+        stripeAdminTable();
+    }
+
+    function stripeAdminTable() {
+        const rows = Array.from(document.querySelectorAll("#adminTable tbody tr.user-row"));
+        let visibleIndex = 0;
+        rows.forEach(r => {
+            r.classList.remove("even-row", "odd-row");
+            if (r.style.display === "none") return;
+            r.classList.add(visibleIndex % 2 === 0 ? "even-row" : "odd-row");
+            visibleIndex++;
+        });
+    }
+
+    function applyAdminTableFilters() {
+        const showInactive = document.getElementById("showInactive")?.checked ?? true;
+        const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
+
+        document.querySelectorAll("#adminTable tbody tr.user-row").forEach(row => {
+            const isInactive = row.classList.contains("inactive");
+            const userRole = row.cells[3]?.innerText.trim() || "";
+            let visible = true;
+            if (!showInactive && isInactive) visible = false;
+            if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
+            row.style.display = visible ? "" : "none";
+        });
+
+        stripeAdminTable(); // <— add this
     }
 
     // ----- Insert / Save -------------------------------------------------
@@ -224,9 +254,10 @@
         text(tdSep, u.SeparationDate || " ");
 
         tr.append(tdActions, tdName, tdEmail, tdRole, tdStatus, tdSep);
-
         if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
         else tbody.appendChild(tr);
+
+        stripeAdminTable();
     }
 
     function addUser(e) {
@@ -240,7 +271,8 @@
         const user = { Name: name, Email: email, Role: role, Status: status, SeparationDate: "" };
         insertUserRow(user);
         applyAdminTableFilters();
-        closeAddUserModal();
+
+        hideModalById("addUserModal");
         document.getElementById("addUserForm")?.reset();
     }
 
@@ -260,7 +292,9 @@
         row.classList.add(status.toLowerCase());
 
         row.cells[5].innerText = document.getElementById("editUserSeparationDate").value || " ";
-        closeEditUserModal();
+        hideModalById("editUserModal");
+        applyAdminTableFilters();
+        stripeAdminTable();
     }
 
     // ----- DOM Ready -----------------------------------------------------
@@ -286,6 +320,7 @@
 
         // Initial filters (respect “Show Inactive” default and role filter)
         applyAdminTableFilters();
+        stripeAdminTable();
     });
 
     // ----- Expose public API --------------------------------------------

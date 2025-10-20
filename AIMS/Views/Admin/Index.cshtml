@@ -5,36 +5,38 @@
    - Displays and manages AAD users (add/edit/filter/sort).
    - Uses mock data for front-end UX testing (replace with real DB/Graph calls).
 
+   What’s on this page
+   - Users table with role/status filters and sortable Status column.
+   - Triggers for Add/Edit User modals (rendered as partials).
+
    Conventions
    1) Layout
       - Inherits global layout from: ~/Views/Shared/_Layout.cshtml
-      - Loads base/global CSS automatically via layout.
+      - Layout must include Bootstrap CSS and bootstrap.bundle.js.
 
    2) Styles
-      - Page CSS: ~/css/pages/admin.index.css
-      - Component CSS (modals, tables): ~/css/components/*.css
-      - Add page CSS in @section Styles {...} using asp-append-version.
+      - Page CSS:              ~/css/pages/admin.index.css
+      - Component CSS (modals) ~/css/components/_AdminModals.css
 
    3) Scripts
-      - Page JS: ~/js/pages/admin.js
-      - Shared/global JS (site, spinner) loaded in layout.
-      - Add page JS in @section Scripts {...} using asp-append-version.
+      - Page JS: ~/js/pages/admin.index.js
+      - bootstrap.bundle.js is required for modal behavior.
 
-   4) Routing
+   4) Partials (rendered below the table wrapper)
+      - _AddUserModal, _EditUserModal (Bootstrap + AIMS theming)
+
+   5) Routing
       - Controller: Controllers/Mvc/AdminController.cs
       - Action:     Index()
       - Route:      /Admin or /Admin/Index
 
-   5) Notes
-      - Indentation: 4 spaces (no tabs)
-      - Keep modals and tables modular for future partial extraction.
+   6) Notes
+      - Keep DOM IDs stable: addUserModal, editUserModal, addUserForm, editUserForm,
+        adminTable, showInactive, roleFilter, aadUserResults.
       - Replace demo `users` array with live data once backend integration is ready.
    ====================================================================== *@
 
 @using AIMS.Utilities
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Http
-@using Microsoft.AspNetCore.Mvc
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 @{
@@ -62,77 +64,13 @@
 }
 
 <div class="table-wrapper">
-    <!-- Add User Modal -->
-    <div id="addUserModal" class="admin-modal">
-        <div class="admin-modal-content">
-            <div class="admin-modal-header">
-                <h2>Add New User</h2>
-                <button class="admin-modal-close" onclick="AIMS.Admin.closeAddUserModal()">&times;</button>
-            </div>
-            <form id="addUserForm" onsubmit="AIMS.Admin.addUser(event)">
-                <label for="userName">Name</label>
-                <input type="text" id="userName" placeholder="Start typing a name.." autocomplete="off" />
-                <div id="aadUserResults" class="aad-user-results"></div>
-
-                <label for="userEmail">Email</label>
-                <input type="email" id="userEmail" required />
-
-                <label for="userRole">Role</label>
-                <select id="userRole" required>
-                    <option value="Admin">Admin</option>
-                    <option value="User">User</option>
-                </select>
-
-                <label for="userStatus">Status</label>
-                <select id="userStatus" required>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
-
-                <button type="submit" class="add-btn">Add User</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit User Modal -->
-    <div id="editUserModal" class="admin-modal">
-        <div class="admin-modal-content">
-            <div class="admin-modal-header">
-                <h2>Edit User</h2>
-                <button class="admin-modal-close" onclick="AIMS.Admin.closeEditUserModal()">&times;</button>
-            </div>
-            <form id="editUserForm" onsubmit="AIMS.Admin.saveUserEdit(event)">
-                <input type="hidden" id="editUserIndex" />
-                <label for="editUserName">Name</label>
-                <input type="text" id="editUserName" required />
-
-                <label for="editUserEmail">Email</label>
-                <input type="email" id="editUserEmail" required />
-
-                <label for="editUserRole">Role</label>
-                <select id="editUserRole" required>
-                    <option value="Admin">Admin</option>
-                    <option value="User">User</option>
-                </select>
-
-                <label for="editUserStatus">Status</label>
-                <select id="editUserStatus" required>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
-
-                <label for="editUserSeparationDate">Separation Date</label>
-                <input type="text" id="editUserSeparationDate" placeholder="MM/DD/YYYY" />
-
-                <button type="submit" class="add-btn">Save Changes</button>
-            </form>
-        </div>
-    </div>
 
     <!-- Table Controls -->
     <div class="admin-table-controls">
         <div>
-            <button class="add-btn" onclick="AIMS.Admin.openAddUserModal()">Add User</button>
+            <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                Add User
+            </button>
         </div>
         <div class="admin-table-controls-right">
             <label class="toggle-container">
@@ -140,7 +78,7 @@
                 <span class="slider"></span>
                 Show Inactive Users
             </label>
-            <select id="roleFilter" onchange="AIMS.Admin.filterByRole()">
+            <select id="roleFilter" class="aims-select" onchange="AIMS.Admin.filterByRole()">
                 <option value="All">All Roles</option>
                 <option value="Admin">Admin</option>
                 <option value="User">User</option>
@@ -148,41 +86,54 @@
         </div>
     </div>
 
-    <!-- Users Table -->
-    <table id="adminTable" class="admin-table" data-sort-dir="asc">
-        <thead>
-            <tr>
-                <th>Actions</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th onclick="AIMS.Admin.sortTable(4)" style="cursor:pointer;">Status ⬍</th>
-                <th>Separation Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (int i = 0; i < users.Length; i++)
-            {
-                var user = users[i];
-                var statusClass = user.Status?.ToLowerInvariant() ?? "active";
-                <tr class="user-row @statusClass">
-                    <td>
-                        <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
-                            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
-                                <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
-                            </svg>
-                        </button>
-                    </td>
-                    <td>@user.Name</td>
-                    <td>@user.Email</td>
-                    <td>@user.Role</td>
-                    <td><span class="badge @statusClass">@user.Status</span></td>
-                    <td>@user.SeparationDate</td>
+    <!-- Chrome wrapper: header (fixed) + body (scrolls) -->
+    <div class="admin-table-chrome">
+        <!-- Header table (fixed, outside the scroller) -->
+        <table class="admin-table-header">
+            <thead>
+                <tr>
+                    <th class="admin-col-1">Actions</th>
+                    <th class="admin-col-2">Name</th>
+                    <th class="admin-col-3">Email</th>
+                    <th class="admin-col-4">Role</th>
+                    <th class="admin-col-5" style="cursor:pointer;" onclick="AIMS.Admin.sortTable(4)">Status ⬍</th>
+                    <th class="admin-col-6">Separation Date</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+        </table>
+
+        <!-- Scroll container with ONLY the body table -->
+        <div class="admin-table-scroll">
+            <table id="adminTable" class="admin-table-body" data-sort-dir="asc">
+                <tbody>
+                    @for (int i = 0; i < users.Length; i++)
+                    {
+                        var user = users[i];
+                        var statusClass = user.Status?.ToLowerInvariant() ?? "active";
+                        <tr class="user-row @statusClass">
+                            <td>
+                                <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
+                                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+                                        <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
+                                    </svg>
+                                </button>
+                            </td>
+                            <td>@user.Name</td>
+                            <td>@user.Email</td>
+                            <td>@user.Role</td>
+                            <td><span class="badge @statusClass">@user.Status</span></td>
+                            <td>@user.SeparationDate</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<!-- Modals -->
+@await Html.PartialAsync("_AddUserModal")
+@await Html.PartialAsync("_EditUserModal")
 
 @section Scripts {
     <script src="~/js/pages/admin.index.js" asp-append-version="true" defer></script>
