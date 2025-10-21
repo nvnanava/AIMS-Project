@@ -17,6 +17,7 @@ public class SoftwareController : ControllerBase
 {
     private readonly AimsDbContext _db;
     private readonly SoftwareQuery _softwareQuery;
+
     public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery)
     {
         _db = db;
@@ -61,14 +62,6 @@ public class SoftwareController : ControllerBase
         if (dto.LicenseSeatsUsed < 0 || dto.LicenseTotalSeats < 0 || dto.LicenseSeatsUsed > dto.LicenseTotalSeats)
         {
             ModelState.AddModelError(nameof(dto.LicenseSeatsUsed), "License seats used must be between 0 and total seats.");
-            return BadRequest(ModelState);
-        }
-
-        // expiry cannot be in past (if provided)
-        if (dto.SoftwareLicenseExpiration.HasValue &&
-            dto.SoftwareLicenseExpiration < DateOnly.FromDateTime(DateTime.UtcNow))
-        {
-            ModelState.AddModelError(nameof(dto.SoftwareLicenseExpiration), "License expiration cannot be in the past.");
             return BadRequest(ModelState);
         }
 
@@ -129,11 +122,7 @@ public class SoftwareController : ControllerBase
         if (dto.SoftwareVersion is not null) software.SoftwareVersion = dto.SoftwareVersion;
         if (dto.SoftwareLicenseExpiration is not null)
         {
-            if (dto.SoftwareLicenseExpiration.Value < DateOnly.FromDateTime(DateTime.UtcNow))
-            {
-                ModelState.AddModelError(nameof(dto.SoftwareLicenseExpiration), "License expiration cannot be in the past.");
-                return BadRequest(ModelState);
-            }
+            // Removed "past" check; UI prevents past selection
             software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration;
         }
         if (dto.SoftwareUsageData is not null)
@@ -239,11 +228,7 @@ public class SoftwareController : ControllerBase
                 itemErrors.Add("Software cost cannot be negative.");
             }
 
-            //validate license expiration is not in the past
-            if (dto.SoftwareLicenseExpiration.HasValue && dto.SoftwareLicenseExpiration < DateOnly.FromDateTime(DateTime.UtcNow))
-            {
-                itemErrors.Add("License expiration cannot be in the past.");
-            }
+            // Removed "expiration not in the past" here to avoid timezone false positives
 
             if (itemErrors.Count > 0)
             {
@@ -261,7 +246,7 @@ public class SoftwareController : ControllerBase
             SoftwareName = dto.SoftwareName,
             SoftwareVersion = dto.SoftwareVersion,
             SoftwareLicenseKey = dto.SoftwareLicenseKey,
-            SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration,
+            SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration, // accept as provided
             SoftwareUsageData = dto.SoftwareUsageData,
             SoftwareCost = dto.SoftwareCost,
             Comment = dto.Comment
@@ -272,7 +257,6 @@ public class SoftwareController : ControllerBase
         CacheStamp.BumpAssets();
 
         return CreatedAtAction(nameof(GetAllSoftware), null, newSoftwareAssets);
-
     }
 
     [HttpPut("archive/{id}")]
@@ -291,9 +275,6 @@ public class SoftwareController : ControllerBase
 
         software.IsArchived = true;
 
-
-
-
         // unassign if assigned
         var assignment = await _db.Assignments
             .Where(s => s.SoftwareID == id && s.UnassignedAtUtc == null)
@@ -306,20 +287,20 @@ public class SoftwareController : ControllerBase
         CacheStamp.BumpAssets();
 
         var Asset = await _db.SoftwareAssets
-        .IgnoreQueryFilters()
-        .Where(s => s.SoftwareID == id)
-        .Select(s => new AssetRowDto
-        {
-            SoftwareID = s.SoftwareID,
-            AssetName = s.SoftwareName,
-            Type = s.SoftwareType,
-            Tag = s.SoftwareLicenseKey,
-            Status = "Archived",
-            IsArchived = true,
-            AssignedUserId = null,
-            AssignedTo = "Unassigned"
-        })
-    .FirstOrDefaultAsync();
+            .IgnoreQueryFilters()
+            .Where(s => s.SoftwareID == id)
+            .Select(s => new AssetRowDto
+            {
+                SoftwareID = s.SoftwareID,
+                AssetName = s.SoftwareName,
+                Type = s.SoftwareType,
+                Tag = s.SoftwareLicenseKey,
+                Status = "Archived",
+                IsArchived = true,
+                AssignedUserId = null,
+                AssignedTo = "Unassigned"
+            })
+            .FirstOrDefaultAsync();
 
         return Ok(Asset);
     }
@@ -340,26 +321,24 @@ public class SoftwareController : ControllerBase
 
         software.IsArchived = false;
 
-
         await _db.SaveChangesAsync(ct);
         CacheStamp.BumpAssets();
 
         var Asset = await _db.SoftwareAssets
-        .Where(s => s.SoftwareID == id)
-        .Select(s => new AssetRowDto
-        {
-            SoftwareID = s.SoftwareID,
-            AssetName = s.SoftwareName,
-            Type = s.SoftwareType,
-            Tag = s.SoftwareLicenseKey,
-            Status = "Available",
-            IsArchived = false,
-            AssignedUserId = null,
-            AssignedTo = "Unassigned"
-        })
-    .FirstOrDefaultAsync();
+            .Where(s => s.SoftwareID == id)
+            .Select(s => new AssetRowDto
+            {
+                SoftwareID = s.SoftwareID,
+                AssetName = s.SoftwareName,
+                Type = s.SoftwareType,
+                Tag = s.SoftwareLicenseKey,
+                Status = "Available",
+                IsArchived = false,
+                AssignedUserId = null,
+                AssignedTo = "Unassigned"
+            })
+            .FirstOrDefaultAsync();
 
         return Ok(Asset);
-
     }
 }

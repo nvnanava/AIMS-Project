@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
+    if (window.AIMS?.__wiredSoftware) return;
+    window.AIMS = window.AIMS || {};
+    window.AIMS.__wiredSoftware = true;
 
     const softwareForm = document.getElementById('SoftwareAddForm'); //phase 1 form
     const addSoftwareModal = document.getElementById('addSoftwareModal');
@@ -42,6 +45,10 @@ document.addEventListener('DOMContentLoaded', function () {
         licenseStep.textContent = `License ${licenses.length + 1} of ${licenseCount}`;
         nextLicenseBtn.style.display = "inline-block";
         submitSoftwareBtn.style.display = "none";
+    }
+
+    async function refreshSoftwareList() {
+        await AIMS.refreshList('Software', 1, 50);
     }
 
     function saveProgress() {
@@ -110,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
         softwarePreviewList.innerHTML = "";
     });
 
-
     // open modal check for saved progress
     addSoftwareModal.addEventListener('show.bs.modal', function () {
         const saved = localStorage.getItem("saveSoftwareProgress");
@@ -162,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         baseSoftware = {
             SoftwareName: document.getElementById('softwareName').value.trim(),
             SoftwareVersion: document.getElementById('softwareVersion').value.trim(),
-            SoftwareType: "Software", //unsure what we want to do with this
+            SoftwareType: "Software",
             SoftwareLicenseExpiration: document.getElementById('softwareLicenseExpiration').value.trim(),
             SoftwareCost: parseFloat(document.getElementById('softwareCost').value) || 0,
             Status: "Available",
@@ -178,11 +184,12 @@ document.addEventListener('DOMContentLoaded', function () {
         inTransition = false;
         loadNextLicense();
     });
+
     // phase 2 license entry
     nextLicenseBtn.addEventListener('click', function (e) {
-        e.preventDefault(); 
+        e.preventDefault();
         const keyInput = document.getElementById('licenseKey').value.trim();
-    
+
         clearError('licenseKey');
 
         if (!keyInput) {
@@ -201,7 +208,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         renderPreviewList();
 
-        // Reset input field for next entry
         document.getElementById('licenseKey').value = "";
 
         if (licenses.length >= licenseCount) {
@@ -213,65 +219,66 @@ document.addEventListener('DOMContentLoaded', function () {
             loadNextLicense();
         }
     });
-    
-    /*
 
-    Submit software licenses
-
-    */
-    
+    // Submit software licenses
     submitSoftwareBtn.addEventListener('click', async function (e) {
         e.preventDefault();
 
-        const licenseKey = document.getElementById('licenseKey').value.trim();
-        if (licenseKey && licenses.length < licenseCount) {
-            licenses.push({
-                ...baseSoftware,
-                SoftwareLicenseKey: licenseKey
-            });
-            renderPreviewList();
+        const keyInput = document.getElementById('licenseKey');
+        const pendingKey = (keyInput?.value || '').trim();
+        if (pendingKey && licenses.length < licenseCount) {
+            if (!licenses.some(l => (l.SoftwareLicenseKey || '').trim() === pendingKey)) {
+                licenses.push({ ...baseSoftware, SoftwareLicenseKey: pendingKey });
+                renderPreviewList();
+            }
+            if (keyInput) keyInput.value = '';
         }
 
         try {
-            const res = await fetch('/api/software/add-bulk', {
+            const cleaned = licenses.map(l => ({
+                SoftwareName: (l.SoftwareName || '').trim(),
+                SoftwareType: (l.SoftwareType || 'Software').trim(),
+                SoftwareVersion: (l.SoftwareVersion || '').trim(),
+                SoftwareLicenseKey: (l.SoftwareLicenseKey || '').trim(),
+                SoftwareLicenseExpiration: l.SoftwareLicenseExpiration || null,
+                SoftwareCost: typeof l.SoftwareCost === 'number' ? l.SoftwareCost : parseFloat(l.SoftwareCost) || 0,
+                Status: (l.Status || 'Available').trim(),
+                Comment: (l.Comment || '').trim()
+            }));
 
+            const res = await fetch('/api/software/add-bulk', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(licenses)
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ dtos: cleaned })
             });
+
             if (res.ok) {
-                inTransition = false;
-                bootstrap.Modal.getInstance(softwareDetailsModal).hide();
-                await new Promise(resolve => setTimeout(resolve, 250));
-                await loadAssetsPaged("Software", 1, 50); // reload software asset list
+                const modal = bootstrap.Modal.getInstance(softwareDetailsModal);
+                if (modal) modal.hide();
+
+                await new Promise(r => setTimeout(r, 250));
                 clearSaveProgress();
+                await refreshSoftwareList();
                 return;
             }
-            //handle serve side errors
-            const data = await res.json();
+
+            let data;
+            try { data = await res.json(); }
+            catch { data = { title: `HTTP ${res.status}`, detail: await res.text() }; }
+
             showServerErrorsInline(data);
         } catch (error) {
-            showServerErrors({ error: "Server response error: " + err.message });
-            inTransition = false;
+            showServerErrors({ error: 'Server response error: ' + (error?.message || error || 'Unknown error') });
         }
     });
 
-
     //save progress button
-    const saveBtn = document.getElementById('saveSoftwareProgress');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', saveProgress);
-    }
+    document.getElementById('saveSoftwareProgress')?.addEventListener('click', saveProgress);
 
     //load licenses progress
-    const loadBtn = document.getElementById('loadSoftwareProgressBtn');
-    if (loadBtn) {
-        loadBtn.addEventListener('click', function (e) {
+    document.getElementById('loadSoftwareProgressBtn')?.addEventListener('click', function (e) {
         e.preventDefault();
 
-        // try to load from localStorage
         const saved = localStorage.getItem("saveSoftwareProgress");
         if (!saved) {
             alert("No saved progress found.");
@@ -281,16 +288,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const addSoftwareModalInstance = bootstrap.Modal.getInstance(document.getElementById('addSoftwareModal'));
         if (addSoftwareModalInstance) addSoftwareModalInstance.hide();
 
-        //show phase 2 modal and load saved data
         const softwareDetailsModalInstance = new bootstrap.Modal(document.getElementById('softwareDetailsModal'), {
             backdrop: 'static',
             keyboard: false
         });
         softwareDetailsModalInstance.show();
-            loadProgress();
-            
-        });
-    }
+        loadProgress();
+    });
 
     // render and manage preview list
     function renderPreviewList() {
@@ -319,15 +323,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function startEditLicense(index) {
         editIndex = index;
-        //on click of edit button, load item data into form
         const item = licenses[index];
         document.getElementById('editLicenseKey').value = item.SoftwareLicenseKey;
-        //show slim modal
 
         const editModalEl = document.getElementById('editSoftwareModal');
         const editModal = new bootstrap.Modal(editModalEl);
         editModal.show();
-
     }
 
     document.getElementById('saveSoftwareEditBtn').addEventListener("click", () => {
@@ -335,7 +336,6 @@ document.addEventListener('DOMContentLoaded', function () {
             licenses[editIndex].SoftwareLicenseKey = document.getElementById('editLicenseKey').value.trim();
             renderPreviewList();
 
-            // close modal
             const editModalEl = document.getElementById('editSoftwareModal');
             const modalInstance = bootstrap.Modal.getInstance(editModalEl);
             modalInstance.hide();
@@ -352,7 +352,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (existingError) existingError.remove();
         });
 
-        // Accept both { errors: {...} } and { 0: [...] }
         const errors = data.errors || data;
         if (errors) {
             for (const key in errors) {
@@ -370,7 +369,6 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (data?.error) {
             showServerErrors({ error: data.error });
         }
-
     }
 
     //show generic server errors
@@ -378,108 +376,4 @@ document.addEventListener('DOMContentLoaded', function () {
         softwareErrorBox.textContent = data.error || "An unknown error occurred.";
         softwareErrorBox.style.display = "block";
     }
-
-
 });
-
-
-
-
-
-
-
-
-
-    // const SoftwareAddForm = document.getElementById('SoftwareAddForm');
-    // const addSoftwareModal = document.getElementById('addSoftwareModal');
-    // const softwareErrorMessage = document.getElementById('softwareErrorMessage');
-
-    // //reset modal on close
-    // addSoftwareModal.addEventListener('hidden.bs.modal', function () {
-    //     SoftwareAddForm.reset();
-    //     softwareErrorMessage.style.display = 'none';
-    //     softwareErrorMessage.innerText = '';
-
-    //     // Clear validation states
-    //     SoftwareAddForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-    // });
-
-
-
-    // document.getElementById('SoftwareAddForm').addEventListener('submit', async function (e) {
-    //     e.preventDefault(); // Prevent form submission
-
-    //     // Clear previous error message
-    //     const errorMessageDiv = document.getElementById('softwareErrorMessage');
-    //     errorMessageDiv.style.display = 'none';
-    //     errorMessageDiv.innerText = '';
-
-    //     //required fields are: Name, Version, License Key, Cost
-    //     // we can also move these error messages directly inline with the classes 
-    //     //to avoid hardcoding them here. May not be needed but might want to clean up if we have time.
-    //     const requiredFields = [
-    //         { id: 'softwareName', message: 'software name required.' },
-    //         { id: 'softwareVersion', message: 'Version number required.' }, //version is mandatory now, but we might want to ask client if they need this specified to be able to add.
-    //         { id: 'softwareLicenseKey', message: 'License Key required.' },
-    //         { id: 'softwareCost', message: 'software cost required.' }
-    //     ];
-
-    //     // Validate required fields
-    //     //will show inline red error warnings with the above messages if corresponding field is not entered.
-    //     let valid = true;
-    //     requiredFields.forEach(field => {
-    //         const inputElem = document.getElementById(field.id);
-    //         if (inputElem) {
-    //             if (!inputElem.value.trim()) {
-    //                 inputElem.classList.add("is-invalid");
-    //                 inputElem.value = "";
-    //                 inputElem.placeholder = field.message;
-    //                 valid = false;
-    //             } else {
-    //                 inputElem.classList.remove("is-invalid");
-    //                 inputElem.placeholder = "";
-    //             }
-    //         }
-    //     });
-
-    //     if (!valid) return;
-
-    //     // Gather form data
-    //     const CreateSoftwareDto = {
-    //         SoftwareName: document.getElementById('softwareName').value.trim(),
-    //         SoftwareType: "Software",
-    //         SoftwareVersion: document.getElementById('softwareVersion').value.trim(),
-    //         SoftwareLicenseKey: document.getElementById('softwareLicenseKey').value.trim(),
-    //         SoftwareLicenseExpiration: document.getElementById('softwareLicenseExpiration').value || null,
-    //         SoftwareCost: parseFloat(document.getElementById('softwareCost').value) || 0
-    //     };
-
-
-    //     // Send data to server via AJAX
-    //     try {
-    //         const res = await fetch('/api/software/add', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json'
-    //             },
-    //             body: JSON.stringify(CreateSoftwareDto)
-    //         })
-    //         if (!res.ok) {
-    //             const err = await res.json();
-    //             throw new Error(`Failed to update asset: ${ Object.values(err).flat().join(' ') } `); 
-    //         }
-    //         const modalElem = document.getElementById('addSoftwareModal');
-    //         const modal = bootstrap.Modal.getInstance(modalElem);
-    //         if (modal) {
-    //             modal.hide();
-    //         }
-    //         //update softwware list
-    //         //and wait for 250ms to ensure backend has processed the new software
-    //         await new Promise(resolve => setTimeout(resolve, 250));
-    //         loadAssets("Software");
-
-    //     } catch (error) {
-    //             errorMessageDiv.innerText = error.message;
-    //             errorMessageDiv.style.display = 'block';
-    //     }
-    // });

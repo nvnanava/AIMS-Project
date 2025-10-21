@@ -76,14 +76,17 @@
             case "marked for survey": return "status-marked-for-survey";
             case "in repair":
             case "damaged": return "status-in-repair";
+            case "full": return "status-assigned";    // map "Full" to a strong/occupied style
+            case "expired": return "status-in-repair"; // map "Expired" to warning/danger style
             default: return "";
         }
     }
-    function setStatusHeaderFor(isSoftware) {
+    // Always "Status" now (no “Used / Total Seats”)
+    function setStatusHeaderFor(/* isSoftware */) {
         const th = document.getElementById("status-col-header");
         if (!th) return;
-        th.textContent = isSoftware ? "Used / Total Seats" : "Status";
-        th.title = isSoftware ? "License seats used / total seats" : "";
+        th.textContent = "Status";
+        th.title = "";
     }
     function getCurrentCategory() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -108,12 +111,42 @@
         document.body.prepend(msg);
     }
 
+    // --- Date helpers for Expired status (treat date-only strings safely) ---
+    function todayLocalYMD() {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        const tz = d.getTimezoneOffset();
+        const local = new Date(d.getTime() - tz * 60000);
+        return local.toISOString().slice(0, 10); // YYYY-MM-DD
+    }
+    function extractYMD(val) {
+        if (!val) return null;
+        // If it looks like "YYYY-MM-DD..." just take first 10
+        if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+            return val.slice(0, 10);
+        }
+        // Try native Date
+        const dt = new Date(val);
+        if (!isNaN(dt.valueOf())) {
+            const tz = dt.getTimezoneOffset();
+            const local = new Date(dt.getTime() - tz * 60000);
+            return local.toISOString().slice(0, 10);
+        }
+        return null;
+    }
+    function isExpired(expVal) {
+        const exp = extractYMD(expVal);
+        if (!exp) return false;
+        return exp < todayLocalYMD();
+    }
+
     // --------------------------- Rendering ----------------------------
     function renderRows(rows) {
         clearTable();
         const totalSeats = rows.length;
         (rows || []).forEach((asset, index) => {
             if ((asset.type || "").toLowerCase().includes("software")) {
+                // Keep seat/tag display text as-is (no change requested)
                 asset.displaySeatOrTag = `Seat ${index + 1} of ${totalSeats}`;
             } else {
                 asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
@@ -186,16 +219,27 @@
         let fourthCellHtml = "";
 
         if (isSoftware) {
-            const used = asset.licenseSeatsUsed ?? null;
-            const total = asset.licenseTotalSeats ?? null;
-            if (used !== null && total !== null) {
-                const full = total > 0 && used >= total;
-                const seatClass = full ? "status-assigned" : "status-available";
-                fourthCellHtml = `<span class="status-badge ${seatClass}">${used} / ${total}</span>`;
+            // Compute Status for software: Available / Full / Expired
+            const usedRaw = asset.licenseSeatsUsed;
+            const totalRaw = asset.licenseTotalSeats;
+            const used = (usedRaw == null ? NaN : Number(usedRaw));
+            const total = (totalRaw == null ? NaN : Number(totalRaw));
+
+            // Try typical property names for expiration coming from API
+            const expVal = asset.softwareLicenseExpiration ?? asset.licenseExpiration ?? asset.expiration;
+            const expired = isExpired(expVal);
+
+            let statusText;
+            if (expired) {
+                statusText = "Expired";
+            } else if (!Number.isNaN(total) && total > 0 && !Number.isNaN(used) && used >= total) {
+                statusText = "Full";
             } else {
-                const sc = statusClassFor(asset.status);
-                fourthCellHtml = `<span class="status-badge ${sc}">${escapeHtml(asset.status ?? "")}</span>`;
+                statusText = "Available";
             }
+
+            const sc = statusClassFor(statusText);
+            fourthCellHtml = `<span class="status-badge ${sc}">${escapeHtml(statusText)}</span>`;
         } else {
             const sc = statusClassFor(asset.status);
             fourthCellHtml = `<span class="status-badge ${sc}">${escapeHtml(asset.status ?? "")}</span>`;
@@ -297,8 +341,8 @@
     // --------------------------- Loaders -----------------------------
     async function loadCategoryPaged(category, page = 1) {
         try {
-            const isSoftwareCategory = normalizeCategory(category) === "software";
-            setStatusHeaderFor(isSoftwareCategory);
+            // Header is always "Status" now
+            setStatusHeaderFor();
 
             const { items } = await getPage(category, page, pageSize);
             currentPage = page;
@@ -319,8 +363,8 @@
             if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
             const asset = await res.json();
 
-            const isSoftware = String(asset.type || "").toLowerCase() === "software";
-            setStatusHeaderFor(isSoftware);
+            // Header is always "Status"
+            setStatusHeaderFor();
 
             const currentCategory = getCurrentCategory();
             const assetCategory = (asset.type || "").trim();
@@ -463,6 +507,9 @@
         const th = document.getElementById("seatOrTagHeader");
         if (th) th.textContent = (category.toLowerCase().includes("software") ? "Seat #" : "Tag #");
 
+        // Header is always "Status" now
+        setStatusHeaderFor();
+
         if (tag) {
             await loadOneByTag(tag);
             return;
@@ -473,7 +520,6 @@
         }
 
         // Default empty state
-        setStatusHeaderFor(normalizeCategory(category) === "software");
         clearTable();
         applyEmpty(true);
         pager.hidden = true;

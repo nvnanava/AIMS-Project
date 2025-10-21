@@ -1,5 +1,4 @@
 <!-- Phase 1 of multi-asset addition form for hardware assets. -->
-<!-- Base asset data is entered and number of assets is selected. On submit, user is taken to a second form to enter serial/tag numbers. -->
 <div class="modal fade" id="addAssetModal" tabindex="-1" aria-labelledby="addAssetModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -18,13 +17,11 @@
                         </select>
                     </div>
 
-
                     <div class="mb-3">
                         <label for="manufacturer" class="form-label">Manufacturer:</label>
                         <input type="text" id="manufacturer" name="manufacturer" class="form-control"
                             placeholder="Enter Manufacturer">
                     </div>
-
 
                     <div class="mb-3">
                         <label for="model" class="form-label">Model:</label>
@@ -53,8 +50,6 @@
                     <div class="modal-footer justify-content-end">
                         <button id="startPhase2btn" class="btn aims-next-btn">Next</button>
                     </div>
-
-
                 </form>
             </div>
 
@@ -62,8 +57,7 @@
     </div>
 </div>
 
-
-<!-- Phase 2: On submit of above form, user is taken to a second form to enter serial/tag numbers for each asset being added. -->
+<!-- Phase 2: enter serial/tag numbers for each asset -->
 <div class="modal fade" id="itemDetailsModal" tabindex="-1" aria-labelledby="itemDetailsLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -79,18 +73,15 @@
                             <label for="serialNumber" class="form-label">Serial Number:</label>
                             <input type="text" id="serialNumber" name="serialNumber" class="form-control"
                                 placeholder="Enter Serial Number">
-                            <button type="button" id="generateSerialBtn" class="btn btn-outline-secondary">
-                                Random
-                            </button>
+                            <button type="button" id="generateSerialBtn"
+                                class="btn btn-outline-secondary">Random</button>
                             <div id="serialNumberError" class="invalid-feedback">Serial Number is required.</div>
                         </div>
                         <div class="mb-3">
                             <label for="tagNumber" class="form-label">Tag Number:</label>
                             <input type="text" id="tagNumber" name="tagNumber" class="form-control"
                                 placeholder="Enter Tag Number">
-                            <button type="button" id="generateTagBtn" class="btn btn-outline-secondary">
-                                Random
-                            </button>
+                            <button type="button" id="generateTagBtn" class="btn btn-outline-secondary">Random</button>
                             <div id="tagNumberError" class="invalid-feedback">Tag Number is required.</div>
                         </div>
                     </div>
@@ -138,10 +129,12 @@
                     <div class="mb-3">
                         <label for="editSerialNumber" class="form-label">Serial Number:</label>
                         <input type="text" id="editSerialNumber" class="form-control">
+                        <div id="editSerialError" class="invalid-feedback"></div>
                     </div>
                     <div class="mb-3">
                         <label for="editTagNumber" class="form-label">Tag Number:</label>
                         <input type="text" id="editTagNumber" class="form-control">
+                        <div id="editTagError" class="invalid-feedback"></div>
                     </div>
                 </form>
             </div>
@@ -153,7 +146,4 @@
     </div>
 </div>
 
-<script src="~/js/asset-add.js"></script>
-
-@*<script src="~/js/assetAddForm.js" defer></script>*@
-
+<script src="~/js/components/add-hardware.js" asp-append-version="true" defer></script>

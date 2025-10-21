@@ -60,7 +60,7 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-primary">Save Changes</button>
-                        <button type="button" class="btn btn-warning reset-fields-btn">Reset Fields</button>
+            <button type="button" class="btn btn-warning reset-fields-btn">Reset Fields</button>
 
           </div>
         </form>
@@ -136,7 +136,6 @@
 
       await populateAssetTypes();
 
-
       // Fill values from data-* on the trigger button
       editId.value = button.getAttribute('data-hardware-id') || button.getAttribute('data-software-id') || '';
       editId.dataset.defaultValue = editId.value;
@@ -159,6 +158,26 @@
       toggleMfsAvailability();
       const v = (statusSel.value || '').toLowerCase();
       mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
+    });
+    
+    // Prefill from sessionStorage if available (from add asset flow)
+    modalEl.addEventListener('show.bs.modal', function () {
+      const savedData = sessionStorage.getItem("addAssetData");
+      if (!savedData) return;
+      try {
+        const data = JSON.parse(savedData);
+        const form = modalEl.querySelector("#editAssetForm");
+        form.querySelectorAll("input, select, textarea").forEach(input => {
+          const field = input.name;
+          if (data[field]) {
+            input.value = data[field];
+            input.readOnly = true;
+            input.classList.add("prefilled");
+          }
+        });
+      } catch (err) {
+        console.warn("Failed to parse addAssetData:", err);
+      }
     });
 
     // Status/checkbox sync & availability
@@ -222,7 +241,7 @@
         };
         const newTag = valueToSend(tagInput);
         if (newTag !== null) {
-            dto.AssetTag = newTag;
+          dto.AssetTag = newTag;
         }
       }
 
@@ -249,7 +268,7 @@
         if (modal) modal.hide();
 
         const urlParams = new URLSearchParams(window.location.search);
-        const category = urlParams.get("category") || "@(ViewData["Category"] ?? "")";
+        const category = urlParams.get("category") || "Charging Cable";
         await new Promise(resolve => setTimeout(resolve, 250));
 
         if (window.loadAssets) {
@@ -262,33 +281,47 @@
         errorBox.style.display = 'block';
       }
     });
-  });
 
-    modalEl.addEventListener('show.bs.modal', function () {
-        const savedData = sessionStorage.getItem("addAssetData");
-        if (savedData) {
-            try {
-                const data = JSON.parse(savedData);
-                const form = modalEl.querySelector("#editAssetForm");
-                form.querySelectorAll("input, select, textarea").forEach(input => {
-                    const field = input.name;
-                    if (data[field]) {
-                        input.value = data[field];
-                        input.readOnly = true;
-                        input.classList.add("prefilled");
-                    }
-                });
-            } catch (err) {
-                console.warn("Failed to parse addAssetData:", err);
+    // Reset fields button (inside DOMContentLoaded)
+    const resetBtn = modalEl.querySelector("#editAssetForm .reset-fields-btn");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        const formEl = modalEl.querySelector("#editAssetForm");
+        if (!formEl) return;
+
+        // 1) Unlock fields + remove visual prefill hint
+        formEl.querySelectorAll("input, select, textarea").forEach(input => {
+          input.readOnly = false;
+          input.classList.remove("prefilled");
+
+          // 2) Restore original values from data-default-value if present
+          const def = input.dataset.defaultValue;
+          if (typeof def !== "undefined") {
+            // For checkboxes use checked; for others use value
+            if (input.type === "checkbox") {
+              input.checked = (def === "true" || def === true);
+            } else {
+              input.value = def ?? "";
             }
-        }
-    });
+          }
 
-document.querySelector("#editAssetForm .reset-fields-btn")?.addEventListener("click", () => {
-    const form = document.querySelector("#editAssetForm");
-    form.querySelectorAll("input, select, textarea").forEach(input => {
-        input.readOnly = false;
-        input.classList.remove("prefilled");
-    });
-});
+          // 3) Clear any validation styling/messages
+          input.classList.remove("is-invalid");
+        });
+
+        // 4) Clear top-level error box (if shown)
+        if (errorBox) {
+          errorBox.style.display = "none";
+          errorBox.innerText = "";
+        }
+
+        // 5) Re-sync MFS availability
+          toggleMfsAvailability();
+
+        // 6) Prevent auto-prefill from locking again on this open instance
+        try { sessionStorage.removeItem("addAssetData"); } catch {}
+
+      });
+    }
+  });
 </script>

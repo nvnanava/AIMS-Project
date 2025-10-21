@@ -375,4 +375,34 @@ public class HardwareController : ControllerBase
         return Ok(Asset);
 
     }
+
+    [HttpPost("check-duplicates")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> CheckDuplicates([FromBody] BulkHardwareRequest req, CancellationToken ct = default)
+    {
+        var serials = req.Dtos?
+            .Select(d => (d.SerialNumber ?? "").Trim())
+            .Where(s => s != "")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList() ?? new();
+
+        var tags = req.Dtos?
+            .Select(d => (d.AssetTag ?? "").Trim())
+            .Where(t => t != "")
+            .Distinct() // case-sensitive; switch to OrdinalIgnoreCase if desired
+            .ToList() ?? new();
+
+        var existingSerials = await _db.HardwareAssets
+            .Where(h => h.SerialNumber != null && serials.Contains(h.SerialNumber!))
+            .Select(h => h.SerialNumber!)
+            .ToListAsync(ct);
+
+        var existingTags = await _db.HardwareAssets
+            .Where(h => h.AssetTag != null && tags.Contains(h.AssetTag!))
+            .Select(h => h.AssetTag!)
+            .ToListAsync(ct);
+
+        return Ok(new { existingSerials, existingTags });
+    }
 }

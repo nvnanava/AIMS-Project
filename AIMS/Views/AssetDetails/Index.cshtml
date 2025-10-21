@@ -11,7 +11,7 @@
 
    2) Styles
       - Page CSS:       ~/css/pages/assetdetails.index.css
-      - Component CSS:  ~/css/components/_AssetButton.css, _AssetAddForm.css
+      - Component CSS:  ~/css/components/_AssetButton.css, _HardwareAddForm.css
       - Add via @section Styles to keep the layout base minimal.
 
    3) Scripts
@@ -44,7 +44,7 @@
 @using AIMS.Utilities
 
 @* Partials (forms & button components) *@
-@await Html.PartialAsync("_AssetAddForm")
+@await Html.PartialAsync("_HardwareAddForm")
 @await Html.PartialAsync("_EditAssetForm")
 @await Html.PartialAsync("_AddCategoryForm")
 @await Html.PartialAsync("_SoftwareAddForm")
@@ -64,10 +64,8 @@
    A single, non-executable config element for the page script to read.
    Avoids inline scripts; safe to extend with more data-* keys later.
    ---------------------------------------------------------------- *@
-<div id="assetdetails-config"
-     data-specs='@Html.Raw(Json.Serialize(ViewData["SpecsData"] ?? new {}))'
-     data-category="@category"
-     data-is-admin="@(User.IsAdmin().ToString().ToLower())">
+<div id="assetdetails-config" data-specs='@Html.Raw(Json.Serialize(ViewData["SpecsData"] ?? new { }))'
+    data-category="@category" data-is-admin="@(User.IsAdmin().ToString().ToLower())">
 </div>
 
 <h2 class="text-center my-4">@ViewData["Title"]</h2>
@@ -124,5 +122,8 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/components/add-shared.js" asp-append-version="true" defer></script>
     <script src="~/js/pages/assetdetails.index.js" asp-append-version="true" defer></script>
+    <script src="~/js/components/add-hardware.js" asp-append-version="true" defer></script>
+    <script src="~/js/components/add-software.js" asp-append-version="true" defer></script>
 }
