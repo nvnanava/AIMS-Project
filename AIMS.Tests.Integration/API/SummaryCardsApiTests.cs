@@ -1,16 +1,11 @@
-using System;
-using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 using AIMS.Data;
+using AIMS.Dtos.Dashboard;
 using AIMS.Models;
-using AIMS.Services;
-using AIMS.ViewModels.SummaryCards;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace AIMS.Tests.Integration.API
 {

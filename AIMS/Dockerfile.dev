@@ -12,7 +12,7 @@ WORKDIR /src
 # (Optional) prime NuGet cache so first run is faster
 # Copy only the csproj to leverage Docker layer caching
 COPY AIMS/*.csproj AIMS/
-RUN dotnet restore AIMS/AIMS.csproj
+RUN dotnet restore AIMS/AIMS.csproj --disable-parallel -v minimal
 
 # We won’t copy the rest of the source here — in dev we use the bind mount.
 # The container will see your live files from the host.

@@ -1,0 +1,88 @@
+/* Viewport + gutter */
+.cards-viewport {
+    height: calc(100vh - 89px);
+    background: #ECF0F1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding-left: 5.869%;
+    padding-right: 5.869%;
+}
+
+.cards-gutter {
+    height: 80vh;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Grid host + strict modes */
+.cards-grid {
+    display: grid;
+    height: 100%;
+    width: 100%;
+    gap: 24px;
+    justify-content: center;
+    align-content: center;
+    justify-items: stretch;
+    align-items: stretch;
+    container-type: inline-size;
+    /* for container queries inside cards */
+}
+
+.cards-grid.mode-3x2 {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.cards-grid.mode-2x2 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.cards-grid.mode-2x1 {
+    grid-template-columns: repeat(1, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+/* Only cards are grid items */
+.cards-grid> :not(.card-link) {
+    display: none !important;
+}
+
+.cards-grid>.card-link {
+    display: block;
+    height: 100%;
+}
+
+/* Pagination visibility managed by JS hydration */
+.card-link.is-hidden {
+    display: none !important;
+}
+
+.cards-grid.hydrating {
+    visibility: hidden;
+}
+
+.cards-grid:not(.hydrating) {
+    visibility: visible;
+}
+
+.cards-grid.hydrating+.cards-pager {
+    visibility: hidden;
+}
+
+.cards-grid:not(.hydrating)+.cards-pager {
+    visibility: visible;
+}
+
+/* Guard against accidental fades */
+.card-icon,
+.js-total,
+.js-available,
+.js-percent,
+.status-dot {
+    transition: none !important;
+}

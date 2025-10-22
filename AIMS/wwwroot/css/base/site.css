@@ -1,0 +1,248 @@
+/* ==========================================================================
+   Global Design Tokens (:root)
+   --------------------------------------------------------------------------
+   - Keep all layout constants, brand colors, and shared component vars here
+   - Accessible throughout all CSS using var(--token-name)
+   ========================================================================== */
+
+:root {
+  /* ------------------------------
+     Layout & Spacing
+     ------------------------------ */
+  --nav-h: 89px;
+  /* fixed navbar height (update if design changes) */
+  --content-max-w: 1440px;
+  /* max page width for centered layouts */
+  --page-pad-x: 5.869%;
+  /* consistent horizontal gutter (matches cards page) */
+  --section-gap: 48px;
+  /* vertical rhythm between sections */
+  --border-radius: 8px;
+  /* global rounded corners for consistency */
+
+  /* ------------------------------
+     Brand Color Palette
+     ------------------------------ */
+  --primary: #2c3e50;
+  /* dark blue-gray (navbar background) */
+  --secondary: #34495e;
+  /* medium slate gray */
+  --accent: #1abc9c;
+  /* teal accent */
+  --neutral-bg: #ecf0f1;
+  /* light gray background (page base) */
+  --neutral-border: #95a5a6;
+  /* neutral border gray */
+  --text-dark: #2c3e50;
+  /* standard dark text */
+  --text-light: #ecf0f1;
+  /* light text on dark backgrounds */
+
+  --card-bg: #f7f9fa;
+
+  /* ------------------------------
+     Typography
+     ------------------------------ */
+  --font-base: "Segoe UI", system-ui, sans-serif;
+  --font-size-base: 16px;
+  --font-size-sm: 0.875rem;
+  --font-size-lg: 1.125rem;
+  --line-height-base: 1.5;
+
+  /* ------------------------------
+     Transitions / Motion
+     ------------------------------ */
+  --fast: 0.15s;
+  --normal: 0.25s;
+  --slow: 0.4s;
+
+  /* ------------------------------
+     Shadows / Elevation
+     ------------------------------ */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-top: var(--nav-h);
+  margin-bottom: 0px;
+  background-color: var(--neutral-bg);
+}
+
+.form-floating>.form-control-plaintext::placeholder,
+.form-floating>.form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating>.form-control-plaintext:focus::placeholder,
+.form-floating>.form-control:focus::placeholder {
+  text-align: start;
+}
+
+/* Navbar container spacing */
+.navbar .navbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* reserves real space between links */
+}
+
+.custom-navbar .navbar-nav {
+  flex: 1;
+  display: flex;
+  justify-content: space-around;
+}
+
+/* Base link */
+.navbar .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.25rem 0.5rem;
+  /* gives each link some breathing room */
+  font-size: clamp(1rem, 0.8vw + 0.8rem, 1.25rem);
+  font-weight: 500;
+  color: #ECF0F1 !important;
+  text-decoration: none;
+  transform-origin: center;
+  transition: color 0.25s ease, transform 0.25s ease;
+  will-change: transform;
+}
+
+.navbar .nav-link .emoji {
+  flex-shrink: 0;
+  font-size: 1.4rem;
+}
+
+.navbar .nav-link .label {
+  flex-shrink: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hover grow only on hover-capable devices */
+@media (hover:hover) and (pointer:fine) {
+  .navbar .nav-link:hover {
+    color: #1abc9c !important;
+    /* accent color */
+    transform: scale(1.08);
+    /* gentle grow */
+  }
+}
+
+/* Active tab look */
+.navbar .nav-link.active {
+  color: #e74c3c !important;
+  font-weight: 600;
+}
+
+/* Navbar background (unchanged) */
+.navbar.bg-white {
+  background-color: #2C3E50 !important;
+  transition: background-color 0.3s ease;
+}
+
+.global-loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  /* shown via JS */
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  /* no opaque overlay */
+  z-index: 2000;
+  /* higher than tables/modals */
+  opacity: 0;
+  transition: opacity .14s ease-in-out;
+}
+
+.global-loading-overlay.is-visible {
+  display: flex;
+  opacity: 1;
+}
+
+.global-loading-overlay .logo-spinner {
+  width: 256px;
+  height: 256px;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.d-none {
+  display: none !important;
+}
+
+/* Desktop (≥992px): right-align search, comfy width */
+@media (min-width: 992px) {
+  .navbar .search-container {
+    width: clamp(22rem, 32vw, 36rem) !important;
+    margin: 0 0 0 auto !important;
+  }
+
+  .navbar .search-input {
+    min-width: 16rem;
+  }
+}
+
+/* Small/medium (<992px): let the search flex between logo and toggler */
+@media (max-width: 991.98px) {
+  .navbar .search-container {
+    min-width: 14rem;
+    max-width: none;
+    flex: 1 1 auto;
+    /* grow to use the middle space */
+    margin: 0 .5rem 0 0;
+    /* small gap before toggle */
+  }
+
+  /* Avoid over-tall bar */
+  .navbar .search-input,
+  .navbar .search-icon {
+    height: auto;
+  }
+}
+
+.container-fluid.layout-flex {
+  margin-top: 0 !important;
+  padding-top: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+.table-wrapper {
+  background: var(--aims-bg-contrast);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 89vh;
+}

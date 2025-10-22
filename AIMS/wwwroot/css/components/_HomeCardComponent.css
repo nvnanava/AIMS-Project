@@ -1,0 +1,199 @@
+/* ==========================================================================
+   Home: Card component
+   - Layout: flex column (no internal CSS grid)
+   - Scaling: container query units (cqw/cqh) with viewport-safe fallbacks
+   - Visuals: retains existing borders, shadows, and color scheme
+   ========================================================================== */
+
+/* Clickable wrapper ensures full-card hit area */
+.card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    height: 100%;
+}
+
+/* Core card shell (flex column) */
+.card {
+    width: 100%;
+    height: 100%;
+    border: 3px solid #2c3e50;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    background-color: var(--aims-bg-contrast);
+    box-shadow: 2px 2px 10px rgba(44, 62, 80, .35);
+    transition: border .2s ease, box-shadow .2s ease, transform .1s ease-in-out;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+
+    position: relative;
+    overflow: hidden;
+
+    /* Enables container query units for child sizing */
+    container-type: size;
+
+    /* Safe base font sizing for browsers without container units */
+    font-size: clamp(12px, 2.2vh, 18px);
+}
+
+/* Hover/focus affordance without layout shift */
+.card:hover,
+.card:focus-within {
+    border-color: #2ecc71;
+    box-shadow: 0 0 10px rgba(46, 204, 113, .45);
+    transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   Text elements
+   - Use em so values track the card’s base font-size
+   - Prevent wrapping/overflow surprises by default
+   -------------------------------------------------------------------------- */
+.card-title {
+    font-size: 1.2em;
+    margin: 4px 0 2px;
+    color: #2c3e50;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.total {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.availability,
+.runningLow {
+    font-size: 1em;
+    font-weight: 400;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.availability {
+    color: #4caf50;
+}
+
+.runningLow {
+    color: #c11a11;
+}
+
+/* --------------------------------------------------------------------------
+   Status dot (image-based)
+   - Absolutely positioned in the top-right corner
+   - Scales with the card; non-interactive
+   -------------------------------------------------------------------------- */
+.status-dot {
+    position: absolute;
+    top: clamp(8px, 1.2cqh, 16px);
+    right: clamp(8px, 1.2cqh, 16px);
+    width: clamp(14px, 5.6cqh, 32px);
+    height: clamp(14px, 5.6cqh, 32px);
+    pointer-events: none;
+}
+
+.status-dot.green {
+    content: url("/images/status-icons/green-status-icon.png");
+    filter: drop-shadow(0 0 8px rgba(0, 255, 0, .9));
+}
+
+.status-dot.red {
+    content: url("/images/status-icons/red-status-icon.png");
+    filter: drop-shadow(0 0 8px rgba(255, 0, 0, .9));
+}
+
+/* --------------------------------------------------------------------------
+   Asset icon (PNG with blue circle baked in)
+   - Width grows with card width; capped by height via container-queries block
+   -------------------------------------------------------------------------- */
+.card-icon {
+    width: clamp(48px, 40%, 300px);
+    height: auto;
+    object-fit: contain;
+    margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Container-query responsive sizing
+   - Width-led growth with height cap to prevent vertical clipping
+   - Falls back gracefully for browsers without 1cqw support
+   -------------------------------------------------------------------------- */
+@supports (font-size: 1cqw) {
+
+    /* Tighten vertical rhythm for compact states */
+    .card-title,
+    .total,
+    .availability,
+    .runningLow {
+        line-height: 1.05;
+        margin-top: 4px;
+        margin-bottom: 2px;
+    }
+
+    /* Title: scale by width, cap by height; remove ellipsis for better fit */
+    .card-title {
+        font-size: clamp(12px, min(9cqw, 11cqh), 70px);
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    /* Total */
+    .total {
+        font-size: clamp(14px, min(11cqw, 13cqh), 68px);
+    }
+
+    /* Percentages */
+    .availability,
+    .runningLow {
+        font-size: clamp(12px, min(9.5cqw, 12cqh), 60px);
+    }
+
+    /* Icon: width-first but capped by height to preserve footer space */
+    .card-icon {
+        width: clamp(56px, min(46cqw, 52cqh), 400px);
+        height: auto;
+        object-fit: contain;
+    }
+
+    /* Dot: tied to the smaller side to avoid title overlap */
+    .status-dot {
+        width: clamp(14px, min(4cqw, 4.5cqh), 32px);
+        height: clamp(14px, min(4cqw, 4.5cqh), 32px);
+        top: clamp(8px, min(1.2cqw, 1.6cqh), 16px);
+        right: clamp(8px, min(1.2cqw, 1.6cqh), 16px);
+    }
+}
+
+/* Fallback sizing for non–container-query browsers */
+@supports not (font-size: 1cqw) {
+    .card-title {
+        font-size: clamp(12px, 2.2vh, 18px);
+    }
+
+    .total {
+        font-size: clamp(14px, 2.4vh, 20px);
+    }
+
+    .availability,
+    .runningLow {
+        font-size: clamp(12px, 2vh, 18px);
+    }
+
+    .card-icon {
+        width: clamp(56px, 40%, 300px);
+        height: auto;
+    }
+}
+
+.card-icon {
+    transition: opacity .15s ease-in;
+}

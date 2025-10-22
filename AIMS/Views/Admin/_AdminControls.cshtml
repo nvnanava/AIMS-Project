@@ -1,0 +1,17 @@
+<div class="admin-table-controls">
+    <div>
+        <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">Add User</button>
+    </div>
+    <div class="admin-table-controls-right">
+        <label class="toggle-container">
+            <input type="checkbox" id="showInactive" onchange="AIMS.Admin.toggleInactiveUsers()" />
+            <span class="slider"></span>
+            Show Inactive Users
+        </label>
+        <select id="roleFilter" class="aims-select" onchange="AIMS.Admin.filterByRole()">
+            <option value="All">All Roles</option>
+            <option value="Admin">Admin</option>
+            <option value="User">User</option>
+        </select>
+    </div>
+</div>
