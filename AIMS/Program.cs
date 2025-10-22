@@ -1,17 +1,18 @@
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using AIMS.Data;
+using AIMS.Hubs;
 using AIMS.Queries;
 using AIMS.Services;
 using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
-
-
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -45,7 +46,7 @@ builder.Services
 // necessary for mocking in UnitTesting
 builder.Services.AddSingleton<IFileSystem, FileSystem>();
 
-// ★ Policy for restricted routes (bulk upload). Supervisors excluded per AC.
+// Policy for restricted routes (bulk upload). Supervisors excluded.
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("CanBulkUpload", policy =>
@@ -62,6 +63,33 @@ builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
 builder.Services.AddScoped<ReportsQuery>();
+
+// SignalR for real-time audit updates
+builder.Services.AddSignalR();
+
+// Feature flags (AuditRealTime, AuditPollingFallback)
+builder.Services.Configure<AIMS.Services.AimsFeatures>(builder.Configuration.GetSection("Feature"));
+
+// Rate limiter for polling fallback (~10 req/min/IP)
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("audit-poll", httpContext =>
+        RateLimitPartition.GetTokenBucketLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 10,                         // max burst
+                TokensPerPeriod = 10,                    // refill amount
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                AutoReplenishment = true,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0                           // don’t queue
+            })
+    );
+});
+
+// Broadcaster to decouple hub sends from data layer
+builder.Services.AddScoped<AIMS.Services.IAuditEventBroadcaster, AIMS.Services.AuditEventBroadcaster>();
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -274,6 +302,8 @@ app.UseStaticFiles();
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
 
+// Apply rate limiting before hitting endpoints
+app.UseRateLimiter();
 
 // CORS for Dev must come after routing
 if (app.Environment.IsDevelopment())
@@ -296,6 +326,9 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+// SignalR hub route for realtime audit stream
+app.MapHub<AuditLogHub>("/hubs/audit");
+
 // Attribute-routed APIs (e.g., /api/assets)
 app.MapControllers();
 
@@ -312,7 +345,3 @@ app.Run();
 public partial class Program
 {
 }
-
-
-
-

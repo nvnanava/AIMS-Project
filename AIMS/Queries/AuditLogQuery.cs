@@ -1,12 +1,19 @@
 using AIMS.Data;
 using AIMS.Dtos.Audit;
 using AIMS.Models;
+using AIMS.Services;
 using Microsoft.EntityFrameworkCore;
 
 public class AuditLogQuery
 {
     private readonly AimsDbContext _db;
-    public AuditLogQuery(AimsDbContext db) => _db = db;
+    private readonly IAuditEventBroadcaster _broadcaster; // inject broadcaster
+
+    public AuditLogQuery(AimsDbContext db, IAuditEventBroadcaster broadcaster) // ctor updated
+    {
+        _db = db;
+        _broadcaster = broadcaster;
+    }
 
     public async Task<List<GetAuditRecordDto>> GetAllAuditRecordsAsync(CancellationToken ct = default)
     {
@@ -76,6 +83,35 @@ public class AuditLogQuery
             .FirstOrDefaultAsync(ct);
     }
 
+    // Recent audit logs by asset
+    public async Task<List<GetAuditRecordDto>> GetRecentAuditRecordsAsync(string assetKind, int assetId, int take = 5, CancellationToken ct = default)
+    {
+        var kind = Enum.TryParse<AssetKind>(assetKind, true, out var parsedKind) ? parsedKind : AssetKind.Hardware;
+
+        return await _db.AuditLogs
+            .AsNoTracking()
+            .Where(a =>
+                a.AssetKind == kind &&
+                ((kind == AssetKind.Hardware && a.HardwareID == assetId) ||
+                 (kind == AssetKind.Software && a.SoftwareID == assetId)))
+            .OrderByDescending(a => a.TimestampUtc)
+            .Take(take)
+            .Select(a => new GetAuditRecordDto
+            {
+                AuditLogID = a.AuditLogID,
+                ExternalId = a.ExternalId,
+                TimestampUtc = a.TimestampUtc,
+                UserID = a.UserID,
+                UserName = a.User.FullName,
+                Action = a.Action,
+                Description = a.Description,
+                AssetKind = a.AssetKind,
+                HardwareID = a.HardwareID,
+                SoftwareID = a.SoftwareID
+            })
+            .ToListAsync(ct);
+    }
+
     public async Task<int> CreateAuditRecordAsync(CreateAuditRecordDto data, CancellationToken ct = default)
     {
         if (data is null) throw new ArgumentNullException(nameof(data));
@@ -141,6 +177,31 @@ public class AuditLogQuery
 
         _db.AuditLogs.Add(log);
         await _db.SaveChangesAsync(ct);
+
+        // Broadcast realtime event after persistence
+        var userName = await _db.Users.AsNoTracking()
+            .Where(u => u.UserID == log.UserID)
+            .Select(u => u.FullName)
+            .FirstOrDefaultAsync(ct);
+
+        var dto = new AIMS.Contracts.AuditEventDto
+        {
+            Id = (log.ExternalId != Guid.Empty ? log.ExternalId.ToString() : log.AuditLogID.ToString()),
+            OccurredAtUtc = log.TimestampUtc,
+            Type = log.Action,
+            User = $"{(userName ?? $"User#{log.UserID}")} ({log.UserID})",
+            Target = log.AssetKind == AssetKind.Hardware
+                ? (log.HardwareID.HasValue ? $"Hardware#{log.HardwareID}" : "Hardware")
+                : (log.SoftwareID.HasValue ? $"Software#{log.SoftwareID}" : "Software"),
+            Details = log.Description ?? "",
+            Hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(
+                    $"{log.AuditLogID}|{log.ExternalId}|{log.TimestampUtc:o}|{log.Action}|{log.UserID}|{log.AssetKind}|{log.HardwareID}|{log.SoftwareID}|{log.Description}"
+                )))
+        };
+
+        await _broadcaster.BroadcastAsync(dto);
+
         return log.AuditLogID;
     }
 }
