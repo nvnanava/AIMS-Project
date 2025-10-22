@@ -22,9 +22,8 @@ public class ReportsController : ControllerBase
 
     // TODO: Using for wwwroot saving. Remove when Blob storage is added
     private readonly IWebHostEnvironment _web;
+    private readonly ILogger<ReportsController> _logger;
 
-    private readonly System.IO.Abstractions.IFileSystem _fs;
-    private readonly string _rootPath;
 
     private sealed class CSVIntermediate
     {
@@ -42,14 +41,13 @@ public class ReportsController : ControllerBase
         AimsDbContext db,
         ReportsQuery reports,
         IWebHostEnvironment web,
-        System.IO.Abstractions.IFileSystem fs)
+        ILogger<ReportsController> logger
+        )
     {
         _reports = reports;
         _db = db;
         _web = web;
-        _fs = fs;
-
-        _rootPath = _fs.Path.Combine(_web.WebRootPath);
+        _logger = logger;
     }
 
     [HttpPost("/")]
@@ -107,15 +105,7 @@ public class ReportsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var creationDate = DateTime.Now;
-
-        var dateString = creationDate.ToString("yyyy-MM-dd_HH-mm-ss");
-
-        var fileName = "";
-        var spacelessReportName = reportName.Replace(" ", "_");
-
-        var memoryStream = new MemoryStream();
-        string? filePath = null;
+        byte[] reportBytes = new byte[0];
 
         // Assignments Report
         // Data In: Start Date, End Date (optional; today if null), Description (optional)
@@ -125,21 +115,11 @@ public class ReportsController : ControllerBase
 
         if (reportType == ReportType.Assignment)
         {
-            fileName = $"{spacelessReportName}_Assignment_Report_{dateString}.csv";
-            var folder = "reports";
-            var dirPath = _fs.Path.Combine(_web.WebRootPath, folder);
-
-            // ensure directory exists
-            _fs.Directory.CreateDirectory(dirPath);
-
-            filePath = _fs.Path.Combine(dirPath, fileName);
-
-
             // get assignments, sorted by activity
             var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct);
 
 
-            await WriteToCSV(memoryStream, activeItemsFirst);
+            reportBytes = await WriteToBinaryCSV(activeItemsFirst);
 
 
             // Custom Report
@@ -150,32 +130,15 @@ public class ReportsController : ControllerBase
         }
         else if (reportType == ReportType.Custom)
         {
-            fileName = $"{spacelessReportName}_Assignment_Report_{dateString}.csv";
-            var folder = "reports";
-            var dirPath = _fs.Path.Combine(_web.WebRootPath, folder);
-
-            // ensure directory exists
-            _fs.Directory.CreateDirectory(dirPath);
-
-            filePath = _fs.Path.Combine(dirPath, fileName);
-
             // get assignments, sorted by activity
             var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
 
 
-            await WriteToCSV(memoryStream, activeItemsFirst, customOptions);
+            reportBytes = await WriteToBinaryCSV(activeItemsFirst, customOptions);
 
         }
         else if (reportType == ReportType.Office)
         {
-            fileName = $"{spacelessReportName}_Assignment_Report_{dateString}.csv";
-            var folder = "reports";
-            var dirPath = _fs.Path.Combine(_web.WebRootPath, folder);
-
-            // ensure directory exists
-            _fs.Directory.CreateDirectory(dirPath);
-
-            filePath = _fs.Path.Combine(dirPath, fileName);
 
             if (OfficeID is null)
             {
@@ -194,23 +157,11 @@ public class ReportsController : ControllerBase
             var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
 
 
-            await WriteToCSV(memoryStream, activeItemsFirst);
+            reportBytes = await WriteToBinaryCSV(activeItemsFirst);
 
         }
-        // 3. Reset the MemoryStream position again for the download
-        memoryStream.Position = 0;
-
-
-        var bytes = memoryStream.ToArray();      // snapshot the data
-
-        _fs.Directory.CreateDirectory(_fs.Path.GetDirectoryName(filePath)!);
-        await _fs.File.WriteAllBytesAsync(filePath!, bytes, ct);  // write all bytes
-
-
-        // Store a relative path (portable)
-        var blobUri = _fs.Path.Combine("reports", fileName).Replace("\\", "/");
         // create report entry
-        await _reports.CreateReport(new CreateReportDto
+        var id = await _reports.CreateReport(new CreateReportDto
         {
             Name = reportName,
 
@@ -218,20 +169,14 @@ public class ReportsController : ControllerBase
 
             Description = desc,
 
-            DateCreated = creationDate,
-
             // Who/Where generated
             GeneratedByUserID = CreatorUserID,
 
             GeneratedByOfficeID = OfficeID,
-            BlobUri = blobUri
+            Content = reportBytes
         }, ct);
 
-        return new FileContentResult(bytes, "text/csv")
-        {
-            FileDownloadName = fileName
-        };
-
+        return Ok(new CreateReportResponsDto { ReportID = id, ContentLength = reportBytes.Length });
     }
 
 
@@ -296,8 +241,10 @@ public class ReportsController : ControllerBase
             })
             .ToListAsync(ct);
     }
-    private async Task WriteToCSV(MemoryStream memoryStream, List<CSVIntermediate> list, CustomReportOptionsDto? opts = null)
+    private async Task<byte[]> WriteToBinaryCSV(List<CSVIntermediate> list, CustomReportOptionsDto? opts = null)
     {
+        var memoryStream = new MemoryStream();
+
         var utf8WithoutBom = new UTF8Encoding(false);
         if (opts is not null)
         {
@@ -405,6 +352,12 @@ public class ReportsController : ControllerBase
             }
 
         }
+
+        // Reset the MemoryStream's position to the beginning
+        memoryStream.Position = 0;
+
+        // Convert the MemoryStream to a byte array
+        return memoryStream.ToArray();
     }
 
     [HttpGet("/download/{id?}")]
@@ -421,7 +374,7 @@ public class ReportsController : ControllerBase
         }
 
 
-        var report = await _reports.GetReportASync((int)id, ct);
+        var report = await _reports.GetReportForDownload((int)id, ct);
 
         if (report is null)
         {
@@ -429,27 +382,10 @@ public class ReportsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        // Expect BlobUri like "reports/yourfile.csv" (relative to wwwroot)
-        var rel = (report.BlobUri ?? "").Replace('\\', '/').TrimStart('/');
-
-        // Build physical path under wwwroot and prevent traversal
-        var baseDir = _fs.Path.GetFullPath(_rootPath); // e.g., env.WebRootPath
-        var fullPath = _fs.Path.GetFullPath(_fs.Path.Combine(baseDir, rel));
-        if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { error = "Invalid file path." });
-
-        // Not found? Say so.
-        if (!_fs.File.Exists(fullPath))
-            return NotFound($"File not found: {report.BlobUri}");
-
-        // Use I/O abstractions for file info
-        var fi = _fs.FileInfo.New(fullPath);
-        if (fi.Length == 0)
-            return StatusCode(StatusCodes.Status409Conflict, "File is empty.");
 
         // For browsers/clients: the actual file header says text/csv
         Response.ContentType = "text/csv";
-        return PhysicalFile(fullPath, "text/csv", fileDownloadName: _fs.Path.GetFileName(fullPath));
+        return File(report.Content, "text/csv", $"{report.Name}_{report.Type}_Report_{report.DateCreated:yyyy_MM_dd_HH_mm_ss}.csv");
     }
 
     [HttpGet("list")]

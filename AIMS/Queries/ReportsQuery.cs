@@ -26,7 +26,6 @@ public sealed class ReportsQuery
                         DateCreated = r.DateCreated,
                         GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
                         GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
-                        BlobUri = r.BlobUri
                     })
                     .ToListAsync(ct);
     }
@@ -44,7 +43,23 @@ public sealed class ReportsQuery
                DateCreated = r.DateCreated,
                GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
                GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
-               BlobUri = r.BlobUri
+           })
+           .FirstOrDefaultAsync(ct);
+    }
+    public async Task<DownloadReportDto?> GetReportForDownload(int id, CancellationToken ct = default)
+    {
+        return await _db.Reports
+           .AsNoTracking()
+           .Where(r => r.ReportID == id)
+           .Select(r => new DownloadReportDto
+           {
+               ReportID = r.ReportID,
+               Name = r.Name,
+               Type = r.Type,
+               DateCreated = r.DateCreated,
+               GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
+               GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
+               Content = r.Content
            })
            .FirstOrDefaultAsync(ct);
     }
@@ -52,7 +67,6 @@ public sealed class ReportsQuery
     public async Task<int> CreateReport(CreateReportDto dto, CancellationToken ct)
     {
         if (dto is null) throw new ArgumentNullException(nameof(dto));
-        if (string.IsNullOrWhiteSpace(dto.BlobUri)) throw new ArgumentException("BlobUri is required.");
         if (dto.GeneratedByUserID is null) throw new ArgumentException("GeneratedByUserID is required.");
         if (string.IsNullOrWhiteSpace(dto.Name)) throw new ArgumentException("Name is required.");
         if (string.IsNullOrWhiteSpace(dto.Type)) throw new ArgumentException("Type is required.");
@@ -65,7 +79,7 @@ public sealed class ReportsQuery
             Name = dto.Name,
             Type = dto.Type,
             Description = dto.Description,
-            BlobUri = dto.BlobUri
+            Content = dto.Content
         };
 
         _db.Reports.Add(report);
