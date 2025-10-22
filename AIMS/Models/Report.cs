@@ -24,7 +24,7 @@ public class Report
     public int? GeneratedByOfficeID { get; set; }
     public Office? GeneratedByOffice { get; set; }
 
-    // Output location
+    // Content
     [Required]
-    public string BlobUri { get; set; } = string.Empty;
+    public byte[] Content { get; set; } = new byte[0];
 }

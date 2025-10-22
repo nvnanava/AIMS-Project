@@ -274,8 +274,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// allow saving to wwwroot folder
-app.UseStaticFiles();
 
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
