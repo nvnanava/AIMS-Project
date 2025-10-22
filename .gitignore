@@ -415,3 +415,9 @@ TestResults/
 
 # wwwroot saved reposed
 AIMS/wwwroot/reports
+
+# local dev secrets
+.env
+appsettings.Local.json
+.secrets/
+secrets/
