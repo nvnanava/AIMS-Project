@@ -1,19 +1,14 @@
-using System;
-using System.Collections.Generic;
-using Moq; // For mocking WebHostLogic
-using System.Threading.Tasks;
-using AIMS.Controllers;
+using System.IO.Abstractions.TestingHelpers;
+using System.Text;
+using AIMS.Controllers.Api;
 using AIMS.Data;
+using AIMS.Dtos.Reports;
 using AIMS.Models;
 using AIMS.Queries;
-using AIMS.ViewModels;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.IO.Abstractions.TestingHelpers;
-using Xunit;
-using System.Text;
-using Microsoft.EntityFrameworkCore.Query;
+using Moq; // For mocking WebHostLogic
 using Xunit.Abstractions;
 
 namespace AIMS.UnitTests.Controllers

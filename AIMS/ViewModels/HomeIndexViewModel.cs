@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using AIMS.Dtos.Hardware;
+using AIMS.Dtos.Software;
 
 namespace AIMS.ViewModels;
 

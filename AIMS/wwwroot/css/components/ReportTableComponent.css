@@ -1,0 +1,149 @@
+/* ===========================
+   Reports → Admin-style table
+   =========================== */
+
+/* Card-like wrapper (use existing container) */
+.reports-page .table-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
+    padding: 0;
+    /* let table control its spacing */
+    overflow: auto;
+    /* keep header/rows clipped to radius */
+    max-height: 100%;
+    max-width: 100%;
+}
+
+/* Core table */
+.reports-page .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-size: 16px;
+}
+
+/* Sticky, dark header like admin */
+.reports-page .report-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #2c3e50;
+    /* override old #CFDCDF */
+    color: #fff;
+}
+
+.reports-page .report-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: .3px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    height: auto;
+    /* don't force 55px */
+}
+
+/* Body cells */
+.reports-page .report-table td {
+    padding: 14px 18px;
+    color: #2c3e50;
+    border-bottom: 1px solid #e1e1e1;
+    vertical-align: middle;
+    text-align: left;
+}
+
+/* Checkbox column — fixed + centered */
+.reports-page .report-table th:first-child,
+.reports-page .report-table td:first-child {
+    width: 48px;
+    min-width: 48px;
+    text-align: center;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* Row hover like admin card tone */
+.reports-page .report-table tbody tr:hover {
+    background: #f7f9fa;
+}
+
+/* “No results / Loading…” row */
+.reports-page .no-results-cell {
+    text-align: center;
+    padding: 24px 16px;
+    color: #2c3e50;
+    font-weight: 600;
+    background: #fff;
+}
+
+/* Make header text inside <span class="sort-text"> inherit the dark theme */
+.reports-page .report-table thead .sort-text {
+    color: inherit;
+}
+
+/* Status pill (to match admin .badge look) */
+.reports-page .status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #fff;
+    font-weight: 600;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.reports-page .status.assigned {
+    background-color: #1abc9c;
+}
+
+.reports-page .status.available {
+    background-color: #2ecc71;
+}
+
+.reports-page .status.damaged {
+    background-color: #e74c3c;
+}
+
+.reports-page .status.inrepair {
+    background-color: #f1c40f;
+}
+
+.reports-page .status["due soon"],
+.reports-page .status.duesoon {
+    background-color: #f39c12;
+}
+
+/* Buttons in the header area (optional: match admin button feel) */
+.reports-page .download-csv-button,
+.reports-page .new-report-button.btn {
+    height: 41px;
+    padding: 0 16px;
+    background: #ecf0f1;
+    color: #34495e;
+    border: 3px solid #34495e;
+    box-shadow: 0 4px 4px #0000003e;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: border-color .15s ease-out, box-shadow .15s ease-out, transform .15s ease-out;
+}
+
+.reports-page .download-csv-button:hover,
+.reports-page .new-report-button.btn:hover {
+    border-color: #1abc9c;
+}
+
+.reports-page .download-csv-button:active,
+.reports-page .new-report-button.btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 3px #0000003e;
+}
+
+@media (max-width: 768px) {
+
+    .reports-page .report-table th,
+    .reports-page .report-table td {
+        padding: 12px 14px;
+    }
+}
