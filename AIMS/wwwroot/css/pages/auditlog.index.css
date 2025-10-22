@@ -115,4 +115,16 @@
     color: #007bff;
 }
 
+@keyframes rowFlash {
+  from {
+    background-color: #1abc9c49;
+  }
+  
+  to {
+    background-color: transparent;
+  }
+}
 
+.row-flash {
+  animation: rowFlash 1.2s ease-out;
+}
