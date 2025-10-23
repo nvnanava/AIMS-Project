@@ -20,9 +20,6 @@ public class ReportsController : ControllerBase
     private readonly ReportsQuery _reports;
     private readonly AimsDbContext _db;
 
-    // TODO: Using for wwwroot saving. Remove when Blob storage is added
-    private readonly IWebHostEnvironment _web;
-    private readonly ILogger<ReportsController> _logger;
 
 
     private sealed class CSVIntermediate
@@ -39,15 +36,11 @@ public class ReportsController : ControllerBase
 
     public ReportsController(
         AimsDbContext db,
-        ReportsQuery reports,
-        IWebHostEnvironment web,
-        ILogger<ReportsController> logger
+        ReportsQuery reports
         )
     {
         _reports = reports;
         _db = db;
-        _web = web;
-        _logger = logger;
     }
 
     [HttpPost("/")]
