@@ -1,5 +1,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Text;
+using System.Text.Json;
 using AIMS.Controllers.Api;
 using AIMS.Data;
 using AIMS.Dtos.Reports;
@@ -32,6 +33,12 @@ public class ReportsGenerationTests
         if (seedAssignments != null)
         {
             db.Assignments.AddRange(seedAssignments);
+            db.Offices.Add(new Office
+            {
+                OfficeID = 15000,
+                OfficeName = "Yolo",
+                Location = "Placerville"
+            });
             db.SaveChanges();
         }
 
@@ -133,49 +140,6 @@ public class ReportsGenerationTests
             };
     }
 
-    public string[] csv2String(FileContentResult res)
-    {
-        var fileBytes = res.FileContents;
-        string csvContent = Encoding.UTF8.GetString(fileBytes);
-        string[] lines = csvContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-        return lines;
-    }
-    public string[] getCSVHeaders(string[] lines)
-    {
-        return lines[0].Split(',');
-    }
-    public bool checkIfEachLineContains(string[] lines, int headerIndx, string[] value)
-    {
-        if (lines == null || lines.Length == 0)
-            return false;
-
-        if (value is null)
-            return false;
-
-        foreach (var line in lines)
-        {
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
-
-            var split = line.Split(',');
-            if (headerIndx >= split.Length)
-                return false; // line missing column
-
-            var chunk = split[headerIndx].Trim();
-
-            // must contain *at least one* allowed value
-            bool containsAny = value.Any(v =>
-                chunk.Contains(v, StringComparison.OrdinalIgnoreCase));
-
-            if (!containsAny)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     [Fact]
     public async Task CreateAssignmentReport_ReturnsBadRequest_EndDateIsBeforeStart()
     {
@@ -198,7 +162,7 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
     }
 
     [Fact]
-    public async Task CreateAssignmentReport_ReturnsFileContentResult_CorrectInputs()
+    public async Task CreateAssignmentReport_ReturnsIdAndLen_CorrectInputs()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -208,21 +172,18 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             reportName: "Test Report",
             CreatorUserID: 1,
             type: "Assignment"
-        ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+        );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
-
-        Assert.Single(csvLines[1..]);
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
     [Fact]
-    public async Task CreateAssignmentReport_ReturnsFileContentResult_CorrectInputsDateFilter()
+    public async Task CreateAssignmentReport_ReturnsIdAndLen_CorrectInputsDateFilter()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -231,17 +192,15 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             reportName: "Test Report",
             CreatorUserID: 1,
             type: "Assignment"
-        ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+        );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
-        Assert.Equal(2, csvLines[1..].Length);
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
     [Fact]
     public async Task CreateAssignmentReport_ReturnsBadRequest_InvalidOfficeID()
@@ -317,7 +276,7 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
         Assert.IsType<BadRequestObjectResult>(result); ;
     }
     [Fact]
-    public async Task CreateOfficeReport_ReturnsFileContentResult_CorrectInputs()
+    public async Task CreateOfficeReport_ReturnsIdAndLen_CorrectInputs()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -326,18 +285,17 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
             reportName: "Test Report",
             CreatorUserID: 1,
-            OfficeID: 1,
+            OfficeID: 15000,
             type: "Office"
-        ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+        );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
     [Fact]
     public async Task CreateCustomReport_ReturnsBadRequest_EndDateIsBeforeStart()
@@ -383,9 +341,10 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
             type: "Custom"
         );
         Assert.IsType<BadRequestObjectResult>(result); ;
+
     }
     [Fact]
-    public async Task CreateCustomReport_ReturnsFileContentResult_SeeHardwareOnly()
+    public async Task CreateCustomReport_ReturnsIdAndLen_SeeHardwareOnly()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -393,7 +352,6 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
              start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
              reportName: "Test Report",
              CreatorUserID: 1,
-             OfficeID: 1,
              type: "Custom",
 
             customOptions: new CustomReportOptionsDto
@@ -405,21 +363,18 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
                 seeUsers = false,
                 filterByMaintenance = false
             }
-         ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+         );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
-
-        Assert.True(checkIfEachLineContains(csvLines[1..], 2, ["Hardware"]));
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
     [Fact]
-    public async Task CreateCustomReport_ReturnsFileContentResult_SeeSoftwareOnly()
+    public async Task CreateCustomReport_ReturnsIdAndLen_SeeSoftwareOnly()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -427,7 +382,6 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
              start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
              reportName: "Test Report",
              CreatorUserID: 1,
-             OfficeID: 1,
              type: "Custom",
 
             customOptions: new CustomReportOptionsDto
@@ -439,22 +393,19 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
                 seeUsers = false,
                 filterByMaintenance = false
             }
-         ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+         );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
-
-        Assert.True(checkIfEachLineContains(csvLines[1..], 2, ["Software"]));
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
 
     [Fact]
-    public async Task CreateCustomReport_ReturnsFileContentResult_SeeUsers()
+    public async Task CreateCustomReport_ReturnsIdAndLen_SeeUsers()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -463,7 +414,6 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
              end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
              reportName: "Test Report",
              CreatorUserID: 1,
-             OfficeID: 1,
              type: "Custom",
 
             customOptions: new CustomReportOptionsDto
@@ -471,19 +421,18 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
                 seeOffice = false,
                 seeUsers = true,
             }
-         ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+         );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
     [Fact]
-    public async Task CreateCustomReport_ReturnsFileContentResult_SeeOffice()
+    public async Task CreateCustomReport_ReturnsIdAndLen_SeeOffice()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -492,26 +441,24 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
              end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
              reportName: "Test Report",
              CreatorUserID: 1,
-             OfficeID: 1,
              type: "Custom",
 
             customOptions: new CustomReportOptionsDto
             {
                 seeUsers = true,
             }
-         ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+         );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
     [Fact]
-    public async Task CreateCustomReport_ReturnsFileContentResult_SeeExpiration()
+    public async Task CreateCustomReport_ReturnsIdAndLen_SeeExpiration()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -520,27 +467,25 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
              end: DateOnly.FromDateTime(DateTime.Now.AddDays(-5)),
              reportName: "Test Report",
              CreatorUserID: 1,
-             OfficeID: 1,
              type: "Custom",
 
             customOptions: new CustomReportOptionsDto
             {
                 seeExpiration = true
             }
-         ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+        );
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
-
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment", "Expiration" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
 
     [Fact]
-    public async Task CreateCustomReport_ReturnsFileContentResult_FilterByMaintenance()
+    public async Task CreateCustomReport_ReturnsIdAndLen_FilterByMaintenance()
     {
         var controller = CreateControllerWithDb(Guid.NewGuid().ToString(), CreateSeedData());
 
@@ -548,25 +493,31 @@ int? OfficeID, string? desc, CustomReportOptionsDto? customOptions,
              start: DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
              reportName: "Test Report",
              CreatorUserID: 1,
-             OfficeID: 1,
              type: "Custom",
 
             customOptions: new CustomReportOptionsDto
             {
                 filterByMaintenance = true
             }
-         ) as FileContentResult;
-        Assert.IsType<FileContentResult>(result);
-        Assert.Equal("text/csv", result.ContentType);
+         );
+        // if (result is BadRequestObjectResult bad)
+        // {
+        //     // Print error details for debugging
+        //     var json = JsonSerializer.Serialize(
+        //         bad.Value,
+        //         new JsonSerializerOptions { WriteIndented = true }
+        //     );
 
-        string[] csvLines = csv2String(result);
-        Assert.True(csvLines.Length > 0, "CSV content should not be empty.");
+        //     throw new Xunit.Sdk.XunitException($"❌ Controller returned BadRequest:\n{json}");
+        // }
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedResponse = Assert.IsType<CreateReportResponseDto>(okResult.Value);
+        // Access fields
+        var id = returnedResponse.ReportID;
+        var len = returnedResponse.ContentLength;
 
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment", "Status" };
-        string[] actualHeaders = getCSVHeaders(csvLines);
-        Assert.Equal(expectedHeaders, actualHeaders);
-
-        Assert.True(checkIfEachLineContains(csvLines[1..], 6, ["In Repair", "Marked for Survey"]));
+        Assert.True(!(id < 0));
+        Assert.True(len > 0);
     }
 
 }

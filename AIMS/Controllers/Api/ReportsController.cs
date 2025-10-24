@@ -150,7 +150,7 @@ public class ReportsController : ControllerBase
             Content = reportBytes
         }, ct);
 
-        return Ok(new CreateReportResponsDto { ReportID = id, ContentLength = reportBytes.Length });
+        return Ok(new CreateReportResponseDto { ReportID = id, ContentLength = reportBytes.Length });
     }
 
 
