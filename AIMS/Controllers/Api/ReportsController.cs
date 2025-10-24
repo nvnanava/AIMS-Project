@@ -25,14 +25,29 @@ public class ReportsController : ControllerBase
 
     private sealed class CSVIntermediate
     {
-        public int AssignmentID { get; set; }
+        // Assignee values
         public string Assignee { get; set; } = string.Empty;
-        public string Office { get; set; } = string.Empty;
+        public string AssigneeOffice { get; set; } = string.Empty;
+
+
+        // Asset Values
         public AssetKind AssetType { get; set; }
         public string AssetName { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public string Comment { get; set; } = string.Empty;
-        public DateOnly? Expiration { get; set; }
+        public string AssetComment { get; set; } = string.Empty;
+        public DateOnly? AssetExpiration { get; set; }
+        public string AssetLicenseOrTag { get; set; } = string.Empty; // unique
+        public string AssetStatus { get; set; } = string.Empty;
+
+
+        // AuditLog Actions
+        public AuditLogAction Action { get; set; }    // e.g. "Create", "Edit", "Assign", "Archive"
+        public string Description { get; set; } = string.Empty;   // human summary
+        public DateTime ActionTimestampUtc { get; set; } = DateTime.UtcNow;
+
+
+        // Record-keeping
+
+        public int AuditLogID { get; set; }
     }
 
     public ReportsController(
@@ -129,7 +144,7 @@ public class ReportsController : ControllerBase
 
         // get assignments, sorted by activity
 
-        var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
+        var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, reportType, ct, customOptions);
 
 
         reportBytes = await WriteToBinaryCSV(activeItemsFirst, customOptions);
@@ -154,24 +169,30 @@ public class ReportsController : ControllerBase
     }
 
 
-    private async Task<List<CSVIntermediate>> getOrderedIntermediateListAsync(DateOnly start, DateOnly end, CancellationToken ct, CustomReportOptionsDto opts)
+    private async Task<List<CSVIntermediate>> getOrderedIntermediateListAsync(DateOnly start, DateOnly end, ReportType type, CancellationToken ct, CustomReportOptionsDto opts, int? OfficeID = null)
     {
-        var startUtc = start.ToDateTime(TimeOnly.MinValue).ToUniversalTime(); // UTC day of 00:00:00 (inclusive bound)
-        var endUtcExclusive = end.AddDays(1).ToDateTime(TimeOnly.MinValue).ToUniversalTime(); // UTC next day 0:00:00 (exclusive)
+        var startUtc = start.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); // UTC day of 00:00:00 (inclusive bound)
+        var endUtcExclusive = end.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc); // UTC next day 0:00:00 (exclusive)
 
         // base query: always apply date filtering
-        IQueryable<Assignment> query = _db.Assignments
+        IQueryable<AuditLog> query = _db.AuditLogs
             .AsNoTracking()
             .Where(a =>
-                (a.AssignedAtUtc >= startUtc && a.AssignedAtUtc < endUtcExclusive)
-                ||
-                (a.UnassignedAtUtc.HasValue &&
-                 a.UnassignedAtUtc.Value >= startUtc &&
-                 a.UnassignedAtUtc.Value < endUtcExclusive)
-            )
-            .OrderBy(a => a.UnassignedAtUtc)
-            .Include(a => a.Hardware)
-            .Include(a => a.Software);
+                a.TimestampUtc >= startUtc && a.TimestampUtc < endUtcExclusive)
+            .OrderBy(a => a.TimestampUtc)
+            .Include(a => a.HardwareAsset)
+            .Include(a => a.SoftwareAsset)
+            .Include(a => a.User)
+           .ThenInclude(u => u.Office);
+
+        if (type == ReportType.Assignment)
+        {
+            query = query.Where(a => a.Action == AuditLogAction.Assign || a.Action == AuditLogAction.Unassign);
+        }
+        else if (type == ReportType.Office)
+        {
+            query = query.Where(a => a.User.OfficeID == OfficeID);
+        }
 
         if (opts.seeHardware && !opts.seeSoftware)
         {
@@ -186,28 +207,43 @@ public class ReportsController : ControllerBase
         {
             query = query.Where(a =>
                 a.HardwareID != null &&
-                (a.Hardware!.Status == "In Repair" || a.Hardware.Status == "Marked for Survey"));
+                (a.HardwareAsset!.Status == "In Repair" || a.HardwareAsset.Status == "Marked for Survey"));
         }
 
         return await query
             .Select(a => new CSVIntermediate
             {
-                AssignmentID = a.AssignmentID,
+                AuditLogID = a.AuditLogID,
+
+                // Assignee info
                 Assignee = a.User!.FullName,
-                Office = a.User!.Office!.OfficeName,
+                AssigneeOffice = (a.User == null || a.User.Office == null || a.User.Office.OfficeName == null) ? "N/A" : a.User.Office.OfficeName,
+
+                // Asset Info
                 AssetType = a.AssetKind,
                 AssetName = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.AssetName
-                                : a.Software!.SoftwareName,
-                Status = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.Status
-                                : string.Empty,
-                Comment = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.Comment
-                                : a.Software!.Comment,
-                Expiration = a.AssetKind == AssetKind.Hardware
-                                ? a.Hardware!.WarrantyExpiration
-                                : a.Software!.SoftwareLicenseExpiration
+                                ? a.HardwareAsset!.AssetName
+                                : a.SoftwareAsset!.SoftwareName,
+                AssetComment = a.AssetKind == AssetKind.Hardware
+                                ? a.HardwareAsset!.Comment
+                                : a.SoftwareAsset!.Comment,
+                AssetExpiration = a.AssetKind == AssetKind.Hardware
+                                ? a.HardwareAsset!.WarrantyExpiration
+                                : a.SoftwareAsset!.SoftwareLicenseExpiration,
+
+                AssetLicenseOrTag = a.AssetKind == AssetKind.Hardware
+                                    ? a.HardwareAsset!.SerialNumber
+                                    : a.SoftwareAsset!.SoftwareLicenseKey,
+
+                AssetStatus = a.AssetKind == AssetKind.Hardware
+                                    ? a.HardwareAsset!.Status
+                                    : $"{a.SoftwareAsset!.LicenseTotalSeats - a.SoftwareAsset!.LicenseSeatsUsed} Seats Remaining",
+
+                // AuditLogInformation
+                Action = a.Action,
+                Description = a.Description,
+                ActionTimestampUtc = a.TimestampUtc
+
             })
             .ToListAsync(ct);
     }
@@ -227,7 +263,7 @@ public class ReportsController : ControllerBase
                 using (var csvWriter = new CsvWriter(streamWriter, csvConfig))
                 {
                     // Manually write the custom header row
-                    csvWriter.WriteField("AssignmentID");
+                    csvWriter.WriteField("AuditLogID");
 
                     if (opts.seeUsers)
                     {
@@ -240,8 +276,13 @@ public class ReportsController : ControllerBase
                     }
                     csvWriter.WriteField("Asset Name");
                     csvWriter.WriteField("Asset Type");
-                    // csvWriter.WriteField("Seat Number"); TODO: Add this when this field is added at the end of sprint 7
-                    csvWriter.WriteField("Comment");
+                    csvWriter.WriteField("Asset License or Serial");
+
+                    csvWriter.WriteField("Action");
+                    csvWriter.WriteField("Description");
+                    csvWriter.WriteField("Timestamp");
+
+                    csvWriter.WriteField("Asset Comment");
                     if (opts.seeExpiration)
                     {
                         csvWriter.WriteField("Expiration");
@@ -253,28 +294,35 @@ public class ReportsController : ControllerBase
                     csvWriter.NextRecord(); // Move to the next line for data
 
                     // Manually write each record
-                    foreach (CSVIntermediate assignment in list)
+                    foreach (CSVIntermediate auditLogEntry in list)
                     {
-                        csvWriter.WriteField(assignment.AssignmentID);
+                        csvWriter.WriteField(auditLogEntry.AuditLogID);
+
                         if (opts.seeUsers)
                         {
-                            csvWriter.WriteField(assignment.Assignee);
+                            csvWriter.WriteField(auditLogEntry.Assignee);
                         }
+
                         if (opts.seeOffice)
                         {
-
-                            csvWriter.WriteField(assignment.Office);
+                            csvWriter.WriteField(auditLogEntry.AssigneeOffice);
                         }
-                        csvWriter.WriteField(assignment.AssetName);
-                        csvWriter.WriteField(assignment.AssetType);
-                        csvWriter.WriteField(assignment.Comment);
+                        csvWriter.WriteField(auditLogEntry.AssetName);
+                        csvWriter.WriteField(auditLogEntry.AssetType);
+                        csvWriter.WriteField(auditLogEntry.AssetLicenseOrTag);
+
+                        csvWriter.WriteField(auditLogEntry.Action);
+                        csvWriter.WriteField(auditLogEntry.Description);
+                        csvWriter.WriteField(auditLogEntry.ActionTimestampUtc);
+
+                        csvWriter.WriteField(auditLogEntry.AssetComment);
                         if (opts.seeExpiration)
                         {
-                            csvWriter.WriteField(assignment.Expiration);
+                            csvWriter.WriteField(auditLogEntry.AssetExpiration);
                         }
                         if (opts.filterByMaintenance)
                         {
-                            csvWriter.WriteField(assignment.Status);
+                            csvWriter.WriteField(auditLogEntry.AssetStatus);
                         }
                         csvWriter.NextRecord(); // Move to the next line
                     }

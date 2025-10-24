@@ -79,7 +79,6 @@ public class AuditLogQuery
     public async Task<int> CreateAuditRecordAsync(CreateAuditRecordDto data, CancellationToken ct = default)
     {
         if (data is null) throw new ArgumentNullException(nameof(data));
-        if (string.IsNullOrWhiteSpace(data.Action)) throw new ArgumentException("Action is required.");
         if (string.IsNullOrWhiteSpace(data.Description)) throw new ArgumentException("Description is required.");
 
         // Validate user exists

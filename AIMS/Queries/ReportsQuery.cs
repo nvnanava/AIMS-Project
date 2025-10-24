@@ -23,7 +23,7 @@ public sealed class ReportsQuery
                         Name = r.Name,
                         Type = r.Type,
                         Description = r.Description,
-                        DateCreated = r.DateCreated,
+                        DateCreated = r.DateCreated.ToLocalTime(),
                         GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
                         GeneratedByOfficeString = r.GeneratedForOffice != null ? r.GeneratedForOffice.OfficeName : "",
                     })

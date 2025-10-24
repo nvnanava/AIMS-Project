@@ -36,7 +36,7 @@
   ViewData["User"] = @User?.Identity?.Name;
 
     // Table headers (server-rendered; values used only for markup)
-    var tableHeaders = new List<string> { "Name", "Type", "Description", "Office", "Date Created" };
+    var tableHeaders = new List<string> { "Report Name", "Type", "Description", "Office", "Date Created", "Created By" };
 
     // Demo data for modal tables (left as-is, rendered server-side)
     var userHeaders  = new List<string> { "Name", "Email", "Role", "Asset", "Status" };
