@@ -195,6 +195,17 @@ public static class DbSeeder
         var softwareByKey = await db.SoftwareAssets.AsNoTracking()
             .ToDictionaryAsync(s => (s.SoftwareName, s.SoftwareVersion), ct);
 
+
+        var offices = new[]
+        {
+            new Office {OfficeName = "Main", Location = "Sacramento"},
+            new Office { OfficeName = "Satellite One", Location = "Lathrop" },
+            new Office { OfficeName = "Satellite Two", Location = "Yuba City" }
+        };
+
+        foreach (var o in offices) await UpsertOfficeAsync(db, o, ct);
+        await db.SaveChangesAsync(ct);
+
         // ---------------- 5) Demo assignments (old mapping) ----------------
         // Build a map by employee number to look up UserID quickly
         usersByEmp = await db.Users.AsNoTracking().ToDictionaryAsync(u => u.EmployeeNumber!, ct);
@@ -255,11 +266,13 @@ public static class DbSeeder
 
         await db.SaveChangesAsync(ct);
 
-        logger?.LogInformation("[DBSeeder] Done. Roles:{Roles}, Users:{Users}, HW:{HW}, SW:{SW}",
+        logger?.LogInformation("[DBSeeder] Done. Roles:{Roles}, Users:{Users}, HW:{HW}, SW:{SW}, Offices:{OF}",
             await db.Roles.CountAsync(ct),
             await db.Users.CountAsync(ct),
             await db.HardwareAssets.CountAsync(ct),
-            await db.SoftwareAssets.CountAsync(ct));
+            await db.SoftwareAssets.CountAsync(ct),
+            await db.Offices.CountAsync(ct)
+            );
     }
 
     private static Guid FromString(string input)
@@ -326,6 +339,16 @@ public static class DbSeeder
             existing.Model = incoming.Model;
             existing.PurchaseDate = incoming.PurchaseDate;
             existing.WarrantyExpiration = incoming.WarrantyExpiration;
+        }
+    }
+    private static async Task UpsertOfficeAsync(AimsDbContext db, Office incoming, CancellationToken ct)
+    {
+        var existing = await db.Offices.FirstOrDefaultAsync(o => o.OfficeID == incoming.OfficeID, ct);
+        if (existing is null) await db.Offices.AddAsync(incoming, ct);
+        else
+        {
+            existing.OfficeName = incoming.OfficeName;
+            existing.Location = incoming.Location;
         }
     }
 

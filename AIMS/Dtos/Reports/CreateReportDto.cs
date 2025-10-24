@@ -14,6 +14,6 @@ public class CreateReportDto
     // Who/Where generated
     public int? GeneratedByUserID { get; set; }
 
-    public int? GeneratedByOfficeID { get; set; }
+    public int? GeneratedForOfficeID { get; set; }
     public byte[] Content { get; set; } = new byte[0];
 }
