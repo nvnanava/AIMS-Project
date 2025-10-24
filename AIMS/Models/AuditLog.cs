@@ -1,5 +1,6 @@
 namespace AIMS.Models;
 
+public enum AuditLogAction { Create = 1, Edit = 2, Assign = 3, Unassign = 4, Archive = 5 };
 public class AuditLog
 {
     public int AuditLogID { get; set; }
@@ -12,7 +13,7 @@ public class AuditLog
     public User User { get; set; } = null!;
 
     // What happened
-    public string Action { get; set; } = string.Empty;        // e.g. "Create", "Edit", "Assign", "Archive"
+    public AuditLogAction Action { get; set; } // e.g. "Create", "Edit", "Assign", "Archive"
     public string Description { get; set; } = string.Empty;   // human summary
 
     // Optional long-form payloads

@@ -87,7 +87,7 @@ public class ReportsApiTests
 
 
             // generate software assets
-            var s1 = new Software { SoftwareType = "ReportsTest", SoftwareLicenseKey = "ReportsTest1" };
+            var s1 = new Software { SoftwareType = "ReportsTest", SoftwareLicenseKey = "ReportsTest1", LicenseTotalSeats = 56, LicenseSeatsUsed = 54 };
             var s2 = new Software { SoftwareType = "ReportsTest", SoftwareLicenseKey = "ReportsTest2" };
             var s3 = new Software { SoftwareType = "ReportsTest", SoftwareLicenseKey = "ReportsTest3", SoftwareLicenseExpiration = DateOnly.FromDateTime(currentTime.AddDays(1)) };
 
@@ -203,8 +203,8 @@ public class ReportsApiTests
         var len = json.RootElement.GetProperty("contentLength").GetInt32();
 
         Assert.True(!(id < 0));
-        // the headers are 69 bytes
-        Assert.Equal(69, len);
+        // the headers are 126 bytes
+        Assert.Equal(126, len);
 
     }
     // non-empty report
@@ -257,7 +257,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
 
@@ -301,8 +301,8 @@ public class ReportsApiTests
         var len = json.RootElement.GetProperty("contentLength").GetInt32();
 
         Assert.True(!(id < 0));
-        // the headers are 69 bytes
-        Assert.Equal(69, len);
+        // the headers are 126 bytes
+        Assert.Equal(126, len);
 
     }
     // non-empty report
@@ -357,7 +357,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
     }
@@ -397,8 +397,8 @@ public class ReportsApiTests
         var len = json.RootElement.GetProperty("contentLength").GetInt32();
 
         Assert.True(!(id < 0));
-        // the headers are 69 bytes
-        Assert.Equal(69, len);
+        // the headers are 126 bytes
+        Assert.Equal(126, len);
 
     }
     // Hardware-Only
@@ -456,11 +456,11 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
 
-        Assert.True(checkIfEachLineContains(lines[1..], 2, ["Hardware"]));
+        Assert.True(checkIfEachLineContains(lines[1..], 3, ["Hardware"]));
 
     }
 
@@ -520,11 +520,11 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
 
-        Assert.True(checkIfEachLineContains(lines[1..], 2, ["Software"]));
+        Assert.True(checkIfEachLineContains(lines[1..], 3, ["Software"]));
 
     }
     // Toggle Offices
@@ -583,7 +583,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
     }
@@ -646,7 +646,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
     }
@@ -706,7 +706,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
     }
@@ -764,7 +764,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee Office", "Asset Name", "Asset Type", "Comment" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
     }
@@ -823,7 +823,7 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment", "Expiration" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment", "Expiration" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
     }
@@ -882,11 +882,11 @@ public class ReportsApiTests
         Assert.NotEmpty(fileStr);
 
         var lines = fileStr.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        string[] expectedHeaders = { "AssignmentID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Comment", "Status" };
+        string[] expectedHeaders = { "AuditLogID", "Assignee", "Assignee Office", "Asset Name", "Asset Type", "Asset License or Serial", "Action", "Description", "Timestamp", "Asset Comment", "Status" };
         string[] actualHeaders = getCSVHeaders(lines);
         Assert.Equal(expectedHeaders, actualHeaders);
 
-        Assert.True(checkIfEachLineContains(lines[1..], 6, ["In Repair", "Marked for Survey"]));
+        Assert.True(checkIfEachLineContains(lines[1..], 6, ["In Repair", "Marked for Survey", "Seats Remaining"]));
     }
 
     // -- Listing --

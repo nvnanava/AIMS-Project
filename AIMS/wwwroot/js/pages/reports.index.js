@@ -52,6 +52,7 @@
                 <td><span class="cell-text">${r.description || "-"}</span></td>
                 <td><span class="cell-text">${r.generatedByOfficeString || "-"}</span></td>
                 <td><span class="cell-text">${r.dateCreated ? new Date(r.dateCreated).toLocaleString() : "-"}</span></td>
+                <td><span class="cell-text">${r.generatedByUserName || "-"}</span></td>
             `;
             frag.appendChild(tr);
         });

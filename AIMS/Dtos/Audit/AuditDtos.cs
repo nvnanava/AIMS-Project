@@ -22,7 +22,7 @@ public sealed class GetAuditRecordDto
     public int UserID { get; set; }
     public string UserName { get; set; } = string.Empty;
 
-    public string Action { get; set; } = string.Empty;        // e.g. "Create", "Edit", "Assign", "Archive"
+    public AuditLogAction Action { get; set; }       // e.g. "Create", "Edit", "Assign", "Archive"
     public string Description { get; set; } = string.Empty;
 
     // Optional large payloads (blob-backed, snapshot inline)
@@ -53,7 +53,7 @@ public sealed class CreateAuditRecordDto
 {
     [Required] public int UserID { get; set; }
 
-    [Required] public string Action { get; set; } = string.Empty;
+    [Required] public AuditLogAction Action { get; set; }
     [Required] public string Description { get; set; } = string.Empty;
 
     // Optional long-form payloads
