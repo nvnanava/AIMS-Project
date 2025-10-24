@@ -70,6 +70,12 @@ namespace AIMS.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<User>()
+                .HasOne(u => u.Office)
+                .WithMany(o => o.Users)
+                .HasForeignKey(u => u.OfficeID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<User>()
                 .HasIndex(u => u.ExternalId)
                 .IsUnique();
 
@@ -238,11 +244,12 @@ namespace AIMS.Data
                 .WithMany()
                 .HasForeignKey(r => r.GeneratedByUserID)
                 .OnDelete(DeleteBehavior.SetNull);
+                
 
             modelBuilder.Entity<Report>()
-                .HasOne(r => r.GeneratedByOffice)
+                .HasOne(r => r.GeneratedForOffice)
                 .WithMany()
-                .HasForeignKey(r => r.GeneratedByOfficeID)
+                .HasForeignKey(r => r.GeneratedForOfficeID)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // -------------------------

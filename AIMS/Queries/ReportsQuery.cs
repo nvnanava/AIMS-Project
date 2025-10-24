@@ -25,7 +25,7 @@ public sealed class ReportsQuery
                         Description = r.Description,
                         DateCreated = r.DateCreated,
                         GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
-                        GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
+                        GeneratedByOfficeString = r.GeneratedForOffice != null ? r.GeneratedForOffice.OfficeName : "",
                     })
                     .ToListAsync(ct);
     }
@@ -42,7 +42,7 @@ public sealed class ReportsQuery
                Description = r.Description,
                DateCreated = r.DateCreated,
                GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
-               GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
+               GeneratedByOfficeString = r.GeneratedForOffice != null ? r.GeneratedForOffice.OfficeName : "",
            })
            .FirstOrDefaultAsync(ct);
     }
@@ -58,7 +58,7 @@ public sealed class ReportsQuery
                Type = r.Type,
                DateCreated = r.DateCreated,
                GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
-               GeneratedByOfficeString = r.GeneratedByOffice != null ? r.GeneratedByOffice.OfficeName : "",
+               GeneratedByOfficeString = r.GeneratedForOffice != null ? r.GeneratedForOffice.OfficeName : "",
                Content = r.Content
            })
            .FirstOrDefaultAsync(ct);
@@ -75,7 +75,7 @@ public sealed class ReportsQuery
         {
             DateCreated = DateTime.UtcNow,
             GeneratedByUserID = dto.GeneratedByUserID,
-            GeneratedByOfficeID = dto.GeneratedByOfficeID,
+            GeneratedForOfficeID = dto.GeneratedForOfficeID,
             Name = dto.Name,
             Type = dto.Type,
             Description = dto.Description,

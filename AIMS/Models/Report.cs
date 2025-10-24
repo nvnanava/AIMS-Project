@@ -21,8 +21,8 @@ public class Report
     public int? GeneratedByUserID { get; set; }
     public User? GeneratedByUser { get; set; }
 
-    public int? GeneratedByOfficeID { get; set; }
-    public Office? GeneratedByOffice { get; set; }
+    public int? GeneratedForOfficeID { get; set; }
+    public Office? GeneratedForOffice { get; set; }
 
     // Content
     [Required]

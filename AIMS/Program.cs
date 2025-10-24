@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using AIMS.Data;
@@ -10,6 +11,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+
+
+var cultureInfo = new CultureInfo("en-US");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -80,6 +87,8 @@ var cs =
     GetConn("DefaultConnection") ??
     GetConn("DockerConnection") ??
     GetConn("CliConnection");
+
+builder.Logging.AddConsole();
 
 if (string.IsNullOrWhiteSpace(cs))
 {

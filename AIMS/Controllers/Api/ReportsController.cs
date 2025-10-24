@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using AIMS.Data;
 using AIMS.Dtos.Reports;
 using AIMS.Models;
@@ -43,7 +44,7 @@ public class ReportsController : ControllerBase
         _db = db;
     }
 
-    [HttpPost("/")]
+    [HttpPost]
     public async Task<IActionResult> Create(
         [FromQuery] DateOnly start,
         [FromQuery] string reportName,
@@ -52,7 +53,7 @@ public class ReportsController : ControllerBase
         [FromQuery] DateOnly? end = null,
         [FromQuery] int? OfficeID = null,
         [FromQuery] string? desc = null,
-        [FromQuery] CustomReportOptionsDto? customOptions = null,
+        [FromBody] CustomReportOptionsDto? customOptions = null,
          CancellationToken ct = default
         )
     {
@@ -61,7 +62,10 @@ public class ReportsController : ControllerBase
         {
             end = DateOnly.FromDateTime(DateTime.Now);
         }
-
+        if (customOptions is null)
+        {
+            customOptions = new CustomReportOptionsDto { };
+        }
         if (OfficeID is not null)
         {
             var office = await _db.Offices.Where(o => o.OfficeID == OfficeID).FirstOrDefaultAsync(ct);
@@ -81,7 +85,6 @@ public class ReportsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-
         // date mismatch
         if (end < start)
         {
@@ -98,7 +101,7 @@ public class ReportsController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        byte[] reportBytes = new byte[0];
+        byte[] reportBytes = Array.Empty<byte>();
 
         // Assignments Report
         // Data In: Start Date, End Date (optional; today if null), Description (optional)
@@ -106,53 +109,31 @@ public class ReportsController : ControllerBase
         // Notes: File Name should include generation date,
         // Sort: Assigned Assets first, non-assigned later
 
-        if (reportType == ReportType.Assignment)
+
+        // Custom Report
+        // Data In: Start Date, End Date (optional), Description (optional)
+        // ... See Hardware, See Software, See Users, See Office, See when software and/ or warranty expires, See what requires maintenance or replacements
+        // Data Out: Assignee, Office, Asset Name, Asset Type, Seat #, Expiration, MaintenanceStatus, Comment
+        // Notes: If MaintenanceStatus opt specified: show only those.
+        if (reportType == ReportType.Office && OfficeID is null)
         {
-            // get assignments, sorted by activity
-            var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct);
-
-
-            reportBytes = await WriteToBinaryCSV(activeItemsFirst);
-
-
-            // Custom Report
-            // Data In: Start Date, End Date (optional), Description (optional)
-            // ... See Hardware, See Software, See Users, See Office, See when software and/ or warranty expires, See what requires maintenance or replacements
-            // Data Out: Assignee, Office, Asset Name, Asset Type, Seat #, Expiration, MaintenanceStatus, Comment
-            // Notes: If MaintenanceStatus opt specified: show only those.
-        }
-        else if (reportType == ReportType.Custom)
-        {
-            // get assignments, sorted by activity
-            var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
-
-
-            reportBytes = await WriteToBinaryCSV(activeItemsFirst, customOptions);
+            ModelState.AddModelError(nameof(OfficeID), "Please specify a valid OfficeID.");
+            return BadRequest(ModelState);
 
         }
-        else if (reportType == ReportType.Office)
-        {
+        // Custom Report
+        // Data In: Start Date, End Date (optional), Description (optional)
+        // ... See Hardware, See Software, See Users, See Office, See when software and/ or warranty expires, See what requires maintenance or replacements
+        // Data Out: Assignee, Office, Asset Name, Asset Type, Seat #, Expiration, MaintenanceStatus, Comment
+        // Notes: If MaintenanceStatus opt specified: show only those.
 
-            if (OfficeID is null)
-            {
-                ModelState.AddModelError(nameof(OfficeID), "Please specify a valid OfficeID.");
-                return BadRequest(ModelState);
-            }
+        // get assignments, sorted by activity
 
-            // Custom Report
-            // Data In: Start Date, End Date (optional), Description (optional)
-            // ... See Hardware, See Software, See Users, See Office, See when software and/ or warranty expires, See what requires maintenance or replacements
-            // Data Out: Assignee, Office, Asset Name, Asset Type, Seat #, Expiration, MaintenanceStatus, Comment
-            // Notes: If MaintenanceStatus opt specified: show only those.
-
-            // get assignments, sorted by activity
-
-            var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
+        var activeItemsFirst = await getOrderedIntermediateListAsync(start, (DateOnly)end, ct, customOptions);
 
 
-            reportBytes = await WriteToBinaryCSV(activeItemsFirst);
+        reportBytes = await WriteToBinaryCSV(activeItemsFirst, customOptions);
 
-        }
         // create report entry
         var id = await _reports.CreateReport(new CreateReportDto
         {
@@ -165,7 +146,7 @@ public class ReportsController : ControllerBase
             // Who/Where generated
             GeneratedByUserID = CreatorUserID,
 
-            GeneratedByOfficeID = OfficeID,
+            GeneratedForOfficeID = OfficeID,
             Content = reportBytes
         }, ct);
 
@@ -173,7 +154,7 @@ public class ReportsController : ControllerBase
     }
 
 
-    private async Task<List<CSVIntermediate>> getOrderedIntermediateListAsync(DateOnly start, DateOnly end, CancellationToken ct, CustomReportOptionsDto? opts = null)
+    private async Task<List<CSVIntermediate>> getOrderedIntermediateListAsync(DateOnly start, DateOnly end, CancellationToken ct, CustomReportOptionsDto opts)
     {
         var startUtc = start.ToDateTime(TimeOnly.MinValue).ToUniversalTime(); // UTC day of 00:00:00 (inclusive bound)
         var endUtcExclusive = end.AddDays(1).ToDateTime(TimeOnly.MinValue).ToUniversalTime(); // UTC next day 0:00:00 (exclusive)
@@ -192,24 +173,20 @@ public class ReportsController : ControllerBase
             .Include(a => a.Hardware)
             .Include(a => a.Software);
 
-        // optional filters
-        if (opts is not null)
+        if (opts.seeHardware && !opts.seeSoftware)
         {
-            if (opts.seeHardware && !opts.seeSoftware)
-            {
-                query = query.Where(a => a.AssetKind == AssetKind.Hardware);
-            }
-            else if (opts.seeSoftware && !opts.seeHardware)
-            {
-                query = query.Where(a => a.AssetKind == AssetKind.Software);
-            }
+            query = query.Where(a => a.AssetKind == AssetKind.Hardware);
+        }
+        else if (opts.seeSoftware && !opts.seeHardware)
+        {
+            query = query.Where(a => a.AssetKind == AssetKind.Software);
+        }
 
-            if (opts.filterByMaintenance)
-            {
-                query = query.Where(a =>
-                    a.HardwareID != null &&
-                    (a.Hardware!.Status == "In Repair" || a.Hardware.Status == "Marked for Survey"));
-            }
+        if (opts.filterByMaintenance)
+        {
+            query = query.Where(a =>
+                a.HardwareID != null &&
+                (a.Hardware!.Status == "In Repair" || a.Hardware.Status == "Marked for Survey"));
         }
 
         return await query
@@ -217,7 +194,7 @@ public class ReportsController : ControllerBase
             {
                 AssignmentID = a.AssignmentID,
                 Assignee = a.User!.FullName,
-                Office = a.Office!.OfficeName,
+                Office = a.User!.Office!.OfficeName,
                 AssetType = a.AssetKind,
                 AssetName = a.AssetKind == AssetKind.Hardware
                                 ? a.Hardware!.AssetName
@@ -234,12 +211,11 @@ public class ReportsController : ControllerBase
             })
             .ToListAsync(ct);
     }
-    private async Task<byte[]> WriteToBinaryCSV(List<CSVIntermediate> list, CustomReportOptionsDto? opts = null)
+    private async Task<byte[]> WriteToBinaryCSV(List<CSVIntermediate> list, CustomReportOptionsDto opts)
     {
         var memoryStream = new MemoryStream();
 
         var utf8WithoutBom = new UTF8Encoding(false);
-        if (opts is not null)
         {
             using (var streamWriter = new StreamWriter(memoryStream, utf8WithoutBom, leaveOpen: true))
             {
@@ -307,44 +283,6 @@ public class ReportsController : ControllerBase
                 }
             }
         }
-        else
-        {
-            using (var streamWriter = new StreamWriter(memoryStream, utf8WithoutBom, leaveOpen: true))
-            {
-                var csvConfig = new CsvConfiguration(CultureInfo.InvariantCulture)
-                {
-                    HasHeaderRecord = false // Disable automatic header generation
-                };
-
-                using (var csvWriter = new CsvWriter(streamWriter, csvConfig))
-                {
-                    // Manually write the custom header row
-                    csvWriter.WriteField("AssignmentID");
-                    csvWriter.WriteField("Assignee");
-                    csvWriter.WriteField("Assignee Office");
-                    csvWriter.WriteField("Asset Name");
-                    csvWriter.WriteField("Asset Type");
-                    // csvWriter.WriteField("Seat Number"); TODO: Add this when this field is added at the end of sprint 7
-                    csvWriter.WriteField("Comment");
-                    csvWriter.NextRecord(); // Move to the next line for data
-
-                    // Manually write each record
-                    foreach (var assignment in list)
-                    {
-                        csvWriter.WriteField(assignment.AssignmentID);
-                        csvWriter.WriteField(assignment.Assignee);
-                        csvWriter.WriteField(assignment.Office);
-                        csvWriter.WriteField(assignment.AssetName);
-                        csvWriter.WriteField(assignment.AssetType);
-                        csvWriter.WriteField(assignment.Comment);
-                        csvWriter.NextRecord(); // Move to the next line
-                    }
-
-                    await streamWriter.FlushAsync();
-                }
-            }
-
-        }
 
         // Reset the MemoryStream's position to the beginning
         memoryStream.Position = 0;
@@ -353,9 +291,9 @@ public class ReportsController : ControllerBase
         return memoryStream.ToArray();
     }
 
-    [HttpGet("/download/{id?}")]
+    [HttpGet("download/{id?}")]
     // for swagger: octet-stream means that the file is a) binary and b) should be offered for download.
-    [Produces("application/octet-stream")]
+    [Produces("text/csv")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> Download(int? id, CancellationToken ct = default)
     {
@@ -377,7 +315,6 @@ public class ReportsController : ControllerBase
 
 
         // For browsers/clients: the actual file header says text/csv
-        Response.ContentType = "text/csv";
         return File(report.Content, "text/csv", $"{report.Name}_{report.Type}_Report_{report.DateCreated:yyyy_MM_dd_HH_mm_ss}.csv");
     }
 
