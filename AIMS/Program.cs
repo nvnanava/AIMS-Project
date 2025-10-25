@@ -5,7 +5,10 @@ using AIMS.Data;
 using AIMS.Hubs;
 using AIMS.Queries;
 using AIMS.Services;
+using AIMS.Utilities; // TestAuthHandler
 using Azure.Identity;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
@@ -18,15 +21,16 @@ var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
 
 // -------------------- Services --------------------
-builder.Services.AddEndpointsApiExplorer();   // dev/test
-builder.Services.AddSwaggerGen();             // dev/test
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
 
-// ★ Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
+// Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
 {
     o.ConstraintMap["allowedAssetType"] = typeof(AIMS.Routing.AllowedAssetTypeConstraint);
@@ -129,17 +133,72 @@ builder.Services.AddDbContext<AimsDbContext>(opt =>
 
 var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
 
-// -------------------- Azure AD AuthN/AuthZ --------------------
-builder.Services
-    .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(options =>
-    {
-        builder.Configuration.Bind("AzureAd", options);
-        options.AccessDeniedPath = "/error/not-authorized";
-        options.TokenValidationParameters.RoleClaimType = "roles";
-    });
+// -------------------- AuthN/AuthZ (switch) --------------------
 
-//Microsoft Graph setup
+// Safe gate: TestAuth can *never* be enabled in Production.
+var useTestAuth =
+    !builder.Environment.IsProduction() &&
+    (builder.Configuration.GetValue<bool>("UseTestAuth", false) ||
+     string.Equals(builder.Environment.EnvironmentName, "Test", StringComparison.OrdinalIgnoreCase));
+
+Console.WriteLine($"[Startup] UseTestAuth={useTestAuth}");
+
+if (useTestAuth)
+{
+    builder.Services
+        .AddAuthentication(options =>
+        {
+            options.DefaultScheme = TestAuthHandler.Scheme;
+            options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
+            options.DefaultChallengeScheme = TestAuthHandler.Scheme;
+        })
+        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+            TestAuthHandler.Scheme,
+            o => { o.TimeProvider = TimeProvider.System; }
+        );
+}
+else
+{
+    builder.Services
+        .AddAuthentication(options =>
+        {
+            options.DefaultScheme = "AppOrApi";
+            options.DefaultAuthenticateScheme = "AppOrApi";
+            options.DefaultChallengeScheme = "AppOrApi";
+        })
+        .AddPolicyScheme("AppOrApi", "AppOrApi", options =>
+        {
+            options.ForwardDefaultSelector = ctx =>
+                ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+                    ? JwtBearerDefaults.AuthenticationScheme
+                    : OpenIdConnectDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
+            options.Audience = builder.Configuration["AzureAd:ApiAudience"];
+            options.RequireHttpsMetadata = false;
+        })
+        .AddMicrosoftIdentityWebApp(options =>
+        {
+            builder.Configuration.Bind("AzureAd", options);
+            options.AccessDeniedPath = "/error/not-authorized";
+            options.TokenValidationParameters.RoleClaimType = "roles";
+
+            // For API calls, respond 401 instead of redirecting to AAD.
+            options.Events ??= new();
+            options.Events.OnRedirectToIdentityProvider = ctx =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    ctx.HandleResponse();
+                }
+                return Task.CompletedTask;
+            };
+        });
+}
+
 builder.Services.AddSingleton<GraphServiceClient>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
@@ -150,18 +209,14 @@ builder.Services.AddSingleton<GraphServiceClient>(sp =>
     var scopes = new[] { "https://graph.microsoft.com/.default" };
     var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
     return new GraphServiceClient(credential, scopes);
-
-
 });
 
-// Register GraphUserService and its interface for DI
 builder.Services.AddScoped<IGraphUserService, GraphUserService>();
 
-builder.Services.AddAuthorization(options => // Require auth by default, you must now sign in to access the application
+builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
-
 
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
@@ -196,24 +251,11 @@ builder.Services.AddAuthorizationBuilder()
                   "tnburg@pacbell.net"
               }.Contains(c.Value))));
 
-
-
-
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
-
-// -------------------- (Dev) CORS helper --------------------
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
 
 // -------------------- App pipeline --------------------
 var app = builder.Build();
+
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
@@ -294,8 +336,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-
-// TODO: Remove when we add proper Azure Blob storage
 // allow saving to wwwroot folder
 app.UseStaticFiles();
 
@@ -305,43 +345,39 @@ app.UseRouting();
 // Apply rate limiting before hitting endpoints
 app.UseRateLimiter();
 
-// CORS for Dev must come after routing
 if (app.Environment.IsDevelopment())
 {
 
-    // CORS only in dev (handy for local frontend)
     app.UseCors("AllowLocalhost");
 }
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ★ Re-execute to /error/{code} for 403/404/etc.
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 
 app.MapStaticAssets();
 
-// MVC conventional route (views)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// SignalR hub route for realtime audit stream
 app.MapHub<AuditLogHub>("/hubs/audit");
-
-// Attribute-routed APIs (e.g., /api/assets)
 app.MapControllers();
-
-// Identity UI pages
 app.MapRazorPages();
 
-// Endpoint list for debugging
 app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
     string.Join("\n", eds.Endpoints.Select(e => e.DisplayName)));
-app.MapGet("/error/not-found-raw", () => Results.Content("<!doctype html><html><head><meta charset='utf-8'><title>404</title></head><body style='font-family:system-ui;padding:2rem'><h1 style='color:var(--primary)'>404</h1><p>We couldn’t find that page.</p><a href='/' style='display:inline-block;padding:.6rem 1rem;border-radius:.5rem;background:var(--primary);color:#fff;text-decoration:none;border:1px solid var(--primary)'>Go to Dashboard</a></body></html>", "text/html"));
+
+app.MapGet("/error/not-found-raw", () => Results.Content(
+    "<!doctype html><html><head><meta charset='utf-8'><title>404</title></head>" +
+    "<body style='font-family:system-ui;padding:2rem'><h1 style='color:var(--primary)'>404</h1>" +
+    "<p>We couldn’t find that page.</p>" +
+    "<a href='/' style='display:inline-block;padding:.6rem 1rem;border-radius:.5rem;background:var(--primary);color:#fff;text-decoration:none;border:1px solid var(--primary)'>Go to Dashboard</a>" +
+    "</body></html>",
+    "text/html"));
 
 app.Run();
 
-public partial class Program
-{
-}
+public partial class Program { }

@@ -78,14 +78,15 @@ public partial class AuditLogApiController
             sinceDto = DateTimeOffset.UtcNow.AddDays(-1);
 
         // Batch size (default 50)
-        var max = Math.Clamp(HttpContext.Request.Query.TryGetValue("take", out var takeV) && int.TryParse(takeV, out var t) ? t : 50, 1, 200);
+        var max = Math.Clamp(
+            HttpContext.Request.Query.TryGetValue("take", out var takeV) && int.TryParse(takeV, out var t) ? t : 50,
+            1, 200);
 
         var events = await _auditQuery.GetAllAuditRecordsAsync(ct);
 
-        var filtered = events
+        // Project → event DTOs we’ll dedupe on Id (ExternalId if present else AuditLogID)
+        var projected = events
             .Where(e => e.TimestampUtc > sinceDto.UtcDateTime)
-            .OrderByDescending(e => e.TimestampUtc)
-            .Take(max)
             .Select(e => new AuditEventDto
             {
                 Id = (e.ExternalId != Guid.Empty ? e.ExternalId.ToString() : e.AuditLogID.ToString()),
@@ -97,19 +98,27 @@ public partial class AuditLogApiController
                     : (e.SoftwareID.HasValue ? $"Software#{e.SoftwareID}" : "Software"),
                 Details = e.Description ?? "",
                 Hash = ComputeHash(e)
-            })
+            });
+
+        // Deduplicate by Id – keep newest per Id
+        var deduped = projected
+            .GroupBy(p => p.Id, StringComparer.Ordinal)                            // group by logical id
+            .Select(g => g.OrderByDescending(x => x.OccurredAtUtc).First())        // pick newest per id
+            .OrderByDescending(x => x.OccurredAtUtc)                                // overall newest first
+            .Take(max)                                                              // page
             .ToList();
 
-        var latest = filtered.FirstOrDefault();
+        var latest = deduped.FirstOrDefault();
         var nextSince = latest?.OccurredAtUtc.ToString("O") ?? sinceDto.UtcDateTime.ToString("O");
 
-        // ETag: hash of "latestId|count"
-        var etagRaw = $"{latest?.Id}|{filtered.Count}";
+        // ETag based on *deduped* page, so 304 works with the collapsed view
+        var etagRaw = $"{latest?.Id}|{deduped.Count}";
         var etag = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(etagRaw)));
         HttpContext.Response.Headers.ETag = $"W/\"{etag}\"";
 
         // If client sent same ETag, signal a cache hit
-        if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm.ToString().Contains(etag, StringComparison.OrdinalIgnoreCase))
+        if (Request.Headers.TryGetValue("If-None-Match", out var inm) &&
+            inm.ToString().Contains(etag, StringComparison.OrdinalIgnoreCase))
         {
             Telemetry.AuditPollEtagHits.Add(1);
             return StatusCode(StatusCodes.Status304NotModified);
@@ -117,13 +126,14 @@ public partial class AuditLogApiController
 
         return Ok(new
         {
-            items = filtered,
+            items = deduped,
             nextSince
         });
 
         static string ComputeHash(AIMS.Dtos.Audit.GetAuditRecordDto e)
         {
-            var raw = $"{e.AuditLogID}|{e.ExternalId}|{e.TimestampUtc:o}|{e.Action}|{e.UserID}|{e.AssetKind}|{e.HardwareID}|{e.SoftwareID}|{e.Description}";
+            var raw =
+                $"{e.AuditLogID}|{e.ExternalId}|{e.TimestampUtc:o}|{e.Action}|{e.UserID}|{e.AssetKind}|{e.HardwareID}|{e.SoftwareID}|{e.Description}";
             return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
         }
     }
