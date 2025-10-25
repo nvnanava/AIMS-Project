@@ -112,6 +112,8 @@ public class AuditLogQuery
             .ToListAsync(ct);
     }
 
+    // Create or update an AuditLog. If ExternalId is supplied and already exists, we update that row in place.
+    // Otherwise, we insert a new row. Always broadcasts the resulting event.
     public async Task<int> CreateAuditRecordAsync(CreateAuditRecordDto data, CancellationToken ct = default)
     {
         if (data is null) throw new ArgumentNullException(nameof(data));
@@ -148,35 +150,79 @@ public class AuditLogQuery
             throw new InvalidOperationException("Unknown AssetKind.");
         }
 
-        var log = new AuditLog
-        {
-            TimestampUtc = DateTime.UtcNow,
-            UserID = data.UserID,
-            Action = data.Action,
-            Description = data.Description,
-            BlobUri = data.BlobUri,
-            SnapshotJson = data.SnapshotJson,
-            AssetKind = data.AssetKind,
-            HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null,
-            SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null
-        };
+        // --- Upsert by ExternalId ---
+        var hasExternal = data.ExternalId.HasValue && data.ExternalId.Value != Guid.Empty;
+        AuditLog? log = null;
 
-        // Optional per-field diffs
-        if (data.Changes is { Count: > 0 })
+        if (hasExternal)
         {
-            foreach (var c in data.Changes)
+            log = await _db.AuditLogs
+                .FirstOrDefaultAsync(a => a.ExternalId == data.ExternalId!.Value, ct);
+
+            if (log is not null)
             {
-                log.Changes.Add(new AuditLogChange
+                // UPDATE IN PLACE
+                log.TimestampUtc = DateTime.UtcNow;
+                log.UserID = data.UserID;
+                log.Action = data.Action;
+                log.Description = data.Description;
+                log.BlobUri = data.BlobUri;
+                log.SnapshotJson = data.SnapshotJson;
+                log.AssetKind = data.AssetKind;
+                log.HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null;
+                log.SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null;
+
+                // Clear existing changes
+                if (data.Changes is { Count: > 0 })
                 {
-                    Field = c.Field,
-                    OldValue = c.OldValue,
-                    NewValue = c.NewValue
-                });
+                    foreach (var c in data.Changes)
+                    {
+                        log.Changes.Add(new AuditLogChange
+                        {
+                            Field = c.Field,
+                            OldValue = c.OldValue,
+                            NewValue = c.NewValue
+                        });
+                    }
+                }
+
+                await _db.SaveChangesAsync(ct);
             }
         }
 
-        _db.AuditLogs.Add(log);
-        await _db.SaveChangesAsync(ct);
+        if (log is null)
+        {
+            // INSERT
+            log = new AuditLog
+            {
+                ExternalId = hasExternal ? data.ExternalId!.Value : Guid.Empty,
+                TimestampUtc = DateTime.UtcNow,
+                UserID = data.UserID,
+                Action = data.Action,
+                Description = data.Description,
+                BlobUri = data.BlobUri,
+                SnapshotJson = data.SnapshotJson,
+                AssetKind = data.AssetKind,
+                HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null,
+                SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null
+            };
+
+            if (data.Changes is { Count: > 0 })
+            {
+                foreach (var c in data.Changes)
+                {
+                    log.Changes.Add(new AuditLogChange
+                    {
+                        Field = c.Field,
+                        OldValue = c.OldValue,
+                        NewValue = c.NewValue
+                    });
+                }
+            }
+
+            _db.AuditLogs.Add(log);
+            await _db.SaveChangesAsync(ct);
+        }
 
         // Broadcast realtime event after persistence
         var userName = await _db.Users.AsNoTracking()
