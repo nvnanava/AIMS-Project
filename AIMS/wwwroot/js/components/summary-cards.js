@@ -91,8 +91,11 @@
         let rows = [];
 
         try {
-            const res = await fetch(`/api/summary/cards?types=${qs}`, { cache: "no-store" });
-            if (res.ok) rows = await res.json();
+            const url = (`/api/summary/cards?types=${qs}`, { cache: "no-store" });
+            aimsFetch.abort(url);
+
+            const res = await aimsFetch((url), { ttl: 30 });
+            rows = Array.isArray(res) ? res : [];
         } catch {
             // ignore network errors; leave existing numbers in place
         }

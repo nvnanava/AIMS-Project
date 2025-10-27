@@ -86,9 +86,7 @@
         resultsList.innerHTML = `<div class="aad-hint">Searching…</div>`;
         try {
             const url = `/aad-users?search=${encodeURIComponent(query)}&top=8`;
-            const resp = await fetch(url, { signal: aadAbortCtrl.signal });
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const users = await resp.json();
+            const users = await aimsFetch(url, { signal: aadAbortCtrl.signal });
             renderAADResults(users, query);
         } catch (e) {
             if (e.name === "AbortError") return;

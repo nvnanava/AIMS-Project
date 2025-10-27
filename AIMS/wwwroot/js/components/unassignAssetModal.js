@@ -20,9 +20,7 @@
         const cacheHeaders = { "Cache-Control": "no-cache, no-store" };
 
         async function fetchActiveAssignments() {
-            const res = await fetch(`/api/assign/list?status=active&_v=${assetsVer}`, { headers: cacheHeaders });
-            if (!res.ok) throw new Error("Failed to load assignments");
-            return res.json();
+            return await aimsFetch(`/api/assign/list?status=active&_v=${assetsVer}`, { headers: cacheHeaders });
         }
 
         async function fetchAssetSummary(kind, id) {
@@ -30,9 +28,7 @@
                 const url = kind === 2
                     ? `/api/assets/one?softwareId=${id}&_v=${assetsVer}`
                     : `/api/assets/one?hardwareId=${id}&_v=${assetsVer}`;
-                const res = await fetch(url, { cache: "no-store" });
-                if (!res.ok) return null;
-                return await res.json(); // { assetName, tag, ... }
+                return await aimsFetch(url, { cache: "no-store" });
             } catch { return null; }
         }
 

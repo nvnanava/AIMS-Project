@@ -180,7 +180,7 @@
     function makeArchiveButton(asset) {
         const id = asset.hardwareID ?? asset.softwareID;
         const name = escapeHtml(asset.assetName || "");
-        const type = escapeHtml(asset.type || "");
+        const type = escapeHtml(asset.type || "software");
         return `
         <button type="button"
                 class="action-btn red-archive"
@@ -197,7 +197,7 @@
     function makeUnarchiveButton(asset) {
         const id = asset.hardwareID ?? asset.softwareID;
         const name = escapeHtml(asset.assetName || "");
-        const type = escapeHtml(asset.type || "");
+        const type = escapeHtml(asset.type || "software");
         return `
         <button type="button"
                 class="action-btn green-unarchive"
@@ -324,9 +324,8 @@
         url.searchParams.set("scope", "all");
         url.searchParams.set("totalsMode", "lookahead");
 
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data = await aimsFetch(url.toString());
+
 
         const items = Array.isArray(data.items) ? data.items : [];
         pageCache.set(page, items);
@@ -359,10 +358,7 @@
 
     async function loadOneByTag(tag) {
         try {
-            const res = await fetch(`/api/assets/one?tag=${encodeURIComponent(tag)}&devBypass=true`, { cache: "no-store" });
-            if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
-            const asset = await res.json();
-
+            const asset = await aimsFetch(`/api/assets/one?tag=${encodeURIComponent(tag)}&devBypass=true`);
             // Header is always "Status"
             setStatusHeaderFor();
 
@@ -425,14 +421,16 @@
         const endpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
 
         try {
-            const res = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" } });
-            if (!res.ok) throw new Error(`Failed to archive: ${res.status} - ${await res.text()}`);
-            const updated = await res.json();
+            const updated = await aimsFetch(endpoint, { method: "PUT" });
             alert(`"${name}" was successfully archived.`);
             await updateRowInUIAndCache(updated);
         } catch (err) {
             console.error("Error archiving asset:", err);
-            alert(`Failed to archive "${name}".`);
+            if (err.isValidation && err.data) {
+                showServerErrorsInline(err.data);
+            } else {
+                alert(`Failed to unarchive "${name}".`);
+            }
         }
     }
 
@@ -441,17 +439,20 @@
         if (!window.confirm(`Are you sure you want to unarchive "${name}"? `)) return;
 
         const isSoftware = (String(type || "").toLowerCase() === "software");
+
         const endpoint = isSoftware ? `/api/software/unarchive/${id}` : `/api/hardware/unarchive/${id}`;
 
         try {
-            const res = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" } });
-            if (!res.ok) throw new Error(`Failed to unarchive: ${res.status} - ${await res.text()}`);
-            const updated = await res.json();
+            const updated = await aimsFetch(endpoint, { method: "PUT" });
             alert(`"${name}" was successfully unarchived.`);
             await updateRowInUIAndCache(updated);
         } catch (err) {
             console.error("Error unarchiving asset:", err);
-            alert(`Failed to unarchive "${name}".`);
+            if (err.isValidation && err.data) {
+                showServerErrorsInline(err.data);
+            } else {
+                alert(`Failed to unarchive "${name}".`);
+            }
         }
     }
 
