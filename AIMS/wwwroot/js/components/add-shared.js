@@ -246,30 +246,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 Comment: (l.Comment || '').trim()
             }));
 
-            const res = await fetch('/api/software/add-bulk', {
+            const data = await aimsFetch('/api/software/add-bulk', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                ttl: 0, //don't cache
                 body: JSON.stringify({ dtos: cleaned })
             });
 
-            if (res.ok) {
-                const modal = bootstrap.Modal.getInstance(softwareDetailsModal);
-                if (modal) modal.hide();
 
-                await new Promise(r => setTimeout(r, 250));
-                clearSaveProgress();
-                await refreshSoftwareList();
-                return;
-            }
+            const modal = bootstrap.Modal.getInstance(softwareDetailsModal);
+            if (modal) modal.hide();
 
-            let data;
-            try { data = await res.json(); }
-            catch { data = { title: `HTTP ${res.status}`, detail: await res.text() }; }
+            await new Promise(r => setTimeout(r, 250));
+            clearSaveProgress();
+            await refreshSoftwareList();
+            return;
 
-            showServerErrorsInline(data);
         } catch (error) {
-            showServerErrors({ error: 'Server response error: ' + (error?.message || error || 'Unknown error') });
+            try {
+                if (error.name === 'AbortError') return; //silently fail aborted requests
+                const errObj = JSON.parse(error.message.replace(/^HTTP \d+:/, "").trim());
+                if (errObj?.errors) {
+                    showServerErrorsInline(errObj.errors);
+                    return;
+                }
+
+            } catch { /* ignore */ }
         }
+        //Fallback generic error
+        showServerErrors({ error: 'Server response error: ' + (error?.message || error || 'Unknown error') });
     });
 
     //save progress button

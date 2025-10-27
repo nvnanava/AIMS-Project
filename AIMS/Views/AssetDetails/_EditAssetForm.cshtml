@@ -72,14 +72,7 @@
 
 <script>
   function fetchUniqueAssetTypes() {
-    return fetch('/api/assets/types/unique', {
-      headers: { "Accept": "application/json, text/json" },
-      cache: "no-store"
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      });
+    return aimsFetch('/api/assets/types/unique');
   }
 
   function valueToSend(el) {
@@ -158,27 +151,27 @@
       toggleMfsAvailability();
       const v = (statusSel.value || '').toLowerCase();
       mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
-    });
-    
-    // Prefill from sessionStorage if available (from add asset flow)
-    modalEl.addEventListener('show.bs.modal', function () {
+
+      // Prefill from sessionStorage if available (from add asset flow)
       const savedData = sessionStorage.getItem("addAssetData");
-      if (!savedData) return;
-      try {
-        const data = JSON.parse(savedData);
-        const form = modalEl.querySelector("#editAssetForm");
-        form.querySelectorAll("input, select, textarea").forEach(input => {
-          const field = input.name;
-          if (data[field]) {
-            input.value = data[field];
-            input.readOnly = true;
-            input.classList.add("prefilled");
-          }
-        });
-      } catch (err) {
-        console.warn("Failed to parse addAssetData:", err);
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          const form = modalEl.querySelector("#editAssetForm");
+          form.querySelectorAll("input, select, textarea").forEach(input => {
+            const field = input.name;
+            if (data[field]) {
+              input.value = data[field];
+              input.readOnly = true;
+              input.classList.add("prefilled");
+            }
+          });
+        } catch (err) {
+          console.warn("Failed to parse addAssetData:", err);
+        }
       }
     });
+
 
     // Status/checkbox sync & availability
     if (statusSel) {
@@ -247,25 +240,15 @@
 
       try {
         const id = dto.HardwareID || dto.SoftwareID;
-        const res = await fetch(`${url}/${id}`, {
+        const updated = await aimsFetch(`${url}/${id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dto)
         });
-
-        if (!res.ok) {
-          let message = `Failed to update asset (HTTP ${res.status})`;
-          try {
-            const err = await res.json();
-            const combined = Object.values(err).flat().join(' ').trim();
-            if (combined) message = combined;
-          } catch { }
-          throw new Error(message);
-        }
 
         // Success: close modal and refresh list
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
+
 
         const urlParams = new URLSearchParams(window.location.search);
         const category = urlParams.get("category") || "Charging Cable";
@@ -277,7 +260,15 @@
           location.reload();
         }
       } catch (err) {
-        errorBox.innerText = (err && err.message) ? err.message : 'Update failed.';
+        console.error("Edit failed:", err);
+
+        if (err.isValidation && err.data) {
+          const combined = Object.values(err.data).flat().join(' ').trim();
+          errorBox.innerText = combined || "Update failed.";
+        } else {
+          errorBox.innerText = (err.message || "Update failed.");
+        }
+
         errorBox.style.display = 'block';
       }
     });
@@ -316,10 +307,10 @@
         }
 
         // 5) Re-sync MFS availability
-          toggleMfsAvailability();
+        toggleMfsAvailability();
 
         // 6) Prevent auto-prefill from locking again on this open instance
-        try { sessionStorage.removeItem("addAssetData"); } catch {}
+        try { sessionStorage.removeItem("addAssetData"); } catch { }
 
       });
     }
