@@ -1,11 +1,25 @@
-/* reports.index.css — consistent with Admin theme */
+
+/*  Base table layout */
 .report-table {
   border: 1px solid #34495e;
   border-radius: 8px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  table-layout: fixed;
+  width: 100%;
 }
 
+/*  Last column clipping fix */
+.report-table td:last-child,
+.report-table th:last-child {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*  Table appearance */
 .report-table thead th {
   background-color: #34495e;
   color: #fff;
@@ -14,24 +28,95 @@
 .report-table tbody tr:nth-child(even) {
   background-color: #ECF0F1;
 }
+
 .report-table tbody tr:nth-child(odd) {
   background-color: #E0E4E5;
 }
 
+/*  Ellipsis + tooltip */
+.report-table th,
+.report-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.report-table td[title] {
+  cursor: help;
+}
+
+.report-table td[title]:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #f8f9fa;
+  position: relative;
+  z-index: 5;
+}
+
+/*  Checkbox accent */
+.report-table input[type="checkbox"] {
+  accent-color: #1abc9c;
+}
+
+/*  Smooth scroll on pagination */
+html {
+  scroll-behavior: smooth;
+}
+
+/*  Buttons and inputs */
 .search-input {
   border-radius: 20px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   border: 1px solid #ccc;
 }
 
-.btn-mint, .add-btn {
+.btn-mint,
+.add-btn {
   background-color: #1abc9c;
   border-color: #1abc9c;
   color: #fff;
 }
-.btn-mint:hover, .add-btn:hover {
+
+.btn-mint:hover,
+.add-btn:hover {
   background-color: #17a589;
   border-color: #17a589;
 }
 
-/* touch update for re-push */
+/*  Responsive navbar */
+@media (max-width: 768px) {
+  .navbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .navbar-search {
+    order: 2;
+    flex: 1;
+    margin: 0 0.5rem;
+  }
+
+  .navbar-search input.search-input {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+
+  .navbar-links {
+    display: none;
+  }
+
+  #hamburger {
+    order: 3;
+    margin-left: 0.5rem;
+    font-size: 1.4rem;
+    background: none;
+    border: none;
+    color: #34495e;
+    cursor: pointer;
+  }
+}
+
