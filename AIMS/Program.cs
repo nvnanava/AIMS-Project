@@ -27,6 +27,16 @@ builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
 
+// CORS for local dev (SignalR needs credentials to send auth cookies)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", p =>
+        p.WithOrigins("http://localhost:5119")
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials());
+});
+
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
 
@@ -69,26 +79,50 @@ builder.Services.AddScoped<AssetSearchQuery>();
 builder.Services.AddScoped<ReportsQuery>();
 
 // SignalR for real-time audit updates
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(o =>
+{
+    // Short, reasonable defaults to detect dropped connections faster in dev
+    o.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    o.KeepAliveInterval = TimeSpan.FromSeconds(10);
+    o.MaximumReceiveMessageSize = 64 * 1024; // 64 KB
+});
 
 // Feature flags (AuditRealTime, AuditPollingFallback)
 builder.Services.Configure<AIMS.Services.AimsFeatures>(builder.Configuration.GetSection("Feature"));
 
-// Rate limiter for polling fallback (~10 req/min/IP)
+// Rate limiter: friendlier in dev, clearer client signal (429 not 503), plus a softer policy for first-paint
 builder.Services.AddRateLimiter(options =>
 {
+    // Return 429 instead of 503 when throttled so client can treat it as a gentle hiccup
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Primary audit poll policy (steady trickle + small burst + small queue)
     options.AddPolicy("audit-poll", httpContext =>
         RateLimitPartition.GetTokenBucketLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new TokenBucketRateLimiterOptions
             {
-                TokenLimit = 10,                         // max burst
-                TokensPerPeriod = 10,                    // refill amount
-                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                TokenLimit = 8,                          // allow small bursts
+                TokensPerPeriod = 1,                     // 1 token per period
+                ReplenishmentPeriod = TimeSpan.FromMilliseconds(500), // ~2 req/sec
                 AutoReplenishment = true,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0                           // don’t queue
-            })
+                QueueLimit = 4                           // brief queue instead of immediate rejection
+            }
+        )
+    );
+
+    // Softer policy for the /events/latest first-paint endpoint
+    options.AddPolicy("audit-poll-soft", httpContext =>
+        RateLimitPartition.GetConcurrencyLimiter(
+            partitionKey: "audit-soft",
+            factory: _ => new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 16,            // more concurrency on seeding
+                QueueLimit = 8,              // short queue
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            }
+        )
     );
 });
 
@@ -341,6 +375,14 @@ app.UseStaticFiles();
 
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
+
+// Enable WebSockets for SignalR
+app.UseWebSockets();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("AllowLocalhost");
+}
 
 // Apply rate limiting before hitting endpoints
 app.UseRateLimiter();

@@ -6,46 +6,47 @@
      * Toggle filter dropdown
      * Free-text search across table rows
      * Action filter (Assign/Create/Update/Delete/Unassign/All)
-     * ⬇ NEW: simple client-side pagination with Search pager styling
+     * Client-side pagination (Search pager styling)
+   - Realtime + Resilience
+     * SignalR with polling fallback
+     * 30-day sinceCursor seed
+     * First-paint fallback to /api/audit/events/latest
+     * Exponential backoff on 5xx; never clears existing rows
+     * Uses the SAME spinner as Search: window.GlobalSpinner
    ====================================================================== */
 
 (() => {
     "use strict";
 
     // ----- DOM helpers ---------------------------------------------------
-    function $(sel) { return document.querySelector(sel); }
-    function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
+    const $ = (sel) => document.querySelector(sel);
+    const $all = (sel) => Array.from(document.querySelectorAll(sel));
 
+    // ----- Filter dropdown ------------------------------------------------
     function setDropdownOpen(isOpen) {
         const btn = $("#filter-button-toggle");
         const dd = $("#filterDropdown");
         if (!btn || !dd) return;
-
         dd.classList.toggle("show", isOpen);
         dd.setAttribute("aria-hidden", String(!isOpen));
         btn.setAttribute("aria-expanded", String(isOpen));
     }
-
     function toggleDropdown() {
         const dd = $("#filterDropdown");
         const isOpen = dd?.classList.contains("show");
         setDropdownOpen(!isOpen);
     }
-
     function closeDropdownIfClickAway(evt) {
         const container = $("#filter-button-container");
         const dd = $("#filterDropdown");
         if (!container || !dd) return;
-        if (!container.contains(evt.target) && dd.classList.contains("show")) {
-            setDropdownOpen(false);
-        }
+        if (!container.contains(evt.target) && dd.classList.contains("show")) setDropdownOpen(false);
     }
 
-    // ----- Filters -------------------------------------------------------
+    // ----- Filtering ------------------------------------------------------
     function visibleRows() {
         return $all(".audit-log-table tbody tr").filter(r => r.style.display !== "none");
     }
-
     function filterByFreeText(term) {
         const rows = $all(".audit-log-table tbody tr");
         const q = (term || "").toLowerCase();
@@ -53,9 +54,8 @@
             const text = row.innerText.toLowerCase();
             row.style.display = text.includes(q) ? "" : "none";
         });
-        applyPagination(); // keep pager in sync with filtering
+        applyPagination();
     }
-
     function filterByAction(action) {
         const rows = $all(".audit-log-table tbody tr");
         const wanted = (action || "All").trim();
@@ -67,25 +67,22 @@
         applyPagination();
     }
 
-    // ----- NEW: Pagination (client-side) --------------------------------
+    // ----- Pagination (client-side) --------------------------------------
     const pager = $("#audit-pager");
-    const btnPrev = $("#audit-pg-prev");
-    const btnNext = $("#audit-pg-next");
-    const lblStatus = $("#audit-pg-status");
+    // Support either legacy audit-pg-* IDs or Search-style pg-* IDs
+    const btnPrev = document.getElementById("pg-prev") || document.getElementById("audit-pg-prev");
+    const btnNext = document.getElementById("pg-next") || document.getElementById("audit-pg-next");
+    const lblStatus = document.getElementById("pg-status") || document.getElementById("audit-pg-status");
 
     let currentPage = 1;
-    let pageSize = 10; // tweak as you like; same UX as Search pager
+    let pageSize = 10;
 
-    function pageCount(total) {
-        return Math.max(1, Math.ceil(total / pageSize));
-    }
-
+    function pageCount(total) { return Math.max(1, Math.ceil(total / pageSize)); }
     function renderCurrentPage() {
         const rows = visibleRows();
         const total = rows.length;
         const totalPages = pageCount(total);
 
-        // Clamp page within bounds
         if (currentPage > totalPages) currentPage = totalPages;
         if (currentPage < 1) currentPage = 1;
 
@@ -93,13 +90,8 @@
         const end = start + pageSize;
 
         let idx = 0;
-        rows.forEach(r => {
-            const show = idx >= start && idx < end;
-            r.hidden = !show;
-            idx++;
-        });
+        rows.forEach(r => { r.hidden = !(idx >= start && idx < end); idx++; });
 
-        // Update pager UI
         if (pager && lblStatus && btnPrev && btnNext) {
             pager.hidden = (total === 0);
             lblStatus.textContent = `Page ${currentPage} of ${totalPages}`;
@@ -107,44 +99,23 @@
             btnNext.disabled = currentPage >= totalPages;
         }
     }
-
     function applyPagination(resetToFirst = false) {
-        // Ensure all rows are 'unhidden' first, filtering will set display,
-        // pagination uses 'hidden' so it doesn't fight with filter display.
         $all(".audit-log-table tbody tr").forEach(r => { r.hidden = false; });
         if (resetToFirst) currentPage = 1;
         renderCurrentPage();
     }
+    btnPrev?.addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderCurrentPage(); } });
+    btnNext?.addEventListener("click", () => { currentPage++; renderCurrentPage(); });
 
-    btnPrev?.addEventListener("click", () => {
-        if (currentPage > 1) {
-            currentPage--;
-            renderCurrentPage();
-        }
-    });
-    btnNext?.addEventListener("click", () => {
-        currentPage++;
-        renderCurrentPage();
-    });
-
-    // ----- Event wiring --------------------------------------------------
+    // ----- Wire filter UI -------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
         const btnToggle = $("#filter-button-toggle");
         const dd = $("#filterDropdown");
         const txtSearch = $("#filterSearchInput");
 
-        // Toggle dropdown
-        btnToggle?.addEventListener("click", (e) => {
-            e.preventDefault();
-            toggleDropdown();
-        });
+        btnToggle?.addEventListener("click", (e) => { e.preventDefault(); toggleDropdown(); });
+        txtSearch?.addEventListener("keyup", function () { filterByFreeText(this.value); });
 
-        // Search-as-you-type across table
-        txtSearch?.addEventListener("keyup", function () {
-            filterByFreeText(this.value);
-        });
-
-        // Action filters (All / Assign / Create / Update / Delete / Unassign)
         $all(".dropdown-item").forEach(a => {
             a.addEventListener("click", (e) => {
                 e.preventDefault();
@@ -154,26 +125,19 @@
             });
         });
 
-        // Close on click-away
         document.addEventListener("click", closeDropdownIfClickAway);
-
-        // Close on Escape
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") setDropdownOpen(false);
-        });
-
-        // Initial ARIA state
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") setDropdownOpen(false); });
         if (dd) setDropdownOpen(false);
 
-        // ⬇ initial pager pass
         applyPagination(true);
     });
-
 })();
 
 /* ======================================================================
-   ★ AIMS Realtime: SignalR + Polling fallback + Dedup/Incremental render
-   (unchanged, but pagination will re-run after inserts)
+   ★ AIMS Realtime: resilient polling + quiet status banner
+   - Quiet period after success to avoid banner flicker
+   - Show banner only if: table empty OR prolonged failures
+   - Re-page only when rows actually changed
    ====================================================================== */
 
 (() => {
@@ -188,139 +152,278 @@
     const FEATURE_REALTIME = String(configEl.dataset.featureRealtime || "true").toLowerCase() === "true";
     const FEATURE_POLLING = String(configEl.dataset.featurePolling || "true").toLowerCase() === "true";
 
-    const seen = new Map();
-    let sinceCursor = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-    let pollTimer = null;
-    let backoffMs = 0;
-    const aborter = new AbortController();
-
-    function fmtLocal(dtIso) {
-        try { return new Date(dtIso).toLocaleString(); } catch { return dtIso; }
+    // Spinner parity with Search (initial only)
+    const MIN_SPINNER_MS = 500;
+    let spinnerShownAt = 0;
+    function showSpinner() { if (window.GlobalSpinner?.show) { spinnerShownAt = performance.now(); GlobalSpinner.show(); } }
+    async function hideSpinner() {
+        if (window.GlobalSpinner?.hide) {
+            const elapsed = performance.now() - spinnerShownAt;
+            const wait = Math.max(0, MIN_SPINNER_MS - elapsed);
+            if (wait) await new Promise(r => setTimeout(r, wait));
+            GlobalSpinner.hide();
+        }
     }
+
+    const seen = new Map();
+    let sinceCursor = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(); // 30 days
+    let seeded = false;
+    let pollTimeout = null;
+    let backoff = POLL_MS;
+    const MAX_BACKOFF = 30000;
+
+    // ✨ New: status banner throttling
+    const QUIET_MS = 15000;                 // suppress warnings for this long after success
+    const FAILS_BEFORE_BANNER = 2;          // don't nag on a single hiccup
+    let lastSuccessAt = 0;                  // ms timestamp
+    let consecutiveFailures = 0;
+
+    const aborter = new AbortController();
+    const now = () => Date.now();
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const haveRows = () => tbody.querySelector("tr") !== null;
+
+    // ---------- Banner (debounced) ----------
+    function ensureBanner() {
+        let el = document.getElementById("audit-status-banner");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "audit-status-banner";
+            el.style.cssText = "margin:8px 0;padding:6px 10px;border:1px solid #f2c97d;background:#fff7e6;font-size:.9rem;border-radius:6px;display:none;";
+            const container = document.querySelector(".audit-log-table")?.parentElement || document.body;
+            container.insertBefore(el, container.firstChild);
+        }
+        return el;
+    }
+    function shouldShowStatus() {
+        const quiet = (now() - lastSuccessAt) < QUIET_MS;
+        if (!haveRows()) return true;
+        if (quiet) return false;
+        return consecutiveFailures >= FAILS_BEFORE_BANNER;
+    }
+    function showStatus(msg) {
+        if (!shouldShowStatus()) return;
+        const el = ensureBanner();
+        el.textContent = msg || "";
+        el.style.display = msg ? "" : "none";
+    }
+    function hideStatus() {
+        const el = document.getElementById("audit-status-banner");
+        if (el) el.style.display = "none";
+    }
+
+    // ---------- Render helpers ----------
+    function fmtLocal(dtIso) { try { return new Date(dtIso).toLocaleString(); } catch { return dtIso; } }
     function keyOf(evt) { return evt?.id || evt?.hash || ""; }
 
-    function buildCells(evt) {
-        const td = (t) => { const c = document.createElement("td"); c.textContent = t; return c; };
-
-        const idCell = td(evt.id || evt.hash?.slice(0, 8) || "—");
-        const tsCell = td(fmtLocal(evt.occurredAtUtc));
-        const userM = /\((\d+)\)\s*$/.exec(evt.user || "");
-        const userTxt = userM ? `U${userM[1]}` : (evt.user || "—");
-        const userIdCell = td(userTxt);
-        const actionCell = td(evt.type || "—");
-        const assetIdCell = td(evt.target || "—");
-        const prevCell = td("");
-        const newCell = td("");
-        const descCell = td(evt.details || "");
-
-        return [idCell, tsCell, userIdCell, actionCell, assetIdCell, prevCell, newCell, descCell];
-    }
-
-    function flash(tr) {
-        tr.classList.remove("row-flash");
-        void tr.offsetWidth;
-        tr.classList.add("row-flash");
-        setTimeout(() => tr.classList.remove("row-flash"), 1500);
-    }
-
-    // Hook pagination after row changes
-    function rePage() {
-        // reuse the pager from the top IIFE if present
-        const evt = new Event("DOMContentLoaded"); // noop if already done
-        window.dispatchEvent(evt); // ensures initial wiring ran
-        // Manually call pagination render if function exists
-        // (safe no-op if minified by bundler)
-        try {
-            // Find the pager elements; if they exist, toggle recompute by clicking status text
-            const status = document.getElementById("audit-pg-status");
-            if (status) status.dispatchEvent(new Event("change")); // harmless
-        } catch { }
-    }
-
+    // returns true if row content changed (to trigger re-page)
     function renderAuditEvent(evt) {
-        if (!evt) return;
+        if (!evt) return false;
         const k = keyOf(evt);
         const existing = k && seen.get(k);
 
+        const td = (t) => { const c = document.createElement("td"); c.textContent = t; return c; };
+        const cells = () => {
+            const userM = /\((\d+)\)\s*$/.exec(evt.user || "");
+            const userTxt = userM ? `U${userM[1]}` : (evt.user || "—");
+            return [
+                td(evt.id || evt.hash?.slice(0, 8) || "—"),
+                td(fmtLocal(evt.occurredAtUtc)),
+                td(userTxt),
+                td(evt.type || "—"),
+                td(evt.target || "—"),
+                td(""), // prev
+                td(""), // new
+                td(evt.details || "")
+            ];
+        };
+
         if (existing) {
-            const cells = buildCells(evt);
             while (existing.firstChild) existing.removeChild(existing.firstChild);
-            cells.forEach(c => existing.appendChild(c));
-            flash(existing);
-            rePage();
-            return;
+            cells().forEach(c => existing.appendChild(c));
+            existing.classList.remove("row-flash"); void existing.offsetWidth; existing.classList.add("row-flash");
+            setTimeout(() => existing.classList.remove("row-flash"), 1500);
+            return true;
         }
 
         const tr = document.createElement("tr");
-        buildCells(evt).forEach(c => tr.appendChild(c));
+        cells().forEach(c => tr.appendChild(c));
         tbody.insertBefore(tr, tbody.firstChild);
-        flash(tr);
+        tr.classList.add("row-flash");
+        setTimeout(() => tr.classList.remove("row-flash"), 1500);
 
         if (k) seen.set(k, tr);
         if (evt.occurredAtUtc) {
             try {
                 const n = new Date(evt.occurredAtUtc).toISOString();
                 if (n > sinceCursor) sinceCursor = n;
-            } catch { }
+            } catch { /* ignore */ }
         }
-        rePage();
+        return true;
     }
 
-    async function fetchSince() {
+    function rePageIfChanged(changed) {
+        if (!changed) return;
+        try {
+            const evt = new Event("DOMContentLoaded");
+            window.dispatchEvent(evt);
+            const status = document.getElementById("pg-status") || document.getElementById("audit-pg-status");
+            if (status) status.dispatchEvent(new Event("change"));
+        } catch { /* noop */ }
+    }
+
+    // ---------- Fetch helpers ----------
+    async function fetchLatestPageFallback() {
+        try {
+            const res = await fetch(`/api/audit/events/latest?take=${MAX_BATCH}`, {
+                headers: { "Accept": "application/json" },
+                signal: aborter.signal
+            });
+            if (!res.ok) return false;
+            const data = await res.json();
+            if (!data || !Array.isArray(data.items)) return false;
+
+            let anyChanged = false;
+            data.items.forEach(evt => { anyChanged = renderAuditEvent(evt) || anyChanged; });
+            rePageIfChanged(anyChanged);
+
+            if (data.nextSince) sinceCursor = data.nextSince;
+            if (haveRows()) { seeded = true; onSuccess(); }
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    async function fetchEventsSince() {
         const url = `/api/audit/events?since=${encodeURIComponent(sinceCursor)}&take=${MAX_BATCH}`;
         const res = await fetch(url, { headers: { "Accept": "application/json" }, signal: aborter.signal });
 
-        if (res.status === 304) return;
-        if (res.status === 429) {
-            backoffMs = Math.min(backoffMs ? backoffMs * 2 : POLL_MS, 30000);
-            stopPolling();
-            setTimeout(startPolling, backoffMs);
-            return;
-        }
-        if (!res.ok) throw new Error(`Polling failed: ${res.status}`);
-        backoffMs = 0;
+        if (res.status === 304) { onSuccess(); return { ok: true, changed: false }; }
+        if (res.status === 429) return { ok: false, retry: "rate" };
+        if (res.status >= 500) return { ok: false, retry: "server" };
+        if (!res.ok) return { ok: false, retry: "client", code: res.status };
 
         const data = await res.json();
-        if (Array.isArray(data.items)) data.items.forEach(renderAuditEvent);
+        let anyChanged = false;
+        if (Array.isArray(data.items) && data.items.length > 0) {
+            data.items.forEach(evt => { anyChanged = renderAuditEvent(evt) || anyChanged; });
+            rePageIfChanged(anyChanged);
+            if (haveRows()) seeded = true;
+        }
         if (data.nextSince) sinceCursor = data.nextSince;
+        onSuccess();
+        return { ok: true, changed: anyChanged };
     }
 
-    function startPolling() {
-        if (!FEATURE_POLLING) return;
-        if (pollTimer) clearInterval(pollTimer);
-        pollTimer = setInterval(async () => {
-            try { await fetchSince(); } catch (e) { console.warn("[audit] polling error", e); }
-        }, POLL_MS);
+    function onSuccess() {
+        lastSuccessAt = now();
+        consecutiveFailures = 0;
+        hideStatus();
+        backoff = POLL_MS;
     }
-    function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
+    function scheduleNext(success) {
+        if (pollTimeout) clearTimeout(pollTimeout);
+        const delay = success ? POLL_MS : Math.min(backoff = Math.min((backoff || POLL_MS) * 2, MAX_BACKOFF), MAX_BACKOFF);
+        pollTimeout = setTimeout(() => pollCycle(), delay);
+    }
+
+    async function pollCycle() {
+        try {
+            const res = await fetchEventsSince();
+            if (res.ok) { scheduleNext(true); return; }
+
+            consecutiveFailures++;
+
+            if (!seeded) {
+                showStatus("Server warming up; loading latest audit entries…");
+                const seededOk = await fetchLatestPageFallback();
+                if (seededOk) { scheduleNext(true); return; }
+            } else {
+                if (shouldShowStatus()) {
+                    if (res.retry === "rate") showStatus("Rate limited; retrying…");
+                    else if (res.retry === "server") showStatus("Server warming up; retrying…");
+                    else showStatus(`Error ${res.code || ""}; retrying…`.trim());
+                }
+            }
+            scheduleNext(false);
+        } catch {
+            consecutiveFailures++;
+            if (!seeded) {
+                showStatus("Reconnecting to audit log…");
+                const ok = await fetchLatestPageFallback();
+                if (ok) { scheduleNext(true); return; }
+            } else {
+                if (shouldShowStatus()) showStatus("Network error; retrying…");
+            }
+            scheduleNext(false);
+        }
+    }
+
+    // Visibility nudge
     document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === "visible") { try { await fetchSince(); } catch { } }
+        if (document.visibilityState === "visible") {
+            try { const res = await fetchEventsSince(); if (res.ok) hideStatus(); } catch { /* ignore */ }
+        }
     });
 
-    window.addEventListener("beforeunload", () => { stopPolling(); try { aborter.abort(); } catch { } });
+    window.addEventListener("beforeunload", () => { if (pollTimeout) clearTimeout(pollTimeout); try { aborter.abort(); } catch { } });
 
-    (async () => { try { await fetchSince(); } catch (e) { console.warn("[audit] initial fetch failed", e); } })();
-
-    async function wireSignalR() {
-        if (!FEATURE_REALTIME || !window.signalR || !window.signalR.HubConnectionBuilder) {
-            startPolling();
-            return;
+    // Initial load (spinner just for first paint) + SignalR wiring
+    (async () => {
+        showSpinner();
+        try {
+            const res = await fetchEventsSince();
+            if (!res.ok && !seeded) {
+                const ok = await fetchLatestPageFallback();
+                if (!ok && !haveRows()) showStatus("Unable to load audit log. Retrying…");
+            }
+        } catch {
+            if (!haveRows()) showStatus("Unable to load audit log. Retrying…");
+        } finally {
+            await hideSpinner();
         }
 
-        const connection = new window.signalR.HubConnectionBuilder()
-            .withUrl("/hubs/audit")
-            .withAutomaticReconnect()
-            .build();
+        // SignalR (optional) with WebSocket→LongPolling fallback and gentle backoff
+        if (FEATURE_REALTIME && window.signalR && window.signalR.HubConnectionBuilder) {
+            try {
+                const connection = new window.signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/audit", {
+                        transport: window.signalR.HttpTransportType.WebSockets | window.signalR.HttpTransportType.LongPolling,
+                        withCredentials: true
+                    })
+                    .withAutomaticReconnect({
+                        nextRetryDelayInMilliseconds: retryContext => {
+                            const seq = [0, 2000, 5000, 10000, 10000, 10000];
+                            return seq[Math.min(retryContext.previousRetryCount + 1, seq.length - 1)];
+                        }
+                    })
+                    .build();
 
-        connection.on("auditEvent", renderAuditEvent);
-        connection.onreconnecting(() => { startPolling(); });
-        connection.onreconnected(async () => { stopPolling(); try { await fetchSince(); } catch { } });
-        connection.onclose(() => { startPolling(); });
+                connection.on("auditEvent", evt => {
+                    const changed = renderAuditEvent(evt);
+                    rePageIfChanged(changed);
+                    if (typeof onSuccess === "function") onSuccess();
+                });
 
-        try { await connection.start(); stopPolling(); }
-        catch (e) { console.warn("[audit] SignalR start failed, using polling", e); startPolling(); }
-    }
+                connection.onreconnecting(() => {
+                    // polling loop stays active during reconnects
+                });
 
-    wireSignalR();
+                connection.onreconnected(async () => {
+                    try {
+                        const r = await fetchEventsSince();
+                        if (r.ok && typeof hideStatus === "function") hideStatus();
+                    } catch { }
+                });
+
+                await connection.start();
+            } catch (e) {
+                console.warn("[audit] SignalR start failed; continuing with polling.", e);
+            }
+        }
+
+        scheduleNext(true);
+    })();
 })();
