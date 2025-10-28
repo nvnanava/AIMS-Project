@@ -67,4 +67,7 @@ public sealed class CreateAuditRecordDto
 
     // Optional per-field diffs to insert as child rows
     public List<CreateAuditLogChangeDto>? Changes { get; set; }
+
+    // Used for dedup/upsert (matches ExternalId on AuditLog)
+    public Guid? ExternalId { get; set; }
 }

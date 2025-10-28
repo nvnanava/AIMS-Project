@@ -72,6 +72,10 @@
     width: 12%;
 }
 
+.row-flash {
+  animation: rowFlash 1.2s ease-out;
+}
+
 .admin-table-body td.al-col-8 {
     width: 20%;
 }
