@@ -1,12 +1,35 @@
 services:
   web-prod:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: AIMS/Dockerfile.prod
     ports:
-      - "5119:5119"
+      - "${WEB_PORT}:5119"
     environment:
+      # --- ASP.NET / .NET runtime toggles (Production) ---
       ASPNETCORE_ENVIRONMENT: Production
+      DOTNET_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
+
+      # --- Connection string for prod container-to-container ---
+      ConnectionStrings__DockerConnection: "Server=sqlserver-prod,${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+
+      # --- Azure AD IDs from .env ---
+      AzureAd__TenantId: ${AZUREAD_TENANT_ID}
+      AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
+
+      # --- Secrets-first path ---
+      AzureAd__ClientSecretFile: ${AZUREAD_CLIENT_SECRET_FILE}
+
+      # Seed toggle
+      AllowProdSeed: "${ALLOW_PROD_SEED}"
+
+    secrets:
+      - azuread_client_secret
+    depends_on:
+      sqlserver-prod:
+        condition: service_started
     networks:
       - new-bridge-net
 
@@ -14,14 +37,26 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserver2022-prod
     ports:
-      - "1433:1433"
+      - "${SQL_PORT_HOST}:${SQL_PORT}"
     environment:
-      SA_PASSWORD: "StrongP@ssword!"
+      SA_PASSWORD: "${SQL_PASSWORD}"
       ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    volumes:
+      - mssql_data_prod:/var/opt/mssql
     restart: unless-stopped
     networks:
       - new-bridge-net
 
+secrets:
+  azuread_client_secret:
+    # In CI/infra, point this to our managed secret file;
+    # local prod testing can reuse dev’s path or a different one.
+    file: ./secrets/azuread_client_secret.txt
+
 networks:
   new-bridge-net:
     driver: bridge
+
+volumes:
+  mssql_data_prod:
