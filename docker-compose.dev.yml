@@ -5,23 +5,37 @@ services:
       context: .
       dockerfile: AIMS/Dockerfile.dev
     ports:
-      - "5119:5119"
+      - "${WEB_PORT}:5119"
     volumes:
       - .:/src/
-      - aims_bin:/src/AIMS/bin     # <- fixed syntax
-      - aims_obj:/src/AIMS/obj     # <- fixed name (was ains_obj)
+      - aims_bin:/src/AIMS/bin
+      - aims_obj:/src/AIMS/obj
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      DOTNET_ENVIRONMEMT: Development
-      DOTNET_USE_POLLING_FILE_WATCHER: "1"
-      ASPNETCORE_URLS: "http://0.0.0.0:5119"
-      DOTNET_CLI_TELEMETRY_OUTPUT: "1"
-      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "true"
-      DOTNET_WATCH_SUPPRESS_EMOJI: "1"
+      # --- ASP.NET / .NET runtime toggles (Development) ---
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      DOTNET_ENVIRONMENT: ${DOTNET_ENVIRONMENT}
+      DOTNET_USE_POLLING_FILE_WATCHER: "${DOTNET_USE_POLLING_FILE_WATCHER}"
+      ASPNETCORE_URLS: "${ASPNETCORE_URLS}"
+      DOTNET_CLI_TELEMETRY_OUTPUT: "${DOTNET_CLI_TELEMETRY_OUTPUT}"
+      DOTNET_WATCH_RESTART_ON_RUDE_EDIT: "${DOTNET_WATCH_RESTART_ON_RUDE_EDIT}"
+      DOTNET_WATCH_SUPPRESS_EMOJI: "${DOTNET_WATCH_SUPPRESS_EMOJI}"
 
-      # One truthy connection string, exposed under BOTH names for compatibility
-      ConnectionStrings__Default: "Server=sqlserver-dev,1433;Database=AIMS;User Id=sa;Password=StrongP@ssword!;TrustServerCertificate=True;Encrypt=False"
-      ConnectionStrings__DockerConnection: "Server=sqlserver-dev,1433;Database=AIMS;User Id=sa;Password=StrongP@ssword!;TrustServerCertificate=True;Encrypt=False"
+      # --- Connection strings ---
+      ConnectionStrings__Default: "Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__DockerConnection: "Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+
+      # --- Azure AD IDs from .env ---
+      AzureAd__TenantId: ${AZUREAD_TENANT_ID}
+      AzureAd__ClientId: ${AZUREAD_CLIENT_ID}
+
+      # --- Secrets-first path ---
+      AzureAd__ClientSecretFile: ${AZUREAD_CLIENT_SECRET_FILE}
+
+      # Seed toggle
+      AllowProdSeed: "${ALLOW_PROD_SEED}"
+
+    secrets:
+      - azuread_client_secret
     depends_on:
       sqlserver-dev:
         condition: service_healthy
@@ -30,12 +44,11 @@ services:
 
   sqlserver-dev:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    platform: linux/amd64                 # <- Rosetta emulation on Apple Silicon
-    #container_name: sqlserver2022-dev     # <- keep for compatibility
+    platform: linux/amd64                       # Rosetta-friendly on Apple Silicon hosts
     ports:
-      - "1433:1433"                       # if busy on host, change to "11433:1433"
+      - "${SQL_PORT_HOST}:${SQL_PORT}"          # e.g. 1433:1433
     environment:
-      SA_PASSWORD: "StrongP@ssword!"
+      SA_PASSWORD: "${SQL_PASSWORD}"
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Developer"
     volumes:
@@ -46,14 +59,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 60
-      start_period: 45s                  # <- give SQL time to come up before first check
+      start_period: 45s
     restart: unless-stopped
     networks:
       - new-bridge-net
 
+secrets:
+  azuread_client_secret:
+    file: ./secrets/azuread_client_secret.txt
+
 networks:
-    new-bridge-net:
-        driver: bridge
+  new-bridge-net:
+    driver: bridge
 
 volumes:
   mssql_data:

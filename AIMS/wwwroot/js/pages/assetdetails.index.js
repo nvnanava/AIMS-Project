@@ -1,26 +1,5 @@
 /* ======================================================================
    AIMS Script: assetdetails.index.js
-   ----------------------------------------------------------------------
-   Purpose
-   - Client-side logic for AssetDetails/Index: paging, rendering, popup,
-     archive/unarchive, and category-correct routing.
-
-   How it works
-   - Reads config from #assetdetails-config (data-category, data-is-admin, data-specs).
-   - For category views: GET /api/assets?page=…&pageSize=…&category=…&scope=all&totalsMode=lookahead
-   - For single tag views: GET /api/assets/one?tag=…
-   - Renders rows and manages Prev/Next with a look-ahead pager and a client cache.
-
-   Public API (exposed on AIMS.AssetDetails)
-   - showPopup(name, seatOrTag, event, type)
-   - archiveAsset(id, name, type)
-   - unarchiveAsset(id, name, type)
-
-   Conventions
-   - No inline JS; everything hangs off AIMS.AssetDetails.
-   - Keep DOM IDs stable: assetTableBody, asset-pager, asset-prev, asset-next,
-     asset-status, seatOrTagHeader, status-col-header, popup.
-   - 4-space indentation, no tabs.
    ====================================================================== */
 
 (() => {
@@ -76,18 +55,34 @@
             case "marked for survey": return "status-marked-for-survey";
             case "in repair":
             case "damaged": return "status-in-repair";
-            case "full": return "status-assigned";    // map "Full" to a strong/occupied style
-            case "expired": return "status-in-repair"; // map "Expired" to warning/danger style
+            case "full": return "status-assigned";
+            case "expired": return "status-in-repair";
             default: return "";
         }
     }
-    // Always "Status" now (no “Used / Total Seats”)
-    function setStatusHeaderFor(/* isSoftware */) {
-        const th = document.getElementById("status-col-header");
-        if (!th) return;
-        th.textContent = "Status";
-        th.title = "";
-    }
+
+
+function setStatusHeaderFor() {
+  const th = document.getElementById("status-col-header");
+  if (!th) return;
+
+  const wrapper = th.firstElementChild || th; // <div class="d-flex ..."> or <th>
+  const icon = wrapper.querySelector('[data-component="filter-icon"]'); // keep existing icon
+
+
+  while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+
+  const label = document.createElement("span");
+  label.className = "status-label";
+  label.textContent = "Status";
+
+  wrapper.appendChild(label);
+  if (icon) wrapper.appendChild(icon);
+
+  th.title = "";
+}
+
+
     function getCurrentCategory() {
         const urlParams = new URLSearchParams(window.location.search);
         return (urlParams.get("category") || SERVER_CATEGORY || "").trim();
@@ -121,11 +116,9 @@
     }
     function extractYMD(val) {
         if (!val) return null;
-        // If it looks like "YYYY-MM-DD..." just take first 10
         if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
             return val.slice(0, 10);
         }
-        // Try native Date
         const dt = new Date(val);
         if (!isNaN(dt.valueOf())) {
             const tz = dt.getTimezoneOffset();
@@ -163,6 +156,7 @@
         renderRow(asset);
     });
 }
+
 
     function makeEditButton(asset) {
         return `
@@ -228,13 +222,11 @@
         let fourthCellHtml = "";
 
         if (isSoftware) {
-            // Compute Status for software: Available / Full / Expired
             const usedRaw = asset.licenseSeatsUsed;
             const totalRaw = asset.licenseTotalSeats;
             const used = (usedRaw == null ? NaN : Number(usedRaw));
             const total = (totalRaw == null ? NaN : Number(totalRaw));
 
-            // Try typical property names for expiration coming from API
             const expVal = asset.softwareLicenseExpiration ?? asset.licenseExpiration ?? asset.expiration;
             const expired = isExpired(expVal);
 
@@ -270,7 +262,6 @@
             AIMS.AssetDetails.showPopup(asset.assetName, asset.displaySeatOrTag, ev, asset.type)
         );
 
-        // escape values before embedding
         const safeName = escapeHtml(asset.assetName ?? "");
         const safeType = escapeHtml(asset.type ?? "");
         const safeSeatOrTag = escapeHtml(asset.displaySeatOrTag ?? "");
@@ -350,7 +341,6 @@
     // --------------------------- Loaders -----------------------------
     async function loadCategoryPaged(category, page = 1) {
         try {
-            // Header is always "Status" now
             setStatusHeaderFor();
 
             const { items } = await getPage(category, page, pageSize);
@@ -372,7 +362,6 @@
             if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
             const asset = await res.json();
 
-            // Header is always "Status"
             setStatusHeaderFor();
 
             const currentCategory = getCurrentCategory();
@@ -431,10 +420,10 @@
         if (!window.confirm(`Are you sure you want to archive "${name}"? `)) return;
 
         const isSoftware = (String(type || "").toLowerCase() === "software");
-        const endpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
+        theEndpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
 
         try {
-            const res = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" } });
+            const res = await fetch(theEndpoint, { method: "PUT", headers: { "Content-Type": "application/json" } });
             if (!res.ok) throw new Error(`Failed to archive: ${res.status} - ${await res.text()}`);
             const updated = await res.json();
             alert(`"${name}" was successfully archived.`);
@@ -510,13 +499,13 @@
     window.addEventListener("DOMContentLoaded", async () => {
         const urlParams = new URLSearchParams(window.location.search);
         const tag = urlParams.get("tag");
-        const source = (urlParams.get("source") || "").toLowerCase(); // "card" when coming from cards
+        const source = (urlParams.get("source") || "").toLowerCase();
         const category = getCurrentCategory();
 
         const th = document.getElementById("seatOrTagHeader");
         if (th) th.textContent = (category.toLowerCase().includes("software") ? "Seat Usage" : "Tag #");
 
-        // Header is always "Status" now
+        // Keep header + icon intact
         setStatusHeaderFor();
 
         if (tag) {
@@ -528,7 +517,6 @@
             return;
         }
 
-        // Default empty state
         clearTable();
         applyEmpty(true);
         pager.hidden = true;
