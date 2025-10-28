@@ -72,6 +72,10 @@
     width: 12%;
 }
 
+.row-flash {
+  animation: rowFlash 1.2s ease-out;
+}
+
 .admin-table-body td.al-col-8 {
     width: 20%;
 }
@@ -80,20 +84,8 @@
 .admin-table-body tr:hover td {
     background: #f7fbfd;
 }
-.dropdown-search {
-    width: 90%;
-    padding: 6px 10px;
-    margin: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
 
-.dropdown-item:hover {
-    background-color: #f1f1f1;
-    color: #007bff;
-}
-
-.row-flash {
-  animation: rowFlash 1.2s ease-out;
+/* Remove legacy audit log styling if any remains */
+.audit-log-table {
+    all: unset;
 }
