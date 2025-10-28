@@ -19,23 +19,12 @@ using Microsoft.Identity.Web.UI;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
-
 // -------------------- Services --------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
-
-// CORS for local dev (SignalR needs credentials to send auth cookies)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost", p =>
-        p.WithOrigins("http://localhost:5119")
-         .AllowAnyHeader()
-         .AllowAnyMethod()
-         .AllowCredentials());
-});
 
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
@@ -55,9 +44,7 @@ builder.Services
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-
-// Register the concrete FileSystem class for the IFileSystem interface (ReportsController)
-// necessary for mocking in UnitTesting
+// File system (ReportsController; mockable in tests)
 builder.Services.AddSingleton<IFileSystem, FileSystem>();
 
 // Policy for restricted routes (bulk upload). Supervisors excluded.
@@ -90,7 +77,7 @@ builder.Services.AddSignalR(o =>
 // Feature flags (AuditRealTime, AuditPollingFallback)
 builder.Services.Configure<AIMS.Services.AimsFeatures>(builder.Configuration.GetSection("Feature"));
 
-// Rate limiter: friendlier in dev, clearer client signal (429 not 503), plus a softer policy for first-paint
+// -------------------- Rate Limiting --------------------
 builder.Services.AddRateLimiter(options =>
 {
     // Return 429 instead of 503 when throttled so client can treat it as a gentle hiccup
@@ -102,12 +89,12 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new TokenBucketRateLimiterOptions
             {
-                TokenLimit = 8,                          // allow small bursts
-                TokensPerPeriod = 1,                     // 1 token per period
+                TokenLimit = 8,
+                TokensPerPeriod = 1,
                 ReplenishmentPeriod = TimeSpan.FromMilliseconds(500), // ~2 req/sec
                 AutoReplenishment = true,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 4                           // brief queue instead of immediate rejection
+                QueueLimit = 4
             }
         )
     );
@@ -118,8 +105,8 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: "audit-soft",
             factory: _ => new ConcurrencyLimiterOptions
             {
-                PermitLimit = 16,            // more concurrency on seeding
-                QueueLimit = 8,              // short queue
+                PermitLimit = 16,
+                QueueLimit = 8,
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst
             }
         )
@@ -128,6 +115,17 @@ builder.Services.AddRateLimiter(options =>
 
 // Broadcaster to decouple hub sends from data layer
 builder.Services.AddScoped<AIMS.Services.IAuditEventBroadcaster, AIMS.Services.AuditEventBroadcaster>();
+
+// -------------------- CORS (dev) --------------------
+// SignalR with cookie auth requires specific origin + AllowCredentials.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost", p =>
+        p.WithOrigins("http://localhost:5119")
+         .AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials());
+});
 
 // ---- Connection string selection (env-aware, robust) ----
 string? GetConn(string name)
@@ -167,8 +165,7 @@ builder.Services.AddDbContext<AimsDbContext>(opt =>
 
 var allowProdSeed = builder.Configuration.GetValue<bool>("AllowProdSeed", false);
 
-// -------------------- AuthN/AuthZ (switch) --------------------
-
+// -------------------- AuthN/AuthZ (switchable) --------------------
 // Safe gate: TestAuth can *never* be enabled in Production.
 var useTestAuth =
     !builder.Environment.IsProduction() &&
@@ -193,6 +190,7 @@ if (useTestAuth)
 }
 else
 {
+    // Hybrid scheme: OAuth web app for MVC, JWT for /api
     builder.Services
         .AddAuthentication(options =>
         {
@@ -233,32 +231,50 @@ else
         });
 }
 
-builder.Services.AddSingleton<GraphServiceClient>(sp =>
+// -------------------- Microsoft Graph setup (secrets-first) --------------------
+string? clientSecret = null;
+var clientSecretPath = builder.Configuration["AzureAd:ClientSecretFile"];
+if (!string.IsNullOrWhiteSpace(clientSecretPath) && File.Exists(clientSecretPath))
 {
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var tenantID = configuration["AzureAd:TenantId"];
-    var clientId = configuration["AzureAd:ClientId"];
-    var clientSecret = configuration["AzureAd:ClientSecret"];
+    clientSecret = File.ReadAllText(clientSecretPath).Trim();
+}
+else
+{
+    // Fallbacks: env var, then (last resort) appsettings
+    clientSecret = Environment.GetEnvironmentVariable("AzureAd__ClientSecret")
+                   ?? builder.Configuration["AzureAd:ClientSecret"];
+}
 
-    var scopes = new[] { "https://graph.microsoft.com/.default" };
-    var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
-    return new GraphServiceClient(credential, scopes);
-});
+if (string.IsNullOrWhiteSpace(clientSecret))
+{
+    Console.WriteLine("⚠️ AzureAd ClientSecret not found (Graph auth will fail).");
+}
+else if (builder.Environment.IsDevelopment())
+{
+    Console.WriteLine($"✅ AzureAd ClientSecret loaded (len={clientSecret.Length}).");
+}
+
+var tenantID = builder.Configuration["AzureAd:TenantId"];
+var clientId = builder.Configuration["AzureAd:ClientId"];
+var graphScopes = new[] { "https://graph.microsoft.com/.default" };
+var graphCredential = new ClientSecretCredential(tenantID, clientId, clientSecret);
+builder.Services.AddSingleton(new GraphServiceClient(graphCredential, graphScopes));
 
 builder.Services.AddScoped<IGraphUserService, GraphUserService>();
 
+// Global "must be authenticated" by default
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
+// Role helper policies (username allowlists)
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
       policy.RequireAssertion(context =>
           context.User.HasClaim(c =>
               c.Type == "preferred_username" &&
               new[] {
-                  // test accounts for now
                   "nvnanavati@csus.edu",
                   "akalustatsingh@csus.edu",
                   "tburguillos@csus.edu",
@@ -333,24 +349,22 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwagger();
     app.UseSwaggerUI();
-
 }
 else
 {
-    app.UseExceptionHandler("/error/not-found"); // ★ ensure proper error page
+    app.UseExceptionHandler("/error/not-found"); // ensure proper error page
     app.UseHsts();
     app.UseHttpsRedirection();
 }
 
+// Dev impersonation helper (?impersonate=empIdOrEmail)
 if (app.Environment.IsDevelopment())
 {
     app.Use(async (ctx, next) =>
     {
-        // Allow ?impersonate=28809  OR  ?impersonate=john.smith@aims.local
         var imp = ctx.Request.Query["impersonate"].ToString();
         if (!string.IsNullOrWhiteSpace(imp))
         {
-            // Try to resolve the user from DB once per request
             using var scope = ctx.RequestServices.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AIMS.Data.AimsDbContext>();
 
@@ -360,7 +374,6 @@ if (app.Environment.IsDevelopment())
 
             if (user != null)
             {
-                // Store for downstream code
                 ctx.Items["ImpersonatedUserId"] = user.UserID;
                 ctx.Items["ImpersonatedEmail"] = user.Email;
             }
@@ -370,15 +383,16 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// allow saving to wwwroot folder
+// allow saving to wwwroot folder (2nd static files for legacy paths)
 app.UseStaticFiles();
 
-// Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
+// Order matters
 app.UseRouting();
 
 // Enable WebSockets for SignalR
 app.UseWebSockets();
 
+// CORS (dev-only) — must be after routing, before auth when using cookies
 if (app.Environment.IsDevelopment())
 {
     app.UseCors("AllowLocalhost");
@@ -386,12 +400,6 @@ if (app.Environment.IsDevelopment())
 
 // Apply rate limiting before hitting endpoints
 app.UseRateLimiter();
-
-if (app.Environment.IsDevelopment())
-{
-
-    app.UseCors("AllowLocalhost");
-}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -405,10 +413,11 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.MapHub<AuditLogHub>("/hubs/audit");
+app.MapHub<AuditLogHub>("/hubs/audit"); // realtime
 app.MapControllers();
 app.MapRazorPages();
 
+// Endpoint list + raw 404 page
 app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
     string.Join("\n", eds.Endpoints.Select(e => e.DisplayName)));
 
