@@ -18,14 +18,19 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="manufacturer" class="form-label">Manufacturer:</label>
-                        <input type="text" id="manufacturer" name="manufacturer" class="form-control"
-                            placeholder="Enter Manufacturer">
+                        <label for="manufacturer" class="form-label">Manufacturer</label>
+                        <select id="manufacturer" name="manufacturer" class="form-select" required>
+                            <option value="">Select Manufacturer</option>
+                            <option value="Other">Other...</option>
+                        </select>
                     </div>
 
                     <div class="mb-3">
-                        <label for="model" class="form-label">Model:</label>
-                        <input type="text" id="model" name="model" class="form-control" placeholder="Enter Model">
+                        <label for="model" class="form-label">Model</label>
+                        <select id="model" name="model" class="form-select" required>
+                            <option value="">Select Model</option>
+                            <option value="Other">Other...</option>
+                        </select>
                     </div>
                     <div id="assetFormError" class="text-danger small" style="display:none;"></div>
 
