@@ -1,0 +1,31 @@
+
+.table-toolbar .toolbar-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(180px, 1fr)) auto;
+    /* 5 filters + actions */
+    align-items: center;
+    /* vertical centering */
+    column-gap: 12px;
+    row-gap: 8px;
+    /* keeps single row; allows wrap on tiny screens */
+}
+
+.table-toolbar .toolbar-actions {
+    justify-self: end;
+
+    display: flex;
+    align-items: center;
+}
+
+
+.aims-filter .aims-filter-btn {
+    height: 36px;
+
+    padding: 0 10px;
+    line-height: 1;
+}
+
+
+.table-toolbar .toolbar-actions .aims-filter {
+    margin-left: 8px;
+}
