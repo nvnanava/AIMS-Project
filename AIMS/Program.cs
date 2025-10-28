@@ -19,7 +19,6 @@ using Microsoft.Identity.Web.UI;
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
-
 // -------------------- Services --------------------
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -44,7 +43,6 @@ builder.Services
         o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
-
 
 // Register the concrete FileSystem class for the IFileSystem interface (ReportsController)
 // necessary for mocking in UnitTesting
@@ -199,17 +197,37 @@ else
         });
 }
 
-builder.Services.AddSingleton<GraphServiceClient>(sp =>
-{
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var tenantID = configuration["AzureAd:TenantId"];
-    var clientId = configuration["AzureAd:ClientId"];
-    var clientSecret = configuration["AzureAd:ClientSecret"];
+// -------------------- Microsoft Graph setup (secrets-first) --------------------
+var clientSecretPath = builder.Configuration["AzureAd:ClientSecretFile"];
+string? clientSecret = null;
 
-    var scopes = new[] { "https://graph.microsoft.com/.default" };
-    var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
-    return new GraphServiceClient(credential, scopes);
-});
+if (!string.IsNullOrWhiteSpace(clientSecretPath) && File.Exists(clientSecretPath))
+{
+    clientSecret = File.ReadAllText(clientSecretPath).Trim();
+}
+else
+{
+    // Fallbacks: env var, then (last resort) appsettings
+    clientSecret = Environment.GetEnvironmentVariable("AzureAd__ClientSecret")
+                   ?? builder.Configuration["AzureAd:ClientSecret"];
+}
+
+if (string.IsNullOrWhiteSpace(clientSecret))
+{
+    Console.WriteLine("⚠️ AzureAd ClientSecret not found (auth will fail).");
+}
+else if (builder.Environment.IsDevelopment())
+{
+    // Avoid printing this in prod; just length for a quick sanity check in dev
+    Console.WriteLine($"✅ AzureAd ClientSecret loaded (len={clientSecret.Length}).");
+}
+
+var tenantID = builder.Configuration["AzureAd:TenantId"];
+var clientId = builder.Configuration["AzureAd:ClientId"];
+var scopes = new[] { "https://graph.microsoft.com/.default" };
+
+var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
+builder.Services.AddSingleton(new GraphServiceClient(credential, scopes));
 
 builder.Services.AddScoped<IGraphUserService, GraphUserService>();
 
@@ -299,7 +317,6 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwagger();
     app.UseSwaggerUI();
-
 }
 else
 {
