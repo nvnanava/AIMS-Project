@@ -2,9 +2,32 @@
    AIMS View: AuditLog/Index (Merged)
    ----------------------------------------------------------------------
    Purpose
-   - Align UI with Admin table chrome and reuse existing Search Logs modal
-   - Preserve realtime/polling hooks and IDs used by page JS (SignalR + polling)
-   - (Temporary) Keep inline script from MAIN to open modal via FilterIcon
+   - Aligns with Admin table chrome
+   - Supports client-side filtering + realtime/polling
+   - Adds pagination chrome consistent with Search page
+
+   Conventions
+   1) Layout
+      - Inherits global layout: ~/Views/Shared/_Layout.cshtml
+
+   2) Styles
+      - Admin chrome: ~/css/pages/admin.index.css
+      - Pager:        ~/css/components/_Pager.css
+      - Page CSS:     ~/css/pages/auditlog.index.css
+
+   3) Scripts
+      - Page JS:      ~/js/pages/auditlog.index.js
+      - Inline: Task 4A modal trigger (kept)
+      - SignalR:      ~/lib/microsoft/signalr/dist/browser/signalr.min.js
+
+   4) Routing
+      - Controller: Controllers/Mvc/AuditLogController.cs
+      - Action:     Index()
+      - Route:      /AuditLog or /AuditLog/Index
+
+   5) Notes
+      - Indentation: 4 spaces
+      - Table body is client-filled; no demo rows
    ====================================================================== *@
 
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
@@ -17,30 +40,27 @@
 @section Styles {
     <!-- bring in the Admin table baseline -->
     <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
-    <!-- page-specific styles -->
+    <link rel="stylesheet" href="~/css/components/_Pager.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/auditlog.index.css" asp-append-version="true" />
 }
 
 <div class="audit-log-container">
-    @* hidden config for JS (polling interval / batch size / feature flags) *@
-    <div id="auditlog-config"
-         data-poll-interval="@Config["Audit:PollingIntervalMs"]"
-         data-max-batch="@Config["Audit:MaxBatchSize"]"
-         data-feature-realtime="@Config["Feature:AuditRealTime"]"
-         data-feature-polling="@Config["Feature:AuditPollingFallback"]"
-         hidden></div>
-
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h1 class="audit-log-title m-0">Audit Log</h1>
 
         <!-- Filter icon (from Task 4A) -->
         <div class="ms-3">
             @await Html.PartialAsync("_FilterIcon", new ViewDataDictionary(ViewData) {
-                ["Id"] = "auditLogFilter",
-                ["Label"] = "Search Logs"
-            })
+            ["Id"] = "auditLogFilter",
+                        ["Label"] = "Search Logs"
+                        })
         </div>
     </div>
+
+    @* hidden config for JS (polling interval / batch size / feature flags) *@
+    <div id="auditlog-config" data-poll-interval="@Config["Audit:PollingIntervalMs"]"
+        data-max-batch="@Config["Audit:MaxBatchSize"]" data-feature-realtime="@Config["Feature:AuditRealTime"]"
+        data-feature-polling="@Config["Feature:AuditPollingFallback"]" hidden></div>
 
     <!-- Admin-style chrome -->
     <div class="table-wrapper">
@@ -63,75 +83,29 @@
 
             <!-- Scrollable body -->
             <div class="admin-table-scroll">
-                <!-- Give the scrolling table/rows the IDs our JS expects -->
-                <table class="admin-table-body" id="auditTable">
-                    <tbody id="auditTableBody">
-                        <tr>
-                            <td class="al-col-1">1</td>
-                            <td class="al-col-2">2025-04-16 10:12 AM</td>
-                            <td class="al-col-3">U001</td>
-                            <td class="al-col-4">Assign</td>
-                            <td class="al-col-5">A101</td>
-                            <td class="al-col-6">Unassigned</td>
-                            <td class="al-col-7">Laptop-001</td>
-                            <td class="al-col-8">Assigned Laptop to John Smith</td>
-                        </tr>
-                        <tr>
-                            <td class="al-col-1">2</td>
-                            <td class="al-col-2">2025-04-16 09:50 AM</td>
-                            <td class="al-col-3">U002</td>
-                            <td class="al-col-4">Create</td>
-                            <td class="al-col-5">A102</td>
-                            <td class="al-col-6">N/A</td>
-                            <td class="al-col-7">Monitor-003</td>
-                            <td class="al-col-8">Created new monitor asset</td>
-                        </tr>
-                        <tr>
-                            <td class="al-col-1">3</td>
-                            <td class="al-col-2">2025-04-15 05:30 PM</td>
-                            <td class="al-col-3">U003</td>
-                            <td class="al-col-4">Update</td>
-                            <td class="al-col-5">A103</td>
-                            <td class="al-col-6">Monitor-001</td>
-                            <td class="al-col-7">Monitor-003</td>
-                            <td class="al-col-8">Updated asset name and status</td>
-                        </tr>
-                        <tr>
-                            <td class="al-col-1">4</td>
-                            <td class="al-col-2">2025-04-15 04:17 PM</td>
-                            <td class="al-col-3">U001</td>
-                            <td class="al-col-4">Unassign</td>
-                            <td class="al-col-5">A104</td>
-                            <td class="al-col-6">Mouse-002</td>
-                            <td class="al-col-7">Unassigned</td>
-                            <td class="al-col-8">Removed asset from user Ava</td>
-                        </tr>
-                        <tr>
-                            <td class="al-col-1">5</td>
-                            <td class="al-col-2">2025-04-15 03:42 PM</td>
-                            <td class="al-col-3">U004</td>
-                            <td class="al-col-4">Delete</td>
-                            <td class="al-col-5">A105</td>
-                            <td class="al-col-6">Keyboard-001</td>
-                            <td class="al-col-7">Deleted</td>
-                            <td class="al-col-8">Deleted broken keyboard asset</td>
-                        </tr>
-                    </tbody>
+                <table class="admin-table-body audit-log-table" id="auditTable">
+                    <tbody id="auditTableBody"><!-- filled by JS (realtime/polling/paging) --></tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    @* ----------- Pager (same markup/classes as Search) ------------------ *@
+    <div id="audit-pager" class="search-pager" hidden>
+        <button id="pg-prev" class="pager-btn" type="button" aria-label="Previous page">Prev</button>
+        <span id="pg-status" class="pager-status" role="status" aria-live="polite"></span>
+        <button id="pg-next" class="pager-btn" type="button" aria-label="Next page">Next</button>
+    </div>
+    @* -------------------------------------------------------------------- *@
 </div>
 
 @* Include the existing modal from Task 4A *@
 @await Html.PartialAsync("_SearchLogsModal")
 
 @section Scripts {
-    <!-- Realtime + page logic -->
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/pages/auditlog.index.js" asp-append-version="true" defer></script>
 
-    <!-- Temporary inline script (kept from MAIN) to wire FilterIcon -> Modal -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Target the FilterIcon button from Task 4A
