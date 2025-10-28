@@ -134,6 +134,10 @@ builder.Services.AddAuthorization(options => // Require auth by default, you mus
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
+// this line scopes the IAdminUserUpsertService to the AdminUserUpsertService class
+builder.Services.AddScoped<IAdminUserUpsertService, AdminUserUpsertService>();
+
+
 
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>

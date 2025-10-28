@@ -72,6 +72,18 @@ namespace AIMS.Data
                 .HasIndex(u => u.ExternalId)
                 .IsUnique();
 
+            // Azure AD Object ID (GraphObjectID) length
+            modelBuilder.Entity<User>()
+                .Property(u => u.GraphObjectID)
+                .HasMaxLength(64) // forces nvarchar(64) in SQL so it can be indexed
+                .IsRequired(); // Every user must have a GraphObjectID
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.GraphObjectID)
+                .IsUnique(); //prevents duplicate (two rows pointing to same AAD user)
+                //No filter added - every user must have a GraphObjectID and come from AAD
+                //This allows us to only add users that exist in AAD, if not in AAD you cannot add them to our system
+
             // -------------------------
             // HARDWARE
             // -------------------------

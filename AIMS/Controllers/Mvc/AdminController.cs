@@ -1,33 +1,41 @@
 using AIMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using AIMS.Data; // Add this line if AimsDbContext is in the Data namespace
+using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers.Mvc;
 
-[Authorize(Policy = "mbcAdmin")] // Only users with the "Admin" role can access any action methods in this controller
 
+[Authorize(Policy = "mbcAdmin")]
 public class AdminController : Controller
 {
-    private readonly IGraphUserService _graphUserService; // interface for better testability
+    private readonly IGraphUserService _graphUserService;
+    private readonly AimsDbContext _db;
 
-    public AdminController(IGraphUserService graphUserService) // Constructor with dependency injection
+    public AdminController(IGraphUserService graphUserService, AimsDbContext db)
     {
-        _graphUserService = graphUserService; // Assign injected service to private field
+        _graphUserService = graphUserService;
+        _db = db;
     }
-    [HttpGet("aad-users")] // Endpoint to get Azure AD users with optional search parameter
+
+    [HttpGet("aad-users")]
     public async Task<IActionResult> GetAzureAdUsers([FromQuery] string? search = null)
-    {
-        var users = await _graphUserService.GetUsersAsync(search); // Call service to get users
-        return Ok(users); // Return users as JSON
-    }
-    [HttpGet("aad-users-roles/{userId}")] // Endpoint to get roles for a specific user by userId
+        => Ok(await _graphUserService.GetUsersAsync(search));
+
+    [HttpGet("aad-users-roles/{userId}")]
     public async Task<IActionResult> GetUserRoles(string userId)
+        => Ok(await _graphUserService.GetUserRolesAsync(userId));
+
+    public async Task<IActionResult> Index()
     {
-        var roles = await _graphUserService.GetUserRolesAsync(userId);
-        return Ok(roles); // Return roles as JSON
-    }
-    public IActionResult Index()
-    {
-        return View();
+        var users = await _db.Users
+            .AsNoTracking()
+            .Include(u => u.Role)
+            .Where(u => !u.IsArchived)
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
+
+        return View(users);
     }
 }
