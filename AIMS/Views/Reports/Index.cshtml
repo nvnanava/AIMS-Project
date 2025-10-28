@@ -451,6 +451,22 @@
   </div>
 </div>
 
+<!-- Dynamic Report Preview Modal -->
+<div class="modal fade" id="reportPreviewModal" tabindex="-1" aria-labelledby="reportPreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportPreviewModalLabel">Report Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="reportPreviewContent">
+        <div class="text-center text-muted p-4">Select a report to preview</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 @section Scripts {
     <script src="~/js/pages/reports.index.js" asp-append-version="true" defer></script>
 }
