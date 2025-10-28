@@ -22,23 +22,23 @@ public sealed class GetAuditRecordDto
     public int UserID { get; set; }
     public string UserName { get; set; } = string.Empty;
 
-    public string Action { get; set; } = string.Empty;        // e.g. "Create", "Edit", "Assign", "Archive"
+    public string Action { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
-    // Optional large payloads (blob-backed, snapshot inline)
-    public string? BlobUri { get; set; }
+    // Expose decoded snapshot and attachment flags
     public string? SnapshotJson { get; set; }
+    public bool HasAttachment { get; set; }
+    public string? AttachmentContentType { get; set; }
 
-    // Target (exactly one based on AssetKind)
+    // Target
     public AssetKind AssetKind { get; set; }
     public int? HardwareID { get; set; }
     public int? SoftwareID { get; set; }
 
-    // Convenience display
+    // Convenience
     public string? HardwareName { get; set; }
     public string? SoftwareName { get; set; }
 
-    // Fine-grained changes (0..N)
     public List<AuditLogChangeDto> Changes { get; set; } = new();
 }
 
@@ -52,22 +52,20 @@ public sealed class CreateAuditLogChangeDto
 public sealed class CreateAuditRecordDto
 {
     [Required] public int UserID { get; set; }
-
     [Required] public string Action { get; set; } = string.Empty;
     [Required] public string Description { get; set; } = string.Empty;
 
-    // Optional long-form payloads
-    public string? BlobUri { get; set; }
+    // Client inputs we convert to bytes
     public string? SnapshotJson { get; set; }
+    public string? AttachmentBase64 { get; set; }
+    public string? AttachmentContentType { get; set; }
 
-    // Target (exactly one must be set and match AssetKind)
+    // Target
     [Required] public AssetKind AssetKind { get; set; }
     public int? HardwareID { get; set; }
     public int? SoftwareID { get; set; }
 
-    // Optional per-field diffs to insert as child rows
     public List<CreateAuditLogChangeDto>? Changes { get; set; }
 
-    // Used for dedup/upsert (matches ExternalId on AuditLog)
     public Guid? ExternalId { get; set; }
 }
