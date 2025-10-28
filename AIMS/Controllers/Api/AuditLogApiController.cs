@@ -1,19 +1,11 @@
 /* ======================================================================
-   AIMS API: AuditLogApiController (GetEventsSince refactor)
+   AIMS API: AuditLogApiController (GetEventsSince refactor + latest)
    ----------------------------------------------------------------------
    Purpose
    - Audit Log CRUD + search endpoints.
    - Lightweight polling endpoint (/api/audit/events) with ETag and
      deduplication to reduce payload churn.
-
-   Conventions
-   - Keep public actions thin; push branching into tiny private helpers.
-   - Stable ordering for paging: newest first (TimestampUtc desc, then Id).
-   - ETag is based on deduped page so 304 follows the collapsed view.
-
-   Notes
-   - Rate limiting policy name: "audit-poll"
-   - Indentation: 4 spaces (no tabs)
+   - NEW: /api/audit/events/latest for first-paint seeding (ignore 'since').
    ====================================================================== */
 
 using System.Security.Cryptography;
@@ -84,7 +76,7 @@ public partial class AuditLogApiController : ControllerBase
     }
 
     // ---------------------------------------------------------------------
-    // NEW: Paged Audit Log search (Task 1B backend)
+    // Paged Audit Log search (Task 1B backend)
     // Absolute route so it lives at /api/auditlog to match spec
     // ---------------------------------------------------------------------
     [HttpGet("~/api/auditlog")]
@@ -143,12 +135,37 @@ public partial class AuditLogApiController
         });
     }
 
+    // First-paint seed — ignore 'since', just return latest N
+    [HttpGet("events/latest")]
+    [EnableRateLimiting("audit-poll-soft")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLatest(CancellationToken ct)
+    {
+        var max = ReadAndClampTake(HttpContext.Request.Query);
+        var all = await _auditQuery.GetAllAuditRecordsAsync(ct);
+
+        // Reuse projection/dedup; pass a 'since' far in the past so we only limit by Take(max)
+        var page = ProjectDedupAndPage(all, DateTime.MinValue, max);
+
+        var latest = page.FirstOrDefault();
+        var nextSince = (latest?.OccurredAtUtc ?? DateTimeOffset.UtcNow.UtcDateTime).ToString("O");
+
+        var etag = BuildEtag(page);
+        HttpContext.Response.Headers.ETag = $"W/\"{etag}\"";
+
+        return Ok(new
+        {
+            items = page,
+            nextSince
+        });
+    }
+
     // ---------------------- tiny helpers (keep action thin) ------------------
 
     private static DateTime ParseSinceOrDefault(string since)
         => DateTimeOffset.TryParse(since, out var dto)
             ? dto.UtcDateTime
-            : DateTimeOffset.UtcNow.AddDays(-1).UtcDateTime;
+            : DateTimeOffset.UtcNow.AddDays(-30).UtcDateTime; // ← 30d to match JS
 
     private static int ReadAndClampTake(IQueryCollection q)
     {

@@ -36,6 +36,7 @@
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/components/_Pager.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/auditlog.index.css" asp-append-version="true" />
 }
 
@@ -78,36 +79,14 @@
                 <th>Description</th>
             </tr>
         </thead>
-        <tbody id="auditTableBody"> @* id for incremental insert/update *@
-            @* Demo rows; replace with server-rendered rows or client fetch *@
-            <tr>
-                <td>1</td>
-                <td>2025-04-16 10:12 AM</td>
-                <td>U001</td>
-                <td>Assign</td>
-                <td>A101</td>
-                <td>Unassigned</td>
-                <td>Laptop-001</td>
-                <td>Assigned Laptop to John Smith</td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>2025-04-16 09:50 AM</td>
-                <td>U002</td>
-                <td>Create</td>
-                <td>A102</td>
-                <td>N/A</td>
-                <td>Monitor-003</td>
-                <td>Created new monitor asset</td>
-            </tr>
-        </tbody>
+        <tbody id="auditTableBody"></tbody>
     </table>
 
-    @* ---- ⬇ NEW: Pager (same markup/classes as Search) ------------------ *@
-    <div class="search-pager" id="audit-pager" hidden>
-        <button type="button" id="audit-pg-prev" class="pager-btn">Prev</button>
-        <span id="audit-pg-status" class="pager-status"></span>
-        <button type="button" id="audit-pg-next" class="pager-btn">Next</button>
+    @* ----------- Pager (same markup/classes as Search) ------------------ *@
+    <div id="audit-pager" class="search-pager" hidden>
+        <button id="pg-prev" class="pager-btn" type="button" aria-label="Previous page">Prev</button>
+        <span id="pg-status" class="pager-status" role="status" aria-live="polite"></span>
+        <button id="pg-next" class="pager-btn" type="button" aria-label="Next page">Next</button>
     </div>
     @* -------------------------------------------------------------------- *@
 </div>
