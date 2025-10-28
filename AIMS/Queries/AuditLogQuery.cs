@@ -1,12 +1,19 @@
 using AIMS.Data;
 using AIMS.Dtos.Audit;
 using AIMS.Models;
+using AIMS.Services;
 using Microsoft.EntityFrameworkCore;
 
 public class AuditLogQuery
 {
     private readonly AimsDbContext _db;
-    public AuditLogQuery(AimsDbContext db) => _db = db;
+    private readonly IAuditEventBroadcaster _broadcaster; // inject broadcaster
+
+    public AuditLogQuery(AimsDbContext db, IAuditEventBroadcaster broadcaster) // ctor updated
+    {
+        _db = db;
+        _broadcaster = broadcaster;
+    }
 
     public async Task<List<GetAuditRecordDto>> GetAllAuditRecordsAsync(CancellationToken ct = default)
     {
@@ -76,6 +83,37 @@ public class AuditLogQuery
             .FirstOrDefaultAsync(ct);
     }
 
+    // Recent audit logs by asset
+    public async Task<List<GetAuditRecordDto>> GetRecentAuditRecordsAsync(string assetKind, int assetId, int take = 5, CancellationToken ct = default)
+    {
+        var kind = Enum.TryParse<AssetKind>(assetKind, true, out var parsedKind) ? parsedKind : AssetKind.Hardware;
+
+        return await _db.AuditLogs
+            .AsNoTracking()
+            .Where(a =>
+                a.AssetKind == kind &&
+                ((kind == AssetKind.Hardware && a.HardwareID == assetId) ||
+                 (kind == AssetKind.Software && a.SoftwareID == assetId)))
+            .OrderByDescending(a => a.TimestampUtc)
+            .Take(take)
+            .Select(a => new GetAuditRecordDto
+            {
+                AuditLogID = a.AuditLogID,
+                ExternalId = a.ExternalId,
+                TimestampUtc = a.TimestampUtc,
+                UserID = a.UserID,
+                UserName = a.User.FullName,
+                Action = a.Action,
+                Description = a.Description,
+                AssetKind = a.AssetKind,
+                HardwareID = a.HardwareID,
+                SoftwareID = a.SoftwareID
+            })
+            .ToListAsync(ct);
+    }
+
+    // Create or update an AuditLog. If ExternalId is supplied and already exists, we update that row in place.
+    // Otherwise, we insert a new row. Always broadcasts the resulting event.
     public async Task<int> CreateAuditRecordAsync(CreateAuditRecordDto data, CancellationToken ct = default)
     {
         if (data is null) throw new ArgumentNullException(nameof(data));
@@ -112,35 +150,104 @@ public class AuditLogQuery
             throw new InvalidOperationException("Unknown AssetKind.");
         }
 
-        var log = new AuditLog
-        {
-            TimestampUtc = DateTime.UtcNow,
-            UserID = data.UserID,
-            Action = data.Action,
-            Description = data.Description,
-            BlobUri = data.BlobUri,
-            SnapshotJson = data.SnapshotJson,
-            AssetKind = data.AssetKind,
-            HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null,
-            SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null
-        };
+        // --- Upsert by ExternalId ---
+        var hasExternal = data.ExternalId.HasValue && data.ExternalId.Value != Guid.Empty;
+        AuditLog? log = null;
 
-        // Optional per-field diffs
-        if (data.Changes is { Count: > 0 })
+        if (hasExternal)
         {
-            foreach (var c in data.Changes)
+            log = await _db.AuditLogs
+                .FirstOrDefaultAsync(a => a.ExternalId == data.ExternalId!.Value, ct);
+
+            if (log is not null)
             {
-                log.Changes.Add(new AuditLogChange
+                // UPDATE IN PLACE
+                log.TimestampUtc = DateTime.UtcNow;
+                log.UserID = data.UserID;
+                log.Action = data.Action;
+                log.Description = data.Description;
+                log.BlobUri = data.BlobUri;
+                log.SnapshotJson = data.SnapshotJson;
+                log.AssetKind = data.AssetKind;
+                log.HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null;
+                log.SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null;
+
+                // Clear existing changes
+                if (data.Changes is { Count: > 0 })
                 {
-                    Field = c.Field,
-                    OldValue = c.OldValue,
-                    NewValue = c.NewValue
-                });
+                    foreach (var c in data.Changes)
+                    {
+                        log.Changes.Add(new AuditLogChange
+                        {
+                            Field = c.Field,
+                            OldValue = c.OldValue,
+                            NewValue = c.NewValue
+                        });
+                    }
+                }
+
+                await _db.SaveChangesAsync(ct);
             }
         }
 
-        _db.AuditLogs.Add(log);
-        await _db.SaveChangesAsync(ct);
+        if (log is null)
+        {
+            // INSERT
+            log = new AuditLog
+            {
+                ExternalId = hasExternal ? data.ExternalId!.Value : Guid.Empty,
+                TimestampUtc = DateTime.UtcNow,
+                UserID = data.UserID,
+                Action = data.Action,
+                Description = data.Description,
+                BlobUri = data.BlobUri,
+                SnapshotJson = data.SnapshotJson,
+                AssetKind = data.AssetKind,
+                HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null,
+                SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null
+            };
+
+            if (data.Changes is { Count: > 0 })
+            {
+                foreach (var c in data.Changes)
+                {
+                    log.Changes.Add(new AuditLogChange
+                    {
+                        Field = c.Field,
+                        OldValue = c.OldValue,
+                        NewValue = c.NewValue
+                    });
+                }
+            }
+
+            _db.AuditLogs.Add(log);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        // Broadcast realtime event after persistence
+        var userName = await _db.Users.AsNoTracking()
+            .Where(u => u.UserID == log.UserID)
+            .Select(u => u.FullName)
+            .FirstOrDefaultAsync(ct);
+
+        var dto = new AIMS.Contracts.AuditEventDto
+        {
+            Id = (log.ExternalId != Guid.Empty ? log.ExternalId.ToString() : log.AuditLogID.ToString()),
+            OccurredAtUtc = log.TimestampUtc,
+            Type = log.Action,
+            User = $"{(userName ?? $"User#{log.UserID}")} ({log.UserID})",
+            Target = log.AssetKind == AssetKind.Hardware
+                ? (log.HardwareID.HasValue ? $"Hardware#{log.HardwareID}" : "Hardware")
+                : (log.SoftwareID.HasValue ? $"Software#{log.SoftwareID}" : "Software"),
+            Details = log.Description ?? "",
+            Hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(
+                    $"{log.AuditLogID}|{log.ExternalId}|{log.TimestampUtc:o}|{log.Action}|{log.UserID}|{log.AssetKind}|{log.HardwareID}|{log.SoftwareID}|{log.Description}"
+                )))
+        };
+
+        await _broadcaster.BroadcastAsync(dto);
+
         return log.AuditLogID;
     }
 }
