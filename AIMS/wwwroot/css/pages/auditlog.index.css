@@ -1,105 +1,84 @@
+/* ======================================================================
+   AIMS Page CSS: AuditLog/Index
+   Purpose:
+   - Align with Admin table styling
+   - Light #ECF0F1 background, consistent column widths, row hover
+   ====================================================================== */
+
 .audit-log-container {
-  padding: 2rem;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #f5f7fa;
-  min-height: 100vh;
+    background: #ECF0F1;
+    padding: 12px 14px;
+    border-radius: 8px;
 }
 
-.audit-log-title {
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
+/* Match Admin chrome column sizing */
+.al-col-1 {
+    width: 8%;
 }
 
-.audit-log-table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.al-col-2 {
+    width: 16%;
 }
 
-.audit-log-table thead {
-  background-color: #dce6eb;
+.al-col-3 {
+    width: 10%;
 }
 
-.audit-log-table th,
-.audit-log-table td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 0.95rem;
+.al-col-4 {
+    width: 10%;
 }
 
-.audit-log-table th {
-  font-weight: bold;
+.al-col-5 {
+    width: 10%;
 }
 
-/* Container styling */
-.audit-log-container {
-    width: 95%;
-    margin: 20px auto;
-    font-family: Arial, sans-serif;
+.al-col-6 {
+    width: 14%;
 }
 
-/* Page title */
-.audit-log-title {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 2rem;
-    color: #333;
+.al-col-7 {
+    width: 12%;
 }
 
-/* Dropdown container */
-#filter-button-container {
-    position: relative;
-    text-align: right; /* Aligns button to the right */
-    margin-bottom: 15px;
+.al-col-8 {
+    width: 20%;
 }
 
-/* Filter button */
-#filter-button-toggle {
-    background-color: #f5f5f5;
-    color: #333;
-    border: 2px solid #000;
-    padding: 8px 16px;
-    font-size: 1rem;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+.admin-table-body td.al-col-1 {
+    width: 8%;
 }
 
-#filter-button-toggle:hover {
-    background-color: #0056b3;
+.admin-table-body td.al-col-2 {
+    width: 16%;
 }
 
-/* Dropdown menu */
-.dropdown-menu {
-    position: absolute;
-    right: 0; /* Align dropdown with button */
-    top: 100%;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    min-width: 150px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    display: none;
-    z-index: 1000;
+.admin-table-body td.al-col-3 {
+    width: 10%;
 }
 
-/* Show dropdown */
-.dropdown-menu.show {
-    display: block;
+.admin-table-body td.al-col-4 {
+    width: 10%;
 }
 
-/* Dropdown items */
-.dropdown-item {
-    display: block;
-    padding: 10px 15px;
-    text-decoration: none;
-    color: #333;
-    transition: background-color 0.2s ease;
+.admin-table-body td.al-col-5 {
+    width: 10%;
+}
+
+.admin-table-body td.al-col-6 {
+    width: 14%;
+}
+
+.admin-table-body td.al-col-7 {
+    width: 12%;
+}
+
+.admin-table-body td.al-col-8 {
+    width: 20%;
+}
+
+/* Hover behavior like Admin */
+.admin-table-body tr:hover td {
+    background: #f7fbfd;
 }
 .dropdown-search {
     width: 90%;
@@ -113,16 +92,6 @@
 .dropdown-item:hover {
     background-color: #f1f1f1;
     color: #007bff;
-}
-
-@keyframes rowFlash {
-  from {
-    background-color: #1abc9c49;
-  }
-  
-  to {
-    background-color: transparent;
-  }
 }
 
 .row-flash {
