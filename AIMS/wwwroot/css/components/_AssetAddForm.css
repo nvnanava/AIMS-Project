@@ -1,0 +1,398 @@
+/* ======================================================================
+   AIMS Component Styles: Asset Add/Edit Modals
+   ----------------------------------------------------------------------
+   Purpose
+   - Theme the Hardware/Software Add (phase 1 + phase 2) and inline Edit
+     modals to match the Admin Modal look & feel.
+   - Consistent inputs, selects, buttons, lists, and inline errors.
+   - Accessible focus states using AIMS teal.
+   ====================================================================== */
+
+/* -------- CSS Variables (AIMS palette) -------- */
+:root {
+  --aims-bg: #ecf0f1;
+  /* page bg */
+  --aims-bg-contrast: #f7f9fa;
+  /* cards/inputs */
+  --aims-ink: #34495e;
+  /* text/borders */
+  --aims-navy: #2c3e50;
+  /* headers/nav */
+  --aims-accent: #1abc9c;
+  /* accent teal */
+  --aims-shadow: rgba(0, 0, 0, .15);
+  --aims-focus: rgba(26, 188, 156, .35);
+  /* teal focus ring */
+}
+
+/* ======================================================================
+   1) Modal shell / header (Hardware + Software + inline Edit)
+   ====================================================================== */
+
+/* Shell */
+#addAssetModal .modal-content,
+#itemDetailsModal .modal-content,
+#editItemModal .modal-content,
+#addSoftwareModal .modal-content,
+#softwareDetailsModal .modal-content,
+#editSoftwareModal .modal-content {
+  background: var(--aims-bg);
+  border: 3px solid var(--aims-ink);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px var(--aims-shadow);
+  overflow: hidden;
+  /* so menus can be portaled if needed */
+}
+
+/* Header */
+#addAssetModal .modal-header,
+#itemDetailsModal .modal-header,
+#editItemModal .modal-header,
+#addSoftwareModal .modal-header,
+#softwareDetailsModal .modal-header,
+#editSoftwareModal .modal-header {
+  background: var(--aims-navy);
+  color: var(--aims-bg);
+  border-bottom: 3px solid var(--aims-ink);
+}
+
+/* Title */
+#addAssetModal .modal-title,
+#itemDetailsModal .modal-title,
+#editItemModal .modal-title,
+#addSoftwareModal .modal-title,
+#softwareDetailsModal .modal-title,
+#editSoftwareModal .modal-title {
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+/* Close “X” */
+#addAssetModal .btn-close,
+#itemDetailsModal .btn-close,
+#editItemModal .btn-close,
+#addSoftwareModal .btn-close,
+#softwareDetailsModal .btn-close,
+#editSoftwareModal .btn-close {
+  opacity: .85;
+  transition: all .15s ease-out;
+  outline: none;
+  box-shadow: none;
+  filter: none;
+  background-color: red;
+}
+
+#addAssetModal .btn-close:hover,
+#itemDetailsModal .btn-close:hover,
+#editItemModal .btn-close:hover,
+#addSoftwareModal .btn-close:hover,
+#softwareDetailsModal .btn-close:hover,
+#editSoftwareModal .btn-close:hover {
+  border: 3px solid red;
+  opacity: 1;
+}
+
+#addAssetModal .btn-close:focus,
+#addAssetModal .btn-close:focus-visible,
+#itemDetailsModal .btn-close:focus,
+#itemDetailsModal .btn-close:focus-visible,
+#editItemModal .btn-close:focus,
+#editItemModal .btn-close:focus-visible,
+#addSoftwareModal .btn-close:focus,
+#addSoftwareModal .btn-close:focus-visible,
+#softwareDetailsModal .btn-close:focus,
+#softwareDetailsModal .btn-close:focus-visible,
+#editSoftwareModal .btn-close:focus,
+#editSoftwareModal .btn-close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.6);
+  border-radius: 50%;
+  opacity: 1;
+  filter: brightness(1.1);
+}
+
+/* Body / footer spacing */
+#addAssetModal .modal-body,
+#itemDetailsModal .modal-body,
+#editItemModal .modal-body,
+#addSoftwareModal .modal-body,
+#softwareDetailsModal .modal-body,
+#editSoftwareModal .modal-body {
+  padding: 20px;
+}
+
+#addAssetModal .modal-footer,
+#itemDetailsModal .modal-footer,
+#editItemModal .modal-footer,
+#addSoftwareModal .modal-footer,
+#softwareDetailsModal .modal-footer,
+#editSoftwareModal .modal-footer {
+  border-top: 1px solid rgba(52, 73, 94, .25);
+  padding: 15px;
+}
+
+/* ======================================================================
+   2) Form layout, labels, inputs, selects
+   ====================================================================== */
+#addAssetModal .modal-body form,
+#itemDetailsModal .modal-body form,
+#editItemModal .modal-body form,
+#addSoftwareModal .modal-body form,
+#softwareDetailsModal .modal-body form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Labels bold, AIMS ink */
+#addAssetModal .form-label,
+#itemDetailsModal .form-label,
+#editItemModal .form-label,
+#addSoftwareModal .form-label,
+#softwareDetailsModal .form-label {
+  font-weight: 700;
+  color: var(--aims-ink);
+}
+
+/* Inputs (text/number/date) */
+#addAssetModal .form-control,
+#itemDetailsModal .form-control,
+#editItemModal .form-control,
+#addSoftwareModal .form-control,
+#softwareDetailsModal .form-control {
+  background: var(--aims-bg-contrast);
+  color: var(--aims-ink);
+  border: 2px solid rgba(52, 73, 94, .35);
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+  box-shadow: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#addAssetModal .form-control:focus,
+#itemDetailsModal .form-control:focus,
+#editItemModal .form-control:focus,
+#addSoftwareModal .form-control:focus,
+#softwareDetailsModal .form-control:focus {
+  border-color: var(--aims-accent);
+  box-shadow: 0 0 8px var(--aims-focus);
+}
+
+/* Native selects baseline */
+#addAssetModal .form-select,
+#itemDetailsModal .form-select,
+#addSoftwareModal .form-select,
+#softwareDetailsModal .form-select {
+  background: var(--aims-bg-contrast);
+  color: var(--aims-ink);
+  border: 2px solid rgba(52, 73, 94, .35);
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 10px 40px 10px 12px;
+  /* room for caret */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, .12);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%2334495e' d='M4.646 6.646a.5.5 0 01.708 0L8 9.293l2.646-2.647a.5.5 0 01.708.708l-3 3a.5.5 0 01-.708 0l-3-3a.5.5 0 010-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+#addAssetModal .form-select:focus,
+#itemDetailsModal .form-select:focus,
+#addSoftwareModal .form-select:focus,
+#softwareDetailsModal .form-select:focus {
+  border-color: var(--aims-accent);
+  box-shadow: 0 0 0 3px var(--aims-focus);
+  background-color: var(--aims-bg-contrast);
+}
+
+#addAssetModal .form-select:disabled,
+#itemDetailsModal .form-select:disabled,
+#addSoftwareModal .form-select:disabled,
+#softwareDetailsModal .form-select:disabled {
+  opacity: .7;
+  cursor: not-allowed;
+}
+
+/* Invalid feedback spacing tweak */
+#addAssetModal .invalid-feedback,
+#itemDetailsModal .invalid-feedback,
+#editItemModal .invalid-feedback,
+#addSoftwareModal .invalid-feedback,
+#softwareDetailsModal .invalid-feedback {
+  display: block;
+  margin-top: .25rem;
+}
+
+/* Inline text error (server side mapping) */
+.inline-error {
+  font-size: .875rem;
+  margin-top: .35rem;
+}
+
+/* ======================================================================
+   3) Buttons (primary, next, outline, success/warning)
+   ====================================================================== */
+.aims-next-btn,
+#submitSoftwareBtn.btn,
+#submitAllBtn.btn,
+#saveSoftwareEditBtn.btn,
+#saveEditBtn.btn,
+#saveProgress.btn,
+#saveSoftwareProgress.btn {
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 10px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+  transition: transform .1s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+.aims-next-btn,
+.btn-primary,
+.btn-success {
+  background-color: var(--aims-accent);
+  color: #fff;
+}
+
+.aims-next-btn:hover,
+.btn-primary:hover,
+.btn-success:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .22);
+  filter: brightness(1.02);
+}
+
+.aims-next-btn:focus,
+.aims-next-btn:focus-visible,
+.btn-primary:focus,
+.btn-primary:focus-visible,
+.btn-success:focus,
+.btn-success:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, .22),
+    0 0 0 3px var(--aims-focus);
+}
+
+/* Outline secondaries (Random buttons) */
+#generateSerialBtn.btn,
+#generateTagBtn.btn,
+#generateLicenseBtn.btn,
+.btn.btn-outline-secondary {
+  border: 2px solid rgba(52, 73, 94, .35);
+  background: transparent;
+  color: var(--aims-ink);
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+#generateSerialBtn.btn:hover,
+#generateTagBtn.btn:hover,
+#generateLicenseBtn.btn:hover,
+.btn.btn-outline-secondary:hover {
+  background: var(--aims-bg-contrast);
+  border-color: var(--aims-accent);
+}
+
+/* Warning button (Save Progress) uses bootstrap base but align colors */
+.btn.btn-warning {
+  font-weight: 800;
+  border-radius: 8px;
+}
+
+/* Danger footer in Global Error modal already themed by header */
+
+/* ======================================================================
+   4) Lists: preview (hardware/software) + row edit button
+   ====================================================================== */
+#previewList.list-group,
+#softwarePreviewList.list-group {
+  border: 2px solid rgba(52, 73, 94, .25);
+  border-radius: 8px;
+  background: #fff;
+}
+
+#previewList .list-group-item,
+#softwarePreviewList .list-group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: .6rem .75rem;
+  border-color: rgba(52, 73, 94, .15);
+}
+
+#previewList .list-group-item-danger,
+#softwarePreviewList .list-group-item-danger {
+  border-left: 4px solid #e74c3c;
+  background: #fff5f5;
+}
+
+/* Blue pencil action (shared) */
+.action-btn.blue-pencil {
+  background: transparent;
+  border: 0;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.action-btn.blue-pencil:focus,
+.action-btn.blue-pencil:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--aims-focus);
+}
+
+/* ======================================================================
+   5) Step counters & helper text
+   ====================================================================== */
+#itemStep,
+#licenseStep {
+  font-weight: 800;
+  color: var(--aims-ink);
+  margin-bottom: 6px;
+}
+
+/* Small helper alerts inside modals */
+#serverErrorMessage,
+#softwareErrorMessage {
+  border-radius: 8px;
+}
+
+/* Global server error modal list style */
+#serverErrorModal #serverErrorList .list-group-item {
+  border: 0;
+  padding: .4rem .25rem;
+}
+
+/* ======================================================================
+   6) Responsive
+   ====================================================================== */
+@media (max-width: 768px) {
+
+  #addAssetModal .modal-dialog,
+  #itemDetailsModal .modal-dialog,
+  #editItemModal .modal-dialog,
+  #addSoftwareModal .modal-dialog,
+  #softwareDetailsModal .modal-dialog,
+  #editSoftwareModal .modal-dialog {
+    margin: 1rem auto;
+    width: 92%;
+  }
+
+  .aims-next-btn,
+  #submitSoftwareBtn,
+  #submitAllBtn,
+  #saveProgress,
+  #saveSoftwareProgress {
+    width: 100%;
+  }
+}

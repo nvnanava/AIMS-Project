@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace AIMS.Models;
@@ -27,6 +25,8 @@ public class User
 
     public int? SupervisorID { get; set; }
     public User? Supervisor { get; set; }
+
+    public bool IsArchived { get; set; } = false;
 
     public ICollection<User> DirectReports { get; set; } = new List<User>();
 

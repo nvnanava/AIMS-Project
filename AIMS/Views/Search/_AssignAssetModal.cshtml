@@ -1,0 +1,63 @@
+<!-- Assign Asset Modal -->
+<div class="modal fade" id="assignAssetModal" tabindex="-1" aria-labelledby="assignAssetLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignAssetLabel">Assign an Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+                <!-- Selected asset summary (shown when opened from 👤) -->
+                <div id="selectedAssetBox" class="mb-3" style="display:none;">
+                    <label class="form-label mb-1">Selected Asset</label>
+                    <div class="p-2 border rounded bg-white">
+                        <div><strong>Name:</strong> <span id="selAssetName">—</span></div>
+                        <div><strong>Tag #:</strong> <span id="selAssetTag">—</span></div>
+                        <div><strong>Kind:</strong> <span id="selAssetKind">—</span></div>
+                    </div>
+                </div>
+
+                <form id="assignAssetForm">
+                    <!-- Select User -->
+                    <div class="mb-3">
+                        <label for="userSelect" class="form-label">Select User</label>
+                        <!-- We will only create a search box once in JS if one doesn’t exist -->
+                        <select class="form-select" id="userSelect" required>
+                            <option selected disabled value="">Choose a user...</option>
+                        </select>
+                    </div>
+
+                    <!-- Select Asset (hidden when opened from 👤) -->
+                    <div class="mb-3" id="assetRow">
+                        <label for="assetSelect" class="form-label">Select Asset</label>
+                        <!-- We will only create a search box once in JS if one doesn’t exist -->
+                        <select class="form-select" id="assetSelect" required>
+                            <option selected disabled value="">Choose an asset...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="commentBox" class="form-label">Assignment Comment</label>
+                        <textarea id="commentBox" class="form-control" rows="3"
+                            placeholder="Reason for assignment..."></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer justify-content-center gap-3">
+                <div>
+                    <label for="userAgreementUpload" class="btn custom-modal-btn custom-upload-btn">Upload Agreement
+                        ✒️</label>
+                    <input type="file" id="userAgreementUpload" style="display: none;" />
+                </div>
+                <button type="submit" form="assignAssetForm" class="btn custom-modal-btn custom-submit-btn">
+                    Assign Asset
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,54 @@
+@* ======================================================================
+   Partial: _AddUserModal
+   ----------------------------------------------------------------------
+   Purpose
+   - Bootstrap 5 modal for adding a new AAD user.
+   - Uses AIMS design system classes (aimsds-*) for consistent styling.
+
+   Behavior
+   - Cannot close by clicking outside or pressing Esc.
+   - Only closes on “X” button or successful form submission.
+
+   Dependencies
+   - Requires Bootstrap JS (for data-bs-dismiss, fade transitions).
+   - Requires ~/css/components/_AdminModals.css for AIMS theming.
+   ====================================================================== *@
+
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserTitle" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content aimsds-shell">
+            <div class="modal-header aimsds-header">
+                <h4 class="modal-title" id="addUserTitle">Add New User</h4>
+                <button type="button" class="btn-close aimsds-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body aimsds-body">
+                <form id="addUserForm" onsubmit="AIMS.Admin.addUser(event)">
+                    <label for="userName" class="form-label fw-bold">Name</label>
+                    <input type="text" id="userName" class="form-control" placeholder="Start typing a name.."
+                        autocomplete="off" />
+                    <div id="aadUserResults" class="aad-user-results"></div>
+
+                    <label for="userEmail" class="form-label fw-bold mt-2">Email</label>
+                    <input type="email" id="userEmail" class="form-control" required />
+
+                    <label for="userRole" class="form-label fw-bold mt-2">Role</label>
+                    <select id="userRole" class="aims-select" required>
+                        <option value="Admin">Admin</option>
+                        <option value="User">User</option>
+                    </select>
+
+                    <label for="userStatus" class="form-label fw-bold mt-2">Status</label>
+                    <select id="userStatus" class="aims-select" required>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+
+                    <button type="submit" class="add-btn mt-4 w-100">Add User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

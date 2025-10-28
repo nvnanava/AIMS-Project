@@ -1,31 +1,86 @@
-@using Microsoft.AspNetCore.Components.Authorization
+@* ======================================================================
+   AIMS Layout
+   ----------------------------------------------------------------------
+   Purpose
+   - Global shell for all pages: navbar, base CSS/JS, and section slots.
+
+   Conventions
+   1) Namespaces
+      - Put local/project usings first, then Microsoft.* in alphabetical order.
+
+   2) Styles
+      - Only load GLOBAL/BASE styles here:
+        ~/css/base/*.css + AIMS.styles.css (scoped Razor CSS).
+      - Page-specific CSS goes in each page via:
+          @section Styles { <link rel="stylesheet" href="~/css/pages/{page}.css" asp-append-version="true" /> }
+      - Component CSS (reusable partials) live in ~/css/components/*.css.
+        Include them only on pages where the partial is used.
+
+   3) Scripts
+      - Only load GLOBAL/BASE scripts here:
+        ~/js/base/site.js and global utilities in ~/js/components (e.g., global-spinner).
+      - Page-specific JS belongs in:
+        ~/js/pages/{page}.js and is added with:
+          @section Scripts { <script src="~/js/pages/{page}.js" asp-append-version="true" defer></script> }
+      - Component scripts live in ~/js/components/*.js and should be included only where used.
+
+   4) Images/Static
+      - Use lowercase paths under ~/images to avoid case issues in Linux containers.
+
+   5) Navigation
+      - Links use asp-controller/asp-action to decouple from file paths.
+      - “Home” points to:
+          - Search/Index for Supervisors
+          - Home/Index for everyone else
+      - Reports/Admin/AuditLog have their own controllers & Index pages.
+
+   6) Anti-forgery
+      - Logout form includes the anti-forgery token from injected IAntiforgery.
+
+   7) Sections
+      - @RenderSection("Styles", required: false)
+      - @RenderSection("Scripts", required: false)
+
+   ====================================================================== *@
+
+@* Usings: local first, then Microsoft.* alphabetically *@
+@using AIMS.Utilities
 @using Microsoft.AspNetCore.Authentication.Cookies
-@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Authentication.OpenIdConnect
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Http
+
+@* Services *@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
-@* Layout file for the entire application. Contains the navbar and footer. *@
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - AIMS</title>
+
+    <!-- Vendor -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/modal.css" asp-append-version="true" />
+
+    <!-- Global/Base CSS only -->
+    <link rel="stylesheet" href="~/css/base/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/base/global.breakpoints.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/base/global.table.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/base/global.mobilefix.css" asp-append-version="true" />
+
+    <!-- AIMS global modal + custom-select theme -->
+    <link rel="stylesheet" href="~/css/components/aims.modals.css" asp-append-version="true" />
+
+    @* Page/partial-specific CSS goes here *@
     @RenderSection("Styles", required: false)
-    @using AIMS.Utilities
 
-
-    <!-- NOTE:
-     index.overrides.css is loaded last on purpose.
-     Ran into an issue where Index.cshtml.css styles (like filter hover + green checkboxes)
-     weren’t applying correctly due to CSS isolation/scoping.
-     This overrides file forces those styles globally and ensures they stick. -->
-    <link rel="stylesheet" href="~/css/index.overrides.css" asp-append-version="true" />
+    <!-- Keep overrides last -->
+    <link rel="stylesheet" href="~/css/base/index.overrides.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
 </head>
 
 <body>
@@ -33,8 +88,8 @@
         <nav
             class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
-                    <img src="~/Images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
+                    <img src="~/images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
                         class="d-inline-block align-text-top" asp-append-version="true" />
                 </a>
 
@@ -47,144 +102,123 @@
                     <ul class="navbar-nav flex-grow-1">
                         @if (User.IsSupervisor())
                         {
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Search">
-                                <span class="emoji">🏠 </span>
-                                <span class="label">Home</span>
+                            <a class="nav-link text-dark" asp-controller="Search" asp-action="Index">
+                                <span class="emoji">🏠 </span><span class="label">Home</span>
                             </a>
                         }
                         else
                         {
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">
-                                <span class="emoji">🏠 </span>
-                                <span class="label">Home</span>
+                                <span class="emoji">🏠 </span><span class="label">Home</span>
                             </a>
                         }
+
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Reports">
-                                <span class="emoji">📊 </span>
-                                <span class="label">Reports</span>
+                            <a class="nav-link text-dark" asp-controller="Reports" asp-action="Index">
+                                <span class="emoji">📊 </span><span class="label">Reports</span>
                             </a>
                         </li>
-                        <!-- Only show the Admin button to admins -->
+
                         @if (User.IsAdmin())
                         {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
-                                <span class="emoji">⚙️ </span>
-                                <span class="label">Admin</span>
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
+                                    <span class="emoji">⚙️ </span><span class="label">Admin</span>
+                                </a>
+                            </li>
                         }
-                            <!-- Only show the Audit Log button to admins and help desk -->
+
                         @if (User.IsAdmin() || User.IsHelpDesk())
                         {
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
-                                <span class="emoji">📝 </span>
-                                <span class="label">Audit Log</span>
-                            </a>
-                        </li>
-                        }
-                        @* <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Feedback">
-                                <span class="emoji">✉️ </span>
-                                <span class="label">Feedback</span>
-                            </a>
-                        </li> *@
-                         <li class = "nav-item">
-                            <form method = "post" asp-controller="Authentication" asp-action="Logout" style='display: inline;'>
-                            <input type = "hidden" name="_RequestVerificationToken" value = "@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
-                             <button type="submit" class="nav-link text-dark">
-                            <span class="emoji">&#128100;</span>
-                            <span class="label">Sign out</span>
-                            </button>
-                            </form>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
+                                    <span class="emoji">📝 </span><span class="label">Audit Log</span>
+                                </a>
                             </li>
+                        }
+
+                        <li class="nav-item">
+                            <form method="post" asp-controller="Authentication" asp-action="Logout"
+                                style="display:inline;">
+                                <input type="hidden" name="_RequestVerificationToken"
+                                    value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+                                <button type="submit" class="nav-link text-dark">
+                                    <span class="emoji">&#128100;</span><span class="label">Sign out</span>
+                                </button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
 
                 <div class="navbar-right">
-                    <form asp-controller="Home" asp-action="Search" method="get">
-                        <div id="search-container" class="search-container">
-                            <button type="submit" id="search-addon" class="input-group-text search-icon">🔍</button>
+                    <form asp-controller="Search" asp-action="Index" method="get">
+                        <div id="search-container" class="search-container"
+                            style="display:flex;justify-content:center;align-items:center;width:100%;">
+                            <button type="submit" id="search-addon" class="input-group-text search-icon"
+                                style="padding:10px;font-size:1rem;">🔍</button>
                             <input name="searchQuery" type="text" id="search-input" class="form-control search-input"
                                 placeholder="Search for assets or employees..." aria-label="Search"
                                 aria-describedby="search-addon">
                         </div>
-
-
                     </form>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container-fluid">
-        <main role="main" class="pb-3">
+
+    <div class="container-fluid px-3 px-md-4 mt-5 layout-flex">
+        <main role="main" class="pb-3 w-100">
             @RenderBody()
         </main>
     </div>
 
-    @* <footer class="border-top footer text-muted">
-        <div class="container-fluid">
-            &copy; 2025 - AIMS - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer> *@
+    <!-- Vendor -->
     <script src="~/lib/jquery/dist/jquery.min.js" asp-append-version="true"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js" asp-append-version="true"></script>
-    <script src="~/js/site.js" asp-append-version="true" asp-append-version="true" defer></script>
-    <script src="~/js/global-spinner.js" asp-append-version="true"></script>
+
+    <!-- Global/Base JS only -->
+    <script src="~/js/base/site.js" asp-append-version="true" defer></script>
+    <script src="~/js/components/global-spinner.js" asp-append-version="true" defer></script>
+
+    <!-- AIMS global UI: custom select enhancer (portal + a11y, works inside any modal) -->
+    <script src="~/js/base/aims.ui.js" asp-append-version="true" defer></script>
+
+    @* Page/partial-specific scripts go here *@
     @await RenderSectionAsync("Scripts", required: false)
 
-
-    <!-- Asset Assigned Message -->
+    <!-- Toasts -->
     <div class="assign-toast-container">
         <div id="assignToast" class="toast assign-toast" role="alert" data-bs-autohide="true">
             <div class="d-flex">
-                <div class="toast-body">
-                    Asset Assigned!
-                </div>
+                <div class="toast-body">Asset Assigned!</div>
             </div>
         </div>
     </div>
-
-    <!-- Asset Assigned Message -->
     <div class="error-toast-container">
         <div id="errorToast" class="toast error-toast" role="alert" data-bs-autohide="true">
             <div class="d-flex">
-                <div class="toast-body">
-                </div>
+                <div class="toast-body"></div>
             </div>
         </div>
     </div>
-
-    <!-- Asset Edited Message -->
     <div class="edit-toast-container">
         <div id="editToast" class="toast edit-toast" role="alert" data-bs-autohide="true">
             <div class="d-flex">
-                <div class="toast-body">
-                    Asset Edited!
-                </div>
+                <div class="toast-body">Asset Edited!</div>
             </div>
         </div>
     </div>
-
-    <!-- Asset Assigned Message -->
     <div class="assign-toast-container">
         <div id="categoryToast" class="toast assign-toast" role="alert" data-bs-autohide="true">
             <div class="d-flex">
-                <div class="toast-body">
-                    Category Added!
-                </div>
+                <div class="toast-body">Category Added!</div>
             </div>
         </div>
     </div>
 
-    <!-- Loading Spinner -->
+    <!-- Global Loading Spinner -->
     <div id="global-loading-overlay" class="global-loading-overlay" aria-hidden="true">
         <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
     </div>
-
-
 </body>
-
 </html>
