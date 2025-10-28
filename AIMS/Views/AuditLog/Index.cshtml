@@ -43,18 +43,19 @@
     <h1 class="audit-log-title">Audit Log</h1>
 
     @* hidden config for JS (polling interval / batch size / feature flags) *@
-    <div id="auditlog-config" data-poll-interval="@Config["Audit:PollingIntervalMs"]"
-        data-max-batch="@Config["Audit:MaxBatchSize"]" data-feature-realtime="@Config["Feature:AuditRealTime"]"
-        data-feature-polling="@Config["Feature:AuditPollingFallback"]" hidden></div>
+    <div id="auditlog-config"
+         data-poll-interval="@Config["Audit:PollingIntervalMs"]"
+         data-max-batch="@Config["Audit:MaxBatchSize"]"
+         data-feature-realtime="@Config["Feature:AuditRealTime"]"
+         data-feature-polling="@Config["Feature:AuditPollingFallback"]"
+         hidden></div>
 
     <div id="filter-button-container" class="dropdown">
-        <button id="filter-button-toggle" class="standard-button" type="button" aria-haspopup="true"
-            aria-expanded="false">
+        <button id="filter-button-toggle" class="standard-button" type="button" aria-haspopup="true" aria-expanded="false">
             Filter
         </button>
         <div id="filterDropdown" class="dropdown-menu" role="menu" aria-hidden="true">
-            <input type="text" id="filterSearchInput" placeholder="Search logs..." class="dropdown-search"
-                aria-label="Search logs" />
+            <input type="text" id="filterSearchInput" placeholder="Search logs..." class="dropdown-search" aria-label="Search logs" />
             <a href="#" class="dropdown-item" data-action="All" role="menuitem">All</a>
             <a href="#" class="dropdown-item" data-action="Assign" role="menuitem">Assign</a>
             <a href="#" class="dropdown-item" data-action="Create" role="menuitem">Create</a>
@@ -101,6 +102,14 @@
             </tr>
         </tbody>
     </table>
+
+    @* ---- ⬇ NEW: Pager (same markup/classes as Search) ------------------ *@
+    <div class="search-pager" id="audit-pager" hidden>
+        <button type="button" id="audit-pg-prev" class="pager-btn">Prev</button>
+        <span id="audit-pg-status" class="pager-status"></span>
+        <button type="button" id="audit-pg-next" class="pager-btn">Next</button>
+    </div>
+    @* -------------------------------------------------------------------- *@
 </div>
 
 @section Scripts {
