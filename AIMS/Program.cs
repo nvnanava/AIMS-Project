@@ -11,10 +11,7 @@ using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
-
-
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
-
 
 // -------------------- Services --------------------
 builder.Services.AddEndpointsApiExplorer();   // dev/test
@@ -39,7 +36,6 @@ builder.Services
         o.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
-
 
 // Register the concrete FileSystem class for the IFileSystem interface (ReportsController)
 // necessary for mocking in UnitTesting
@@ -111,20 +107,37 @@ builder.Services
         options.TokenValidationParameters.RoleClaimType = "roles";
     });
 
-//Microsoft Graph setup
-builder.Services.AddSingleton<GraphServiceClient>(sp =>
+// -------------------- Microsoft Graph setup (secrets-first) --------------------
+var clientSecretPath = builder.Configuration["AzureAd:ClientSecretFile"];
+string? clientSecret = null;
+
+if (!string.IsNullOrWhiteSpace(clientSecretPath) && File.Exists(clientSecretPath))
 {
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var tenantID = configuration["AzureAd:TenantId"];
-    var clientId = configuration["AzureAd:ClientId"];
-    var clientSecret = configuration["AzureAd:ClientSecret"];
+    clientSecret = File.ReadAllText(clientSecretPath).Trim();
+}
+else
+{
+    // Fallbacks: env var, then (last resort) appsettings
+    clientSecret = Environment.GetEnvironmentVariable("AzureAd__ClientSecret")
+                   ?? builder.Configuration["AzureAd:ClientSecret"];
+}
 
-    var scopes = new[] { "https://graph.microsoft.com/.default" };
-    var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
-    return new GraphServiceClient(credential, scopes);
+if (string.IsNullOrWhiteSpace(clientSecret))
+{
+    Console.WriteLine("⚠️ AzureAd ClientSecret not found (auth will fail).");
+}
+else if (builder.Environment.IsDevelopment())
+{
+    // Avoid printing this in prod; just length for a quick sanity check in dev
+    Console.WriteLine($"✅ AzureAd ClientSecret loaded (len={clientSecret.Length}).");
+}
 
+var tenantID = builder.Configuration["AzureAd:TenantId"];
+var clientId = builder.Configuration["AzureAd:ClientId"];
+var scopes = new[] { "https://graph.microsoft.com/.default" };
 
-});
+var credential = new ClientSecretCredential(tenantID, clientId, clientSecret);
+builder.Services.AddSingleton(new GraphServiceClient(credential, scopes));
 
 // Register GraphUserService and its interface for DI
 builder.Services.AddScoped<IGraphUserService, GraphUserService>();
@@ -133,7 +146,6 @@ builder.Services.AddAuthorization(options => // Require auth by default, you mus
 {
     options.FallbackPolicy = options.DefaultPolicy;
 });
-
 
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
@@ -167,9 +179,6 @@ builder.Services.AddAuthorizationBuilder()
                   "niyant397@gmail.com",
                   "tnburg@pacbell.net"
               }.Contains(c.Value))));
-
-
-
 
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 
@@ -229,7 +238,6 @@ if (app.Environment.IsDevelopment())
 
     app.UseSwagger();
     app.UseSwaggerUI();
-
 }
 else
 {
@@ -266,22 +274,19 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-
-// TODO: Remove when we add proper Azure Blob storage
 // allow saving to wwwroot folder
 app.UseStaticFiles();
 
 // Order matters: Routing -> AuthN -> AuthZ -> status pages -> endpoints
 app.UseRouting();
 
-
 // CORS for Dev must come after routing
 if (app.Environment.IsDevelopment())
 {
-
     // CORS only in dev (handy for local frontend)
     app.UseCors("AllowLocalhost");
 }
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -312,7 +317,3 @@ app.Run();
 public partial class Program
 {
 }
-
-
-
-

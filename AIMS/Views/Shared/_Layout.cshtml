@@ -65,6 +65,7 @@
 
     <!-- Vendor -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/_FilterIcon.css" asp-append-version="true" />
 
     <!-- Global/Base CSS only -->
     <link rel="stylesheet" href="~/css/base/site.css" asp-append-version="true" />
@@ -187,6 +188,9 @@
     <!-- js Utilities -->
     <script src="~/js/Utilities/aimsFetch.js" asp-append-version="true"></script>
 
+    <link rel="stylesheet" href="~/css/components/_FilterIcon.css" asp-append-version="true" />
+
+
     @* Page/partial-specific scripts go here *@
     @await RenderSectionAsync("Scripts", required: false)
 
@@ -224,6 +228,8 @@
     <div id="global-loading-overlay" class="global-loading-overlay" aria-hidden="true">
         <img class="logo-spinner" src="@Url.Content("~/images/mbc_logo.png")" alt="Loading" />
     </div>
+
+
 </body>
 
 </html>
