@@ -115,4 +115,72 @@
     color: #007bff;
 }
 
+/*  Table whites & borders match Reports/Admin */
+.audit-log-table {
+  border: 1px solid #34495e;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  table-layout: fixed;
+}
 
+.audit-log-table thead th {
+  background-color: #34495e;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.audit-log-table tbody tr:nth-child(even) {
+  background-color: #ECF0F1;
+}
+.audit-log-table tbody tr:nth-child(odd) {
+  background-color: #E0E4E5;
+}
+
+/*  Truncate long text gracefully */
+.audit-log-table th,
+.audit-log-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 250px;
+}
+
+/*  Tooltip for truncated cells */
+.audit-log-table td[title]:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #f8f9fa;
+  position: relative;
+  z-index: 2;
+}
+
+/*  Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/*  Button colors consistent with mint theme */
+#filter-button-toggle {
+  background-color: #1abc9c;
+  color: #fff;
+  border: 1px solid #1abc9c;
+  transition: background-color 0.2s ease;
+}
+
+#filter-button-toggle:hover {
+  background-color: #17a589;
+}
+
+.audit-log-table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.audit-log-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+html {
+  scroll-behavior: smooth;
+}
