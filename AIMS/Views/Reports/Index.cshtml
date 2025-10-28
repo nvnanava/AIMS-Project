@@ -1,586 +1,245 @@
-<link rel="stylesheet" href="~/css/pages/reports.index.css" />
+@* ======================================================================
+   AIMS View: Reports/Index
+   ----------------------------------------------------------------------
+   Purpose
+   - Lists generated reports and provides actions: search, CSV download,
+     and three “Generate report” modals (Assignment / Office / Custom).
+
+   Conventions
+   1) Layout
+      - Uses ~/Views/Shared/_Layout.cshtml for Bootstrap/JS includes.
+
+   2) Styles
+      - Page CSS: ~/css/pages/reports.index.css
+      - Table CSS shared by report tables:
+        ~/css/components/_ReportTableComponent.css
+      - Do not place inline <style> in this view.
+
+   3) Scripts
+      - Page JS: ~/js/pages/reports.index.js (no inline <script>).
+      - Uses Bootstrap’s Modal/Toast from the layout bundle.
+
+   4) Markup notes
+      - Main table body id: #reports-table-body (unique).
+      - Modal table bodies use unique ids:
+        #asset-report-tbody, #custom-report-tbody, #user-report-tbody, #office-report-tbody.
+      - Avoid duplicate IDs; keep classes semantic.
+
+   5) Data
+      - Index loads table data from /api/reports/list.
+      - Generate buttons POST to the existing endpoints (as before).
+
+   ====================================================================== *@
+
 @{
     ViewData["Title"] = "Reports";
-    Layout = "_Layout";
+
+    // Table headers (server-rendered; values used only for markup)
+    var tableHeaders = new List<string> { "Name", "Type", "Description", "Office", "Date Created" };
+
+    // Demo data for modal tables (left as-is, rendered server-side)
+    var userHeaders  = new List<string> { "Name", "Email", "Role", "Asset", "Status" };
+    var officeHeaders = new List<string> { "Office", "Asset", "Status" };
+    var assetHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
+
+    var userData = new List<Dictionary<string, string>> {
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Lenovo ThinkPad E16"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Dell S2421NX"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Logitech Zone 300"},{"Status","Inactive"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Lenovo IdeaCentre 3"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Microsoft 365 Business"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP 527SH"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Logitech Zone Vibe 100"},{"Status","Inactive"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Dell Inspirion 3030"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Inactive"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
+        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
+    };
+
+    var officeData = new List<Dictionary<string, string>> {
+        new() { {"Office","10"},{"Asset","Lenovo Thinkpad E16"},{"Status","Active"} },
+        new() { {"Office","31"},{"Asset","Dell S2421NX"},{"Status","Inactive"} },
+        new() { {"Office","14"},{"Asset","Logitech Zone 300"},{"Status","Active"} },
+        new() { {"Office","28"},{"Asset","Lenovo IdeaCentre 3"},{"Status","Active"} },
+        new() { {"Office","14"},{"Asset","Microsoft 365 Business"},{"Status","Active"} },
+        new() { {"Office","26"},{"Asset","HP 527SH"},{"Status","Active"} },
+        new() { {"Office","13"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
+        new() { {"Office","21"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
+        new() { {"Office","28"},{"Asset","Logitech Zone Vibe 100"},{"Status","Inactive"} },
+        new() { {"Office","29"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Active"} },
+        new() { {"Office","46"},{"Asset","Dell Inspirion 3030"},{"Status","Active"} },
+        new() { {"Office","51"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
+        new() { {"Office","38"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Inactive"} },
+        new() { {"Office","21"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
+        new() { {"Office","42"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
+    };
+
+    var assetData = new List<Dictionary<string, string>> {
+        new() { {"Asset Name","Lenovo ThinkPad E16"},{"Type","Laptop"},{"Tag #","LT-0020"},{"Assigned To","John Smith"},{"Status","Damaged"} },
+        new() { {"Asset Name","Dell S2421NX"},{"Type","Laptop"},{"Tag #","MN-0001"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","Logitech Zone 300"},{"Type","Headphone"},{"Tag #","HS-0080"},{"Assigned To","Unassigned"},{"Status","Available"} },
+        new() { {"Asset Name","Lenovo IdeaCentre 3"},{"Type","Laptop"},{"Tag #","DT-0011"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","Microsoft 365 Business"},{"Type","Laptop"},{"Tag #","SW-0100"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","HP 527SH"},{"Type","Laptop"},{"Tag #","MN-0023"},{"Assigned To","Unassigned"},{"Status","Damaged"} },
+        new() { {"Asset Name","HP Pavilion TP01-2234"},{"Type","Laptop"},{"Tag #","DT-0075"},{"Assigned To","John Smith"},{"Status","Due Soon"} },
+        new() { {"Asset Name","Logitech Zone Vibe 100"},{"Type","Monitor"},{"Tag #","HS-0015"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","Belkin BoostCharge 3.3ft USB-C"},{"Type","Keyboard"},{"Tag #","CC-0088"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","Dell Inspirion 3030"},{"Type","Mouse"},{"Tag #","SW-0100"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","Samsung Galaxy Book4"},{"Type","Monitor"},{"Tag #","MN-0023"},{"Assigned To","Unassigned"},{"Status","Available"} },
+        new() { {"Asset Name","Belkin BoostCharge 3.3ft  USB-C"},{"Type","Laptop"},{"Tag #","DT-0075"},{"Assigned To","John Smith"},{"Status","In Repair"} },
+        new() { {"Asset Name","HP Pavilion TP01-2234"},{"Type","Laptop"},{"Tag #","LT-0005"},{"Assigned To","John Smith"},{"Status","Assigned"} },
+        new() { {"Asset Name","HP Pavilion TP01-2234"},{"Type","Laptop"},{"Tag #","HS-0015"},{"Assigned To","John Smith"},{"Status","In Repair"} },
+    };
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/AIMS.styles.css" />
-    <link rel="stylesheet" href="~/css/base/site.css" />
-    <link rel="stylesheet" href="~/css/components/_Pager.css" />
-    <link rel="stylesheet" href="~/css/components/_AdminTable.css" />
-    <link rel="stylesheet" href="~/css/components/_SettingsCheckbox.css" />
-    <link rel="stylesheet" href="~/css/pages/reports.index.css" />
-}
-@{
-
-
-    // Define Table Headers
-  var tableHeaders = new List<string> { "Name", "Type", "Description", "Office", "Date Created" };
-
-    // Define Table Data
-  var tableData = new List<Dictionary<string, string>> {
-    new Dictionary<string, string> { {"Name", "Monthly Report for Jan"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "231ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Check for Daisy"},
-        {"Type", "Asset Report"}, {"Description", "Daisy wanted to see what assets we have"},
-        {"Office", "214ISB"}, {"Date Created", "12 Dec 2024 03:41:04 PT"} },
-    new Dictionary<string, string> { {"Name", "Send to Higher-ups"},
-        {"Type", "Custom Report"}, {"Description", "They asked for all the information we have"},
-        {"Office", "3A-17"}, {"Date Created", "11 Dec 2024 06:32:51 PT"} },
-    new Dictionary<string, string> { {"Name", "Monthly Report for Dec"},
-        {"Type", "Asset Assignments to Users"}, {"Description", ""},
-        {"Office", "2B-05"}, {"Date Created", "02 Dec 2024 11:05:25 PT"} },
-    new Dictionary<string, string> { {"Name", "Report for Dan"},
-        {"Type", "Custom Report"}, {"Description", "Dan asked for report will users and office"},
-        {"Office", "231ISB"}, {"Date Created", "25 Nov 2024 09:38:31 PT"} },
-    new Dictionary<string, string> { {"Name", "Checking something"},
-        {"Type", "Assets Assigned to an Office"}, {"Description", "Needed to do some analysis on how many assets per office"},
-        {"Office", "1C-28"}, {"Date Created", "07 Nov 2024 04:34:11 PT"} },
-    new Dictionary<string, string> { {"Name", "Monthly Report for Nov"},
-        {"Type", "Assets Assigned to an Office"}, {"Description", ""},
-        {"Office", "214ISB"}, {"Date Created", "01 Nov 2024 10:25:57 PT"} },
-    new Dictionary<string, string> { {"Name", "Print for Wall"},
-        {"Type", "Asset Report"}, {"Description", "need to put on wall so everyone can see what assets are where"},
-        {"Office", "3A-02"}, {"Date Created", "26 Sept 2024 01:28:58 PT"} },
-    new Dictionary<string, string> { {"Name", "Send our reminders"},
-        {"Type", "Asset Assignments to Users"}, {"Description", "sending out reminders who has what in case missing items"},
-        {"Office", "2B-12"}, {"Date Created", "15 Sept 2024 07:15:47 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 1"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "231ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 2"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "214ISB"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 3"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "1C-28"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 4"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "3A-17"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 5"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "2B-05"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} },
-    new Dictionary<string, string> { {"Name", "Do 6"},
-        {"Type", "Asset Report"}, {"Description", "Also yearly report"},
-        {"Office", "3A-02"}, {"Date Created", "01 Jan 2025 09:19:34 PT"} }
-};
-
-
-    // Define User Table Headers
-    var userHeaders = new List<string> { "Name", "Email", "Role", "Asset", "Status"};
-
-    // Define User Table Data
-    var userData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Lenovo ThinkPad E16"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Dell S2421NX"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Logitech Zone 300"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Lenovo IdeaCentre 3"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Microsoft 365 Business"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "HP 527SH"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Logitech Zone Vibe 100"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Dell Inspirion 3030"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Name", "John Smith"},
-            {"Email", "Jsmith@email.com"}, {"Role", "Admin"},
-            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} }
-    };
-
-    // Define Office Table Headers
-    var officeHeaders = new List<string> { "Office", "Asset", "Status"};
-
-    // Define Office Table Data
-    var officeData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Office", "10"},
-            {"Asset", "Lenovo Thinkpad E16"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "31"},
-            {"Asset", "Dell S2421NX"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "14"},
-            {"Asset", "Logitech Zone 300"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "28"},
-            {"Asset", "Lenovo IdeaCentre 3"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "14"},
-            {"Asset", "Microsoft 365 Business"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "26"},
-            {"Asset", "HP 527SH"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "13"},
-            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "21"},
-            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "28"},
-            {"Asset", "Logitech Zone Vibe 100"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "29"},
-            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "46"},
-            {"Asset", "Dell Inspirion 3030"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "51"},
-            {"Asset", "Samsung Galaxy Book4"}, {"Status", "Active"} },
-        new Dictionary<string, string> { {"Office", "38"},
-            {"Asset", "Belkin BoostCharge 3.3ft USB-C"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "21"},
-            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} },
-        new Dictionary<string, string> { {"Office", "42"},
-            {"Asset", "HP Pavilion TP01-2234"}, {"Status", "Inactive"} }
-    };
-
-    // Define Asset Table Headers
-    var assetHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status"};
-
-    // Define Asset Table Data
-    var assetData = new List<Dictionary<string, string>> {
-        new Dictionary<string, string> { {"Asset Name", "Lenovo ThinkPad E16"},
-            {"Type", "Laptop"}, {"Tag #", "LT-0020"},
-            {"Assigned To", "John Smith"}, {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell S2421NX"},
-            {"Type", "Laptop"}, {"Tag #", "MN-0001"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone 300"},
-            {"Type", "Headphone"}, {"Tag #", "HS-0080"},
-            {"Assigned To", "Unassigned"}, {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Lenovo IdeaCentre 3"},
-            {"Type", "Laptop"}, {"Tag #", "DT-0011"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Microsoft 365 Business"},
-            {"Type", "Laptop"}, {"Tag #", "SW-0100"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP 527SH"},
-            {"Type", "Laptop"}, {"Tag #", "MN-0023"},
-            {"Assigned To", "Unassigned"}, {"Status", "Damaged"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"},
-            {"Type", "Laptop"}, {"Tag #", "DT-0075"},
-            {"Assigned To", "John Smith"}, {"Status", "Due Soon"} },
-        new Dictionary<string, string> { {"Asset Name", "Logitech Zone Vibe 100"},
-            {"Type", "Monitor"}, {"Tag #", "HS-0015"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft USB-C"},
-            {"Type", "Keyboard"}, {"Tag #", "CC-0088"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Dell Inspirion 3030"},
-            {"Type", "Mouse"}, {"Tag #", "SW-0100"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "Samsung Galaxy Book4"},
-            {"Type", "Monitor"}, {"Tag #", "MN-0023"},
-            {"Assigned To", "Unassigned"}, {"Status", "Available"} },
-        new Dictionary<string, string> { {"Asset Name", "Belkin BoostCharge 3.3ft  USB-C"},
-            {"Type", "Laptop"}, {"Tag #", "DT-0075"},
-            {"Assigned To", "John Smith"}, {"Status", "In Repair"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"},
-            {"Type", "Laptop"}, {"Tag #", "LT-0005"},
-            {"Assigned To", "John Smith"}, {"Status", "Assigned"} },
-        new Dictionary<string, string> { {"Asset Name", "HP Pavilion TP01-2234"},
-            {"Type", "Laptop"}, {"Tag #", "HS-0015"},
-            {"Assigned To", "John Smith"}, {"Status", "In Repair"} }
-    };
-
-}
-<body style="background-color:#ECF0F1;">
-
-    <style>
-        body {
-            overflow-y: scroll;
-        }
-
-        .report-page-size {
-            width: 95%;
-            margin: 0 auto 20px auto;
-        }
-
-        /* Report Management Section */
-        .report-management {
-            width: 100%;
-            height: auto;
-            background-color: #FFFFFF;
-            margin: 0 auto 20px auto;
-            overflow: visible;
-        }
-
-        /* Report Header */
-        .report-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            height: 50px;
-            padding: 0px 5px 0px 20px;
-            margin: 0;
-        }
-
-        .report-header .left-section {
-            display: flex;
-            align-items: center;
-        }
-
-        .report-header .right-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Search Bar */
-        .search-container {
-            display: flex;
-            align-items: center;
-            width: 300px;
-            height: 41px;
-            background-color: #ecf0f1;
-            border: 2px solid transparent;
-            border-radius: 20px;
-            padding: 5px 12px;
-        }
-
-        .search-input {
-            flex: 1;
-            background-color: transparent;
-            text-align: start;
-            border: none;
-            outline: none;
-            padding: 0px;
-        }
-
-
-        /* View Download CSV and New Report Button */
-        .download-csv-button, .new-report-button {
-            height: 41px;
-            padding: 0px 16px;
-            color: #34495e;
-            line-height: normal;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .new-report-button {
-            margin-left: auto;
-            margin-inline-end: 10px;
-            writing-mode: horizontal-tb;
-        }
-
-
-/* --- Responsive Table Layout --- */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    margin-top: 0.5rem;
-    position: relative;
+    <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/base/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/_ReportTableComponent.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/reports.index.css" asp-append-version="true" />
 }
 
-/* Make sure the table fits screen width and scrolls cleanly */
-.report-table {
-    width: 100%;
-    min-width: 700px;
-    border-collapse: collapse;
-    table-layout: auto;
-}
+<div class="reports-page"> @* page-scoped wrapper for bg & spacing *@
+    <div class="report-page-size">
+        <h1>Reports</h1>
 
-/* Auto-fit and prevent text clipping */
-.report-table th,
-.report-table td {
-    padding: 12px 14px;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+        <div class="report-management">
+            <div class="report-header">
+                <div class="left-section">
+                    <div class="search-container">
+                        <input
+                            type="search"
+                            id="reportSearch"
+                            class="form-control search-input"
+                            placeholder="Search Reports"
+                            aria-label="Search" />
+                    </div>
+                </div>
 
-/* Narrow first column for checkbox */
-.report-table th:first-child,
-.report-table td:first-child {
-    width: 40px;
-    min-width: 40px;
-}
+                <div class="right-section">
+                    <button type="button" class="download-csv-button">Download CSV of Selected Files</button>
 
-/* Sticky header on scroll */
-.report-table thead {
-    position: sticky;
-    top: 0;
-    background: #CFDCDF;
-    z-index: 5;
-}
-
-/* Subtle fade shadow on right edge for mobile scroll */
-.table-container::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 2rem;
-    pointer-events: none;
-    background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
-    display: none;
-}
-
-@@media (max-width: 768px) {
-    .table-container::after {
-        display: block;
-    }
-}
-
-/*Updated column widths to account for Office
-.report-table th:nth-child(1),
-.report-table td:nth-child(1) { width: 16px; }
-
-
-.report-table th:nth-child(2),
-.report-table td:nth-child(2) { width: 122px; }
-
-
-.report-table th:nth-child(3),
-.report-table td:nth-child(3) { width: 145px; }
-
-
-.report-table th:nth-child(4),
-.report-table td:nth-child(4) { width: 265px; }
-
-
-.report-table th:nth-child(5),
-.report-table td:nth-child(5) { width: 120px; }
-
-
-.report-table th:nth-child(6),
-.report-table td:nth-child(6) { width: 118px; } */
-
-        .report-table th {
-            height: 55px;
-            color: #34495e;
-        }
-
-        .report-table thead {
-            position: sticky;
-            top: 0;
-            background-color: #CFDCDF;
-            border-radius: 5px;
-            z-index: 2;
-        }
-
-        .report-table tbody tr {
-            border-bottom: 1px solid #999393;
-        }
-
-
-
-        .other-table {
-            table-layout: fixed;
-            width: 100%;
-            background-color: #FFFFFF;
-        }
-
-        .other-table th, .other-table td {
-            padding: 12px;
-            text-align: left;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .other-table th {
-            height: 55px;
-            color: #34495e;
-        }
-
-        .other-table thead {
-            position: sticky;
-            top: 0;
-            background-color: #CFDCDF;
-            border-radius: 5px;
-            z-index: 2;
-        }
-
-        .other-table tbody tr {
-            border-bottom: 1px solid #999393;
-        }
-
-        /* Header Titles */
-        .header-titles {
-            color: #34495e;
-            font-size: 18px;
-            height: 41px;
-            padding: 0px 16px;
-            cursor: pointer;
-        }
-
-        .modal-dialog.custom-width {
-            max-width: 75%;
-        }
-
-        .modal-dialog.custom-width-two {
-            max-width: 50%;
-        }
-
-
-        /* Status Badges */
-        .status {
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-
-        .status.assigned {
-            background-color: #0070ff29;
-        }
-
-        .status.available {
-            background-color: #9df299;
-        }
-
-        .status.damaged {
-            background-color: #ff000029;
-        }
-
-        .status.duesoon {
-            background-color: #fff20029;
-        }
-
-        .status.overdue {
-            background-color: #ff000029;
-        }
-
-        .status.inrepair {
-            background-color: #fff20029;
-        }
-
-        .status.active {
-            background-color: #9df299;
-        }
-
-        .status.inactive {
-            background-color: #6db869;
-        }
-    </style>
-
-<div class="report-page-size">
-    <h1>Reports</h1>
-
-    <div class="table-wrapper">
-        <div class="toolbar d-flex justify-content-between align-items-center mb-3">
-            <input type="text" id="reportSearch" class="form-control search-input" placeholder="Search Reports" aria-label="Search">
-            
-            <div class="d-flex gap-2">
-        	<button class="btn add-btn">Download CSV</button>
-                <div class="dropdown">
-                    <button class="btn btn-mint dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                        New Report
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Assignments Users</button></li>
-                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Assets Assigned to an Office</button></li>
-                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateReport">Asset Reports</button></li>
-                        <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom Report (IT Admin Only)</button></li>
-                    </ul>
+                    <div class="dropdown">
+                        <button class="btn new-report-button dropdown-toggle" type="button" id="dropdownMenuButton1"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            New Report
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateAssignmentReport">Assignment</button>
+                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateOfficeReport">Office</button>
+                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom</button>
+                        </ul>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
-
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th scope="col">
-                            <span class="sort-text"></span>
-                        </th>
-                        @foreach (var header in tableHeaders) {
-    				<th scope="col">
-        			<span class="sort-text">@((header == "Name") ? "Report Name" : header)</span>
-    				</th>
-				
-                        }
-                    </tr>
-                </thead>
-                <tbody id="table-body"> <!--class="table-body"-->
-                    @if (tableData.Count == 0) {
-                        <tr><td colspan="tableHeaders.Count" style="text-align: center;">No data available</td></tr>
-                    } else {
-                        @foreach (var row in tableData) {
-                            <tr>
-                                <td>
-                                     <input type="checkbox" class="settings-checkbox" aria-label="Select report" />
-                                </td>
-                                @foreach (var header in tableHeaders) {
-                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                }
-                            </tr>
-                        }
-                        <!-- "No results" row (hidden if data in table) -->
-                        <tr id="no-results-row" style="display: none;">
-                            <td colspan="@tableHeaders.Count + 1" class="no-results-cell">No matching results found</td>
+            <div class="table-container table-responsive">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">
+                                <span class="sort-text"></span>
+                            </th>
+                            @foreach (var header in tableHeaders)
+                            {
+                                <th scope="col"><span class="sort-text">@header</span></th>
+                            }
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody id="reports-table-body">
+                        <tr><td colspan="@tableHeaders.Count + 1" class="no-results-cell">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="report-toast-container">
+        <div id="reportToast" class="toast report-toast" role="alert" data-bs-autohide="true">
+            <div class="d-flex"><div class="toast-body">Report generated!</div></div>
         </div>
     </div>
 </div>
 
-</body>
+@* ------------------------- Modals ------------------------- *@
 
-
-
-<!-- Generate Report Modal -->
-<div class="modal fade" id="generateReport" tabindex="-1" aria-labelledby="generateReportLabel" aria-hidden="true">
+<!-- Generate Assignment Report Modal -->
+<div class="modal fade" id="generateAssignmentReport" tabindex="-1" aria-labelledby="generateAssignmentReportLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="generateReportLabel">Generate a Report</h5>
+        <h5 class="modal-title" id="generateAssignmentReportLabel">Generate an Assignment Report</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-            <form class="row g-3">
-                <div class="col-md-6">
-                    <label for="dateRange1" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="dateRange1" name="dateRange1">
-                </div>
-                <div class="col-md-6">
-                    <label for="dateRange2" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="dateRange2" name="dateRange2">
-                </div>
-                <div class="col-12">
-                    <label for="inputDescription" class="form-label">Description (optional)</label>
-                    <input type="text" class="form-control" id="inputDescription">
-                </div>
-            </form>
+        <form class="row g-3" id="assignmentReportForm">
+          <div class="col-12">
+            <label for="reportName" class="form-label">Report Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="reportName" name="reportName" required />
+          </div>
+          <div class="col-md-6">
+            <label for="dateRange1" class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="dateRange1" name="dateRange1" required />
+          </div>
+          <div class="col-md-6">
+            <label for="dateRange2" class="form-label">End Date (optional)</label>
+            <input type="date" class="form-control" id="dateRange2" name="dateRange2" />
+          </div>
+          <div class="col-12">
+            <label for="inputDescription" class="form-label">Description (optional)</label>
+            <input type="text" class="form-control" id="inputDescription" />
+          </div>
+        </form>
       </div>
       <div class="modal-footer">
-  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-  <button type="button" class="btn add-btn" data-bs-dismiss="modal">Generate Report</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="generateAssignmentReportBtn">Generate Report</button>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Generate Office Report Modal -->
+<div class="modal fade" id="generateOfficeReport" tabindex="-1" aria-labelledby="generateOfficeReportLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="generateOfficeReportLabel">Generate an Office Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form class="row g-3" id="officeReportForm">
+          <div class="col-12">
+            <label for="officeReportName" class="form-label">Report Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="officeReportName" name="officeReportName" required />
+          </div>
+          <div class="col-12">
+            <label for="officeName" class="form-label">Office Number <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="officeName" name="officeName" required />
+          </div>
+          <div class="col-md-6">
+            <label for="officeStartDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="officeStartDate" name="officeStartDate" required />
+          </div>
+          <div class="col-md-6">
+            <label for="officeEndDate" class="form-label">End Date (optional)</label>
+            <input type="date" class="form-control" id="officeEndDate" name="officeEndDate" />
+          </div>
+          <div class="col-12">
+            <label for="officeDescription" class="form-label">Description (optional)</label>
+            <input type="text" class="form-control" id="officeDescription" />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="generateOfficeReportBtn">Generate Report</button>
+      </div>
     </div>
   </div>
 </div>
@@ -594,350 +253,204 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-            <form class="row g-3">
-                <div class="col-md-6">
-                    <label for="dateRange1" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="dateRange1" name="dateRange1">
-                </div>
-                <div class="col-md-6">
-                    <label for="dateRange2" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="dateRange2" name="dateRange2">
-                </div>
-                <div class="col-12">
-                    <label for="inputDescription" class="form-label">Description (optional)</label>
-                    <input type="text" class="form-control" id="inputDescription">
-                </div>
-                <div class="col-12">
-                    <div class="form-check">
-                        <input class="settings-checkbox" type="checkbox" id="gridCheck">
-                        <label class="form-check-label" for="gridCheck">
-                            See Hardware
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="settings-checkbox" type="checkbox" id="gridCheck2">
-                        <label class="form-check-label" for="gridCheck2">
-                            See Software
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="settings-checkbox" type="checkbox" id="gridCheck3">
-                        <label class="form-check-label" for="gridCheck3">
-                            See Users
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="settings-checkbox" type="checkbox" id="gridCheck4">
-                        <label class="form-check-label" for="gridCheck4">
-                            See Office
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="settings-checkbox" type="checkbox" id="gridCheck5">
-                        <label class="form-check-label" for="gridCheck5">
-                            See when software and/or warranty expires
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="settings-checkbox" type="checkbox" id="gridCheck6">
-                        <label class="form-check-label" for="gridCheck6">
-                            See what requires maintenance or replacements
-                        </label>
-                    </div>
-                </div>
-            </form>
+        <form class="row g-3" id="customReportForm">
+          <div class="col-12">
+            <label for="customReportName" class="form-label">Report Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="customReportName" name="customReportName" required />
+          </div>
+          <div class="col-md-6">
+            <label for="customStartDate" class="form-label">Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="customStartDate" name="customStartDate" required />
+          </div>
+          <div class="col-md-6">
+            <label for="customEndDate" class="form-label">End Date (optional)</label>
+            <input type="date" class="form-control" id="customEndDate" name="customEndDate" />
+          </div>
+          <div class="col-12">
+            <label for="customDescription" class="form-label">Description (optional)</label>
+            <input type="text" class="form-control" id="customDescription" />
+          </div>
+
+          <div class="col-12">
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="seeHardware" checked /><label class="form-check-label" for="seeHardware">See Hardware</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="seeSoftware" checked /><label class="form-check-label" for="seeSoftware">See Software</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="seeUsers" checked /><label class="form-check-label" for="seeUsers">See Users</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="seeOffice" checked /><label class="form-check-label" for="seeOffice">See Office</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="seeExpiration" /><label class="form-check-label" for="seeExpiration">See when software and/or warranty expires</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" id="filterByMaintenance" /><label class="form-check-label" for="filterByMaintenance">See what requires maintenance or replacements</label></div>
+          </div>
+        </form>
       </div>
-<div class="modal-footer">
-  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-  <button type="button" class="btn add-btn" data-bs-dismiss="modal">Generate Report</button>
-</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="generateCustomReportBtn">Generate Report</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Modal for Asset Report -->
-<div class="modal" id="assetReportModal" tabindex="-1" aria-labelledby="assetReportModalLabel" aria-hidden="true">
-    <div class="modal-dialog custom-width">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="assetReportModalLabel">Asset Report</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Content for Asset Report -->
-                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
-                        <table class="other-table">
-                            <thead>
-                                <tr>
-                                    @foreach (var header in assetHeaders) {
-                                        <th scope="col">
-                                            <span class="sort-text">@header</span>
-                                        </th>
-                                    }
-                                </tr>
-                            </thead>
-                            <tbody id="table-body"> <!--class="table-body"-->
-                                @if (assetData.Count == 0) {
-                                    <tr><td colspan="assetHeaders.Count" style="text-align: center;">No data available</td></tr>
-                                } else {
-                                    @foreach (var row in assetData) {
-                                        <tr>
-                                            @foreach (var header in assetHeaders) {
-                                                @if (header == "Status") {
-                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                } else {
-                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                }
-                                            }
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-            </div>
+@* ---- Static modal tables (demo content) -------------------------------- *@
+
+<!-- Asset Report Modal (table) -->
+<div class="modal fade" id="assetReportModal" tabindex="-1" aria-labelledby="assetReportModalLabel" aria-hidden="true">
+  <div class="modal-dialog custom-width">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assetReportModalLabel">Asset Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-container table-responsive">
+          <table class="other-table">
+            <thead>
+              <tr>
+                @foreach (var header in assetHeaders) { <th scope="col"><span class="sort-text">@header</span></th> }
+              </tr>
+            </thead>
+            <tbody id="asset-report-tbody">
+              @if (assetData.Count == 0) {
+                <tr><td colspan="@assetHeaders.Count" style="text-align:center;">No data available</td></tr>
+              } else {
+                @foreach (var row in assetData) {
+                  <tr>
+                    @foreach (var header in assetHeaders) {
+                      if (header == "Status") {
+                        <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      } else {
+                        <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      }
+                    }
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- Modal for Custom Report -->
-<div class="modal" id="customReportModal" tabindex="-1" aria-labelledby="customReportModalLabel" aria-hidden="true">
-    <div class="modal-dialog custom-width">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="customReportModalLabel">Custom Report</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Content for Custom Report -->
-                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
-                        <table class="other-table">
-                            <thead>
-                                <tr>
-                                    @foreach (var header in assetHeaders) {
-                                        <th scope="col">
-                                            <span class="sort-text">@header</span>
-                                        </th>
-                                    }
-                                </tr>
-                            </thead>
-                            <tbody id="table-body"> <!--class="table-body"-->
-                                @if (assetData.Count == 0) {
-                                    <tr><td colspan="assetHeaders.Count" style="text-align: center;">No data available</td></tr>
-                                } else {
-                                    @foreach (var row in assetData) {
-                                        <tr>
-                                            @foreach (var header in assetHeaders) {
-                                                @if (header == "Status") {
-                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                } else {
-                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                }
-                                            }
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-            </div>
+<!-- Custom Report Modal (table) -->
+<div class="modal fade" id="customReportModalView" tabindex="-1" aria-labelledby="customReportModalViewLabel" aria-hidden="true">
+  <div class="modal-dialog custom-width">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="customReportModalViewLabel">Custom Report</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-container table-responsive">
+          <table class="other-table">
+            <thead>
+              <tr>
+                @foreach (var header in assetHeaders) { <th scope="col"><span class="sort-text">@header</span></th> }
+              </tr>
+            </thead>
+            <tbody id="custom-report-tbody">
+              @if (assetData.Count == 0) {
+                <tr><td colspan="@assetHeaders.Count" style="text-align:center;">No data available</td></tr>
+              } else {
+                @foreach (var row in assetData) {
+                  <tr>
+                    @foreach (var header in assetHeaders) {
+                      if (header == "Status") {
+                        <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      } else {
+                        <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      }
+                    }
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- Modal for Asset Assignments to Users -->
-<div class="modal" id="assetAssignmentsToUsersModal" tabindex="-1" aria-labelledby="assetAssignmentsToUsersModalLabel" aria-hidden="true">
-    <div class="modal-dialog custom-width">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="assetAssignmentsToUsersModalLabel">Asset Assignments to Users</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Content for Asset Assignments to Users -->
-                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
-                        <table class="other-table">
-                            <thead>
-                                <tr>
-                                    @foreach (var header in userHeaders) {
-                                        <th scope="col">
-                                            <span class="sort-text">@header</span>
-                                        </th>
-                                    }
-                                </tr>
-                            </thead>
-                            <tbody id="table-body"> <!--class="table-body"-->
-                                @if (userData.Count == 0) {
-                                    <tr><td colspan="userHeaders.Count" style="text-align: center;">No data available</td></tr>
-                                } else {
-                                    @foreach (var row in userData) {
-                                        <tr>
-                                            @foreach (var header in userHeaders) {
-                                                @if (header == "Status") {
-                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                } else {
-                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                }
-                                            }
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-            </div>
+<!-- Asset Assignments to Users Modal (table) -->
+<div class="modal fade" id="assetAssignmentsToUsersModal" tabindex="-1" aria-labelledby="assetAssignmentsToUsersModalLabel" aria-hidden="true">
+  <div class="modal-dialog custom-width">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assetAssignmentsToUsersModalLabel">Asset Assignments to Users</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-container table-responsive">
+          <table class="other-table">
+            <thead>
+              <tr>
+                @foreach (var header in userHeaders) { <th scope="col"><span class="sort-text">@header</span></th> }
+              </tr>
+            </thead>
+            <tbody id="user-report-tbody">
+              @if (userData.Count == 0) {
+                <tr><td colspan="@userHeaders.Count" style="text-align:center;">No data available</td></tr>
+              } else {
+                @foreach (var row in userData) {
+                  <tr>
+                    @foreach (var header in userHeaders) {
+                      if (header == "Status") {
+                        <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      } else {
+                        <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      }
+                    }
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- Modal for Assets Assigned to an Office -->
-<div class="modal" id="assetsAssignedToOfficeModal" tabindex="-1" aria-labelledby="assetsAssignedToOfficeModalLabel" aria-hidden="true">
-    <div class="modal-dialog custom-width-two">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="assetsAssignedToOfficeModalLabel">Assets Assigned to an Office</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Content for Assets Assigned to an Office -->
-                    <div class="table-container table-responsive" style="overflow-x:auto; white-space:nowrap;">
-                        <table class="other-table">
-                            <thead>
-                                <tr>
-                                    @foreach (var header in officeHeaders) {
-                                        <th scope="col">
-                                            <span class="sort-text">@header</span>
-                                        </th>
-                                    }
-                                </tr>
-                            </thead>
-                            <tbody id="table-body"> <!--class="table-body"-->
-                                @if (officeData.Count == 0) {
-                                    <tr><td colspan="officeHeaders.Count" style="text-align: center;">No data available</td></tr>
-                                } else {
-                                    @foreach (var row in officeData) {
-                                        <tr>
-                                            @foreach (var header in officeHeaders) {
-                                                @if (header == "Status") {
-                                                    <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                } else {
-                                                    <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
-                                                }
-                                            }
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-            </div>
+<!-- Assets Assigned to an Office Modal (table) -->
+<div class="modal fade" id="assetsAssignedToOfficeModal" tabindex="-1" aria-labelledby="assetsAssignedToOfficeModalLabel" aria-hidden="true">
+  <div class="modal-dialog custom-width-two">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assetsAssignedToOfficeModalLabel">Assets Assigned to an Office</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-container table-responsive">
+          <table class="other-table">
+            <thead>
+              <tr>
+                @foreach (var header in officeHeaders) { <th scope="col"><span class="sort-text">@header</span></th> }
+              </tr>
+            </thead>
+            <tbody id="office-report-tbody">
+              @if (officeData.Count == 0) {
+                <tr><td colspan="@officeHeaders.Count" style="text-align:center;">No data available</td></tr>
+              } else {
+                @foreach (var row in officeData) {
+                  <tr>
+                    @foreach (var header in officeHeaders) {
+                      if (header == "Status") {
+                        <td><span class="status @row[header].ToLower().Replace(" ", "")">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      } else {
+                        <td><span class="cell-text">@(row.ContainsKey(header) ? row[header] : "-")</span></td>
+                      }
+                    }
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
-
-<!-- Report Submitted Message -->
-<div class="report-toast-container">
-    <div id="reportToast" class="toast report-toast" role="alert" data-bs-autohide="true">
-        <div class="d-flex">
-            <div class="toast-body">
-                Report generated!
-            </div>
-        </div>
-    </div>
-</div>
-
 
 @section Scripts {
-    <script>
-        const searchInput = document.getElementById("reportSearch");
-        const tableBody = document.getElementById("table-body");
-        const rows = tableBody.getElementsByTagName("tr");
-        const noResultsRow = document.getElementById("no-results-row");
-
-
-        searchInput.addEventListener("input", function () {
-            const query = this.value.toLowerCase();
-            let shownRows = 0;
-
-            Array.from(rows).forEach(row => {
-                const cells = row.getElementsByTagName("td");
-                if (row.id === "no-results-row") return; // Skip the "No results" row
-                let match = false;
-
-                // Skip checkbox cell
-                for (let i = 1; i < cells.length; i++) {
-                    if (cells[i].textContent.toLowerCase().includes(query)) {
-                        match = true;
-                        shownRows++;
-                        break;
-                    }
-                }
-
-                row.style.display = match ? "" : "none";
-                noResultsRow.style.display = shownRows === 0 ? "" : "none";
-            });
-        });
-
-
-
-
-
-
-
-        // Add event listener for each name row
-        document.addEventListener('DOMContentLoaded', function () {
-            const rows = document.querySelectorAll('.report-table tbody tr');
-
-            rows.forEach(function(row) {
-                const nameCell = row.querySelector('td:nth-child(2)');
-                const typeCell = row.querySelector('td:nth-child(3)');
-
-                nameCell.addEventListener('click', function() {
-                    const reportType = typeCell.textContent.trim();
-                    let modalId = '';
-
-                    // Determine which modal to show based on the "Type" column
-                    switch (reportType) {
-                        case 'Asset Report':
-                            modalId = '#assetReportModal';
-                            break;
-                        case 'Custom Report':
-                            modalId = '#customReportModal';
-                            break;
-                        case 'Asset Assignments to Users':
-                            modalId = '#assetAssignmentsToUsersModal';
-                            break;
-                        case 'Assets Assigned to an Office':
-                            modalId = '#assetsAssignedToOfficeModal';
-                            break;
-                        default:
-                            break;
-                    }
-
-                    // Show the corresponding modal
-                    if (modalId) {
-                        const modal = new bootstrap.Modal(document.querySelector(modalId));
-                        modal.show();
-                    }
-                });
-            });
-        });
-
-
-        // Toast on generate report
-        document.addEventListener("DOMContentLoaded", function () {
-            const generateBtn = document.querySelector("#generateReport .btn.btn-primary");
-            const reportToast = new bootstrap.Toast(document.getElementById("reportToast"), { delay: 3000 });
-
-            generateBtn.addEventListener("click", function () {
-                reportToast.show();
-            });
-
-            const customReportBtn = document.querySelector("#generateCustomReport .btn.btn-primary");
-            customReportBtn.addEventListener("click", function () {
-                reportToast.show();
-            });
-        });
-    </script>
+    <script src="~/js/pages/reports.index.js" asp-append-version="true" defer></script>
 }
-
