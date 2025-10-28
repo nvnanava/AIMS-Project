@@ -1,22 +1,24 @@
 @* ======================================================================
-   AIMS View: AuditLog/Index
+   AIMS View: AuditLog/Index (Merged)
    ----------------------------------------------------------------------
    Purpose
-   - Read-only audit table with client-side filtering (search + action).
+   - Aligns with Admin table chrome
+   - Supports client-side filtering + realtime/polling
+   - Adds pagination chrome consistent with Search page
 
    Conventions
    1) Layout
       - Inherits global layout: ~/Views/Shared/_Layout.cshtml
 
    2) Styles
-      - Page CSS: ~/css/pages/auditlog.index.css
-      - Component CSS (dropdowns, etc.): ~/css/components/*.css (add as needed)
-      - Add page CSS in @section Styles {...} using asp-append-version.
+      - Admin chrome: ~/css/pages/admin.index.css
+      - Pager:        ~/css/components/_Pager.css
+      - Page CSS:     ~/css/pages/auditlog.index.css
 
    3) Scripts
-      - Page JS: ~/js/pages/auditlog.index.js
-      - No inline JS. All event wiring lives in the page script.
-      - Add page JS in @section Scripts {...} using asp-append-version.
+      - Page JS:      ~/js/pages/auditlog.index.js
+      - Inline: Task 4A modal trigger (kept)
+      - SignalR:      ~/lib/microsoft/signalr/dist/browser/signalr.min.js
 
    4) Routing
       - Controller: Controllers/Mvc/AuditLogController.cs
@@ -24,8 +26,8 @@
       - Route:      /AuditLog or /AuditLog/Index
 
    5) Notes
-      - Indentation: 4 spaces (no tabs)
-      - Table body is currently static demo data; replace with server model when ready.
+      - Indentation: 4 spaces
+      - Table body is client-filled; no demo rows
    ====================================================================== *@
 
 @inject Microsoft.Extensions.Configuration.IConfiguration Config
@@ -36,51 +38,57 @@
 }
 
 @section Styles {
+    <!-- bring in the Admin table baseline -->
+    <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/_Pager.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/auditlog.index.css" asp-append-version="true" />
 }
 
 <div class="audit-log-container">
-    <h1 class="audit-log-title">Audit Log</h1>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="audit-log-title m-0">Audit Log</h1>
 
-    @* hidden config for JS (polling interval / batch size / feature flags) *@
-    <div id="auditlog-config"
-         data-poll-interval="@Config["Audit:PollingIntervalMs"]"
-         data-max-batch="@Config["Audit:MaxBatchSize"]"
-         data-feature-realtime="@Config["Feature:AuditRealTime"]"
-         data-feature-polling="@Config["Feature:AuditPollingFallback"]"
-         hidden></div>
-
-    <div id="filter-button-container" class="dropdown">
-        <button id="filter-button-toggle" class="standard-button" type="button" aria-haspopup="true" aria-expanded="false">
-            Filter
-        </button>
-        <div id="filterDropdown" class="dropdown-menu" role="menu" aria-hidden="true">
-            <input type="text" id="filterSearchInput" placeholder="Search logs..." class="dropdown-search" aria-label="Search logs" />
-            <a href="#" class="dropdown-item" data-action="All" role="menuitem">All</a>
-            <a href="#" class="dropdown-item" data-action="Assign" role="menuitem">Assign</a>
-            <a href="#" class="dropdown-item" data-action="Create" role="menuitem">Create</a>
-            <a href="#" class="dropdown-item" data-action="Update" role="menuitem">Update</a>
-            <a href="#" class="dropdown-item" data-action="Delete" role="menuitem">Delete</a>
-            <a href="#" class="dropdown-item" data-action="Unassign" role="menuitem">Unassign</a>
+        <!-- Filter icon (from Task 4A) -->
+        <div class="ms-3">
+            @await Html.PartialAsync("_FilterIcon", new ViewDataDictionary(ViewData) {
+            ["Id"] = "auditLogFilter",
+                        ["Label"] = "Search Logs"
+                        })
         </div>
     </div>
 
-    <table class="audit-log-table" id="auditTable">
-        <thead>
-            <tr>
-                <th>Log ID</th>
-                <th>Timestamp</th>
-                <th>User ID</th>
-                <th>Action</th>
-                <th>Asset ID</th>
-                <th>Previous Value</th>
-                <th>New Value</th>
-                <th>Description</th>
-            </tr>
-        </thead>
-        <tbody id="auditTableBody"></tbody>
-    </table>
+    @* hidden config for JS (polling interval / batch size / feature flags) *@
+    <div id="auditlog-config" data-poll-interval="@Config["Audit:PollingIntervalMs"]"
+        data-max-batch="@Config["Audit:MaxBatchSize"]" data-feature-realtime="@Config["Feature:AuditRealTime"]"
+        data-feature-polling="@Config["Feature:AuditPollingFallback"]" hidden></div>
+
+    <!-- Admin-style chrome -->
+    <div class="table-wrapper">
+        <div class="admin-table-chrome">
+            <!-- Fixed header -->
+            <table class="admin-table-header">
+                <thead>
+                    <tr>
+                        <th class="al-col-1">Log ID</th>
+                        <th class="al-col-2">Timestamp</th>
+                        <th class="al-col-3">User ID</th>
+                        <th class="al-col-4">Action</th>
+                        <th class="al-col-5">Asset ID</th>
+                        <th class="al-col-6">Previous Value</th>
+                        <th class="al-col-7">New Value</th>
+                        <th class="al-col-8">Description</th>
+                    </tr>
+                </thead>
+            </table>
+
+            <!-- Scrollable body -->
+            <div class="admin-table-scroll">
+                <table class="admin-table-body audit-log-table" id="auditTable">
+                    <tbody id="auditTableBody"><!-- filled by JS (realtime/polling/paging) --></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     @* ----------- Pager (same markup/classes as Search) ------------------ *@
     <div id="audit-pager" class="search-pager" hidden>
@@ -91,7 +99,37 @@
     @* -------------------------------------------------------------------- *@
 </div>
 
+@* Include the existing modal from Task 4A *@
+@await Html.PartialAsync("_SearchLogsModal")
+
 @section Scripts {
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/pages/auditlog.index.js" asp-append-version="true" defer></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Target the FilterIcon button from Task 4A
+            const root = document.querySelector('[data-component="filter-icon"][data-id="auditLogFilter"]');
+            if (!root) return;
+
+            const btn = root.querySelector('.aims-filter-btn');
+            const dropdown = root.querySelector('.dropdown-menu');
+            if (dropdown) dropdown.remove(); // remove old dropdown menu
+
+            if (btn) {
+                btn.removeAttribute('data-bs-toggle');
+                btn.removeAttribute('aria-expanded');
+                btn.setAttribute('type', 'button');
+            }
+
+            const modalEl = document.getElementById('searchLogsModal');
+            if (btn && modalEl && window.bootstrap && bootstrap.Modal) {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                });
+            }
+        });
+    </script>
 }

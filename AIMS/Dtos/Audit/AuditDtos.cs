@@ -67,5 +67,6 @@ public sealed class CreateAuditRecordDto
 
     public List<CreateAuditLogChangeDto>? Changes { get; set; }
 
+    // Used for dedup/upsert (matches ExternalId on AuditLog)
     public Guid? ExternalId { get; set; }
 }

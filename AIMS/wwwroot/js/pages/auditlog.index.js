@@ -45,31 +45,33 @@
 
     // ----- Filtering ------------------------------------------------------
     function visibleRows() {
-        return $all(".audit-log-table tbody tr").filter(r => r.style.display !== "none");
+        // support both legacy .audit-log-table and admin chrome .admin-table-body
+        return $all(".audit-log-table tbody tr, .admin-table-body tbody tr").filter(r => r.style.display !== "none");
     }
     function filterByFreeText(term) {
-        const rows = $all(".audit-log-table tbody tr");
+        const rows = $all(".audit-log-table tbody tr, .admin-table-body tbody tr");
         const q = (term || "").toLowerCase();
         rows.forEach(row => {
             const text = row.innerText.toLowerCase();
             row.style.display = text.includes(q) ? "" : "none";
         });
-        applyPagination();
+        // filtering should reset to first page
+        window.AuditPager.applyPagination(true);
     }
     function filterByAction(action) {
-        const rows = $all(".audit-log-table tbody tr");
+        const rows = $all(".audit-log-table tbody tr, .admin-table-body tbody tr");
         const wanted = (action || "All").trim();
         rows.forEach(row => {
             const cell = row.cells?.[3]; // Action column
             const current = (cell?.innerText || "").trim();
             row.style.display = (wanted === "All" || current === wanted) ? "" : "none";
         });
-        applyPagination();
+        // filtering should reset to first page
+        window.AuditPager.applyPagination(true);
     }
 
     // ----- Pagination (client-side) --------------------------------------
     const pager = $("#audit-pager");
-    // Support either legacy audit-pg-* IDs or Search-style pg-* IDs
     const btnPrev = document.getElementById("pg-prev") || document.getElementById("audit-pg-prev");
     const btnNext = document.getElementById("pg-next") || document.getElementById("audit-pg-next");
     const lblStatus = document.getElementById("pg-status") || document.getElementById("audit-pg-status");
@@ -78,6 +80,18 @@
     let pageSize = 10;
 
     function pageCount(total) { return Math.max(1, Math.ceil(total / pageSize)); }
+
+    // Helper: trigger flash if a row *just became visible* and requested to flash
+    function triggerDeferredFlashIfNeeded(tr) {
+        if (tr.classList.contains("pending-flash")) {
+            tr.classList.remove("pending-flash");
+            tr.classList.remove("row-flash");
+            void tr.offsetWidth; // reflow
+            tr.classList.add("row-flash");
+            setTimeout(() => tr.classList.remove("row-flash"), 1500);
+        }
+    }
+
     function renderCurrentPage() {
         const rows = visibleRows();
         const total = rows.length;
@@ -90,7 +104,12 @@
         const end = start + pageSize;
 
         let idx = 0;
-        rows.forEach(r => { r.hidden = !(idx >= start && idx < end); idx++; });
+        rows.forEach(r => {
+            const shouldShow = idx >= start && idx < end;
+            r.hidden = !shouldShow;
+            if (shouldShow) triggerDeferredFlashIfNeeded(r);
+            idx++;
+        });
 
         if (pager && lblStatus && btnPrev && btnNext) {
             pager.hidden = (total === 0);
@@ -99,11 +118,22 @@
             btnNext.disabled = currentPage >= totalPages;
         }
     }
+
     function applyPagination(resetToFirst = false) {
-        $all(".audit-log-table tbody tr").forEach(r => { r.hidden = false; });
+        $all(".audit-log-table tbody tr, .admin-table-body tbody tr").forEach(r => { r.hidden = false; });
         if (resetToFirst) currentPage = 1;
         renderCurrentPage();
     }
+
+    // Expose a tiny pager API so realtime can re-page WITHOUT resetting to page 1
+    window.AuditPager = {
+        get currentPage() { return currentPage; },
+        set currentPage(v) { currentPage = Math.max(1, +v || 1); renderCurrentPage(); },
+        setPageSize(n) { pageSize = Math.max(1, +n || 10); renderCurrentPage(); },
+        renderCurrentPage,
+        applyPagination
+    };
+
     btnPrev?.addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderCurrentPage(); } });
     btnNext?.addEventListener("click", () => { currentPage++; renderCurrentPage(); });
 
@@ -138,6 +168,7 @@
    - Quiet period after success to avoid banner flicker
    - Show banner only if: table empty OR prolonged failures
    - Re-page only when rows actually changed
+   - Only flash rows for events AFTER initial seed
    ====================================================================== */
 
 (() => {
@@ -167,30 +198,31 @@
 
     const seen = new Map();
     let sinceCursor = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(); // 30 days
-    let seeded = false;
+    let seeded = false;                 // ← key: initial backfill done?
     let pollTimeout = null;
     let backoff = POLL_MS;
     const MAX_BACKOFF = 30000;
 
-    // ✨ New: status banner throttling
-    const QUIET_MS = 15000;                 // suppress warnings for this long after success
-    const FAILS_BEFORE_BANNER = 2;          // don't nag on a single hiccup
-    let lastSuccessAt = 0;                  // ms timestamp
+    // throttled banner
+    const QUIET_MS = 15000;
+    const FAILS_BEFORE_BANNER = 2;
+    let lastSuccessAt = 0;
     let consecutiveFailures = 0;
 
     const aborter = new AbortController();
     const now = () => Date.now();
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const haveRows = () => tbody.querySelector("tr") !== null;
 
-    // ---------- Banner (debounced) ----------
+    // ---------- Banner ----------
     function ensureBanner() {
         let el = document.getElementById("audit-status-banner");
         if (!el) {
             el = document.createElement("div");
             el.id = "audit-status-banner";
             el.style.cssText = "margin:8px 0;padding:6px 10px;border:1px solid #f2c97d;background:#fff7e6;font-size:.9rem;border-radius:6px;display:none;";
-            const container = document.querySelector(".audit-log-table")?.parentElement || document.body;
+            const container = document.querySelector(".audit-log-table")?.parentElement
+                || document.querySelector(".admin-table-chrome")
+                || document.body;
             container.insertBefore(el, container.firstChild);
         }
         return el;
@@ -212,13 +244,50 @@
         if (el) el.style.display = "none";
     }
 
-    // ---------- Render helpers ----------
-    function fmtLocal(dtIso) { try { return new Date(dtIso).toLocaleString(); } catch { return dtIso; } }
+    // ---------- Robust Time Formatting (handles naive + microseconds) ----------
+    function fmtLocal(dt) {
+        try {
+            let s = String(dt ?? "").trim();
+            if (!s) return "—";
+
+            // Has a time part?
+            const hasT = s.includes("T");
+            // Already has explicit timezone?
+            const hasTZ = /[Zz]$|[+\-]\d{2}:?\d{2}$/.test(s);
+
+            if (hasT && !hasTZ) {
+                // Treat naive timestamps as UTC and normalize microseconds -> milliseconds
+                // e.g. 2025-10-28T23:21:09.751012  =>  2025-10-28T23:21:09.751Z
+                s = s
+                    // Trim fractional seconds to 3 digits if present
+                    .replace(/(\.\d{3})\d+$/, "$1")
+                    // If there is a fractional part <3 digits, right-pad to 3
+                    .replace(/\.([\d]{1,2})$/, (m, g1) => "." + g1.padEnd(3, "0"))
+                    // If there is no fractional part at all, add .000
+                    .replace(/(T\d{2}:\d{2}:\d{2})(?!\.)/, "$1.000")
+                    + "Z";
+            }
+
+            const d = new Date(s);
+            if (isNaN(d)) return String(dt); // fallback: show original if parsing fails
+
+            return new Intl.DateTimeFormat("en-US", {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: "America/Los_Angeles"
+            }).format(d);
+        } catch {
+            return String(dt ?? "");
+        }
+    }
+
     function keyOf(evt) { return evt?.id || evt?.hash || ""; }
 
     // returns true if row content changed (to trigger re-page)
-    function renderAuditEvent(evt) {
+    // opts: { seed:boolean } — when seeding initial data, do NOT flash
+    function renderAuditEvent(evt, opts = {}) {
         if (!evt) return false;
+        const seed = !!opts.seed;
         const k = keyOf(evt);
         const existing = k && seen.get(k);
 
@@ -241,16 +310,27 @@
         if (existing) {
             while (existing.firstChild) existing.removeChild(existing.firstChild);
             cells().forEach(c => existing.appendChild(c));
-            existing.classList.remove("row-flash"); void existing.offsetWidth; existing.classList.add("row-flash");
-            setTimeout(() => existing.classList.remove("row-flash"), 1500);
+
+            // Flash only for non-seed updates
+            if (!seed) {
+                if (!existing.hidden) {
+                    existing.classList.remove("row-flash"); void existing.offsetWidth; existing.classList.add("row-flash");
+                    setTimeout(() => existing.classList.remove("row-flash"), 1500);
+                } else {
+                    existing.classList.add("pending-flash");
+                }
+            }
             return true;
         }
 
         const tr = document.createElement("tr");
         cells().forEach(c => tr.appendChild(c));
         tbody.insertBefore(tr, tbody.firstChild);
-        tr.classList.add("row-flash");
-        setTimeout(() => tr.classList.remove("row-flash"), 1500);
+
+        // Flash only if not part of initial seed
+        if (!seed) {
+            tr.classList.add("pending-flash");
+        }
 
         if (k) seen.set(k, tr);
         if (evt.occurredAtUtc) {
@@ -262,18 +342,16 @@
         return true;
     }
 
+    // Re-page *without* resetting to page 1
     function rePageIfChanged(changed) {
         if (!changed) return;
-        try {
-            const evt = new Event("DOMContentLoaded");
-            window.dispatchEvent(evt);
-            const status = document.getElementById("pg-status") || document.getElementById("audit-pg-status");
-            if (status) status.dispatchEvent(new Event("change"));
-        } catch { /* noop */ }
+        if (window.AuditPager?.renderCurrentPage) {
+            window.AuditPager.renderCurrentPage();
+        }
     }
 
     // ---------- Fetch helpers ----------
-    async function fetchLatestPageFallback() {
+    async function fetchLatestPageFallback(seedMode = false) {
         try {
             const res = await fetch(`/api/audit/events/latest?take=${MAX_BATCH}`, {
                 headers: { "Accept": "application/json" },
@@ -284,18 +362,18 @@
             if (!data || !Array.isArray(data.items)) return false;
 
             let anyChanged = false;
-            data.items.forEach(evt => { anyChanged = renderAuditEvent(evt) || anyChanged; });
+            data.items.forEach(evt => { anyChanged = renderAuditEvent(evt, { seed: seedMode }) || anyChanged; });
             rePageIfChanged(anyChanged);
 
             if (data.nextSince) sinceCursor = data.nextSince;
-            if (haveRows()) { seeded = true; onSuccess(); }
+            if (tbody.querySelector("tr")) { onSuccess(); }
             return true;
         } catch {
             return false;
         }
     }
 
-    async function fetchEventsSince() {
+    async function fetchEventsSince(seedMode = false) {
         const url = `/api/audit/events?since=${encodeURIComponent(sinceCursor)}&take=${MAX_BATCH}`;
         const res = await fetch(url, { headers: { "Accept": "application/json" }, signal: aborter.signal });
 
@@ -307,9 +385,8 @@
         const data = await res.json();
         let anyChanged = false;
         if (Array.isArray(data.items) && data.items.length > 0) {
-            data.items.forEach(evt => { anyChanged = renderAuditEvent(evt) || anyChanged; });
+            data.items.forEach(evt => { anyChanged = renderAuditEvent(evt, { seed: seedMode }) || anyChanged; });
             rePageIfChanged(anyChanged);
-            if (haveRows()) seeded = true;
         }
         if (data.nextSince) sinceCursor = data.nextSince;
         onSuccess();
@@ -331,15 +408,15 @@
 
     async function pollCycle() {
         try {
-            const res = await fetchEventsSince();
+            const res = await fetchEventsSince(false); // normal mode after seed
             if (res.ok) { scheduleNext(true); return; }
 
             consecutiveFailures++;
 
             if (!seeded) {
                 showStatus("Server warming up; loading latest audit entries…");
-                const seededOk = await fetchLatestPageFallback();
-                if (seededOk) { scheduleNext(true); return; }
+                const seededOk = await fetchLatestPageFallback(true /* seed mode: no flashing */);
+                if (seededOk) { seeded = true; scheduleNext(true); return; }
             } else {
                 if (shouldShowStatus()) {
                     if (res.retry === "rate") showStatus("Rate limited; retrying…");
@@ -352,8 +429,8 @@
             consecutiveFailures++;
             if (!seeded) {
                 showStatus("Reconnecting to audit log…");
-                const ok = await fetchLatestPageFallback();
-                if (ok) { scheduleNext(true); return; }
+                const ok = await fetchLatestPageFallback(true /* seed mode */);
+                if (ok) { seeded = true; scheduleNext(true); return; }
             } else {
                 if (shouldShowStatus()) showStatus("Network error; retrying…");
             }
@@ -364,7 +441,7 @@
     // Visibility nudge
     document.addEventListener("visibilitychange", async () => {
         if (document.visibilityState === "visible") {
-            try { const res = await fetchEventsSince(); if (res.ok) hideStatus(); } catch { /* ignore */ }
+            try { const res = await fetchEventsSince(false); if (res.ok) hideStatus(); } catch { /* ignore */ }
         }
     });
 
@@ -374,13 +451,15 @@
     (async () => {
         showSpinner();
         try {
-            const res = await fetchEventsSince();
-            if (!res.ok && !seeded) {
-                const ok = await fetchLatestPageFallback();
-                if (!ok && !haveRows()) showStatus("Unable to load audit log. Retrying…");
+            // Initial fetch in **seed mode**: NO flashing
+            const res = await fetchEventsSince(true);
+            if (!res.ok) {
+                const ok = await fetchLatestPageFallback(true);
+                if (!ok && !tbody.querySelector("tr")) showStatus("Unable to load audit log. Retrying…");
             }
+            seeded = true; // from here on, new items may flash
         } catch {
-            if (!haveRows()) showStatus("Unable to load audit log. Retrying…");
+            if (!tbody.querySelector("tr")) showStatus("Unable to load audit log. Retrying…");
         } finally {
             await hideSpinner();
         }
@@ -402,20 +481,15 @@
                     .build();
 
                 connection.on("auditEvent", evt => {
-                    const changed = renderAuditEvent(evt);
+                    // Normal mode: flash only after seed
+                    const changed = renderAuditEvent(evt, { seed: false });
+                    // re-page without resetting to page 1
                     rePageIfChanged(changed);
-                    if (typeof onSuccess === "function") onSuccess();
-                });
-
-                connection.onreconnecting(() => {
-                    // polling loop stays active during reconnects
+                    onSuccess();
                 });
 
                 connection.onreconnected(async () => {
-                    try {
-                        const r = await fetchEventsSince();
-                        if (r.ok && typeof hideStatus === "function") hideStatus();
-                    } catch { }
+                    try { const r = await fetchEventsSince(false); if (r.ok) hideStatus(); } catch { }
                 });
 
                 await connection.start();

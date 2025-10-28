@@ -464,3 +464,8 @@ yarn-error.log*
 bin/
 obj/
 coverage/
+# local dev secrets
+.env
+appsettings.Local.json
+.secrets/
+secrets/
