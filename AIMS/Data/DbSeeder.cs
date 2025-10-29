@@ -350,7 +350,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:assign:LT-0020:28809"),
                     TimestampUtc = now.AddDays(-12).AddMinutes(3),
                     UserID       = usersByEmp["28809"].UserID, // John did it
-                    Action       = AuditLogAction.Assign,
+                    Action       = "Assign",
                     Description  = "Assigned Lenovo ThinkPad E16 to John Smith",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["LT-0020"].HardwareID,
@@ -368,7 +368,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:assign:SW-0100:10971"),
                     TimestampUtc = now.AddDays(-9).AddMinutes(10),
                     UserID       = usersByEmp["10971"].UserID, // Robin
-                    Action       = AuditLogAction.Assign,
+                    Action       = "Assign",
                     Description  = "Assigned Microsoft 365 Business seat to Robin Williams",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("Microsoft 365 Business","1.0")].SoftwareID,
@@ -385,7 +385,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:update:HS-0015:repair"),
                     TimestampUtc = now.AddDays(-5).AddMinutes(20),
                     UserID       = usersByEmp["27094"].UserID, // Brian
-                    Action       = AuditLogAction.Update,
+                    Action       = "Update",
                     Description  = "Set Logitech Zone Vibe 100 status to In Repair",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["HS-0015"].HardwareID,
@@ -402,7 +402,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:create:report:license-usage"),
                     TimestampUtc = now.AddDays(-3).AddMinutes(5),
                     UserID       = usersByEmp["47283"].UserID, // Emily
-                    Action       = AuditLogAction.Create,
+                    Action       = "Create",
                     Description  = "Generated License Usage Summary report",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("Microsoft 365 Business","1.0")].SoftwareID,
@@ -417,7 +417,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:assign:MN-0001:69444"),
                     TimestampUtc = now.AddDays(-11).AddMinutes(7),
                     UserID       = usersByEmp["69444"].UserID, // Jane
-                    Action       = AuditLogAction.Assign,
+                    Action       = "Assign",
                     Description  = "Assigned Dell S2421NX to Jane Doe",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["MN-0001"].HardwareID,
@@ -435,7 +435,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:assign:DT-0011:58344"),
                     TimestampUtc = now.AddDays(-10).AddMinutes(12),
                     UserID       = usersByEmp["58344"].UserID, // Randy
-                    Action       = AuditLogAction.Assign,
+                    Action       = "Assign",
                     Description  = "Assigned Lenovo IdeaCentre 3 to Randy Orton",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["DT-0011"].HardwareID,
@@ -453,7 +453,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:unassign:CC-0019:34532"),
                     TimestampUtc = now.AddDays(-3).AddMinutes(30),
                     UserID       = usersByEmp["93232"].UserID, // Kate performed unassign
-                    Action       = AuditLogAction.Unassign,
+                    Action       = "Unassign",
                     Description  = "Unassigned j5create 100W Super Charger from Bruce Wayne",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["CC-0019"].HardwareID,
@@ -471,7 +471,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:update:LT-0115:warranty:extended"),
                     TimestampUtc = now.AddDays(-2).AddMinutes(15),
                     UserID       = usersByEmp["93232"].UserID, // Kate
-                    Action       = AuditLogAction.Update,
+                    Action       = "Update",
                     Description  = "Extended warranty for Dell Inspiron 15 by 1 year",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["LT-0115"].HardwareID,
@@ -488,7 +488,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:update:MN-0023:notes"),
                     TimestampUtc = now.AddDays(-8).AddMinutes(40),
                     UserID       = usersByEmp["62241"].UserID, // Sarah
-                    Action       = AuditLogAction.Update,
+                    Action       = "Update",
                     Description  = "Updated ergonomic notes for HP 527SH monitor",
                     AssetKind    = AssetKind.Hardware,
                     HardwareID   = hardwareBySerial["MN-0023"].HardwareID,
@@ -505,7 +505,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:install:IntelliJ:2024.2:93232"),
                     TimestampUtc = now.AddDays(-4).AddMinutes(5),
                     UserID       = usersByEmp["93232"].UserID,
-                    Action       = AuditLogAction.Install,
+                    Action       = "Install",
                     Description  = "Installed IntelliJ IDEA (2024.2) for Kate Rosenberg",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("IntelliJ IDEA","2024.2")].SoftwareID,
@@ -522,7 +522,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:renew:ZoomPro:7.1"),
                     TimestampUtc = now.AddDays(-3).AddMinutes(50),
                     UserID       = usersByEmp["20983"].UserID, // Max
-                    Action       = AuditLogAction.Renew,
+                    Action       = "License Renewed",
                     Description  = "Renewed Zoom Pro (7.1) license for 12 months",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("Zoom Pro","7.1")].SoftwareID,
@@ -539,7 +539,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:expire:Slack:5.3"),
                     TimestampUtc = now.AddDays(-2).AddMinutes(42),
                     UserID       = usersByEmp["62241"].UserID, // Sarah
-                    Action       = AuditLogAction.Expired,
+                    Action       = "License Expired",
                     Description  = "Slack (5.3) license reached end of term",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("Slack","5.3")].SoftwareID,
@@ -556,7 +556,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:unassign:M365:1.0:10971"),
                     TimestampUtc = now.AddDays(-2).AddMinutes(55),
                     UserID       = usersByEmp["47283"].UserID, // Emily
-                    Action       = AuditLogAction.Unassign,
+                    Action       = "Unassign",
                     Description  = "Unassigned Microsoft 365 Business (1.0) from Robin Williams",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("Microsoft 365 Business","1.0")].SoftwareID,
@@ -573,7 +573,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:install:QuickBooks:2024:28809"),
                     TimestampUtc = now.AddDays(-1).AddMinutes(22),
                     UserID       = usersByEmp["28809"].UserID, // John
-                    Action       = AuditLogAction.Install,
+                    Action       = "Install",
                     Description  = "Installed QuickBooks Online (2024) for John Smith",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("QuickBooks Online","2024")].SoftwareID,
@@ -590,7 +590,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:remove:Photoshop:2024:47283"),
                     TimestampUtc = now.AddDays(-1).AddMinutes(40),
                     UserID       = usersByEmp["47283"].UserID, // Emily
-                    Action       = AuditLogAction.Unassign,
+                    Action       = "Remove",
                     Description  = "Removed Adobe Photoshop (2024) license from Emily Carter",
                     AssetKind    = AssetKind.Software,
                     SoftwareID   = softwareByKey[("Adobe Photoshop","2024")].SoftwareID,
@@ -702,6 +702,17 @@ public static class DbSeeder
             existing.WarrantyExpiration = incoming.WarrantyExpiration;
         }
     }
+    private static async Task UpsertOfficeAsync(AimsDbContext db, Office incoming, CancellationToken ct)
+    {
+        var existing = await db.Offices.FirstOrDefaultAsync(o => o.OfficeID == incoming.OfficeID, ct);
+        if (existing is null) await db.Offices.AddAsync(incoming, ct);
+        else
+        {
+            existing.OfficeName = incoming.OfficeName;
+            existing.Location = incoming.Location;
+        }
+    }
+
     private static async Task UpsertSoftwareAsync(AimsDbContext db, Software incoming, CancellationToken ct)
     {
         var existing = await db.SoftwareAssets
@@ -757,9 +768,9 @@ public static class DbSeeder
         else
         {
             existing.Description = incoming.Description;
-           // existing.BlobUri = incoming.BlobUri;
+            existing.BlobUri = incoming.BlobUri;
             existing.GeneratedByUserID = incoming.GeneratedByUserID;
-            existing.GeneratedForOfficeID = incoming.GeneratedForOfficeID;
+            existing.GeneratedByOfficeID = incoming.GeneratedByOfficeID;
             existing.DateCreated = incoming.DateCreated;
         }
     }

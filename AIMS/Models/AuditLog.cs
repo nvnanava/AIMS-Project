@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AIMS.Models;
 
-public enum AuditLogAction { Create = 1, Edit = 2, Assign = 3, Unassign = 4, Archive = 5, Install = 6, Update = 7, Renew = 8, Expired = 9 };
+public enum AuditLogAction { Create = 1, Edit = 2, Assign = 3, Unassign = 4, Archive = 5 };
 public class AuditLog
 {
     public int AuditLogID { get; set; }
