@@ -62,25 +62,25 @@
     }
 
 
-function setStatusHeaderFor() {
-  const th = document.getElementById("status-col-header");
-  if (!th) return;
+    function setStatusHeaderFor() {
+        const th = document.getElementById("status-col-header");
+        if (!th) return;
 
-  const wrapper = th.firstElementChild || th; // <div class="d-flex ..."> or <th>
-  const icon = wrapper.querySelector('[data-component="filter-icon"]'); // keep existing icon
+        const wrapper = th.firstElementChild || th; // <div class="d-flex ..."> or <th>
+        const icon = wrapper.querySelector('[data-component="filter-icon"]'); // keep existing icon
 
 
-  while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+        while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
 
-  const label = document.createElement("span");
-  label.className = "status-label";
-  label.textContent = "Status";
+        const label = document.createElement("span");
+        label.className = "status-label";
+        label.textContent = "Status";
 
-  wrapper.appendChild(label);
-  if (icon) wrapper.appendChild(icon);
+        wrapper.appendChild(label);
+        if (icon) wrapper.appendChild(icon);
 
-  th.title = "";
-}
+        th.title = "";
+    }
 
 
     function getCurrentCategory() {
@@ -406,7 +406,7 @@ function setStatusHeaderFor() {
         if (!window.confirm(`Are you sure you want to archive "${name}"? `)) return;
 
         const isSoftware = (String(type || "").toLowerCase() === "software");
-        theEndpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
+        const endpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
 
         try {
             const updated = await aimsFetch(endpoint, { method: "PUT" });
