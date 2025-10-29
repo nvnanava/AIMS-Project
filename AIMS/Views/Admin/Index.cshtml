@@ -71,6 +71,13 @@
             <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
                 Add User
             </button>
+            <input
+                type="text"
+                id="userSearch"
+                class="aims-input"
+                placeholder="Search Users..."
+                oninput="AIMS.Admin.applyAdminTableFilters()"
+            />
         </div>
         <div class="admin-table-controls-right">
             <label class="toggle-container">
@@ -95,7 +102,6 @@
                     <th class="admin-col-1">Actions</th>
                     <th class="admin-col-2">Name</th>
                     <th class="admin-col-3">Email</th>
-                    <th class="admin-col-4">Role</th>
                     <th class="admin-col-5" style="cursor:pointer;" onclick="AIMS.Admin.sortTable(4)">Status ⬍</th>
                     <th class="admin-col-6">Separation Date</th>
                 </tr>
@@ -120,7 +126,6 @@
                             </td>
                             <td>@user.Name</td>
                             <td>@user.Email</td>
-                            <td>@user.Role</td>
                             <td><span class="badge @statusClass">@user.Status</span></td>
                             <td>@user.SeparationDate</td>
                         </tr>
