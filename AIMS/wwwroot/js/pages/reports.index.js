@@ -99,14 +99,16 @@
                 }
 
                 // Build table dynamically
-                const headers = Object.keys(data.previewRows[0]);
+                const headers = Object.keys(data.previewRows[0])
+
+                const titleCaseHeaders = headers.map(h => h.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
                 let html = `
                 <p><strong>Created:</strong> ${new Date(data.dateCreated).toLocaleString()}</p>
                 <p><strong>Total Rows:</strong> ${data.totalRows}</p>
                 <div class="table-responsive">
                     <table class="table table-striped table-sm align-middle">
                         <thead class="table-light">
-                            <tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>
+                            <tr>${titleCaseHeaders.map(h => `<th>${h}</th>`).join("")}</tr>
                         </thead>
                         <tbody>
                             ${data.previewRows.map(row => `
