@@ -40,7 +40,7 @@ public class ReportsController : ControllerBase
 
 
         // AuditLog Actions
-        public AuditLogAction Action { get; set; }    // e.g. "Create", "Edit", "Assign", "Archive"
+        public string Action { get; set; } = string.Empty;  // e.g. "Create", "Edit", "Assign", "Archive"
         public string Description { get; set; } = string.Empty;   // human summary
         public DateTime ActionTimestampUtc { get; set; } = DateTime.UtcNow;
 
@@ -187,7 +187,7 @@ public class ReportsController : ControllerBase
 
         if (type == ReportType.Assignment)
         {
-            query = query.Where(a => a.Action == AuditLogAction.Assign || a.Action == AuditLogAction.Unassign);
+            query = query.Where(a => a.Action.ToLower().Contains("assign") || a.Action.ToLower().Contains("unassign"));
         }
         else if (type == ReportType.Office)
         {

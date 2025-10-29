@@ -272,7 +272,7 @@ namespace AIMS.Queries
             => q
                 .Pipe(q1 => ApplyDateRange(q1, c.FromUtc, c.ToUtc))
                 .Pipe(q2 => ApplyActor(q2, c.Actor))           // updated
-       //         .Pipe(q3 => ApplyAction(q3, c.Action))
+                .Pipe(q3 => ApplyAction(q3, c.Action))
                 .Pipe(q4 => ApplyKind(q4, c.Kind))
                 .Pipe(q5 => ApplyTargets(q5, c.HardwareId, c.SoftwareId))
                 .Pipe(q6 => ApplySearchText(q6, c.Q));
@@ -295,8 +295,8 @@ namespace AIMS.Queries
             return q.Where(a => a.User.FullName.Contains(actor));
         }
 
-        private static IQueryable<AuditLog> ApplyAction(IQueryable<AuditLog> q, AuditLogAction? action)
-            => action is null ? q : q.Where(a => a.Action == action);
+        private static IQueryable<AuditLog> ApplyAction(IQueryable<AuditLog> q, string? action)
+            => string.IsNullOrWhiteSpace(action) ? q : q.Where(a => a.Action == action);
 
         private static IQueryable<AuditLog> ApplyKind(IQueryable<AuditLog> q, AssetKind? kind)
             => kind.HasValue ? q.Where(a => a.AssetKind == kind.Value) : q;
@@ -313,7 +313,7 @@ namespace AIMS.Queries
                 ? q
                 : q.Where(a =>
                     a.Description.Contains(term!) ||
-                   // a.Action.Contains(term!) ||
+                    a.Action.Contains(term!) ||
                     a.User.FullName.Contains(term!));
 
         #endregion
@@ -324,6 +324,7 @@ namespace AIMS.Queries
         private static void GuardInput(CreateAuditRecordDto data)
         {
             if (data is null) throw new ArgumentNullException(nameof(data));
+            if (string.IsNullOrWhiteSpace(data.Action)) throw new ArgumentException("Action is required.");
             if (string.IsNullOrWhiteSpace(data.Description)) throw new ArgumentException("Description is required.");
         }
 
@@ -497,7 +498,7 @@ namespace AIMS.Queries
             {
                 Id = (log.ExternalId != Guid.Empty ? log.ExternalId.ToString() : log.AuditLogID.ToString()),
                 OccurredAtUtc = log.TimestampUtc,
-                Type = log.Action.toString(),
+                Type = log.Action,
                 User = $"{(userName ?? $"User#{log.UserID}")} ({log.UserID})",
                 Target = log.AssetKind == AssetKind.Hardware
                     ? (log.HardwareID.HasValue ? $"Hardware#{log.HardwareID}" : "Hardware")
@@ -511,7 +512,7 @@ namespace AIMS.Queries
         private static string ComputeEventHash(AuditLog log)
         {
             var raw =
-                $"{log.AuditLogID}|{log.ExternalId}|{log.TimestampUtc:o}|{log.Action.toString()}|{log.UserID}|{log.AssetKind}|{log.HardwareID}|{log.SoftwareID}|{log.Description}";
+                $"{log.AuditLogID}|{log.ExternalId}|{log.TimestampUtc:o}|{log.Action}|{log.UserID}|{log.AssetKind}|{log.HardwareID}|{log.SoftwareID}|{log.Description}";
             return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
         }
 

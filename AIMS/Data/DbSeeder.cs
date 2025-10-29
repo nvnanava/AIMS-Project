@@ -260,7 +260,7 @@ public static class DbSeeder
                 Name = "Weekly Asset Count",
                 Type = "Inventory",
                 Description = "Hardware & Software totals by type",
-               // BlobUri = "blob://reports/weekly-asset-count.csv",
+             //   BlobUri = "blob://reports/weekly-asset-count.csv",
                 GeneratedByUserID = usersByEmp["28809"].UserID, // John
                 GeneratedForOfficeID = officeByName["HQ - Sacramento"].OfficeID,
                 DateCreated = DateTime.UtcNow.AddDays(-7)
@@ -702,16 +702,6 @@ public static class DbSeeder
             existing.WarrantyExpiration = incoming.WarrantyExpiration;
         }
     }
-    private static async Task UpsertOfficeAsync(AimsDbContext db, Office incoming, CancellationToken ct)
-    {
-        var existing = await db.Offices.FirstOrDefaultAsync(o => o.OfficeID == incoming.OfficeID, ct);
-        if (existing is null) await db.Offices.AddAsync(incoming, ct);
-        else
-        {
-            existing.OfficeName = incoming.OfficeName;
-            existing.Location = incoming.Location;
-        }
-    }
 
     private static async Task UpsertSoftwareAsync(AimsDbContext db, Software incoming, CancellationToken ct)
     {
@@ -768,9 +758,9 @@ public static class DbSeeder
         else
         {
             existing.Description = incoming.Description;
-            existing.BlobUri = incoming.BlobUri;
+            //   existing.BlobUri = incoming.BlobUri;
             existing.GeneratedByUserID = incoming.GeneratedByUserID;
-            existing.GeneratedByOfficeID = incoming.GeneratedByOfficeID;
+            existing.GeneratedForOfficeID = incoming.GeneratedForOfficeID;
             existing.DateCreated = incoming.DateCreated;
         }
     }
