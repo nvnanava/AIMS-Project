@@ -475,7 +475,9 @@ namespace AIMS.Migrations
                         .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("GraphObjectID")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -497,6 +499,8 @@ namespace AIMS.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
+                    b.HasIndex("GraphObjectID")
+                        .IsUnique();
                     b.HasIndex("OfficeID");
 
                     b.HasIndex("RoleID");

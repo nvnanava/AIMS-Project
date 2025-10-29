@@ -48,7 +48,17 @@
 
     // ----- Utils ---------------------------------------------------------
     const escapeHtml = (s) =>
-        (s || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+        (s || "").replace(
+            /[&<>"']/g,
+            (m) =>
+                ({
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#39;",
+                }[m])
+        );
     const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const highlight = (text, q) => {
         const safe = escapeHtml(text ?? "");
@@ -103,7 +113,9 @@
 
         resultsList.innerHTML = "";
         if (!Array.isArray(items) || items.length === 0) {
-            resultsList.innerHTML = `<div class="aad-hint">No results for "${escapeHtml(query)}"</div>`;
+            resultsList.innerHTML = `<div class="aad-hint">No results for "${escapeHtml(
+                query
+            )}"</div>`;
             return;
         }
 
@@ -115,13 +127,22 @@
             btn.type = "button";
             btn.className = "aad-user-item";
             btn.innerHTML = `
-                <div class="aad-line"><strong>${highlight(name, query)}</strong></div>
+                <div class="aad-line"><strong>${highlight(
+                    name,
+                    query
+                )}</strong></div>
                 <div class="aad-sub">${highlight(email, query)}</div>`;
             btn.onclick = () => {
                 const nameInput = document.getElementById("userName");
                 const emailInput = document.getElementById("userEmail");
+                const idInput = document.getElementById("graphObjectId");
                 if (nameInput) nameInput.value = name;
                 if (emailInput) emailInput.value = email;
+                if (idInput) idInput.value = u.id || ""; // set AAD object id
+
+                //: preflight check
+                if (u.id) checkUserExists(u.id);
+
                 resultsList.innerHTML = "";
             };
             frag.appendChild(btn);
@@ -147,11 +168,16 @@
         document.getElementById("editUserIndex").value = index;
 
         const cells = row.getElementsByTagName("td");
-        document.getElementById("editUserName").value = cells[1].innerText.trim();
-        document.getElementById("editUserEmail").value = cells[2].innerText.trim();
-        document.getElementById("editUserRole").value = cells[3].innerText.trim();
-        document.getElementById("editUserStatus").value = cells[4].innerText.trim();
-        document.getElementById("editUserSeparationDate").value = cells[5].innerText.trim();
+        document.getElementById("editUserName").value =
+            cells[1].innerText.trim();
+        document.getElementById("editUserEmail").value =
+            cells[2].innerText.trim();
+        document.getElementById("editUserRole").value =
+            cells[3].innerText.trim();
+        document.getElementById("editUserStatus").value =
+            cells[4].innerText.trim();
+        document.getElementById("editUserSeparationDate").value =
+            cells[5].innerText.trim();
 
         showModalById("editUserModal");
     }
@@ -160,22 +186,13 @@
     }
 
     // ----- Table Filters / Sorting --------------------------------------
-    function applyAdminTableFilters() {
-        const showInactive = document.getElementById("showInactive")?.checked ?? true;
-        const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
 
-        document.querySelectorAll("#adminTable tbody tr.user-row").forEach((row) => {
-            const isInactive = row.classList.contains("inactive");
-            const userRole = row.cells[3]?.innerText.trim() || "";
-            let visible = true;
-            if (!showInactive && isInactive) visible = false;
-            if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
-            row.style.display = visible ? "" : "none";
-        });
+    function toggleInactiveUsers() {
+        applyAdminTableFilters();
     }
-
-    function toggleInactiveUsers() { applyAdminTableFilters(); }
-    function filterByRole() { applyAdminTableFilters(); }
+    function filterByRole() {
+        applyAdminTableFilters();
+    }
 
     function sortTable(n) {
         const table = document.getElementById("adminTable");
@@ -190,16 +207,24 @@
             return asc ? x.localeCompare(y) : y.localeCompare(x);
         });
 
-        rows.forEach(r => tbody.appendChild(r));
+        rows.forEach((r) => tbody.appendChild(r));
         table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
 
         stripeAdminTable();
     }
+    function getRoleNameFromId(id) {
+        const sel = document.getElementById("userRole");
+        if (!sel) return null;
+        const opt = [...sel.options].find((o) => Number(o.value) === id);
+        return opt ? opt.textContent : null;
+    }
 
     function stripeAdminTable() {
-        const rows = Array.from(document.querySelectorAll("#adminTable tbody tr.user-row"));
+        const rows = Array.from(
+            document.querySelectorAll("#adminTable tbody tr.user-row")
+        );
         let visibleIndex = 0;
-        rows.forEach(r => {
+        rows.forEach((r) => {
             r.classList.remove("even-row", "odd-row");
             if (r.style.display === "none") return;
             r.classList.add(visibleIndex % 2 === 0 ? "even-row" : "odd-row");
@@ -294,20 +319,81 @@
         stripeAdminTable();
     }
 
-    function addUser(e) {
+    async function addUser(e) {
         e.preventDefault();
-        const name = document.getElementById("userName")?.value.trim();
-        const email = document.getElementById("userEmail")?.value.trim();
+        const btn = document.querySelector("#addUserForm button[type=submit]");
+        btn?.setAttribute("disabled", "disabled"); // disable to prevent multiple submits
+
         const role = document.getElementById("userRole")?.value;
-        const status = document.getElementById("userStatus")?.value;
-        if (!name || !email) return;
+        const status = document.getElementById("userStatus")?.value || "Active";
+        const graphId = document.getElementById("graphObjectId")?.value;
 
-        const user = { Name: name, Email: email, Role: role, Status: status, SeparationDate: "" };
-        insertUserRow(user);
+        if (!graphId) {
+            alert("Please pick a user from the Azure AD suggestions first.");
+            return;
+        }
+
+        const roleVal = document.getElementById("userRole")?.value ?? "";
+        const roleId = parseInt(roleVal, 10);
+        if (!Number.isInteger(roleId)) {
+            alert("Please choose a role.");
+            return;
+        }
+
+        const resp = await fetch("/api/admin/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ graphObjectId: graphId, roleId }), // roleId (camelCase)
+        });
+
+        if (!resp.ok) {
+            const msg = await resp.text().catch(() => "");
+            alert(msg || "Failed to save user.");
+            return;
+        }
+
+        const saved = await resp.json();
+
+        // Insert the saved row into the table
+        insertUserRow({
+            Name: saved.fullName,
+            Email: saved.email,
+            Role: getRoleNameFromId(roleId) || "",
+            Status: status,
+            SeparationDate: "",
+        });
+
         applyAdminTableFilters();
-
         hideModalById("addUserModal");
         document.getElementById("addUserForm")?.reset();
+        document.getElementById("aadUserResults")?.replaceChildren();
+    }
+
+    async function checkUserExists(graphId) {
+        const notice = document.getElementById("userExistsNotice");
+        const submitBtn = document.querySelector(
+            "#addUserForm button[type=submit]"
+        );
+        try {
+            const resp = await fetch(
+                `/api/admin/users/exists?graphObjectId=${encodeURIComponent(
+                    graphId
+                )}`
+            );
+            if (!resp.ok) throw new Error("exists check failed");
+            const { exists } = await resp.json();
+            if (exists) {
+                notice?.classList.remove("d-none");
+                submitBtn?.setAttribute("disabled", "disabled");
+            } else {
+                notice?.classList.add("d-none");
+                submitBtn?.removeAttribute("disabled");
+            }
+        } catch {
+            // on error, be conservative: allow submit but hide notice
+            notice?.classList.add("d-none");
+            submitBtn?.removeAttribute("disabled");
+        }
     }
 
     function saveUserEdit(event) {
@@ -325,7 +411,8 @@
         row.classList.remove("active", "inactive");
         row.classList.add(status.toLowerCase());
 
-        row.cells[5].innerText = document.getElementById("editUserSeparationDate").value || " ";
+        row.cells[5].innerText =
+            document.getElementById("editUserSeparationDate").value || " ";
         hideModalById("editUserModal");
         applyAdminTableFilters();
         stripeAdminTable();
@@ -351,7 +438,12 @@
         document.addEventListener("click", (e) => {
             const box = document.getElementById("aadUserResults");
             const nameEl = document.getElementById("userName");
-            if (box && nameEl && !box.contains(e.target) && e.target !== nameEl) {
+            if (
+                box &&
+                nameEl &&
+                !box.contains(e.target) &&
+                e.target !== nameEl
+            ) {
                 box.innerHTML = "";
             }
         });
@@ -370,7 +462,7 @@
         saveUserEdit,
         toggleInactiveUsers,
         filterByRole,
-        sortTable
+        sortTable,
     });
 
 
