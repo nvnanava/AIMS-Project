@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using System.Threading; // for CancellationToken
-using AIMS.Services;
 using AIMS.Data;
+using AIMS.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 
 
@@ -14,9 +14,10 @@ public class AdminUsersApiController : ControllerBase
 {
     private readonly IAdminUserUpsertService _svc; // Service to upsert admin users
     private readonly AimsDbContext _db;
-    public AdminUsersApiController(IAdminUserUpsertService svc, AimsDbContext db) {
-          _svc = svc;
-          _db  = db;
+    public AdminUsersApiController(IAdminUserUpsertService svc, AimsDbContext db)
+    {
+        _svc = svc;
+        _db = db;
     }
 
     public record AddAadUserRequest(string GraphObjectId, int? RoleId, int? SupervisorId); //defines the request body for adding an AAD user, used in the POST method

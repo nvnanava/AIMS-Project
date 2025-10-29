@@ -1,10 +1,11 @@
 @* ======================================================================
-   AIMS View: AuditLog/Index (Merged)
+   AIMS View: AuditLog/Index
    ----------------------------------------------------------------------
    Purpose
    - Aligns with Admin table chrome
    - Supports client-side filtering + realtime/polling
    - Adds pagination chrome consistent with Search page
+   - Row click opens a read-only details modal (optional UX)
 
    Conventions
    1) Layout
@@ -50,60 +51,65 @@
 
         <!-- Filter icon (from Task 4A) -->
         <div class="ms-3">
-            @await Html.PartialAsync("_FilterIcon", new ViewDataDictionary(ViewData) {
-            ["Id"] = "auditLogFilter",
-                        ["Label"] = "Search Logs"
-                        })
+            <partial name="_FilterIcon"
+                view-data='@new ViewDataDictionary(ViewData) { ["Id"]="auditLogFilter", ["Label"]="Search Logs" }' />
         </div>
     </div>
 
     @* hidden config for JS (polling interval / batch size / feature flags) *@
-    <div id="auditlog-config" data-poll-interval="@Config["Audit:PollingIntervalMs"]"
-        data-max-batch="@Config["Audit:MaxBatchSize"]" data-feature-realtime="@Config["Feature:AuditRealTime"]"
-        data-feature-polling="@Config["Feature:AuditPollingFallback"]" hidden></div>
+    <div id="auditlog-config"
+         data-poll-interval="@Config["Audit:PollingIntervalMs"]"
+         data-max-batch="@Config["Audit:MaxBatchSize"]"
+         data-feature-realtime="@Config["Feature:AuditRealTime"]"
+         data-feature-polling="@Config["Feature:AuditPollingFallback"]"
+         hidden></div>
 
-			<!-- Admin-style chrome -->
-<div class="auditlog-wrapper">
-    <table class="auditlog-table">
-        <thead>
-            <tr>
-                <th class="al-col-1">Log ID</th>
-                <th class="al-col-2">Timestamp</th>
-                <th class="al-col-3">User ID</th>
-                <th class="al-col-4">Action</th>
-                <th class="al-col-5">Asset ID</th>
-                <th class="al-col-6">Previous Value</th>
-                <th class="al-col-7">New Value</th>
-                <th class="al-col-8">Description</th>
-            </tr>
-        </thead>
-        <tbody>
-	@if (Model != null && Model.Any())
-{
-    foreach (var log in Model)
-    {
-        <tr>
-            <td>@log.LogId</td>
-            <td>@log.Timestamp</td>
-            <td>@log.UserId</td>
-            <td>@log.Action</td>
-            <td>@log.AssetId</td>
-            <td>@log.PreviousValue</td>
-            <td>@log.NewValue</td>
-            <td>@log.Description</td>
-        </tr>
-    }
-}
-else
-{
-    <tr>
-        <td colspan="8" style="text-align:center; color:#777;">No audit logs available</td>
-    </tr>
-}
+    <!-- Admin-style chrome -->
+    <div class="table-wrapper">
+        <!-- use the exact admin wrapper + scroll structure -->
+        <div class="admin-table-wrapper">
+            <div class="admin-table-scroll">
+                <!-- Header table (fixed) -->
+                <table class="admin-table-header">
+                    <colgroup>
+                        <col class="al-col-1" />
+                        <col class="al-col-2" />
+                        <col class="al-col-3" />
+                        <col class="al-col-4" />
+                        <col class="al-col-5" />
+                        <col class="al-col-6" />
+                        <col class="al-col-7" />
+                        <col class="al-col-8" />
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Timestamp</th>
+                            <th>User ID</th>
+                            <th>Action</th>
+                            <th>Asset ID</th>
+                            <th>Previous Value</th>
+                            <th>New Value</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                </table>
 
-        </tbody>
-    </table>
-</div>
+                <!-- Body table (scrolls) -->
+                <table class="admin-table-body audit-log-table" id="auditTable" aria-describedby="audit-pager">
+                    <colgroup>
+                        <col class="al-col-1" />
+                        <col class="al-col-2" />
+                        <col class="al-col-3" />
+                        <col class="al-col-4" />
+                        <col class="al-col-5" />
+                        <col class="al-col-6" />
+                        <col class="al-col-7" />
+                        <col class="al-col-8" />
+                    </colgroup>
+                    <tbody id="auditTableBody"><!-- filled by JS (realtime/polling/paging) --></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -118,6 +124,35 @@ else
 
 @* Include the existing modal from Task 4A *@
 @await Html.PartialAsync("_SearchLogsModal")
+
+@* ---------- NEW: Row Details Modal (read-only) ------------------------ *@
+<div class="modal fade" id="auditRowModal" tabindex="-1" aria-labelledby="auditRowModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="auditRowModalLabel">Audit Entry</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <dl class="row audit-row-fields">
+          <dt class="col-sm-3">Log ID</dt>        <dd class="col-sm-9" id="ar-id"></dd>
+          <dt class="col-sm-3">Timestamp</dt>     <dd class="col-sm-9" id="ar-ts"></dd>
+          <dt class="col-sm-3">User ID</dt>       <dd class="col-sm-9" id="ar-user"></dd>
+          <dt class="col-sm-3">Action</dt>        <dd class="col-sm-9" id="ar-action"></dd>
+          <dt class="col-sm-3">Asset ID</dt>      <dd class="col-sm-9" id="ar-asset"></dd>
+          <dt class="col-sm-3">Previous Value</dt><dd class="col-sm-9" id="ar-prev"></dd>
+          <dt class="col-sm-3">New Value</dt>     <dd class="col-sm-9" id="ar-new"></dd>
+        </dl>
+        <div class="mb-1 fw-semibold">Description</div>
+        <textarea id="ar-desc" class="form-control audit-desc-box" rows="6" readonly></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn add-btn" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+@* --------------------------------------------------------------------- *@
 
 @section Scripts {
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
