@@ -80,7 +80,7 @@ Options:
 Examples:
   $0                                   # integration assembly
   $0 --suite unit                      # unit assembly
-  $0 --suite both                      # both assemblies (one HTML/JUnit)
+  $0 --suite both                      # both assemblies (one HTML)
   $0 AIMS.Tests.Integration.SchemaTests
   $0 AIMS.Tests.Integration.SchemaTests.Invalid... --method
   $0 --suite both --coverage           # merged coverage
@@ -448,19 +448,27 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
     UNIT_OUT="$COVERAGE_DIR/unit"
     mkdir -p "$INT_OUT" "$UNIT_OUT"
 
+    # --- surgical change: allow coverage run to proceed even if tests fail ---
+    set +e
     dotnet test "$INT_PROJ" -c "$CONFIG" --no-build \
       --collect:"XPlat Code Coverage" \
       --logger "trx;LogFileName=$(basename "$INT_OUT/coverage.trx")" \
       --results-directory "$INT_OUT" \
       -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
+    rc_cov_int=$?
+    set -e
+    # -------------------------------------------------------------------------
 
+    set +e
     dotnet test "$UNIT_PROJ" -c "$CONFIG" --no-build \
       --collect:"XPlat Code Coverage" \
       --logger "trx;LogFileName=$(basename "$UNIT_OUT/coverage.trx")" \
       --results-directory "$UNIT_OUT" \
       -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
+    rc_cov_unit=$?
+    set -e
 
     COV_XML_INT="$(find "$INT_OUT" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
     COV_XML_UNIT="$(find "$UNIT_OUT" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
@@ -489,6 +497,7 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
           cat "$COV_HTML_DIR/Summary.txt"
         fi
 
+        # Inject link to coverage into the test HTML even when tests failed
         if [[ -f "$OUT_HTML" ]]; then
           TMP_HTML="$OUT_HTML.tmp"
           {
@@ -507,7 +516,10 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
       fi
     fi
   else
+    # Single suite
     if (( ${#COV_FILTER_ARGS[@]:-0} > 0 )); then
+      # --- surgical change: allow coverage run to proceed even if tests fail ---
+      set +e
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         "${COV_FILTER_ARGS[@]}" \
         --collect:"XPlat Code Coverage" \
@@ -515,13 +527,19 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
         --results-directory "$COVERAGE_DIR" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
+      rc_cov_single=$?
+      set -e
+      # -----------------------------------------------------------------------
     else
+      set +e
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         --collect:"XPlat Code Coverage" \
         --logger "trx;LogFileName=$(basename "$COVERAGE_DIR/coverage.trx")" \
         --results-directory "$COVERAGE_DIR" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
+      rc_cov_single=$?
+      set -e
     fi
 
     COV_XML="$(find "$COVERAGE_DIR" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
@@ -547,6 +565,7 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
           cat "$COV_HTML_DIR/Summary.txt"
         fi
 
+        # Inject link to coverage into the test HTML even when tests failed
         if [[ -f "$OUT_HTML" ]]; then
           TMP_HTML="$OUT_HTML.tmp"
           {

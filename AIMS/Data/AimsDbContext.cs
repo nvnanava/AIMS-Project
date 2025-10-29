@@ -214,6 +214,24 @@ namespace AIMS.Data
                 .Property(a => a.ExternalId)
                 .HasDefaultValueSql("NEWID()");
 
+            // Helpful indexes for paging/filtering
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => a.TimestampUtc);
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.AssetKind, a.HardwareID });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.AssetKind, a.SoftwareID });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.UserID, a.Action });
+
+            // Inline large payloads for AuditLog (varbinary(max)); strings default to nvarchar(max)
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.AttachmentBytes)
+                .HasColumnType("varbinary(max)");
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.SnapshotBytes)
+                .HasColumnType("varbinary(max)");
+
             // Child rows (per-field diffs)
             modelBuilder.Entity<AuditLogChange>()
                 .HasOne(c => c.AuditLog)
@@ -221,9 +239,11 @@ namespace AIMS.Data
                 .HasForeignKey(c => c.AuditLogID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<AuditLogChange>()
-                .Property(c => c.Field)
-                .HasMaxLength(128);
+            // No max length limits on field names for flexibility
+            // (strings default to nvarchar(max))
+            // modelBuilder.Entity<AuditLogChange>()
+            //     .Property(c => c.Field)
+            //     .HasMaxLength(128);   // ← removed (no max length)
 
             modelBuilder.Entity<AuditLogChange>()
                 .HasIndex(c => new { c.AuditLogID, c.Field });

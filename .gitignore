@@ -416,6 +416,54 @@ TestResults/
 # wwwroot saved reposed
 AIMS/wwwroot/reports
 
+# DOCFX OUTPUT & CACHE
+_site/
+styles/
+.docfx_cache/
+search-stopwords.json
+manifest.json
+index.json
+xrefmap.yml
+
+# Generated API YAML (DocFX metadata output)
+api/*.yml
+api/.manifest*
+api/.cache/
+!api/index.md          # keep authored landing page
+!api/filterConfig.yml  # keep filter rules
+
+# Conceptual docs cache (if any local temp)
+docs/.cache/
+docs/**/_site/
+
+# Generated PDFs or temporary exports
+*.pdf
+
+# TEST OUTPUTS
+test-results/
+*.trx
+*.coverage
+.last-run.json
+
+# LOCAL DEV/EDITOR FILES
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+*.DS_Store
+Thumbs.db
+
+# NODE MODULES (E2E TESTS / FRONTEND ASSETS)
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OTHER BUILD ARTIFACTS
+bin/
+obj/
+coverage/
 # local dev secrets
 .env
 appsettings.Local.json

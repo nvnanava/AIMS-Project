@@ -1,49 +1,8 @@
 @* ======================================================================
    AIMS View: AssetDetails/Index
-   ----------------------------------------------------------------------
-   Purpose
-   - List and manage assets for a single category (or a single asset by tag).
-   - Supports server-driven paging (look-ahead), admin actions, and a detail popup.
-
-   Conventions
-   1) Layout
-      - Uses ~/Views/Shared/_Layout.cshtml for global CSS/JS and navbar.
-
-   2) Styles
-      - Page CSS:       ~/css/pages/assetdetails.index.css
-      - Component CSS:  ~/css/components/_AssetButton.css, _HardwareAddForm.css
-      - Add via @section Styles to keep the layout base minimal.
-
-   3) Scripts
-      - No inline JS. All page logic lives in:
-          ~/js/pages/assetdetails.index.js
-      - The view exposes configuration via a data-* block (see #Config).
-
-   4) Data flow
-      - The server sets ViewData["Category"] and (optionally) "SpecsData".
-      - The page writes a config <div> with data-category, data-is-admin, data-specs.
-      - JS reads config → fetches pages via /api/assets or fetches single via /api/assets/one.
-
-   5) Admin actions
-      - Archive/Unarchive buttons render only for admins.
-      - Actions call /api/hardware/* or /api/software/* and then update the cached page.
-
-   6) Paging strategy
-      - Look-ahead mode: total = -1 indicates “unknown”; a full page implies “maybe more”.
-      - Prev/Next buttons are enabled based on cache/response size.
-
-   7) Partials
-      - Modal partials are loaded here; their CSS lives in /css/components.
-      - Keep partials presentation-only; JS wires them up from the page script.
-
-   8) Indentation
-      - 4 spaces, no tabs.
-
    ====================================================================== *@
-
 @using AIMS.Utilities
 
-@* Partials (forms & button components) *@
 @await Html.PartialAsync("_HardwareAddForm")
 @await Html.PartialAsync("_EditAssetForm")
 @await Html.PartialAsync("_AddCategoryForm")
@@ -53,6 +12,7 @@
     <link rel="stylesheet" href="~/css/pages/assetdetails.index.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/_AssetButton.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/_AssetAddForm.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/components/_FilterIcon.css" asp-append-version="true" />
 }
 
 @{
@@ -60,10 +20,6 @@
     ViewData["Title"] = $"{category} Asset Details";
 }
 
-@* ---------------------------- #Config ------------------------------
-   A single, non-executable config element for the page script to read.
-   Avoids inline scripts; safe to extend with more data-* keys later.
-   ---------------------------------------------------------------- *@
 <div id="assetdetails-config" data-specs='@Html.Raw(Json.Serialize(ViewData["SpecsData"] ?? new { }))'
     data-category="@category" data-is-admin="@(User.IsAdmin().ToString().ToLower())">
 </div>
@@ -77,7 +33,16 @@
                 <th>Asset Name</th>
                 <th>Type</th>
                 <th id="seatOrTagHeader">Tag #</th>
-                <th id="status-col-header">Status</th>
+                <th id="status-col-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <span>Status</span>
+                        @await Html.PartialAsync("_FilterIcon", new ViewDataDictionary(ViewData){
+                        ["Id"] = "detailsFilters",
+                                                ["Label"] = "Show Archived",
+                                                ["Checked"] = false
+                                                })
+                    </div>
+                </th>
                 <th>
                     <div style="margin-left:auto;">
                         @if (User.IsAdmin())
@@ -93,7 +58,6 @@
         </tbody>
     </table>
 
-    <!-- Look-ahead pager -->
     <div id="asset-pager" class="search-pager" hidden>
         <button type="button" id="asset-prev" class="pager-btn">Prev</button>
         <span id="asset-status" class="pager-status"></span>
@@ -126,4 +90,12 @@
     <script src="~/js/pages/assetdetails.index.js" asp-append-version="true" defer></script>
     <script src="~/js/components/add-hardware.js" asp-append-version="true" defer></script>
     <script src="~/js/components/add-software.js" asp-append-version="true" defer></script>
+
+    <script>
+        // Initialize the filter component for this page
+        AIMSFilterIcon.init("detailsFilters", {
+            onChange: ({ showArchived }) => {
+            }
+        });
+    </script>
 }
