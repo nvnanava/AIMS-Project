@@ -366,6 +366,72 @@ public class ReportsController : ControllerBase
         return File(report.Content, "text/csv", $"{report.Name}_{report.Type}_Report_{report.DateCreated:yyyy_MM_dd_HH_mm_ss}.csv");
     }
 
+    [HttpGet("preview/{id:int}")]
+    public async Task<IActionResult> PreviewById(int id, CancellationToken ct = default)
+    {
+        // Step 1: Get report metadata from DB
+        var report = await _reports.GetReportASync(id, ct);
+
+        if (report is null)
+            return NotFound(new { error = $"No report found with ID {id}." });
+
+        if (string.IsNullOrWhiteSpace(report.BlobUri))
+            return BadRequest(new { error = "This report has no associated file (BlobUri missing)." });
+
+        // Step 2: Resolve full file path safely
+        var rel = report.BlobUri.Replace('\\', '/').TrimStart('/');
+        var baseDir = _fs.Path.GetFullPath(_rootPath);
+        var fullPath = _fs.Path.GetFullPath(_fs.Path.Combine(baseDir, rel));
+
+        if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new { error = "Invalid file path." });
+
+        if (!_fs.File.Exists(fullPath))
+            return NotFound(new { error = $"Report file not found at {report.BlobUri}" });
+
+        // Step 3: Read CSV file content
+        using var stream = _fs.File.OpenRead(fullPath);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            BadDataFound = null,
+            MissingFieldFound = null,
+            HeaderValidated = null
+        });
+
+        // Step 4: Parse records into objects (dynamic for flexibility)
+        var records = new List<Dictionary<string, string>>();
+        using (csv)
+        {
+            csv.Read();
+            csv.ReadHeader();
+            var headers = csv.HeaderRecord;
+
+            while (csv.Read())
+            {
+                var row = new Dictionary<string, string>();
+                foreach (var header in headers)
+                {
+                    row[header] = csv.GetField(header);
+                }
+                records.Add(row);
+            }
+        }
+
+        // Step 5: Return JSON preview
+        return Ok(new
+        {
+            report.ReportID,
+            report.Name,
+            report.Type,
+            report.DateCreated,
+            report.Description,
+            totalRows = records.Count,
+            previewRows = records.Take(100) // only first 100 rows for preview
+        });
+    }
+
+
     [HttpGet("list")]
     public async Task<IActionResult> GetAll()
     {
