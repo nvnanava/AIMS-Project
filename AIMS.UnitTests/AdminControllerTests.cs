@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using AIMS.Controllers.Mvc;
 using AIMS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph.Models;
 using Moq;
 
