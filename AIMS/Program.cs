@@ -277,6 +277,11 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
+// this line scopes the IAdminUserUpsertService to the AdminUserUpsertService class
+builder.Services.AddScoped<IAdminUserUpsertService, AdminUserUpsertService>();
+
+
+
 // Role helper policies (username allowlists)
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>

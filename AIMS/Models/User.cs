@@ -13,7 +13,8 @@ public class User
     [Required, MaxLength(256)]
     public string Email { get; set; } = string.Empty;
 
-    public string? GraphObjectID { get; set; }
+    [Required, MaxLength(64)]
+    public string GraphObjectID { get; set; } = string.Empty;
 
     [Required, MaxLength(32)]
     public string EmployeeNumber { get; set; } = string.Empty;
