@@ -115,34 +115,32 @@
         <h1>Reports</h1>
 
         <div class="report-management">
-            <div class="report-header">
-                <div class="left-section">
-                    <div class="search-container">
-                        <input
-                            type="search"
-                            id="reportSearch"
-                            class="form-control search-input"
-                            placeholder="Search Reports"
-                            aria-label="Search" />
-                    </div>
-                </div>
+	<div class="report-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <!-- Left: Search -->
+    <div class="d-flex align-items-center gap-2">
+        <input type="search" id="reportSearch" class="form-control search-input"
+               placeholder="Search Reports" aria-label="Search"
+               style="width: 260px; border: 1px solid #ccc; border-radius: 6px; padding: 6px 10px;" />
+    </div>
 
-                <div class="right-section">
-                    <button type="button" class="download-csv-button">Download CSV of Selected Files</button>
-
-                    <div class="dropdown">
-                        <button class="btn new-report-button dropdown-toggle" type="button" id="dropdownMenuButton1"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                            New Report
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateAssignmentReport">Assignment</button>
-                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateOfficeReport">Office</button>
-                            <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateCustomReport">Custom</button>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+    <!-- Right: Buttons -->
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-mint">
+            <i class="bi bi-download"></i> Download CSV
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-mint dropdown-toggle" type="button" id="newReportDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-plus-circle"></i> New Report
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="newReportDropdown">
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generalReportModal">General Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#inventoryReportModal">Inventory Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#softwareReportModal">Software Report</button></li>
+            </ul>
+        </div>
+    </div>
+</div>
 
             <div class="table-container table-responsive">
                 <table class="report-table">

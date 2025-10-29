@@ -62,31 +62,48 @@
         data-max-batch="@Config["Audit:MaxBatchSize"]" data-feature-realtime="@Config["Feature:AuditRealTime"]"
         data-feature-polling="@Config["Feature:AuditPollingFallback"]" hidden></div>
 
-    <!-- Admin-style chrome -->
-    <div class="table-wrapper">
-        <div class="admin-table-chrome">
-            <!-- Fixed header -->
-            <table class="admin-table-header">
-                <thead>
-                    <tr>
-                        <th class="al-col-1">Log ID</th>
-                        <th class="al-col-2">Timestamp</th>
-                        <th class="al-col-3">User ID</th>
-                        <th class="al-col-4">Action</th>
-                        <th class="al-col-5">Asset ID</th>
-                        <th class="al-col-6">Previous Value</th>
-                        <th class="al-col-7">New Value</th>
-                        <th class="al-col-8">Description</th>
-                    </tr>
-                </thead>
-            </table>
+			<!-- Admin-style chrome -->
+<div class="auditlog-wrapper">
+    <table class="auditlog-table">
+        <thead>
+            <tr>
+                <th class="al-col-1">Log ID</th>
+                <th class="al-col-2">Timestamp</th>
+                <th class="al-col-3">User ID</th>
+                <th class="al-col-4">Action</th>
+                <th class="al-col-5">Asset ID</th>
+                <th class="al-col-6">Previous Value</th>
+                <th class="al-col-7">New Value</th>
+                <th class="al-col-8">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+	@if (Model != null && Model.Any())
+{
+    foreach (var log in Model)
+    {
+        <tr>
+            <td>@log.LogId</td>
+            <td>@log.Timestamp</td>
+            <td>@log.UserId</td>
+            <td>@log.Action</td>
+            <td>@log.AssetId</td>
+            <td>@log.PreviousValue</td>
+            <td>@log.NewValue</td>
+            <td>@log.Description</td>
+        </tr>
+    }
+}
+else
+{
+    <tr>
+        <td colspan="8" style="text-align:center; color:#777;">No audit logs available</td>
+    </tr>
+}
 
-            <!-- Scrollable body -->
-            <div class="admin-table-scroll">
-                <table class="admin-table-body audit-log-table" id="auditTable">
-                    <tbody id="auditTableBody"><!-- filled by JS (realtime/polling/paging) --></tbody>
-                </table>
-            </div>
+        </tbody>
+    </table>
+</div>
         </div>
     </div>
 
