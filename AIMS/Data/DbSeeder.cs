@@ -632,6 +632,15 @@ public static class DbSeeder
         return new Guid(bytes);
     }
 
+    // NEW: deterministic 32-hex GraphObjectID generator
+    private static string GraphIdFor(User u)
+    {
+        var key = !string.IsNullOrWhiteSpace(u.EmployeeNumber)
+            ? $"emp:{u.EmployeeNumber}"
+            : $"email:{u.Email}";
+        return FromString("graph:" + key).ToString("N"); // 32 hex, no dashes
+    }
+
     private static async Task UpsertRoleAsync(AimsDbContext db, Role incoming, CancellationToken ct)
     {
         var existing = await db.Roles.FirstOrDefaultAsync(r => r.RoleName == incoming.RoleName, ct);
@@ -639,6 +648,7 @@ public static class DbSeeder
         else existing.Description = incoming.Description;
     }
 
+    // UPDATED: always set/repair GraphObjectID (never blank)
     private static async Task UpsertUserAsync(AimsDbContext db, User incoming, CancellationToken ct)
     {
         if (incoming.ExternalId == Guid.Empty)
@@ -648,6 +658,10 @@ public static class DbSeeder
                 : $"email:{incoming.Email}";
             incoming.ExternalId = FromString(key);
         }
+
+        // Ensure GraphObjectID on incoming for inserts
+        if (string.IsNullOrWhiteSpace(incoming.GraphObjectID))
+            incoming.GraphObjectID = GraphIdFor(incoming);
 
         var existing = await db.Users.FirstOrDefaultAsync(u => u.Email == incoming.Email, ct);
         if (existing is null)
@@ -663,6 +677,10 @@ public static class DbSeeder
             existing.EmployeeNumber = incoming.EmployeeNumber;
             existing.IsActive = incoming.IsActive;
             existing.RoleID = incoming.RoleID;
+
+            // Repair GraphObjectID if missing/blank
+            if (string.IsNullOrWhiteSpace(existing.GraphObjectID))
+                existing.GraphObjectID = GraphIdFor(existing);
         }
     }
 

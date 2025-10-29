@@ -88,8 +88,8 @@ namespace AIMS.Data
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.GraphObjectID)
                 .IsUnique(); //prevents duplicate (two rows pointing to same AAD user)
-                //No filter added - every user must have a GraphObjectID and come from AAD
-                //This allows us to only add users that exist in AAD, if not in AAD you cannot add them to our system
+                             //No filter added - every user must have a GraphObjectID and come from AAD
+                             //This allows us to only add users that exist in AAD, if not in AAD you cannot add them to our system
 
             // -------------------------
             // HARDWARE
@@ -276,7 +276,7 @@ namespace AIMS.Data
                 .WithMany()
                 .HasForeignKey(r => r.GeneratedByUserID)
                 .OnDelete(DeleteBehavior.SetNull);
-                
+
 
             modelBuilder.Entity<Report>()
                 .HasOne(r => r.GeneratedForOffice)
