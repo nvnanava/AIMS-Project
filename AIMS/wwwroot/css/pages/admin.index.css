@@ -1,8 +1,4 @@
-/* ======================================================================
-   AIMS Page CSS: Admin / Index  (split header; fixed columns; teal buttons)
-   ====================================================================== */
-
-/* ---------- Layout wrappers ---------- */
+/*  Layout wrappers  */
 .table-wrapper {
     background: var(--aims-bg-contrast);
     border-radius: 8px;
@@ -10,7 +6,7 @@
     min-height: 89vh;
 }
 
-/* ---------- Top controls row ---------- */
+/*  Top controls row */
 .admin-table-controls {
     display: flex;
     align-items: center;
@@ -25,7 +21,7 @@
     gap: 10px;
 }
 
-/* ---------- Pill-style teal buttons ---------- */
+/*  Pill-style teal buttons */
 .add-btn {
     height: 41px;
     padding: 0 20px;
@@ -94,7 +90,7 @@
     min-width: 160px;
 }
 
-/* ---------- Toggle (Show Inactive) ---------- */
+/*  Toggle (Show Inactive) */
 .toggle-container {
     position: relative;
     display: inline-flex;
@@ -146,228 +142,101 @@
     transform: translateX(22px);
 }
 
-/* ---------- Split header + scrollable body ---------- */
-.admin-table-chrome {
-    /* visual frame */
-    border: 3px solid var(--aims-ink, #34495e);
-    border-radius: 12px;
-    box-shadow: 0 4px 8px var(--aims-shadow, rgba(0, 0, 0, .15));
-    background: #fff;
-    overflow: hidden;
-    /* keep rounded corners */
+
+div.admin-table-wrapper {
+  border: 1px solid #34495e;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background: #fff;
+  overflow: hidden;
 }
 
-/* Header table (not scrolling) */
-.admin-table-header {
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: separate;
-    border-spacing: 0;
+div.admin-table-scroll {
+  display: block !important;
+  width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
-.admin-table-header th {
-    background: #2c3e50;
-    color: #fff;
-    font-weight: 600;
-    letter-spacing: .3px;
-    text-align: left;
-    padding: 16px 20px;
-    /* optional top separator look */
-}
-
-/* Scroll body */
-.admin-table-scroll {
-    max-height: 73vh;
-    /* adjust to taste */
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    /* smooth on iOS */
-    overscroll-behavior: contain;
-    /* prevent page scroll chaining */
-    scrollbar-gutter: stable;
-    /* keep width stable on supported browsers */
-}
-
-/* Body table */
+/* Ensure wide layout for horizontal scroll */
+.admin-table-header,
 .admin-table-body {
-    width: 100%;
-    table-layout: fixed;
-    /* critical for column alignment */
-    border-collapse: separate;
-    border-spacing: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  min-width: 1000px;
 }
 
-.admin-table-body td {
-    padding: 14px 18px;
-    color: #2c3e50;
-    vertical-align: middle;
-    border-bottom: 1px solid rgba(52, 73, 94, .20);
-    background: #fff;
+/* Header styling */
+.admin-table-header th {
+  background-color: #34495e;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-/* Column widths (keeps header/body aligned even with a scrollbar) */
-.admin-col-1 {
-    width: 12%;
+/* Body striping */
+.admin-table-body tr:nth-child(even) {
+  background-color: #ECF0F1;
+}
+.admin-table-body tr:nth-child(odd) {
+  background-color: #E0E4E5;
 }
 
-/* Actions */
-.admin-col-2 {
-    width: 22%;
-}
-
-/* Name */
-.admin-col-3 {
-    width: 26%;
-}
-
-/* Email */
-.admin-col-4 {
-    width: 14%;
-}
-
-/* Role */
-.admin-col-5 {
-    width: 14%;
-}
-
-/* Status */
-.admin-col-6 {
-    width: 12%;
-}
-
-/* Separation Date */
-
-/* Apply same widths to body cells via nth-child */
-.admin-table-body td:nth-child(1) {
-    width: 12%;
-}
-
-.admin-table-body td:nth-child(2) {
-    width: 22%;
-}
-
-.admin-table-body td:nth-child(3) {
-    width: 26%;
-}
-
-.admin-table-body td:nth-child(4) {
-    width: 14%;
-}
-
-.admin-table-body td:nth-child(5) {
-    width: 14%;
-}
-
-.admin-table-body td:nth-child(6) {
-    width: 12%;
-}
-
-/* Text overflow hygiene (optional) */
+/* Text overflow + ellipsis */
 .admin-table-header th,
 .admin-table-body td {
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+  padding: 0.75rem 1rem;
 }
 
-/* Zebra */
-.admin-table-body tr:nth-child(even) td {
-    background: #ffffff;
+/* Optional hover tooltip */
+.admin-table-body td[title]:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #f8f9fa;
+  position: relative;
+  z-index: 3;
 }
 
-.admin-table-body tr:nth-child(odd) td {
-    background: var(--aims-bg-contrast, #f7f9fa);
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
 
-/* ---------- Status badges ---------- */
 .admin-table-body .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 28px;
-    min-width: 96px;
-    padding: 0 12px;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    line-height: 1;
-    text-transform: uppercase;
-    cursor: default;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 96px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: default;
 }
 
 .admin-table-body .badge.active {
-    background: #d5f5e3;
-    color: #1e7e34;
-    border: 2px solid #2ecc71;
+  background-color: #d5f5e3;     /* light mint */
+  color: #0b5345;               /* dark green text */
+  border: 2px solid #1abc9c;    /* mint border */
 }
 
 .admin-table-body .badge.inactive {
-    background: #fadbd8;
-    color: #a33a2a;
-    border: 2px solid #e74c3c;
+  background-color: #fadbd8;    /* light red */
+  color: #922b21;               /* deep red text */
+  border: 2px solid #e74c3c;    /* red border */
 }
 
-/* ---------- AAD typeahead (Add User) ---------- */
-#aadUserResults {
-    margin-top: .25rem;
-    max-height: 220px;
-    overflow: auto;
-    border: 1px solid #ddd;
-    border-radius: .5rem;
-    background: #fff;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
-    z-index: 1056;
-}
-
-#aadUserResults:empty {
-    display: none;
-}
-
-#aadUserResults .aad-user-item {
-    width: 100%;
-    text-align: left;
-    padding: .5rem .75rem;
-    border: 0;
-    border-bottom: 1px solid #eee;
-    background: transparent;
-    cursor: pointer;
-}
-
-#aadUserResults .aad-user-item:last-child {
-    border-bottom: 0;
-}
-
-#aadUserResults .aad-user-item:hover,
-#aadUserResults .aad-user-item:focus {
-    background: #f7f9fc;
-    outline: none;
-}
-
-#aadUserResults .aad-hint,
-#aadUserResults .aad-error {
-    padding: .5rem .75rem;
-    color: #666;
-}
-
-/*-------search bar -----*/
-.aims-input {
-    padding: 6px 10px;
-    border: 1px solid #ccc;
-    border-radius: 999px;
-    margin-right: 10px;
-    min-width: 200px;
-}
-
-
-/* ---------- Responsive ---------- */
-@media (max-width: 768px) {
-    .admin-table-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-    }
-
-    #roleFilter {
-        width: 100%;
-    }
-}
