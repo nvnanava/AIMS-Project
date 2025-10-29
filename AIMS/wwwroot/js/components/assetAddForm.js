@@ -1,4 +1,4 @@
-window.assetFormCache = {}; // Global cache for multi-item phase 2
+window.assetFormCache = {};
 
 document.addEventListener('DOMContentLoaded', function () {
     const addAssetModal = document.getElementById('addAssetModal');
@@ -97,8 +97,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Initialize dropdowns
-    populateDropdown(manufacturerSelect, '/api/hardware/add-bulk');
-    populateDropdown(modelSelect, '/api/hardware/add-bulk');
+    populateDropdown(manufacturerSelect, '/api/hardware/add');
+    populateDropdown(modelSelect, '/api/hardware/add');
     enableFreeType(manufacturerSelect);
     enableFreeType(modelSelect);
 
