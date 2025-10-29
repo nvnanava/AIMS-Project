@@ -1,7 +1,7 @@
+using AIMS.Data; // Add this line if AimsDbContext is in the Data namespace
 using AIMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AIMS.Data; // Add this line if AimsDbContext is in the Data namespace
 using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers.Mvc;

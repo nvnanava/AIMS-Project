@@ -6,13 +6,16 @@
      * Toggle filter dropdown
      * Free-text search across table rows
      * Action filter (Assign/Create/Update/Delete/Unassign/All)
-     * Client-side pagination (Search pager styling)
+     * Client-side pagination (Search pager styling)  ← kept
    - Realtime + Resilience
      * SignalR with polling fallback
      * 30-day sinceCursor seed
      * First-paint fallback to /api/audit/events/latest
      * Exponential backoff on 5xx; never clears existing rows
      * Uses the SAME spinner as Search: window.GlobalSpinner
+   - UX
+     * Only ellipsed cells get native tooltips (no “help” cursor)
+     * Row click opens read-only modal with scrollable Description
    ====================================================================== */
 
 (() => {
@@ -71,7 +74,7 @@
     }
 
     // ----- Pagination (client-side) --------------------------------------
-    const pager = $("#audit-pager");
+    const pager = document.getElementById("audit-pager");
     const btnPrev = document.getElementById("pg-prev") || document.getElementById("audit-pg-prev");
     const btnNext = document.getElementById("pg-next") || document.getElementById("audit-pg-next");
     const lblStatus = document.getElementById("pg-status") || document.getElementById("audit-pg-status");
@@ -137,11 +140,57 @@
     btnPrev?.addEventListener("click", () => { if (currentPage > 1) { currentPage--; renderCurrentPage(); } });
     btnNext?.addEventListener("click", () => { currentPage++; renderCurrentPage(); });
 
+    // ----- Tooltips only for ellipsed cells ------------------------------
+    function setSmartTooltip(td) {
+        if (!td) return;
+        const hasOverflow = td.scrollWidth > td.clientWidth;
+        if (hasOverflow) td.title = td.textContent.trim();
+        else td.removeAttribute("title");
+    }
+    function refreshVisibleTooltips() {
+        const rows = $all(".admin-table-body tbody tr:not([hidden])");
+        rows.forEach(tr => {
+            Array.from(tr.cells).forEach(setSmartTooltip);
+        });
+    }
+    window.addEventListener("resize", () => { refreshVisibleTooltips(); });
+
+    // ----- Row details modal (read-only) ---------------------------------
+    function openRowModalFromTR(tr) {
+        if (!tr) return;
+        const cells = Array.from(tr.cells).map(td => (td.textContent || "").trim());
+
+        document.getElementById("ar-id").textContent = cells[0] || "—";
+        document.getElementById("ar-ts").textContent = cells[1] || "—";
+        document.getElementById("ar-user").textContent = cells[2] || "—";
+        document.getElementById("ar-action").textContent = cells[3] || "—";
+        document.getElementById("ar-asset").textContent = cells[4] || "—";
+        document.getElementById("ar-prev").textContent = cells[5] || "—";
+        document.getElementById("ar-new").textContent = cells[6] || "—";
+        document.getElementById("ar-desc").value = cells[7] || "";
+
+        if (window.bootstrap?.Modal) {
+            const m = bootstrap.Modal.getOrCreateInstance(document.getElementById("auditRowModal"));
+            m.show();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const tbody = document.getElementById("auditTableBody");
+        if (tbody) {
+            tbody.addEventListener("click", (e) => {
+                const tr = e.target?.closest("tr");
+                if (!tr) return;
+                openRowModalFromTR(tr);
+            });
+        }
+    });
+
     // ----- Wire filter UI -------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
-        const btnToggle = $("#filter-button-toggle");
-        const dd = $("#filterDropdown");
-        const txtSearch = $("#filterSearchInput");
+        const btnToggle = document.getElementById("filter-button-toggle");
+        const dd = document.getElementById("filterDropdown");
+        const txtSearch = document.getElementById("filterSearchInput");
 
         btnToggle?.addEventListener("click", (e) => { e.preventDefault(); toggleDropdown(); });
         txtSearch?.addEventListener("keyup", function () { filterByFreeText(this.value); });
@@ -161,6 +210,9 @@
 
         applyPagination(true);
     });
+
+    // Expose for realtime to refresh tooltips after re-render
+    window.__Audit_RefreshVisibleTooltips = refreshVisibleTooltips;
 })();
 
 /* ======================================================================
@@ -169,6 +221,7 @@
    - Show banner only if: table empty OR prolonged failures
    - Re-page only when rows actually changed
    - Only flash rows for events AFTER initial seed
+   - After each render/update, recompute "smart tooltips"
    ====================================================================== */
 
 (() => {
@@ -210,8 +263,8 @@
     let consecutiveFailures = 0;
 
     const aborter = new AbortController();
-    const now = () => Date.now();
-    const haveRows = () => tbody.querySelector("tr") !== null;
+    const now = () => Date.now();                               // ← keep single definition
+    const haveRows = () => tbody.querySelector("tr") !== null;  // ← keep single definition
 
     // ---------- Banner ----------
     function ensureBanner() {
@@ -250,27 +303,19 @@
             let s = String(dt ?? "").trim();
             if (!s) return "—";
 
-            // Has a time part?
             const hasT = s.includes("T");
-            // Already has explicit timezone?
             const hasTZ = /[Zz]$|[+\-]\d{2}:?\d{2}$/.test(s);
 
             if (hasT && !hasTZ) {
-                // Treat naive timestamps as UTC and normalize microseconds -> milliseconds
-                // e.g. 2025-10-28T23:21:09.751012  =>  2025-10-28T23:21:09.751Z
                 s = s
-                    // Trim fractional seconds to 3 digits if present
                     .replace(/(\.\d{3})\d+$/, "$1")
-                    // If there is a fractional part <3 digits, right-pad to 3
                     .replace(/\.([\d]{1,2})$/, (m, g1) => "." + g1.padEnd(3, "0"))
-                    // If there is no fractional part at all, add .000
                     .replace(/(T\d{2}:\d{2}:\d{2})(?!\.)/, "$1.000")
                     + "Z";
             }
 
             const d = new Date(s);
-            if (isNaN(d)) return String(dt); // fallback: show original if parsing fails
-
+            if (isNaN(d)) return String(dt);
             return new Intl.DateTimeFormat("en-US", {
                 dateStyle: "medium",
                 timeStyle: "short",
@@ -283,6 +328,23 @@
 
     function keyOf(evt) { return evt?.id || evt?.hash || ""; }
 
+    // Create <td> helper (no title by default; tooltips set later if ellipsed)
+    function makeTD(text) {
+        const c = document.createElement("td");
+        c.textContent = (text == null) ? "" : String(text);
+        return c;
+    }
+
+    // Recompute tooltip eligibility for a given row
+    function refreshTooltipsForRow(tr) {
+        if (!tr) return;
+        Array.from(tr.cells).forEach(td => {
+            const hasOverflow = td.scrollWidth > td.clientWidth;
+            if (hasOverflow) td.title = td.textContent.trim();
+            else td.removeAttribute("title");
+        });
+    }
+
     // returns true if row content changed (to trigger re-page)
     // opts: { seed:boolean } — when seeding initial data, do NOT flash
     function renderAuditEvent(evt, opts = {}) {
@@ -291,27 +353,24 @@
         const k = keyOf(evt);
         const existing = k && seen.get(k);
 
-        const td = (t) => { const c = document.createElement("td"); c.textContent = t; return c; };
-        const cells = () => {
-            const userM = /\((\d+)\)\s*$/.exec(evt.user || "");
-            const userTxt = userM ? `U${userM[1]}` : (evt.user || "—");
-            return [
-                td(evt.id || evt.hash?.slice(0, 8) || "—"),
-                td(fmtLocal(evt.occurredAtUtc)),
-                td(userTxt),
-                td(evt.type || "—"),
-                td(evt.target || "—"),
-                td(""), // prev
-                td(""), // new
-                td(evt.details || "")
-            ];
-        };
+        const userM = /\((\d+)\)\s*$/.exec(evt.user || "");
+        const userTxt = userM ? `U${userM[1]}` : (evt.user || "—");
+        const cells = () => ([
+            makeTD(evt.id || evt.hash?.slice(0, 8) || "—"),
+            makeTD(fmtLocal(evt.occurredAtUtc)),
+            makeTD(userTxt),
+            makeTD(evt.type || "—"),
+            makeTD(evt.target || "—"),
+            makeTD(""), // prev
+            makeTD(""), // new
+            makeTD(evt.details || "")
+        ]);
 
         if (existing) {
             while (existing.firstChild) existing.removeChild(existing.firstChild);
             cells().forEach(c => existing.appendChild(c));
+            refreshTooltipsForRow(existing); // tooltips for overflow only
 
-            // Flash only for non-seed updates
             if (!seed) {
                 if (!existing.hidden) {
                     existing.classList.remove("row-flash"); void existing.offsetWidth; existing.classList.add("row-flash");
@@ -327,10 +386,8 @@
         cells().forEach(c => tr.appendChild(c));
         tbody.insertBefore(tr, tbody.firstChild);
 
-        // Flash only if not part of initial seed
-        if (!seed) {
-            tr.classList.add("pending-flash");
-        }
+        refreshTooltipsForRow(tr);      // tooltips only for ellipsed cells
+        if (!seed) tr.classList.add("pending-flash");
 
         if (k) seen.set(k, tr);
         if (evt.occurredAtUtc) {
@@ -347,10 +404,10 @@
         if (!changed) return;
         if (window.AuditPager?.renderCurrentPage) {
             window.AuditPager.renderCurrentPage();
+            window.__Audit_RefreshVisibleTooltips?.(); // recompute visible tooltips
         }
     }
 
-    // ---------- Fetch helpers ----------
     async function fetchLatestPageFallback(seedMode = false) {
         try {
             const res = await fetch(`/api/audit/events/latest?take=${MAX_BATCH}`, {
@@ -451,8 +508,7 @@
     (async () => {
         showSpinner();
         try {
-            // Initial fetch in **seed mode**: NO flashing
-            const res = await fetchEventsSince(true);
+            const res = await fetchEventsSince(true); // seed mode: NO flashing
             if (!res.ok) {
                 const ok = await fetchLatestPageFallback(true);
                 if (!ok && !tbody.querySelector("tr")) showStatus("Unable to load audit log. Retrying…");
@@ -464,7 +520,6 @@
             await hideSpinner();
         }
 
-        // SignalR (optional) with WebSocket→LongPolling fallback and gentle backoff
         if (FEATURE_REALTIME && window.signalR && window.signalR.HubConnectionBuilder) {
             try {
                 const connection = new window.signalR.HubConnectionBuilder()
@@ -481,11 +536,9 @@
                     .build();
 
                 connection.on("auditEvent", evt => {
-                    // Normal mode: flash only after seed
                     const changed = renderAuditEvent(evt, { seed: false });
-                    // re-page without resetting to page 1
                     rePageIfChanged(changed);
-                    onSuccess();
+                    hideStatus();
                 });
 
                 connection.onreconnected(async () => {

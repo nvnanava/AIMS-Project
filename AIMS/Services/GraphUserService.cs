@@ -33,7 +33,7 @@ public class GraphUserService : IGraphUserService
         return result?.Value?.ToList() ?? new List<DirectoryObject>();
     }
 
-      // Fetch a single user by Graph object id
+    // Fetch a single user by Graph object id
     public async Task<User?> GetUserByIdAsync(string graphObjectId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(graphObjectId)) //guardrail in case of invalid input

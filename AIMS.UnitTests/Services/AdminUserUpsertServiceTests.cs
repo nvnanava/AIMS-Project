@@ -1,5 +1,3 @@
-using AppUser = AIMS.Models.User;
-using GraphUser = Microsoft.Graph.Models.User;
 using System;
 using System.Reflection;
 using System.Threading;
@@ -15,6 +13,8 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Graph.Models;
 using Moq;
 using Xunit;
+using AppUser = AIMS.Models.User;
+using GraphUser = Microsoft.Graph.Models.User;
 
 public class AdminUserUpsertServiceTests
 {
@@ -78,7 +78,7 @@ public class AdminUserUpsertServiceTests
         using var db = new AimsDbContext(options);
         db.Database.EnsureCreated();
 
-    db.Users.Add(new AppUser
+        db.Users.Add(new AppUser
         {
             GraphObjectID = graphId,
             FullName = "Old Name",
@@ -116,7 +116,7 @@ public class AdminUserUpsertServiceTests
         using var db = new AimsDbContext(options);
         db.Database.EnsureCreated();
 
-    db.Users.Add(new AppUser
+        db.Users.Add(new AppUser
         {
             GraphObjectID = graphId,
             FullName = "Archived Name",
@@ -191,7 +191,7 @@ public class AdminUserUpsertServiceTests
             svc.UpsertAdminUserAsync(graphId, null, null, CancellationToken.None));
     }
 
-  
+
     private sealed class ThrowOnceOnSaveAimsDbContext : AimsDbContext
     {
         private bool _throwOnce;
