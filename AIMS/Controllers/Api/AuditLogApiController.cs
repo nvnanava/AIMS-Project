@@ -184,7 +184,7 @@ public partial class AuditLogApiController
             {
                 Id = (e.ExternalId != Guid.Empty ? e.ExternalId.ToString() : e.AuditLogID.ToString()),
                 OccurredAtUtc = e.TimestampUtc,
-                Type = e.Action.ToString(),
+                Type = e.Action,
                 User = $"{e.UserName} ({e.UserID})",
                 Target = e.AssetKind == AssetKind.Hardware
                     ? (e.HardwareID.HasValue ? $"Hardware#{e.HardwareID}" : "Hardware")

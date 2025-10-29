@@ -29,7 +29,7 @@ namespace AIMS.Queries
         public DateTime OccurredAtUtc { get; set; }
         public int UserID { get; set; }
         public string Actor { get; set; } = string.Empty;
-        public AuditLogAction Action { get; set; }
+        public string Action { get; set; } = string.Empty;
         public AssetKind AssetKind { get; set; }
         public int? HardwareID { get; set; }
         public int? SoftwareID { get; set; }
@@ -272,7 +272,7 @@ namespace AIMS.Queries
             => q
                 .Pipe(q1 => ApplyDateRange(q1, c.FromUtc, c.ToUtc))
                 .Pipe(q2 => ApplyActor(q2, c.Actor))           // updated
-                                                               //         .Pipe(q3 => ApplyAction(q3, c.Action))
+       //         .Pipe(q3 => ApplyAction(q3, c.Action))
                 .Pipe(q4 => ApplyKind(q4, c.Kind))
                 .Pipe(q5 => ApplyTargets(q5, c.HardwareId, c.SoftwareId))
                 .Pipe(q6 => ApplySearchText(q6, c.Q));
@@ -313,7 +313,7 @@ namespace AIMS.Queries
                 ? q
                 : q.Where(a =>
                     a.Description.Contains(term!) ||
-                    // a.Action.Contains(term!) ||
+                   // a.Action.Contains(term!) ||
                     a.User.FullName.Contains(term!));
 
         #endregion
@@ -497,7 +497,7 @@ namespace AIMS.Queries
             {
                 Id = (log.ExternalId != Guid.Empty ? log.ExternalId.ToString() : log.AuditLogID.ToString()),
                 OccurredAtUtc = log.TimestampUtc,
-                Type = log.Action.ToString(),
+                Type = log.Action.toString(),
                 User = $"{(userName ?? $"User#{log.UserID}")} ({log.UserID})",
                 Target = log.AssetKind == AssetKind.Hardware
                     ? (log.HardwareID.HasValue ? $"Hardware#{log.HardwareID}" : "Hardware")
@@ -511,7 +511,7 @@ namespace AIMS.Queries
         private static string ComputeEventHash(AuditLog log)
         {
             var raw =
-                $"{log.AuditLogID}|{log.ExternalId}|{log.TimestampUtc:o}|{log.Action.ToString()}|{log.UserID}|{log.AssetKind}|{log.HardwareID}|{log.SoftwareID}|{log.Description}";
+                $"{log.AuditLogID}|{log.ExternalId}|{log.TimestampUtc:o}|{log.Action.toString()}|{log.UserID}|{log.AssetKind}|{log.HardwareID}|{log.SoftwareID}|{log.Description}";
             return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
         }
 
