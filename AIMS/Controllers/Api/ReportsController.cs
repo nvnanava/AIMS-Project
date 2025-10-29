@@ -369,56 +369,44 @@ public class ReportsController : ControllerBase
     [HttpGet("preview/{id:int}")]
     public async Task<IActionResult> PreviewById(int id, CancellationToken ct = default)
     {
-        // Step 1: Get report metadata from DB
-        var report = await _reports.GetReportASync(id, ct);
+        var report = await _reports.GetReportWithContentAsync(id, ct);
 
         if (report is null)
             return NotFound(new { error = $"No report found with ID {id}." });
 
-        if (string.IsNullOrWhiteSpace(report.BlobUri))
-            return BadRequest(new { error = "This report has no associated file (BlobUri missing)." });
+        if (report.Content == null || report.Content.Length == 0)
+            return Ok(new { report.ReportID, report.Name, totalRows = 0, previewRows = Array.Empty<object>() });
 
-        // Step 2: Resolve full file path safely
-        var rel = report.BlobUri.Replace('\\', '/').TrimStart('/');
-        var baseDir = _fs.Path.GetFullPath(_rootPath);
-        var fullPath = _fs.Path.GetFullPath(_fs.Path.Combine(baseDir, rel));
-
-        if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new { error = "Invalid file path." });
-
-        if (!_fs.File.Exists(fullPath))
-            return NotFound(new { error = $"Report file not found at {report.BlobUri}" });
-
-        // Step 3: Read CSV file content
-        using var stream = _fs.File.OpenRead(fullPath);
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-        using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+        var records = new List<Dictionary<string, string>>();
+        using var ms = new MemoryStream(report.Content);
+        using var reader = new StreamReader(ms, Encoding.UTF8);
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
             BadDataFound = null,
             MissingFieldFound = null,
             HeaderValidated = null
-        });
+        };
 
-        // Step 4: Parse records into objects (dynamic for flexibility)
-        var records = new List<Dictionary<string, string>>();
-        using (csv)
+        using var csv = new CsvReader(reader, config);
+
+        if (await csv.ReadAsync())
         {
-            csv.Read();
             csv.ReadHeader();
-            var headers = csv.HeaderRecord;
+            var headers = csv.HeaderRecord ?? Array.Empty<string>();
 
-            while (csv.Read())
+            while (await csv.ReadAsync())
             {
-                var row = new Dictionary<string, string>();
+                var row = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var header in headers)
                 {
-                    row[header] = csv.GetField(header);
+                    string? cell = null;
+                    try { cell = csv.GetField(header); } catch { cell = string.Empty; }
+                    row[header] = cell ?? string.Empty;
                 }
                 records.Add(row);
             }
         }
 
-        // Step 5: Return JSON preview
         return Ok(new
         {
             report.ReportID,
@@ -426,11 +414,11 @@ public class ReportsController : ControllerBase
             report.Type,
             report.DateCreated,
             report.Description,
+            report.Content.Length,
             totalRows = records.Count,
-            previewRows = records.Take(100) // only first 100 rows for preview
+            previewRows = records.Take(50)
         });
     }
-
 
     [HttpGet("list")]
     public async Task<IActionResult> GetAll()

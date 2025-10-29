@@ -46,6 +46,25 @@ public sealed class ReportsQuery
            })
            .FirstOrDefaultAsync(ct);
     }
+    public async Task<ReportPreviewDto?> GetReportWithContentAsync(int id, CancellationToken ct = default)
+    {
+        return await _db.Reports
+           .AsNoTracking()
+           .Where(r => r.ReportID == id)
+           .Select(r => new ReportPreviewDto
+           {
+               ReportID = r.ReportID,
+               Name = r.Name,
+               Type = r.Type,
+               Content = r.Content,
+               Description = r.Description,
+               DateCreated = r.DateCreated,
+               GeneratedByUserName = r.GeneratedByUser != null ? r.GeneratedByUser.FullName : "",
+               GeneratedForOfficeString = r.GeneratedForOffice != null ? r.GeneratedForOffice.OfficeName : "",
+           })
+           .FirstOrDefaultAsync(ct);
+    }
+
     public async Task<DownloadReportDto?> GetReportForDownload(int id, CancellationToken ct = default)
     {
         return await _db.Reports
