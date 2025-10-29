@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -16,6 +17,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+
+
+var cultureInfo = new CultureInfo("en-US");
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
 
 var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -149,6 +156,8 @@ var cs =
     GetConn("DockerConnection") ??
     GetConn("CliConnection");
 
+builder.Logging.AddConsole();
+
 if (string.IsNullOrWhiteSpace(cs))
 {
     throw new InvalidOperationException(
@@ -268,6 +277,11 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
+// this line scopes the IAdminUserUpsertService to the AdminUserUpsertService class
+builder.Services.AddScoped<IAdminUserUpsertService, AdminUserUpsertService>();
+
+
+
 // Role helper policies (username allowlists)
 builder.Services.AddAuthorizationBuilder()
   .AddPolicy("mbcAdmin", policy =>
@@ -383,8 +397,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// allow saving to wwwroot folder (2nd static files for legacy paths)
-app.UseStaticFiles();
 
 // Order matters
 app.UseRouting();

@@ -32,10 +32,11 @@
    ====================================================================== *@
 
 @{
-    ViewData["Title"] = "Reports";
+  ViewData["Title"] = "Reports";
+  ViewData["User"] = @User?.Identity?.Name;
 
     // Table headers (server-rendered; values used only for markup)
-    var tableHeaders = new List<string> { "Name", "Type", "Description", "Office", "Date Created" };
+    var tableHeaders = new List<string> { "Report Name", "Type", "Description", "Office", "Date Created", "Created By" };
 
     // Demo data for modal tables (left as-is, rendered server-side)
     var userHeaders  = new List<string> { "Name", "Email", "Role", "Asset", "Status" };
@@ -102,6 +103,12 @@
     <link rel="stylesheet" href="~/css/components/_ReportTableComponent.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/reports.index.css" asp-append-version="true" />
 }
+
+<script>
+  window.pageData = {
+    user: "@ViewData["User"]",
+    };
+</script>
 
 <div class="reports-page"> @* page-scoped wrapper for bg & spacing *@
     <div class="report-page-size">
@@ -450,6 +457,22 @@
     </div>
   </div>
 </div>
+
+<!-- Dynamic Report Preview Modal -->
+<div class="modal fade" id="reportPreviewModal" tabindex="-1" aria-labelledby="reportPreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportPreviewModalLabel">Report Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="reportPreviewContent">
+        <div class="text-center text-muted p-4">Select a report to preview</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 @section Scripts {
     <script src="~/js/pages/reports.index.js" asp-append-version="true" defer></script>

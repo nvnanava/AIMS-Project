@@ -135,17 +135,28 @@
 
     // --------------------------- Rendering ----------------------------
     function renderRows(rows) {
-        clearTable();
-        const totalSeats = rows.length;
-        (rows || []).forEach((asset, index) => {
-            if ((asset.type || "").toLowerCase().includes("software")) {
-                asset.displaySeatOrTag = `Seat ${index + 1} of ${totalSeats}`;
-            } else {
-                asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
-            }
-            renderRow(asset);
-        });
-    }
+    clearTable();
+
+    (rows || []).forEach((asset) => {
+        const typeLower = (asset.type || "").toLowerCase();
+
+        if (typeLower.includes("software")) {
+            // Software: show assigned seats vs total seats, or "—" if no data
+            const assigned = asset.assignedSeats ?? asset.SeatsUsed ?? 0;
+            const total = asset.totalSeats ?? asset.SeatsTotal ?? "?";
+
+            asset.displaySeatOrTag = (assigned || total !== "?")
+                ? `Seat ${assigned} of ${total}`
+                : "—";
+        } else {
+            // Hardware: display tag or ID
+            asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
+        }
+
+        renderRow(asset);
+    });
+}
+
 
     function makeEditButton(asset) {
         return `
@@ -494,7 +505,7 @@
         const category = getCurrentCategory();
 
         const th = document.getElementById("seatOrTagHeader");
-        if (th) th.textContent = (category.toLowerCase().includes("software") ? "Seat #" : "Tag #");
+        if (th) th.textContent = (category.toLowerCase().includes("software") ? "Seat Usage" : "Tag #");
 
         // Keep header + icon intact
         setStatusHeaderFor();

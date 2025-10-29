@@ -4,16 +4,19 @@ using AIMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AIMS.Migrations
+namespace AIMS.Migrations._local_sync
 {
     [DbContext(typeof(AimsDbContext))]
-    partial class AimsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251029005417_EnumToString")]
+    partial class EnumToString
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,7 +58,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Agreements", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -99,7 +102,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Assignments", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -170,7 +173,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -475,9 +478,7 @@ namespace AIMS.Migrations
                         .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("GraphObjectID")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -499,8 +500,6 @@ namespace AIMS.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
-                    b.HasIndex("GraphObjectID")
-                        .IsUnique();
                     b.HasIndex("OfficeID");
 
                     b.HasIndex("RoleID");

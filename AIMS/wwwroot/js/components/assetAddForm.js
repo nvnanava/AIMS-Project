@@ -1,141 +1,249 @@
 window.assetFormCache = {};
 
-
-
-// Function to handle the form submission and shows werror message if any fields are missing.a
 document.addEventListener('DOMContentLoaded', function () {
-    const categoryStore = document.getElementById('categoryStore');
-    const assetForm = document.getElementById('AssetAddForm');
     const addAssetModal = document.getElementById('addAssetModal');
+    const itemDetailsModal = document.getElementById('itemDetailsModal');
+    const assetForm = document.getElementById('AssetAddForm');
+    const itemForm = document.getElementById('ItemDetailsForm');
     const assetFormError = document.getElementById('assetFormError');
     const errorBox = document.getElementById('serverErrorMessage');
+    const categoryStore = document.getElementById('categoryStore');
 
-    //reset the modal when closed
-    addAssetModal.addEventListener('hidden.bs.modal', function () {
+    let currentItems = [];
+    let currentIndex = 0;
+    let itemCount = 1;
+
+    // ---------------- Reset Modals ----------------
+    addAssetModal.addEventListener('hidden.bs.modal', resetPhase1);
+    itemDetailsModal.addEventListener('hidden.bs.modal', resetPhase2);
+
+    function resetPhase1() {
         assetForm.reset();
         assetFormError.style.display = "none";
-        assetFormError.textContent = "";
         errorBox.style.display = "none";
-        errorBox.textContent = "";
-
         assetForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    }
+
+    function resetPhase2() {
+        itemForm.reset();
+        document.getElementById('previewList').innerHTML = "";
+        currentItems = [];
+        currentIndex = 0;
+        itemCount = 1;
+    }
+
+    // ---------------- Auto-fill Warranty (+1 year) ----------------
+    const purchaseInput = document.getElementById('addPurchaseDate');
+    const warrantyInput = document.getElementById('warrantyExpiration');
+    purchaseInput?.addEventListener('change', function () {
+        if (!purchaseInput.value) return;
+        const pd = new Date(purchaseInput.value);
+        const nextYear = new Date(pd.setFullYear(pd.getFullYear() + 1));
+        warrantyInput.value = nextYear.toISOString().split('T')[0];
     });
 
-    document.getElementById('AssetAddForm').addEventListener('submit', function (e) {
-        e.preventDefault(); // Stay on page
-        const assetFormError = document.getElementById('assetFormError');
+    // ---------------- Populate & Free-type Support ----------------
+    const manufacturerSelect = document.getElementById('manufacturer');
+    const modelSelect = document.getElementById('model');
+
+    async function populateDropdown(selectEl, apiUrl, defaultOptions = []) {
+        let options = [...defaultOptions];
+        try {
+            const resp = await fetch(apiUrl, { cache: 'no-store' });
+            if (resp.ok) {
+                const data = await resp.json();
+                options = options.concat(data);
+            }
+        } catch (err) {
+            console.error(`Error fetching ${selectEl.id}:`, err);
+        }
+
+        selectEl.innerHTML = "";
+        options.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt;
+            optionEl.textContent = opt;
+            selectEl.appendChild(optionEl);
+        });
+
+        const otherOption = document.createElement('option');
+        otherOption.value = "Other";
+        otherOption.textContent = "Other...";
+        selectEl.appendChild(otherOption);
+    }
+
+    function enableFreeType(selectEl) {
+        selectEl.addEventListener('change', function () {
+            if (selectEl.value === "Other") {
+                const input = document.createElement('input');
+                input.type = "text";
+                input.className = "form-control mb-2";
+                input.placeholder = "Enter custom value";
+                input.id = selectEl.id + "_free";
+                selectEl.style.display = "none";
+                selectEl.parentElement.insertBefore(input, selectEl.nextSibling);
+
+                input.addEventListener('blur', function () {
+                    if (!input.value.trim()) {
+                        selectEl.value = "";
+                    } else {
+                        selectEl.value = input.value.trim();
+                    }
+                    input.remove();
+                    selectEl.style.display = "";
+                });
+            }
+        });
+    }
+
+    // Initialize dropdowns
+    populateDropdown(manufacturerSelect, '/api/hardware/add');
+    populateDropdown(modelSelect, '/api/hardware/add');
+    enableFreeType(manufacturerSelect);
+    enableFreeType(modelSelect);
+
+    // ---------------- Phase 1 Submit ----------------
+    assetForm.addEventListener('submit', function (e) {
+        e.preventDefault();
         assetFormError.style.display = "none";
-        assetFormError.textContent = "";
+        errorBox.style.display = "none";
 
-
-        // Validate required fields
         const requiredFields = [
             { id: "assetType", message: "Asset Type is required" },
-            { id: "manufacturer", message: "Manufacturer is required", errorId: "manufacturerError" },
-            { id: "model", message: "Model is required", errorId: "modelError" },
-            { id: "serialNumber", message: "Serial Number is required", errorId: "serialNumberError" },
-            { id: "tagNumber", message: "Tag Number is required", errorId: "tagNumberError" },
-            { id: "addPurchaseDate", message: "Purchase Date is required", errorId: "purchaseDateError" },
-            { id: "warrantyExpiration", message: "Warranty Expiration is required", errorId: "warrantyExpirationError" }
+            { id: "manufacturer", message: "Manufacturer is required" },
+            { id: "model", message: "Model is required" },
+            { id: "addPurchaseDate", message: "Purchase Date is required" },
+            { id: "warrantyExpiration", message: "Warranty Expiration is required" },
+            { id: "itemCount", message: "Number of Items is required" }
         ];
 
         let valid = true;
-
-        //loop through required fields and show error if any are missing.
         requiredFields.forEach(field => {
             const input = document.getElementById(field.id);
-            const errorElem = document.getElementById(field.errorId);
             if (!input.value.trim()) {
-                input.classList.add("is-invalid");
-                input.value = "";
-                input.placeholder = field.message;
+                input.classList.add('is-invalid');
                 valid = false;
             } else {
-                input.classList.remove("is-invalid");
-                input.placeholder = "";
+                input.classList.remove('is-invalid');
             }
         });
 
         if (!valid) return;
 
-        //build the dto object to send to the server.
-        const CreateHardwareDto = {
-            AssetTag: document.getElementById('tagNumber').value.trim(),
-            AssetName: document.getElementById('manufacturer').value + " " + document.getElementById('model').value,
+        itemCount = parseInt(document.getElementById('itemCount').value, 10) || 1;
+
+        // Phase 2 setup
+        currentItems = [];
+        currentIndex = 0;
+        document.getElementById('itemStep').textContent = `Item 1 of ${itemCount}`;
+        document.getElementById('nextItemBtn').style.display = itemCount > 1 ? "inline-block" : "none";
+        document.getElementById('submitAllBtn').style.display = itemCount === 1 ? "inline-block" : "none";
+        itemDetailsModal.querySelector('#serialNumber').value = "";
+        itemDetailsModal.querySelector('#tagNumber').value = "";
+
+        bootstrap.Modal.getOrCreateInstance(itemDetailsModal).show();
+    });
+
+    // ---------------- Phase 2 Navigation ----------------
+    document.getElementById('nextItemBtn').addEventListener('click', function () {
+        const serial = itemForm.querySelector('#serialNumber').value.trim();
+        const tag = itemForm.querySelector('#tagNumber').value.trim();
+
+        if (!serial || !tag) {
+            itemForm.querySelector('#serialNumber').classList.toggle('is-invalid', !serial);
+            itemForm.querySelector('#tagNumber').classList.toggle('is-invalid', !tag);
+            return;
+        }
+
+        currentItems.push({ SerialNumber: serial, AssetTag: tag });
+        updatePreviewList();
+
+        currentIndex++;
+        if (currentIndex >= itemCount - 1) {
+            document.getElementById('nextItemBtn').style.display = "none";
+            document.getElementById('submitAllBtn').style.display = "inline-block";
+        }
+
+        itemForm.reset();
+        document.getElementById('itemStep').textContent = `Item ${currentIndex + 1} of ${itemCount}`;
+    });
+
+    document.getElementById('submitAllBtn').addEventListener('click', async function () {
+        const serial = itemForm.querySelector('#serialNumber').value.trim();
+        const tag = itemForm.querySelector('#tagNumber').value.trim();
+
+        if (!serial || !tag) {
+            itemForm.querySelector('#serialNumber').classList.toggle('is-invalid', !serial);
+            itemForm.querySelector('#tagNumber').classList.toggle('is-invalid', !tag);
+            return;
+        }
+
+        currentItems.push({ SerialNumber: serial, AssetTag: tag });
+        await submitAllAssets();
+    });
+
+    // ---------------- Preview ----------------
+    function updatePreviewList() {
+        const ul = document.getElementById('previewList');
+        ul.innerHTML = "";
+        currentItems.forEach((item, i) => {
+            const li = document.createElement('li');
+            li.className = "list-group-item";
+            li.textContent = `${i + 1}. Serial: ${item.SerialNumber}, Tag: ${item.AssetTag}`;
+            ul.appendChild(li);
+        });
+    }
+
+    // ---------------- Submit to Server ----------------
+    async function submitAllAssets() {
+        const CreateHardwareDto = currentItems.map(item => ({
+            AssetName: manufacturerSelect.value + " " + modelSelect.value,
             AssetType: document.getElementById('assetType').value,
-            Status: "Available", // Default status
-            Manufacturer: document.getElementById('manufacturer').value,
-            Model: document.getElementById('model').value,
-            SerialNumber: document.getElementById('serialNumber').value.trim(),
-            WarrantyExpiration: document.getElementById('warrantyExpiration').value,
-            PurchaseDate: document.getElementById('addPurchaseDate').value
-        };
+            Status: "Available",
+            Manufacturer: manufacturerSelect.value,
+            Model: modelSelect.value,
+            PurchaseDate: purchaseInput.value,
+            WarrantyExpiration: warrantyInput.value,
+            SerialNumber: item.SerialNumber,
+            AssetTag: item.AssetTag
+        }));
 
-        //send data if all required fields are filled.
+        try {
+            const res = await fetch("/api/hardware/add-bulk", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(CreateHardwareDto)
+            });
 
-        fetch("/api/hardware/add", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
-            body: JSON.stringify(CreateHardwareDto)
-        }).then(async res => {
-            const errorBox = document.getElementById('serverErrorMessage');
-            try {
-                if (res.ok) {
-                    errorBox.style.display = 'none';
-                    const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
-                    assignToast.show();
-
-                    $('#addAssetModal').modal('hide');
-
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const category = urlParams.get("category") || categoryStore.value
-
-                    await new Promise(resolve => setTimeout(resolve, 250)); // delay for 250ms.
-                    await loadCategoryPaged(category, 1); //optimistically reload assets. Hardware controller now bumps cache stamp.
-                    return;
-                }
+            if (!res.ok) {
                 const data = await res.json();
                 showErrorMessages(data, errorBox);
-            } catch (err) {
-                showErrorMessages({ error: "Server response error: " + err.message }, errorBox);
+                return;
             }
-        });
-    });
-});
 
-if (res.ok) {
-    // Save data locally for Edit modal prefill
-    localStorage.setItem("lastAddedAsset", JSON.stringify(CreateHardwareDto));
+            localStorage.setItem("lastAddedAsset", JSON.stringify(CreateHardwareDto));
+            const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
+            assignToast.show();
+            bootstrap.Modal.getOrCreateInstance(itemDetailsModal).hide();
+            bootstrap.Modal.getOrCreateInstance(addAssetModal).hide();
 
-    errorBox.style.display = 'none';
-    const assignToast = new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 });
-    assignToast.show();
-
-    $('#addAssetModal').modal('hide');
-}
-
-function showErrorMessages(data, container) {
-    let message = "";
-    if (data?.errors) {
-        for (const key in data.errors) {
-            if (data.errors.hasOwnProperty(key)) {
-                message += data.errors[key].join(" ") + " ";
-            }
+            const urlParams = new URLSearchParams(window.location.search);
+            const category = urlParams.get("category") || categoryStore.value;
+            await new Promise(resolve => setTimeout(resolve, 250));
+            if (typeof loadCategoryPaged === "function") await loadCategoryPaged(category, 1);
+        } catch (err) {
+            showErrorMessages({ error: "Server error: " + err.message }, errorBox);
         }
-    } else if (typeof data === "object") { //for mismatched/unexpected data errors. Need to refine or keep.
-        for (const key in data) {
-            if (Array.isArray(data[key])) {
-                message += data[key].join(" ") + " ";
-            }
-        }
-    } else if (data?.error) {
-        message = data.error;
-    } else {
-        message = "An unknown error occurred.";
     }
-    container.innerText = message.trim();
-    container.style.display = "block";
-}
+
+    // ---------------- Error Handler ----------------
+    function showErrorMessages(data, container) {
+        let message = "";
+        if (data?.errors) {
+            for (const key in data.errors) message += data.errors[key].join(" ") + " ";
+        } else if (data?.error) message = data.error;
+        else message = "An unknown error occurred.";
+        container.innerText = message.trim();
+        container.style.display = "block";
+    }
+});

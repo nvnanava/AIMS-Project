@@ -1,6 +1,6 @@
-namespace AIMS.ViewModels;
+namespace AIMS.Dtos.Reports;
 
-public class ReportsVm
+public class ReportPreviewDto
 {
     public int ReportID { get; set; }
     public required string Name { get; set; }
@@ -11,5 +11,6 @@ public class ReportsVm
     // Who/Where generated
     public string? GeneratedByUserName { get; set; }
 
-    public string? GeneratedByOfficeString { get; set; }
+    public string? GeneratedForOfficeString { get; set; }
+    public byte[] Content { get; set; } = new byte[0];
 }

@@ -349,6 +349,16 @@
     color: #666;
 }
 
+/*-------search bar -----*/
+.aims-input {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 999px;
+    margin-right: 10px;
+    min-width: 200px;
+}
+
+
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
     .admin-table-controls {

@@ -1,74 +1,88 @@
 @* Views/Home/_EditAssetForm.cshtml *@
-<div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
+<div class="modal fade" id="editAssetModal" tabindex="-1" aria-labelledby="editAssetModalLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content aimsds-shell">
 
-      <div class="modal-header">
-        <h5 class="modal-title" id="editAssetModalLabel">Edit Asset</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+            <!-- ===== Modal Header ===== -->
+            <div class="modal-header aimsds-header">
+                <h5 class="modal-title" id="editAssetModalLabel">Edit Asset</h5>
+                <button type="button" class="btn-close aimsds-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
 
-      <div class="modal-body">
-        <form id="editAssetForm" novalidate>
-          <!-- Hidden primary key (HardwareID or SoftwareID) -->
-          <input type="hidden" id="editId" name="id" />
+            <!-- ===== Modal Body ===== -->
+            <div class="modal-body p-4">
+                <form id="editAssetForm" novalidate>
+                    <input type="hidden" id="editId" name="id" />
 
-          <div id="editAssetErrorMessage" class="alert alert-danger" style="display:none;"></div>
+                    <div id="editAssetErrorMessage" class="alert alert-danger" style="display:none;"></div>
 
-          <div class="mb-3">
-            <label for="editName" class="form-label">Asset Name</label>
-            <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name" required>
-            <div class="invalid-feedback">Asset Name is required.</div>
-          </div>
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Asset Name</label>
+                        <input type="text" id="editName" name="name" class="form-control" placeholder="Enter asset name"
+                            required>
+                        <div class="invalid-feedback">Asset Name is required.</div>
+                    </div>
 
-          <div class="mb-3">
-            <label for="editType" class="form-label">Type</label>
-            <select id="editType" name="type" class="form-control"></select>
-          </div>
+                    <div class="mb-3">
+                        <label for="editType" class="form-label">Type</label>
+                        <select id="editType" name="type" class="form-select"></select>
+                    </div>
 
-          <div class="mb-3">
-            <label for="editTag" class="form-label">Tag Number</label>
-            <input type="text" id="editTag" name="tagNumber" class="form-control" placeholder="Enter tag number"
-              required>
-            <div class="invalid-feedback">Tag Number is required.</div>
-          </div>
+                    <div class="mb-3">
+                        <label for="editTag" class="form-label">Tag Number</label>
+                        <input type="text" id="editTag" name="tagNumber" class="form-control"
+                            placeholder="Enter tag number" required>
+                        <div class="invalid-feedback">Tag Number is required.</div>
+                    </div>
 
-          <div class="mb-3">
-            <label for="editStatus" class="form-label">Status</label>
-            <select id="editStatus" name="status" class="form-select">
-              <option value="">-- Select status --</option>
-              <option>Available</option>
-              <option>Assigned</option>
-              <option>Surveyed</option>
-              <option>Marked for Survey</option>
-              <option>In Repair</option>
-              <option>Archived</option>
-            </select>
-          </div>
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">Status</label>
+                        <select id="editStatus" name="status" class="form-select">
+                            <option value="">-- Select status --</option>
+                            <option>Available</option>
+                            <option>Assigned</option>
+                            <option>Surveyed</option>
+                            <option>Marked for Survey</option>
+                            <option>In Repair</option>
+                            <option>Archived</option>
+                        </select>
+                    </div>
 
-          <div class="mb-3">
-            <label for="editComments" class="form-label">Comments</label>
-            <textarea id="editComments" name="comments" class="form-control" rows="4"
-              placeholder="Add any remarks..."></textarea>
-          </div>
+                    <div class="mb-3">
+                        <label for="editComments" class="form-label">Comments</label>
+                        <textarea id="editComments" name="comments" class="form-control" rows="4"
+                            placeholder="Add any remarks..."></textarea>
+                    </div>
 
-          <div class="mb-3 form-check">
-            <input type="checkbox" class="form-check-input" id="markForSurvey" name="markForSurvey">
-            <label class="form-check-label" for="markForSurvey">Mark for Survey</label>
-          </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="markForSurvey" name="markForSurvey">
+                        <label class="form-check-label" for="markForSurvey">Mark for Survey</label>
+                    </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-            <button type="button" class="btn btn-warning reset-fields-btn">Reset Fields</button>
+                    <!-- ===== Modal Footer / Buttons ===== -->
+                    <div class="modal-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+                        <div>
+                            <button type="button" class="btn btn-outline-danger me-2 reset-fields-btn">
+                                Reset Fields
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
 
-          </div>
-        </form>
-      </div>
+                </form>
+            </div>
 
+        </div>
     </div>
-  </div>
 </div>
+
 
 <script>
   function fetchUniqueAssetTypes() {
@@ -129,6 +143,7 @@
 
       await populateAssetTypes();
 
+
       // Fill values from data-* on the trigger button
       editId.value = button.getAttribute('data-hardware-id') || button.getAttribute('data-software-id') || '';
       editId.dataset.defaultValue = editId.value;
@@ -152,7 +167,10 @@
       const v = (statusSel.value || '').toLowerCase();
       mfs.checked = (v.includes('marked for survey') || v.includes('surveyed'));
 
-      // Prefill from sessionStorage if available (from add asset flow)
+    });
+    
+    // Prefill from sessionStorage if available (from add asset flow)
+    modalEl.addEventListener('show.bs.modal', function () {
       const savedData = sessionStorage.getItem("addAssetData");
       if (savedData) {
         try {
@@ -315,4 +333,24 @@
       });
     }
   });
+
+    modalEl.addEventListener('show.bs.modal', function () {
+        const savedData = sessionStorage.getItem("addAssetData");
+        if (savedData) {
+            try {
+                const data = JSON.parse(savedData);
+                const form = modalEl.querySelector("#editAssetForm");
+                form.querySelectorAll("input, select, textarea").forEach(input => {
+                    const field = input.name;
+                    if (data[field]) {
+                        input.value = data[field];
+                        input.readOnly = true;
+                        input.classList.add("prefilled");
+                    }
+                });
+            } catch (err) {
+                console.warn("Failed to parse addAssetData:", err);
+            }
+        }
+    });
 </script>
