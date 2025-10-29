@@ -6,6 +6,18 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <!-- Turn on XML documentation file generation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Where to write the XML (optional: keeps output tidy and predictable) -->
+    <DocumentationFile>$(OutputPath)AIMS.UnitTests.xml</DocumentationFile>
+
+    <!-- Suppress CS1591: “missing XML comment” warnings in tests -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- (Optional) Keep builds green without requiring docs everywhere -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +34,7 @@
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.16" />
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FluentAssertions" Version="8.6.0" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.2" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

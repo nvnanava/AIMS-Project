@@ -8,9 +8,6 @@ public class Assignment
     public int? UserID { get; set; } // nullable
     public User? User { get; set; }
 
-    // Where (optional)
-    public int? OfficeID { get; set; }
-    public Office? Office { get; set; }
 
     // What (XOR: one of these must be set; enforced via check constraint)
     public AssetKind AssetKind { get; set; }

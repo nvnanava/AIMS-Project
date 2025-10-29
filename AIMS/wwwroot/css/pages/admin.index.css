@@ -96,6 +96,7 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    -webkit-user-select: none;
     user-select: none;
     font-weight: 600;
     color: var(--aims-ink, #34495e);

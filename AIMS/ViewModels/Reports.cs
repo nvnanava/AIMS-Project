@@ -12,6 +12,4 @@ public class ReportsVm
     public string? GeneratedByUserName { get; set; }
 
     public string? GeneratedByOfficeString { get; set; }
-
-    public string BlobUri { get; set; } = string.Empty;
 }

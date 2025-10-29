@@ -25,8 +25,9 @@
   color: #fff;
 }
 
-.report-table tbody tr:nth-child(even) {
-  background-color: #ECF0F1;
+.report-page-size {
+    width: 95%;
+    margin: 0 auto 20px auto;
 }
 
 .report-table tbody tr:nth-child(odd) {
@@ -66,9 +67,24 @@ html {
 
 /*  Buttons and inputs */
 .search-input {
-  border-radius: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  border: 1px solid #ccc;
+    flex: 1;
+    background-color: transparent;
+    text-align: start;
+    border: none;
+    outline: none;
+    padding: 0px;
+}
+
+
+/* View Download CSV and New Report Button */
+.download-csv-button, .new-report-button {
+    height: 41px;
+    padding: 0px 16px;
+    color: #34495e;
+    line-height: normal;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
 }
 
 .btn-mint,
