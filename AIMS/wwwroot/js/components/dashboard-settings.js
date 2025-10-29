@@ -38,9 +38,8 @@
     };
 
     const getJson = async (url) => {
-        const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.json();
+        const data = await aimsFetch(url, { credentials: "same-origin", cache: "no-store" });
+        return data;
     };
 
     // ---------------- data loaders ----------------
