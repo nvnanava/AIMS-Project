@@ -266,7 +266,7 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, { method: "POST" });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateOfficeReport"))?.hide();
                 reportToast?.show();
@@ -304,7 +304,13 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST", body: JSON.stringify(customOptions) });
+                const resp = await fetch(`/api/reports?${params.toString()}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(customOptions)
+                });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateCustomReport"))?.hide();
                 reportToast?.show();
