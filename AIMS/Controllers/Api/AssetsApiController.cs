@@ -375,7 +375,8 @@ public class AssetsApiController : ControllerBase
             {
                 UserID = me.UserID,
                 Name = me.FullName,
-                EmployeeNumber = me.EmployeeNumber
+                EmployeeNumber = me.EmployeeNumber,
+                OfficeID = me?.OfficeID ?? null
             };
         }
 
@@ -386,7 +387,8 @@ public class AssetsApiController : ControllerBase
             {
                 UserID = u.UserID,
                 Name = u.FullName,
-                EmployeeNumber = u.EmployeeNumber
+                EmployeeNumber = u.EmployeeNumber,
+                OfficeID = u.OfficeID ?? null
             })
             .ToListAsync(ct);
 

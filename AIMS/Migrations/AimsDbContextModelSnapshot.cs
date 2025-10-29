@@ -76,9 +76,6 @@ namespace AIMS.Migrations
                     b.Property<int?>("HardwareID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("OfficeID")
-                        .HasColumnType("int");
-
                     b.Property<int?>("SoftwareID")
                         .HasColumnType("int");
 
@@ -89,8 +86,6 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("AssignmentID");
-
-                    b.HasIndex("OfficeID");
 
                     b.HasIndex("UserID");
 
@@ -118,12 +113,15 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Action")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
 
-                    b.Property<string>("BlobUri")
+                    b.Property<byte[]>("AttachmentBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("AttachmentContentType")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
@@ -138,7 +136,10 @@ namespace AIMS.Migrations
                     b.Property<int?>("HardwareID")
                         .HasColumnType("int");
 
-                    b.Property<string>("SnapshotJson")
+                    b.Property<byte[]>("SnapshotBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("SnapshotContentType")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SoftwareID")
@@ -159,7 +160,13 @@ namespace AIMS.Migrations
 
                     b.HasIndex("SoftwareID");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("TimestampUtc");
+
+                    b.HasIndex("AssetKind", "HardwareID");
+
+                    b.HasIndex("AssetKind", "SoftwareID");
+
+                    b.HasIndex("UserID", "Action");
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
@@ -180,8 +187,7 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Field")
                         .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("NewValue")
                         .HasColumnType("nvarchar(max)");
@@ -294,9 +300,9 @@ namespace AIMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
 
-                    b.Property<string>("BlobUri")
+                    b.Property<byte[]>("Content")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("varbinary(max)");
 
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("datetime2");
@@ -309,10 +315,10 @@ namespace AIMS.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWID()");
 
-                    b.Property<int?>("GeneratedByOfficeID")
+                    b.Property<int?>("GeneratedByUserID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("GeneratedByUserID")
+                    b.Property<int?>("GeneratedForOfficeID")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -330,9 +336,9 @@ namespace AIMS.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
-                    b.HasIndex("GeneratedByOfficeID");
-
                     b.HasIndex("GeneratedByUserID");
+
+                    b.HasIndex("GeneratedForOfficeID");
 
                     b.ToTable("Reports", "dbo");
                 });
@@ -479,6 +485,9 @@ namespace AIMS.Migrations
                     b.Property<bool>("IsArchived")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("OfficeID")
+                        .HasColumnType("int");
+
                     b.Property<int>("RoleID")
                         .HasColumnType("int");
 
@@ -492,6 +501,7 @@ namespace AIMS.Migrations
 
                     b.HasIndex("GraphObjectID")
                         .IsUnique();
+                    b.HasIndex("OfficeID");
 
                     b.HasIndex("RoleID");
 
@@ -524,10 +534,6 @@ namespace AIMS.Migrations
                         .HasForeignKey("HardwareID")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("AIMS.Models.Office", "Office")
-                        .WithMany()
-                        .HasForeignKey("OfficeID");
-
                     b.HasOne("AIMS.Models.Software", "Software")
                         .WithMany()
                         .HasForeignKey("SoftwareID")
@@ -539,8 +545,6 @@ namespace AIMS.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Hardware");
-
-                    b.Navigation("Office");
 
                     b.Navigation("Software");
 
@@ -585,23 +589,28 @@ namespace AIMS.Migrations
 
             modelBuilder.Entity("AIMS.Models.Report", b =>
                 {
-                    b.HasOne("AIMS.Models.Office", "GeneratedByOffice")
-                        .WithMany()
-                        .HasForeignKey("GeneratedByOfficeID")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("AIMS.Models.User", "GeneratedByUser")
                         .WithMany()
                         .HasForeignKey("GeneratedByUserID")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("GeneratedByOffice");
+                    b.HasOne("AIMS.Models.Office", "GeneratedForOffice")
+                        .WithMany()
+                        .HasForeignKey("GeneratedForOfficeID")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("GeneratedByUser");
+
+                    b.Navigation("GeneratedForOffice");
                 });
 
             modelBuilder.Entity("AIMS.Models.User", b =>
                 {
+                    b.HasOne("AIMS.Models.Office", "Office")
+                        .WithMany("Users")
+                        .HasForeignKey("OfficeID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("AIMS.Models.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleID")
@@ -613,6 +622,8 @@ namespace AIMS.Migrations
                         .HasForeignKey("SupervisorID")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.Navigation("Office");
+
                     b.Navigation("Role");
 
                     b.Navigation("Supervisor");
@@ -621,6 +632,11 @@ namespace AIMS.Migrations
             modelBuilder.Entity("AIMS.Models.AuditLog", b =>
                 {
                     b.Navigation("Changes");
+                });
+
+            modelBuilder.Entity("AIMS.Models.Office", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("AIMS.Models.Role", b =>

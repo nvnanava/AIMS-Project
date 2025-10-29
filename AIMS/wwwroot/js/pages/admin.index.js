@@ -232,26 +232,55 @@
         });
     }
 
-    function applyAdminTableFilters() {
-        const showInactive =
-            document.getElementById("showInactive")?.checked ?? true;
-        const roleFilter =
-            document.getElementById("roleFilter")?.value ?? "All";
+    // function applyAdminTableFilters() {
+    //     const showInactive = document.getElementById("showInactive")?.checked ?? true;
+    //     const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
 
-        document
-            .querySelectorAll("#adminTable tbody tr.user-row")
-            .forEach((row) => {
-                const isInactive = row.classList.contains("inactive");
-                const userRole = row.cells[3]?.innerText.trim() || "";
-                let visible = true;
-                if (!showInactive && isInactive) visible = false;
-                if (roleFilter !== "All" && userRole !== roleFilter)
-                    visible = false;
-                row.style.display = visible ? "" : "none";
-            });
+    //     document.querySelectorAll("#adminTable tbody tr.user-row").forEach(row => {
+    //         const isInactive = row.classList.contains("inactive");
+    //         const userRole = row.cells[3]?.innerText.trim() || "";
+    //         let visible = true;
+    //         if (!showInactive && isInactive) visible = false;
+    //         if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
+    //         row.style.display = visible ? "" : "none";
+    //     });
 
-        stripeAdminTable(); // <— add this
-    }
+    //     stripeAdminTable(); // <— add this
+    // }
+    // Add this somewhere after other helper functions, near your other AIMS.Admin methods
+
+    AIMS.Admin.applyAdminTableFilters = function () {
+        const showInactive = document.getElementById("showInactive")?.checked ?? true;
+        const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
+        const searchQuery = document.getElementById("userSearch")?.value.trim().toLowerCase() || "";
+
+        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
+
+        if (searchQuery === "") {
+            rows.forEach(row => (row.style.display = "none"));
+            AIMS.Admin.stripeAdminTable?.();
+            return;
+        }
+
+        rows.forEach(row => {
+            const isInactive = row.classList.contains("inactive");
+            const userRole = row.cells[3]?.innerText.trim() || "";
+            const name = row.cells[1]?.innerText.trim().toLowerCase() || "";
+
+            let visible = true;
+            if (!showInactive && isInactive) visible = false;
+            if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
+
+            const matchesSearch = name.includes(searchQuery);
+            if (!matchesSearch) visible = false;
+
+            row.style.display = visible ? "" : "none";
+        });
+
+        AIMS.Admin.stripeAdminTable?.();
+    };
+
+
 
     // ----- Insert / Save -------------------------------------------------
     function insertUserRow(u) {
@@ -391,10 +420,11 @@
 
     // ----- DOM Ready -----------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
-        document
-            .getElementById("addUserForm")
-            ?.addEventListener("submit", addUser);
-        // Typeahead search for AAD (debounced)
+        // ----- Hide all users initially -----
+        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
+        rows.forEach(row => (row.style.display = "none"));
+
+        // ----- Typeahead search for AAD (debounced) -----
         const nameInput = document.getElementById("userName");
         if (nameInput) {
             nameInput.addEventListener("input", () => {
@@ -404,7 +434,7 @@
             });
         }
 
-        // Click-away to close the AAD suggestion list
+        // ----- Click-away to close the AAD suggestion list -----
         document.addEventListener("click", (e) => {
             const box = document.getElementById("aadUserResults");
             const nameEl = document.getElementById("userName");
@@ -418,8 +448,7 @@
             }
         });
 
-        // Initial filters (respect “Show Inactive” default and role filter)
-        applyAdminTableFilters();
+        // ----- Keep striping updated -----
         stripeAdminTable();
     });
 
@@ -435,4 +464,21 @@
         filterByRole,
         sortTable,
     });
+
+
+    // document.addEventListener("DOMContentLoaded", () => {
+    //     // Focus on search bar for convenience
+    //     document.getElementById("userSearch")?.focus();
+
+    //     // Hide all rows initially
+    //     AIMS.Admin.applyAdminTableFilters();
+    // });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Hide all users initially
+        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
+        rows.forEach(row => (row.style.display = "none"));
+    });
+
+
 })();

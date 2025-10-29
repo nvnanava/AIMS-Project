@@ -6,6 +6,18 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <!-- Turn on XML documentation file generation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Where to write the XML (optional: keeps output tidy and predictable) -->
+    <DocumentationFile>$(OutputPath)AIMS.UnitTests.xml</DocumentationFile>
+
+    <!-- Suppress CS1591: “missing XML comment” warnings in tests -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- (Optional) Keep builds green without requiring docs everywhere -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
   </PropertyGroup>
 
   <ItemGroup>

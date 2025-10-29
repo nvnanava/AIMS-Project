@@ -19,8 +19,9 @@ namespace AIMS.Data
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<AuditLogChange> AuditLogChanges { get; set; } = null!;   // child rows
 
-        // Blob-backed payloads: only URIs live in DB; files live in blob storage
         public DbSet<Report> Reports { get; set; } = null!;
+
+        // Blob-backed payloads: only URIs live in DB; files live in blob storage
         public DbSet<Agreement> Agreements { get; set; } = null!;
 
         // Optional/aux tables
@@ -47,7 +48,7 @@ namespace AIMS.Data
             modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
             modelBuilder.Entity<AuditLogChange>().ToTable("AuditLogChanges");
 
-            modelBuilder.Entity<Report>().ToTable("Reports");         // Blob-backed (Report.BlobUri)
+            modelBuilder.Entity<Report>().ToTable("Reports");
             modelBuilder.Entity<Agreement>().ToTable("Agreements");   // Blob-backed (Agreement.FileUri)
 
             modelBuilder.Entity<Office>().ToTable("Offices");
@@ -66,6 +67,12 @@ namespace AIMS.Data
                 .HasOne(u => u.Supervisor)
                 .WithMany(s => s.DirectReports)
                 .HasForeignKey(u => u.SupervisorID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Office)
+                .WithMany(o => o.Users)
+                .HasForeignKey(u => u.OfficeID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<User>()
@@ -219,6 +226,24 @@ namespace AIMS.Data
                 .Property(a => a.ExternalId)
                 .HasDefaultValueSql("NEWID()");
 
+            // Helpful indexes for paging/filtering
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => a.TimestampUtc);
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.AssetKind, a.HardwareID });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.AssetKind, a.SoftwareID });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.UserID, a.Action });
+
+            // Inline large payloads for AuditLog (varbinary(max)); strings default to nvarchar(max)
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.AttachmentBytes)
+                .HasColumnType("varbinary(max)");
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.SnapshotBytes)
+                .HasColumnType("varbinary(max)");
+
             // Child rows (per-field diffs)
             modelBuilder.Entity<AuditLogChange>()
                 .HasOne(c => c.AuditLog)
@@ -226,15 +251,17 @@ namespace AIMS.Data
                 .HasForeignKey(c => c.AuditLogID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<AuditLogChange>()
-                .Property(c => c.Field)
-                .HasMaxLength(128);
+            // No max length limits on field names for flexibility
+            // (strings default to nvarchar(max))
+            // modelBuilder.Entity<AuditLogChange>()
+            //     .Property(c => c.Field)
+            //     .HasMaxLength(128);   // ← removed (no max length)
 
             modelBuilder.Entity<AuditLogChange>()
                 .HasIndex(c => new { c.AuditLogID, c.Field });
 
             // -------------------------
-            // REPORTS  (blob-backed)
+            // REPORTS  Stored as VARCHAR(MAX)
             // -------------------------
             modelBuilder.Entity<Report>()
                 .HasIndex(r => r.ExternalId)
@@ -249,11 +276,12 @@ namespace AIMS.Data
                 .WithMany()
                 .HasForeignKey(r => r.GeneratedByUserID)
                 .OnDelete(DeleteBehavior.SetNull);
+                
 
             modelBuilder.Entity<Report>()
-                .HasOne(r => r.GeneratedByOffice)
+                .HasOne(r => r.GeneratedForOffice)
                 .WithMany()
-                .HasForeignKey(r => r.GeneratedByOfficeID)
+                .HasForeignKey(r => r.GeneratedForOfficeID)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // -------------------------

@@ -100,6 +100,7 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    -webkit-user-select: none;
     user-select: none;
     font-weight: 600;
     color: var(--aims-ink, #34495e);
@@ -347,6 +348,16 @@
     padding: .5rem .75rem;
     color: #666;
 }
+
+/*-------search bar -----*/
+.aims-input {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 999px;
+    margin-right: 10px;
+    min-width: 200px;
+}
+
 
 /* ---------- Responsive ---------- */
 @media (max-width: 768px) {
