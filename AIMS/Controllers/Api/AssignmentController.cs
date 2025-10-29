@@ -131,7 +131,7 @@ public class AssignmentController : ControllerBase
             await _auditQuery.CreateAuditRecordAsync(new CreateAuditRecordDto
             {
                 UserID = req.UserID,
-                Action = AuditLogAction.Assign,
+                Action = "Assign",
                 Description = description,
                 AssetKind = req.AssetKind,
                 HardwareID = req.AssetKind == AssetKind.Hardware ? req.HardwareID : null,
@@ -200,7 +200,7 @@ public class AssignmentController : ControllerBase
                 await _auditQuery.CreateAuditRecordAsync(new CreateAuditRecordDto
                 {
                     UserID = assignment.UserID ?? 0,
-                    Action = AuditLogAction.Unassign,
+                    Action = "Unassign",
                     Description = description,
                     AssetKind = assignment.AssetKind,
                     HardwareID = assignment.HardwareID,

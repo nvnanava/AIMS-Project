@@ -22,7 +22,7 @@ public sealed class GetAuditRecordDto
     public int UserID { get; set; }
     public string UserName { get; set; } = string.Empty;
 
-    public AuditLogAction Action { get; set; }       // e.g. "Create", "Edit", "Assign", "Archive"
+    public string Action { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
 
     // Expose decoded snapshot and attachment flags
@@ -52,8 +52,7 @@ public sealed class CreateAuditLogChangeDto
 public sealed class CreateAuditRecordDto
 {
     [Required] public int UserID { get; set; }
-
-    [Required] public AuditLogAction Action { get; set; }
+    [Required] public string Action { get; set; } = string.Empty;
     [Required] public string Description { get; set; } = string.Empty;
 
     // Client inputs we convert to bytes
