@@ -1,5 +1,3 @@
-
-/*  Base table layout */
 .report-table {
   border: 1px solid #34495e;
   border-radius: 8px;
@@ -10,7 +8,6 @@
   width: 100%;
 }
 
-/*  Last column clipping fix */
 .report-table td:last-child,
 .report-table th:last-child {
   max-width: 160px;
@@ -19,22 +16,20 @@
   text-overflow: ellipsis;
 }
 
-/*  Table appearance */
 .report-table thead th {
   background-color: #34495e;
   color: #fff;
 }
 
 .report-page-size {
-    width: 95%;
-    margin: 0 auto 20px auto;
+  width: 95%;
+  margin: 0 auto 20px auto;
 }
 
 .report-table tbody tr:nth-child(odd) {
   background-color: #E0E4E5;
 }
 
-/*  Ellipsis + tooltip */
 .report-table th,
 .report-table td {
   white-space: nowrap;
@@ -55,36 +50,21 @@
   z-index: 5;
 }
 
-/*  Checkbox accent */
 .report-table input[type="checkbox"] {
   accent-color: #1abc9c;
 }
 
-/*  Smooth scroll on pagination */
 html {
   scroll-behavior: smooth;
 }
 
-/*  Buttons and inputs */
 .search-input {
-    flex: 1;
-    background-color: transparent;
-    text-align: start;
-    border: none;
-    outline: none;
-    padding: 0px;
-}
-
-
-/* View Download CSV and New Report Button */
-.download-csv-button, .new-report-button {
-    height: 41px;
-    padding: 0px 16px;
-    color: #34495e;
-    line-height: normal;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
+  flex: 1;
+  background-color: transparent;
+  text-align: start;
+  border: none;
+  outline: none;
+  padding: 0px;
 }
 
 .btn-mint,
@@ -100,7 +80,6 @@ html {
   border-color: #17a589;
 }
 
-/*  Responsive navbar */
 @media (max-width: 768px) {
   .navbar {
     display: flex;
@@ -133,6 +112,88 @@ html {
     border: none;
     color: #34495e;
     cursor: pointer;
+  }
+}
+
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.btn-mint,
+.download-csv-button,
+.new-report-button {
+  background-color: #1abc9c !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 6px 16px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-mint:hover,
+.download-csv-button:hover,
+.new-report-button:hover {
+  background-color: #17a589 !important;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+}
+
+.search-input {
+  width: 280px;
+  max-width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 992px) {
+  .report-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .right-section {
+    justify-content: flex-start;
+  }
+
+  .search-input {
+    width: 220px;
+  }
+}
+
+@media (max-width: 576px) {
+  .search-input {
+    width: 180px;
+    font-size: 0.9rem;
+  }
+
+  .right-section {
+    justify-content: flex-start;
+  }
+
+  .download-csv-button,
+  .new-report-button {
+    flex: 1 1 auto;
+    text-align: center;
   }
 }
 
