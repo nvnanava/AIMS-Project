@@ -260,9 +260,9 @@ public static class DbSeeder
                 Name = "Weekly Asset Count",
                 Type = "Inventory",
                 Description = "Hardware & Software totals by type",
-                BlobUri = "blob://reports/weekly-asset-count.csv",
+             //   BlobUri = "blob://reports/weekly-asset-count.csv",
                 GeneratedByUserID = usersByEmp["28809"].UserID, // John
-                GeneratedByOfficeID = officeByName["HQ - Sacramento"].OfficeID,
+                GeneratedForOfficeID = officeByName["HQ - Sacramento"].OfficeID,
                 DateCreated = DateTime.UtcNow.AddDays(-7)
             },
             new Report
@@ -270,9 +270,9 @@ public static class DbSeeder
                 Name = "License Usage Summary",
                 Type = "Software",
                 Description = "Seats used vs total by product",
-                BlobUri = "blob://reports/license-usage.csv",
+              //  BlobUri = "blob://reports/license-usage.csv",
                 GeneratedByUserID = usersByEmp["47283"].UserID, // Emily
-                GeneratedByOfficeID = officeByName["Remote"].OfficeID,
+                GeneratedForOfficeID = officeByName["Remote"].OfficeID,
                 DateCreated = DateTime.UtcNow.AddDays(-3)
             }
         };
@@ -758,9 +758,9 @@ public static class DbSeeder
         else
         {
             existing.Description = incoming.Description;
-            existing.BlobUri = incoming.BlobUri;
+            //   existing.BlobUri = incoming.BlobUri;
             existing.GeneratedByUserID = incoming.GeneratedByUserID;
-            existing.GeneratedByOfficeID = incoming.GeneratedByOfficeID;
+            existing.GeneratedForOfficeID = incoming.GeneratedForOfficeID;
             existing.DateCreated = incoming.DateCreated;
         }
     }

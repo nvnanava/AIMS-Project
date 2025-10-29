@@ -19,8 +19,9 @@ namespace AIMS.Data
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<AuditLogChange> AuditLogChanges { get; set; } = null!;   // child rows
 
-        // Blob-backed payloads: only URIs live in DB; files live in blob storage
         public DbSet<Report> Reports { get; set; } = null!;
+
+        // Blob-backed payloads: only URIs live in DB; files live in blob storage
         public DbSet<Agreement> Agreements { get; set; } = null!;
 
         // Optional/aux tables
@@ -47,7 +48,7 @@ namespace AIMS.Data
             modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
             modelBuilder.Entity<AuditLogChange>().ToTable("AuditLogChanges");
 
-            modelBuilder.Entity<Report>().ToTable("Reports");         // Blob-backed (Report.BlobUri)
+            modelBuilder.Entity<Report>().ToTable("Reports");
             modelBuilder.Entity<Agreement>().ToTable("Agreements");   // Blob-backed (Agreement.FileUri)
 
             modelBuilder.Entity<Office>().ToTable("Offices");
@@ -66,6 +67,12 @@ namespace AIMS.Data
                 .HasOne(u => u.Supervisor)
                 .WithMany(s => s.DirectReports)
                 .HasForeignKey(u => u.SupervisorID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Office)
+                .WithMany(o => o.Users)
+                .HasForeignKey(u => u.OfficeID)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<User>()
@@ -242,7 +249,7 @@ namespace AIMS.Data
                 .HasIndex(c => new { c.AuditLogID, c.Field });
 
             // -------------------------
-            // REPORTS  (blob-backed)
+            // REPORTS  Stored as VARCHAR(MAX)
             // -------------------------
             modelBuilder.Entity<Report>()
                 .HasIndex(r => r.ExternalId)
@@ -257,11 +264,12 @@ namespace AIMS.Data
                 .WithMany()
                 .HasForeignKey(r => r.GeneratedByUserID)
                 .OnDelete(DeleteBehavior.SetNull);
+                
 
             modelBuilder.Entity<Report>()
-                .HasOne(r => r.GeneratedByOffice)
+                .HasOne(r => r.GeneratedForOffice)
                 .WithMany()
-                .HasForeignKey(r => r.GeneratedByOfficeID)
+                .HasForeignKey(r => r.GeneratedForOfficeID)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // -------------------------
