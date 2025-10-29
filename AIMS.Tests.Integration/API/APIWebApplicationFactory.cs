@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using AIMS.Data;
 using AIMS.Tests.Integration;
 using Microsoft.AspNetCore.Authentication;
@@ -12,121 +14,74 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-public class APIWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint>, IAsyncLifetime
-    where TEntryPoint : class
+public class APIWebApplicationFactory<TEntryPoint> : WebApplicationFactory<TEntryPoint> where TEntryPoint : class
 {
     private DbTestHarness? _harness;
 
-    public APIWebApplicationFactory() { }
+    public void SetHarness(DbTestHarness harness) => _harness = harness;
 
-    // Method to allow the test to "prime" the factory with the harness
-    public void SetHarness(DbTestHarness harness)
-    {
-        _harness = harness;
-    }
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Test");
 
-        builder.ConfigureAppConfiguration((context, conf) =>
+        // 1) Resolve a single connection string we will push through all channels
+        var conn = _harness?.ConnectionString;
+        if (string.IsNullOrWhiteSpace(conn))
         {
-            conf.Sources.Clear();
-            conf.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), optional: true);
-            conf.AddInMemoryCollection(new Dictionary<string, string?>
+            // Fallback if harness not set yet
+            conn = "Server=localhost,1433;Database=AIMS_Test;User Id=sa;Password=StrongP@ssword!;TrustServerCertificate=True;Encrypt=False";
+        }
+
+        // 2) Host settings
+        builder.UseSetting("UseTestAuth", "true");
+        builder.UseSetting("ConnectionStrings:DockerConnection", conn);
+        builder.UseSetting("ConnectionStrings:DefaultConnection", conn);
+        builder.UseSetting("ConnectionStrings:CliConnection", conn);
+        builder.UseSetting("AzureAd:TenantId", "dummy");
+        builder.UseSetting("AzureAd:ClientId", "dummy");
+        builder.UseSetting("AzureAd:ClientSecret", "dummy");
+        builder.UseSetting("AzureAd:ApiAudience", "api://dummy");
+
+        // 3) Env vars
+        System.Environment.SetEnvironmentVariable("UseTestAuth", "true");
+        System.Environment.SetEnvironmentVariable("ConnectionStrings__DockerConnection", conn);
+        System.Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", conn);
+        System.Environment.SetEnvironmentVariable("ConnectionStrings__CliConnection", conn);
+
+        // 4) In-memory config
+        builder.ConfigureAppConfiguration((ctx, config) =>
+        {
+            var dict = new Dictionary<string, string?>
             {
-                ["ConnectionStrings:DefaultConnection"] = _harness?.ConnectionString
-            });
+                ["UseTestAuth"] = "true",
+                ["AzureAd:TenantId"] = "dummy",
+                ["AzureAd:ClientId"] = "dummy",
+                ["AzureAd:ClientSecret"] = "dummy",
+                ["AzureAd:ApiAudience"] = "api://dummy",
+                ["ConnectionStrings:DockerConnection"] = conn,
+                ["ConnectionStrings:DefaultConnection"] = conn,
+                ["ConnectionStrings:CliConnection"] = conn,
+            };
+            config.AddInMemoryCollection(dict!);
         });
 
-
-        // service replacements go here. This is called before the host is built.
+        // 5) Force AimsDbContext to use the harness connection (or conn fallback) and ensure schema
         builder.ConfigureServices(services =>
         {
-            // Remove the app's real OIDC registration so it never validates ClientId/etc.
-            services.RemoveAll<IConfigureOptions<OpenIdConnectOptions>>();
-            services.RemoveAll<IPostConfigureOptions<OpenIdConnectOptions>>();
-            services.RemoveAll<IValidateOptions<OpenIdConnectOptions>>();
+            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<AimsDbContext>));
+            if (descriptor != null) services.Remove(descriptor);
 
-            // Replace production DbContext with a test version
-            var dbContextDescriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(DbContextOptions<AimsDbContext>));
-
-            if (dbContextDescriptor is not null)
+            services.AddDbContext<AimsDbContext>(opt =>
             {
-                services.Remove(dbContextDescriptor);
-            }
-
-            services.AddDbContext<AimsDbContext>(options =>
-            {
-                options.UseSqlServer(_harness?.ConnectionString);
+                opt.UseSqlServer(conn!,
+                    sql => sql.EnableRetryOnFailure(5, System.TimeSpan.FromSeconds(2), null));
             });
 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
-                options.DefaultChallengeScheme = TestAuthHandler.Scheme;
-                options.DefaultScheme = TestAuthHandler.Scheme;
-            })
-            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.Scheme, _ => { });
-
-            services.AddAuthorization();
-
-            // Make OIDC inert so validation won't throw if it's ever resolved
-            services.PostConfigureAll<OpenIdConnectOptions>(o =>
-            {
-                // Required fields so Validate() passes
-                o.ClientId ??= "test-client";
-                o.Authority ??= "https://login.microsoftonline.com/common";
-                o.CallbackPath = "/signin-oidc";
-                o.TokenValidationParameters ??= new TokenValidationParameters();
-
-                // Make it as no-op as possible
-                o.DisableTelemetry = true;
-                o.SaveTokens = false;
-                // (optional) If something challenges explicitly with OIDC, map sign-in to our test scheme
-                o.SignInScheme ??= TestAuthHandler.Scheme;
-            });
-
+            // Build a scoped provider to run migrations so DB schema exists
+            var sp = services.BuildServiceProvider();
+            using var scope = sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
+            db.Database.Migrate();
         });
-    }
-
-    // Override CreateHost to defer configuration until after the harness is ready.
-    protected override IHost CreateHost(IHostBuilder builder)
-    {
-        // First, apply base host configuration
-        builder.ConfigureAppConfiguration((context, conf) =>
-        {
-            // Clear existing configuration
-            conf.Sources.Clear();
-
-            // Add test appsettings.json
-            conf.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"));
-
-            // Override with in-memory configuration from the harness
-            conf.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:DefaultConnection"] = _harness?.ConnectionString
-            });
-        });
-
-        // Add additional web host configuration, such as setting the content root.
-        builder.ConfigureWebHost(webHostBuilder =>
-        {
-            // Set the content root to the test project's base directory
-            webHostBuilder.UseContentRoot(AppContext.BaseDirectory);
-        });
-
-        // The base.CreateHost() call will use the test host builder
-        return base.CreateHost(builder);
-    }
-
-    public async Task InitializeAsync()
-    {
-        await _harness?.InitializeAsync();
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _harness?.DisposeAsync();
     }
 }

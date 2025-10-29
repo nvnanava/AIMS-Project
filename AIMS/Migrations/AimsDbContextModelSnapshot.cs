@@ -117,7 +117,10 @@ namespace AIMS.Migrations
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
 
-                    b.Property<string>("BlobUri")
+                    b.Property<byte[]>("AttachmentBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("AttachmentContentType")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
@@ -132,7 +135,10 @@ namespace AIMS.Migrations
                     b.Property<int?>("HardwareID")
                         .HasColumnType("int");
 
-                    b.Property<string>("SnapshotJson")
+                    b.Property<byte[]>("SnapshotBytes")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("SnapshotContentType")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SoftwareID")
@@ -153,7 +159,13 @@ namespace AIMS.Migrations
 
                     b.HasIndex("SoftwareID");
 
-                    b.HasIndex("UserID");
+                    b.HasIndex("TimestampUtc");
+
+                    b.HasIndex("AssetKind", "HardwareID");
+
+                    b.HasIndex("AssetKind", "SoftwareID");
+
+                    b.HasIndex("UserID", "Action");
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
@@ -174,8 +186,7 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Field")
                         .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("NewValue")
                         .HasColumnType("nvarchar(max)");
