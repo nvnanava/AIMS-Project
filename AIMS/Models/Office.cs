@@ -11,4 +11,6 @@ public class Office
 
     [MaxLength(256)]
     public string Location { get; set; } = string.Empty;
+
+    public ICollection<User> Users { get; set; } = new List<User>();
 }

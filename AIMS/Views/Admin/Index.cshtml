@@ -37,27 +37,16 @@
    ====================================================================== *@
 
 @using AIMS.Utilities
+@model List<AIMS.Models.User>
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    var users = new[]
+    var users = new AIMS.Models.User[]
     {
-        new { Name = "John Smith",     Email = "john.smith@email.com",     Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Jane Doe",       Email = "jane.doe@email.com",       Role = "User",  Status = "Inactive", SeparationDate = "12/01/2024" },
-        new { Name = "Max Taylor",     Email = "max.taylor@email.com",     Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Zara Khan",      Email = "zara.khan@email.com",      Role = "User",  Status = "Inactive", SeparationDate = "11/16/2023" },
-        new { Name = "Leo Clark",      Email = "leo.clark@email.com",      Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Sophie Lee",     Email = "sophie.lee@email.com",     Role = "User",  Status = "Active",   SeparationDate = " " },
-        new { Name = "Nina Patel",     Email = "nina.patel@email.com",     Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Andrew Jackson", Email = "andrew.jackson@email.com", Role = "User",  Status = "Inactive", SeparationDate = "10/31/2024" },
-        new { Name = "Taylor Jackson", Email = "taylor.jackson@email.com", Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Michael Dawson", Email = "michael.dawson@email.com", Role = "User",  Status = "Inactive", SeparationDate = "09/15/2025" },
-        new { Name = "Clint Clark",    Email = "clint.clark@email.com",    Role = "Admin", Status = "Active",   SeparationDate = " " },
-        new { Name = "Tobi Brown",     Email = "tobi.brown@email.com",     Role = "User",  Status = "Active",   SeparationDate = " " }
     };
-}
+    }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
@@ -71,6 +60,13 @@
             <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
                 Add User
             </button>
+            <input
+                type="text"
+                id="userSearch"
+                class="aims-input"
+                placeholder="Search Users..."
+                oninput="AIMS.Admin.applyAdminTableFilters()"
+            />
         </div>
         <div class="admin-table-controls-right">
             <label class="toggle-container">

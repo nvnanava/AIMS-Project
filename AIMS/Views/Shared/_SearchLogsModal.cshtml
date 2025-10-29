@@ -1,0 +1,56 @@
+@* ======================================================================
+   Partial: _SearchLogsModal
+   Purpose: Shared modal for searching and filtering logs
+   Triggered by Filter Icon (Task 4A / Audit Log Integration)
+   ====================================================================== *@
+
+<div class="modal fade" id="searchLogsModal" tabindex="-1" aria-labelledby="searchLogsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="searchLogsModalLabel">Search Logs</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="searchLogsForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="searchUserId" class="form-label fw-bold">User ID</label>
+                            <input type="text" class="form-control" id="searchUserId" placeholder="e.g., U001">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="searchAction" class="form-label fw-bold">Action Type</label>
+                            <select id="searchAction" class="form-select">
+                                <option value="">All</option>
+                                <option value="Create">Create</option>
+                                <option value="Assign">Assign</option>
+                                <option value="Unassign">Unassign</option>
+                                <option value="Update">Update</option>
+                                <option value="Delete">Delete</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="searchAssetId" class="form-label fw-bold">Asset ID</label>
+                            <input type="text" class="form-control" id="searchAssetId" placeholder="e.g., A101">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="searchDateRange" class="form-label fw-bold">Date Range</label>
+                            <input type="text" class="form-control" id="searchDateRange"
+                                placeholder="YYYY-MM-DD to YYYY-MM-DD">
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" form="searchLogsForm" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+    </div>
+</div>
