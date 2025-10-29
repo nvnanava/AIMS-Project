@@ -26,6 +26,9 @@ public class User
     public int? SupervisorID { get; set; }
     public User? Supervisor { get; set; }
 
+    public int? OfficeID { get; set; }
+    public Office? Office { get; set; }
+
     public bool IsArchived { get; set; } = false;
 
     public ICollection<User> DirectReports { get; set; } = new List<User>();

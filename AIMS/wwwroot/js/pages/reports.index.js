@@ -52,6 +52,7 @@
                 <td><span class="cell-text">${r.description || "-"}</span></td>
                 <td><span class="cell-text">${r.generatedByOfficeString || "-"}</span></td>
                 <td><span class="cell-text">${r.dateCreated ? new Date(r.dateCreated).toLocaleString() : "-"}</span></td>
+                <td><span class="cell-text">${r.generatedByUserName || "-"}</span></td>
             `;
             frag.appendChild(tr);
         });
@@ -139,7 +140,7 @@
         for (const cb of selected) {
             const id = cb.getAttribute("data-id");
             try {
-                const resp = await fetch(`/download/${id}`);
+                const resp = await fetch(`api/reports/download/${id}`);
                 if (!resp.ok) throw new Error(`Failed to download report ${id}`);
 
                 // Try to pick filename from content-disposition
@@ -179,7 +180,9 @@
             const startDate = document.getElementById("dateRange1")?.value || "";
             const endDate = document.getElementById("dateRange2")?.value || "";
             const description = (document.getElementById("inputDescription")?.value || "").trim();
-            const CreatorUserID = 1; // replace with real user id
+            const CreatorUserID = 4; // replace with real user id
+
+            // alert(window.pageData.user);
 
             if (!reportName) return alert("Please enter a report name.");
             if (!startDate) return alert("Please select a start date.");
@@ -191,7 +194,7 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, { method: "POST" });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateAssignmentReport"))?.hide();
                 reportToast?.show();
@@ -258,10 +261,9 @@
             });
             if (endDate) params.append("end", endDate);
             if (description) params.append("desc", description);
-            params.append("customOptions", JSON.stringify(customOptions));
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/?${params.toString()}`, { method: "POST", body: JSON.stringify(customOptions) });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateCustomReport"))?.hide();
                 reportToast?.show();

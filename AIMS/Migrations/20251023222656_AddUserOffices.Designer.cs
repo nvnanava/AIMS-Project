@@ -4,16 +4,19 @@ using AIMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AIMS.Migrations
+namespace AIMS.Migrations._local_sync
 {
     [DbContext(typeof(AimsDbContext))]
-    partial class AimsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251023222656_AddUserOffices")]
+    partial class AddUserOffices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -113,15 +116,12 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Action")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
 
-                    b.Property<byte[]>("AttachmentBytes")
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<string>("AttachmentContentType")
+                    b.Property<string>("BlobUri")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
@@ -136,10 +136,7 @@ namespace AIMS.Migrations
                     b.Property<int?>("HardwareID")
                         .HasColumnType("int");
 
-                    b.Property<byte[]>("SnapshotBytes")
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<string>("SnapshotContentType")
+                    b.Property<string>("SnapshotJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SoftwareID")
@@ -160,13 +157,7 @@ namespace AIMS.Migrations
 
                     b.HasIndex("SoftwareID");
 
-                    b.HasIndex("TimestampUtc");
-
-                    b.HasIndex("AssetKind", "HardwareID");
-
-                    b.HasIndex("AssetKind", "SoftwareID");
-
-                    b.HasIndex("UserID", "Action");
+                    b.HasIndex("UserID");
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
@@ -187,7 +178,8 @@ namespace AIMS.Migrations
 
                     b.Property<string>("Field")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("NewValue")
                         .HasColumnType("nvarchar(max)");
