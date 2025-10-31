@@ -13,6 +13,7 @@ export default defineConfig({
     use: {
         baseURL: BASE_URL,
         headless: true,
+        launchOptions: { slowMo: 0 },
         storageState: STORAGE_STATE,
         trace: 'on-first-retry',
         actionTimeout: 15_000,

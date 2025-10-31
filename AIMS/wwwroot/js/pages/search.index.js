@@ -48,14 +48,17 @@
     let lastQuery = null;
 
     // ----- Show archived state ----------------------------------------------
-    const showArchivedSwitch = document.getElementById("showArchivedSwitch");
     let showArchived = false;
-    if (showArchivedSwitch) {
-        showArchivedSwitch.addEventListener("change", async () => {
-            showArchived = showArchivedSwitch.checked;
-            await fetchInitial(activeQuery(), 1, pageSize);
-        });
-    }
+
+    // archive-filter.js is loaded globally from _Layout
+    AIMSFilterIcon.init("searchFilters", {
+        onChange: ({ showArchived: newVal }) => {
+            showArchived = newVal;
+            // Re-fetch using existing AIMS.Search infrastructure
+            const q = (lastQuery ?? activeQuery() ?? "").trim();
+            fetchInitial(q, 1, pageSize);
+        }
+    });
 
     // ----- Scoped CSS attr (Blazor/razor isolation friendly) ----------------
     const scopeAttrName = (() => {
