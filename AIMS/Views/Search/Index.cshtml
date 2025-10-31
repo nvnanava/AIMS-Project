@@ -116,24 +116,4 @@
     <script src="~/js/pages/search.index.js" asp-append-version="true" defer></script>
     <script src="~/js/components/assignAssetModal.js" asp-append-version="true" defer></script>
     <script src="~/js/components/unassignAssetModal.js" asp-append-version="true" defer></script>
-
-    <!-- Init for Show Archived filter -->
-    <script>
-        // Re-fetch table when the toggle changes (adjust URL/render as needed)
-        function refreshSearchTable(showArchived) {
-            fetch(`/api/assets?includeArchived=${showArchived}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (typeof window.renderAssetsTable === 'function') {
-                        window.renderAssetsTable(data);
-                    }
-                })
-                .catch(console.error);
-        }
-
-        // archive-filter.js is loaded globally from _Layout
-        AIMSFilterIcon.init("searchFilters", {
-            onChange: ({ showArchived }) => refreshSearchTable(showArchived)
-        });
-    </script>
 }
