@@ -126,7 +126,7 @@
     <!-- Right: Buttons -->
     <div class="d-flex align-items-center gap-2">
         <button type="button" class="btn btn-mint">
-            <i class="bi bi-download"></i> Download CSV
+            <i class="bi bi-download download-csv-button"></i> Download CSV
         </button>
         <div class="dropdown">
             <button class="btn btn-mint dropdown-toggle" type="button" id="newReportDropdown"
@@ -134,9 +134,11 @@
                 <i class="bi bi-plus-circle"></i> New Report
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="newReportDropdown">
-                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generalReportModal">General Report</button></li>
-                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#inventoryReportModal">Inventory Report</button></li>
-                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#softwareReportModal">Software Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateAssignmentReport">Assignment Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal"
+                    data-bs-target="#generateOfficeReport">Office Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal"
+                    data-bs-target="#generateCustomReport">Custom Report</button></li>
             </ul>
         </div>
     </div>
