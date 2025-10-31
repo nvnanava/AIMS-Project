@@ -135,27 +135,27 @@
 
     // --------------------------- Rendering ----------------------------
     function renderRows(rows) {
-    clearTable();
+        clearTable();
 
-    (rows || []).forEach((asset) => {
-        const typeLower = (asset.type || "").toLowerCase();
+        (rows || []).forEach((asset) => {
+            const typeLower = (asset.type || "").toLowerCase();
 
-        if (typeLower.includes("software")) {
-            // Software: show assigned seats vs total seats, or "—" if no data
-            const assigned = asset.assignedSeats ?? asset.SeatsUsed ?? 0;
-            const total = asset.totalSeats ?? asset.SeatsTotal ?? "?";
+            if (typeLower.includes("software")) {
+                // Software: show assigned seats vs total seats, or "—" if no data
+                const assigned = asset.assignedSeats ?? asset.SeatsUsed ?? 0;
+                const total = asset.totalSeats ?? asset.SeatsTotal ?? "?";
 
-            asset.displaySeatOrTag = (assigned || total !== "?")
-                ? `Seat ${assigned} of ${total}`
-                : "—";
-        } else {
-            // Hardware: display tag or ID
-            asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
-        }
+                asset.displaySeatOrTag = (assigned || total !== "?")
+                    ? `Seat ${assigned} of ${total}`
+                    : "—";
+            } else {
+                // Hardware: display tag or ID
+                asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
+            }
 
-        renderRow(asset);
-    });
-}
+            renderRow(asset);
+        });
+    }
 
 
     function makeEditButton(asset) {
@@ -323,6 +323,9 @@
         url.searchParams.set("category", safe);
         url.searchParams.set("scope", "all");
         url.searchParams.set("totalsMode", "lookahead");
+        const showArchived = localStorage.getItem('filter:assetdetails:showArchived') === "true";
+        url.searchParams.set("showArchived", String(showArchived));
+
 
         const data = await aimsFetch(url.toString());
 
@@ -454,6 +457,37 @@
             }
         }
     }
+
+    // Initialize the Show Archived filter toggle for Asset Details page
+    document.addEventListener("DOMContentLoaded", () => {
+        AIMSFilterIcon.init("detailsFilters", {
+            onChange: ({ showArchived }) => {
+                // Dispatch the global event your listener already handles
+                document.dispatchEvent(new CustomEvent("aims:filter:changed", {
+                    detail: { id: "detailsFilters", showArchived }
+                }));
+            }
+        });
+    });
+
+    // Listen for archived filter toggle
+    document.addEventListener('aims:filter:changed', async (ev) => {
+        const { id, showArchived } = ev.detail || {};
+        if (id !== 'detailsFilters') return; // ignore if not this page’s filter
+
+        // Save preference globally if needed
+        localStorage.setItem('filter:assetdetails:showArchived', String(showArchived));
+
+        // Reload data with new filter
+        const category = getCurrentCategory ? getCurrentCategory() : null;
+        pageCache?.clear?.();
+
+        if (typeof loadCategoryPaged === "function" && category) {
+            await loadCategoryPaged(category, 1);
+        } else if (typeof loadSearchResults === "function") {
+            await loadSearchResults(1);
+        }
+    });
 
     // --------------- Cache/DOM updates after actions -----------------
     async function updateRowInUIAndCache(update) {
