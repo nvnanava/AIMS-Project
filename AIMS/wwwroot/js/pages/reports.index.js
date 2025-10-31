@@ -99,14 +99,16 @@
                 }
 
                 // Build table dynamically
-                const headers = Object.keys(data.previewRows[0]);
+                const headers = Object.keys(data.previewRows[0])
+
+                const titleCaseHeaders = headers.map(h => h.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
                 let html = `
                 <p><strong>Created:</strong> ${new Date(data.dateCreated).toLocaleString()}</p>
                 <p><strong>Total Rows:</strong> ${data.totalRows}</p>
                 <div class="table-responsive">
                     <table class="table table-striped table-sm align-middle">
                         <thead class="table-light">
-                            <tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>
+                            <tr>${titleCaseHeaders.map(h => `<th>${h}</th>`).join("")}</tr>
                         </thead>
                         <tbody>
                             ${data.previewRows.map(row => `
@@ -266,7 +268,7 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, { method: "POST" });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateOfficeReport"))?.hide();
                 reportToast?.show();
@@ -304,7 +306,13 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST", body: JSON.stringify(customOptions) });
+                const resp = await fetch(`/api/reports?${params.toString()}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(customOptions)
+                });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateCustomReport"))?.hide();
                 reportToast?.show();
