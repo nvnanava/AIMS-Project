@@ -3,7 +3,10 @@ using Moq;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AIMS.Hubs;
 
@@ -37,11 +40,8 @@ namespace AIMS.UnitTests.Hubs
         {
             var connectionId = "conn-123";
             _mockContext.Setup(c => c.ConnectionId).Returns(connectionId);
-
             await _hub.OnConnectedAsync();
-
             _mockGroups.Verify(g => g.AddToGroupAsync(connectionId, "audit", default), Times.Once);
-
             _mockLogger.Verify(
                 l => l.Log(
                     It.Is<LogLevel>(lvl => lvl == LogLevel.Information),
@@ -57,11 +57,8 @@ namespace AIMS.UnitTests.Hubs
         {
             var connectionId = "conn-456";
             _mockContext.Setup(c => c.ConnectionId).Returns(connectionId);
-
             await _hub.OnDisconnectedAsync(null);
-
             _mockGroups.Verify(g => g.RemoveFromGroupAsync(connectionId, "audit", default), Times.Once);
-
             _mockLogger.Verify(
                 l => l.Log(
                     It.Is<LogLevel>(lvl => lvl == LogLevel.Information),
@@ -77,18 +74,14 @@ namespace AIMS.UnitTests.Hubs
         {
             var connectionId = "conn-789";
             _mockContext.Setup(c => c.ConnectionId).Returns(connectionId);
-
             await _hub.JoinAuditGroup();
             await _hub.JoinAuditGroup();
-
             _mockGroups.Verify(g => g.AddToGroupAsync(connectionId, "audit", default), Times.Exactly(2));
-
             var order = new List<string>();
             _mockGroups
                 .Setup(g => g.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), default))
                 .Callback(() => order.Add("AddGroup"))
                 .Returns(Task.CompletedTask);
-
             _mockLogger
                 .Setup(l => l.Log(
                     It.IsAny<LogLevel>(),
@@ -97,27 +90,23 @@ namespace AIMS.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception, string>>()))
                 .Callback(() => order.Add("Log"));
-
             await _hub.JoinAuditGroup();
-
-            Assert.True(order.IndexOf("AddGroup") > order.IndexOf("Log"), "Log should execute before AddToGroupAsync");
+            Assert.True(order.IndexOf("AddGroup") > order.IndexOf("Log"));
         }
 
         [Fact]
         public void AuditLogHub_HasAuthorizeAttribute_AndNotOverriddenInDerivedClasses()
         {
             var hubType = typeof(AuditLogHub);
-            var authorizeAttr = hubType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), inherit: false);
+            var authorizeAttr = hubType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false);
             Assert.NotEmpty(authorizeAttr);
-
             foreach (var derivedType in hubType.Assembly.GetTypes())
             {
                 if (derivedType.IsSubclassOf(hubType))
                 {
-                    var derivedAttrs = derivedType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute), inherit: false);
+                    var derivedAttrs = derivedType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AllowAnonymousAttribute), false);
                     Assert.Empty(derivedAttrs);
-
-                    var overrideAuthorize = derivedType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), inherit: false);
+                    var overrideAuthorize = derivedType.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false);
                     Assert.Empty(overrideAuthorize);
                 }
             }
@@ -126,58 +115,52 @@ namespace AIMS.UnitTests.Hubs
         [Fact]
         public async Task MultipleConcurrentConnections_MaintainGroupIntegrity()
         {
-            var connectionIds = new List<string>();
-            var added = new HashSet<string>();
-            var removed = new HashSet<string>();
-            var locker = new object();
-
-            _mockGroups
-                .Setup(g => g.AddToGroupAsync(It.IsAny<string>(), "audit", default))
-                .Callback<string, string, System.Threading.CancellationToken>((id, _, __) =>
-                {
-                    lock (locker) { added.Add(id); }
-                })
-                .Returns(Task.CompletedTask);
-
-            _mockGroups
-                .Setup(g => g.RemoveFromGroupAsync(It.IsAny<string>(), "audit", default))
-                .Callback<string, string, System.Threading.CancellationToken>((id, _, __) =>
-                {
-                    lock (locker) { removed.Add(id); }
-                })
-                .Returns(Task.CompletedTask);
-
+            var totalConnections = 25;
+            var added = new ConcurrentBag<string>();
+            var removed = new ConcurrentBag<string>();
             var tasks = new List<Task>();
-            var random = new Random();
-            for (int i = 0; i < 25; i++)
+
+            for (int i = 0; i < totalConnections; i++)
             {
-                var id = $"conn-{random.Next(1000, 9999)}";
-                connectionIds.Add(id);
-                _mockContext.Setup(c => c.ConnectionId).Returns(id);
-                tasks.Add(_hub.OnConnectedAsync());
+                var id = $"conn-{i + 1}";
+                var mockGroups = new Mock<IGroupManager>();
+                mockGroups
+                    .Setup(g => g.AddToGroupAsync(It.IsAny<string>(), "audit", default))
+                    .Callback<string, string, CancellationToken>((connId, _, __) => added.Add(connId))
+                    .Returns(Task.CompletedTask);
+                mockGroups
+                    .Setup(g => g.RemoveFromGroupAsync(It.IsAny<string>(), "audit", default))
+                    .Callback<string, string, CancellationToken>((connId, _, __) => removed.Add(connId))
+                    .Returns(Task.CompletedTask);
+
+                var mockContext = new Mock<HubCallerContext>();
+                mockContext.Setup(c => c.ConnectionId).Returns(id);
+
+                var mockLogger = new Mock<ILogger<AuditLogHub>>();
+                var hub = new AuditLogHub(mockLogger.Object)
+                {
+                    Groups = mockGroups.Object,
+                    Context = mockContext.Object
+                };
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    await hub.OnConnectedAsync();
+                    await Task.Delay(10);
+                    await hub.OnDisconnectedAsync(null);
+                }));
             }
 
             await Task.WhenAll(tasks);
-            Assert.Equal(25, added.Count);
+            await Task.Delay(200);
 
-            tasks.Clear();
-            foreach (var id in connectionIds)
-            {
-                _mockContext.Setup(c => c.ConnectionId).Returns(id);
-                tasks.Add(_hub.OnDisconnectedAsync(null));
-            }
-
-            await Task.WhenAll(tasks);
-            Assert.Equal(25, removed.Count);
-
-            foreach (var id in connectionIds)
+            Assert.Equal(totalConnections, added.Count);
+            Assert.Equal(totalConnections, removed.Count);
+            foreach (var id in Enumerable.Range(1, totalConnections).Select(x => $"conn-{x}"))
             {
                 Assert.Contains(id, added);
                 Assert.Contains(id, removed);
             }
-
-            _mockGroups.Verify(g => g.AddToGroupAsync(It.IsAny<string>(), "audit", default), Times.Exactly(25));
-            _mockGroups.Verify(g => g.RemoveFromGroupAsync(It.IsAny<string>(), "audit", default), Times.Exactly(25));
         }
     }
 }
