@@ -3,6 +3,7 @@ using AIMS.Data;
 using AIMS.Dtos.Hardware;
 using AIMS.Models;
 using AIMS.Queries;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,7 +33,12 @@ namespace AIMS.UnitTests
         }
 
         private static BulkHardwareRequest Wrap(List<CreateHardwareDto>? dtos)
-            => new BulkHardwareRequest { Dtos = dtos };
+        {
+            var req = new BulkHardwareRequest();
+            if (dtos is not null)
+                req.Dtos = dtos;
+            return req;
+        }
 
         [Fact]
         public async Task AddBulkHardware_ReturnsBadRequest_WhenDuplicateSerialNumber()

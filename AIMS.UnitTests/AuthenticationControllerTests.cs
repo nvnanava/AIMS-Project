@@ -39,7 +39,7 @@ public class AuthenticationControllerTests
 // Small test helper that implements IUrlHelper and returns a fixed Action URL.
 internal class TestUrlHelper : IUrlHelper
 {
-    public ActionContext ActionContext { get; set; }
+    public ActionContext ActionContext { get; set; } = new ActionContext();
 
     // Use fully-qualified nullable parameter types to match the current IUrlHelper interface
     public string? Action(Microsoft.AspNetCore.Mvc.Routing.UrlActionContext? actionContext)

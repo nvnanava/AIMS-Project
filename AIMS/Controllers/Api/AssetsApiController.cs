@@ -3,7 +3,6 @@ using AIMS.Data;
 using AIMS.Dtos.Assets;
 using AIMS.Dtos.Users;
 using AIMS.Models;
-using AIMS.Queries;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,6 @@ namespace AIMS.Controllers.Api;
 public class AssetsApiController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    private readonly AssetQuery _assetQuery;
     private readonly IMemoryCache _cache;
     private readonly IWebHostEnvironment _env;
 
@@ -46,11 +44,10 @@ public class AssetsApiController : ControllerBase
         public string EmployeeNumber { get; set; } = "";
     }
 
-    public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery, IWebHostEnvironment env)
+    public AssetsApiController(AimsDbContext db, IMemoryCache cache, IWebHostEnvironment env)
     {
         _db = db;
         _cache = cache;
-        _assetQuery = assetQuery;
         _env = env;
     }
 
@@ -135,7 +132,7 @@ public class AssetsApiController : ControllerBase
             if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm.Contains(etagCached))
                 return StatusCode(304);
 
-            Response.Headers.ETag = etagCached;
+            Response.Headers["ETag"] = etagCached;
             return Ok(cached);
         }
 
@@ -411,7 +408,7 @@ public class AssetsApiController : ControllerBase
         });
 
         var pageEtag = $"W/\"{total}-{items.FirstOrDefault()?.Tag}-{items.LastOrDefault()?.Tag}\"";
-        Response.Headers.ETag = pageEtag;
+        Response.Headers["ETag"] = pageEtag;
 
         return Ok(payload);
     }
@@ -549,7 +546,7 @@ public class AssetsApiController : ControllerBase
                 var etagHw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
                 if (Request.Headers.TryGetValue("If-None-Match", out var inmHw) && inmHw.Contains(etagHw))
                     return StatusCode(304);
-                Response.Headers.ETag = etagHw;
+                Response.Headers["ETag"] = etagHw;
                 return Ok(dto);
             }
         }
@@ -627,7 +624,7 @@ public class AssetsApiController : ControllerBase
                 var etagSw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
                 if (Request.Headers.TryGetValue("If-None-Match", out var inmSw) && inmSw.Contains(etagSw))
                     return StatusCode(304);
-                Response.Headers.ETag = etagSw;
+                Response.Headers["ETag"] = etagSw;
                 return Ok(dto);
             }
         }
@@ -657,14 +654,31 @@ public class AssetsApiController : ControllerBase
             }
         }
 
-        // Normal resolution from claims
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
-        var emp = User.FindFirstValue("employeeNumber");
+        // Normal resolution from claims (OID → Email/Emp# fallback)
+        // 1) Try AAD Object ID (Graph Object ID)
+        var oid = User.FindFirst("oid")?.Value
+            ?? User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
 
-        var me = await _db.Users.AsNoTracking()
-            .FirstOrDefaultAsync(u =>
-                (!string.IsNullOrEmpty(email) && u.Email == email) ||
-                (!string.IsNullOrEmpty(emp) && u.EmployeeNumber == emp), ct);
+        AIMS.Models.User? me = null;
+        if (!string.IsNullOrWhiteSpace(oid))
+        {
+            me = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.GraphObjectID == oid, ct);
+        }
+
+        // 2) Fallback to Email or Employee Number
+        if (me is null)
+        {
+            var email = User.FindFirst("preferred_username")?.Value
+                        ?? User.FindFirstValue(ClaimTypes.Email)
+                        ?? User.Identity?.Name;
+            var emp = User.FindFirstValue("employeeNumber");
+
+            me = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u =>
+                    (!string.IsNullOrEmpty(email) && u.Email == email) ||
+                    (!string.IsNullOrEmpty(emp) && u.EmployeeNumber == emp), ct);
+        }
 
         if (me is null) return (null, null);
 

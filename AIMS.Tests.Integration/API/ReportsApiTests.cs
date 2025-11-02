@@ -149,19 +149,52 @@ public class ReportsApiTests
 
     private async Task<User> GetRandomUser()
     {
-        using (var scope = _factory.Services.CreateScope())
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
+
+        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync();
+        if (user is not null) return user;
+
+        // ensure ther is at least one Role
+        var role = await db.Roles.FirstOrDefaultAsync();
+        if (role is null)
         {
-            var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
-            return await db.Users.Take<User>(1).FirstAsync();
+            role = new Role { RoleName = "TestAdmin", Description = "Role for Integration Tests" };
+            db.Roles.Add(role);
+            await db.SaveChangesAsync();
         }
+
+        user = new User
+        {
+            Email = $"itest+{Guid.NewGuid():N}@local",
+            FullName = "Integration Test User",
+            EmployeeNumber = "ITEST-001",
+            ExternalId = Guid.NewGuid(),
+            GraphObjectID = Guid.NewGuid().ToString("D"),
+            IsActive = true,
+            IsArchived = false,
+            RoleID = role.RoleID,
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user;
     }
     private async Task<Office> GetRandomOffice()
     {
-        using (var scope = _factory.Services.CreateScope())
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
+
+        var office = await db.Offices.AsNoTracking().FirstOrDefaultAsync();
+        if (office is not null) return office;
+
+        office = new Office
         {
-            var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
-            return await db.Offices.Take<Office>(1).FirstAsync();
-        }
+            OfficeName = "Integration Test Office",
+            Location = "Test Location"
+        };
+        db.Offices.Add(office);
+        await db.SaveChangesAsync();
+        return office;
     }
 
 

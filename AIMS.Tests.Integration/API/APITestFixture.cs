@@ -1,15 +1,17 @@
 using AIMS.Tests.Integration;
 
-public class APiTestFixture : IAsyncLifetime, ICollectionFixture<APiTestFixture>
+public sealed class APiTestFixture : IAsyncLifetime, ICollectionFixture<APiTestFixture>
 {
-    public APIWebApplicationFactory<Program> _webFactory { get; private set; }
-    public DbTestHarness _harness { get; private set; }
+    public APIWebApplicationFactory<Program> _webFactory { get; private set; } = default!;
+    public DbTestHarness _harness { get; private set; } = default!;
 
     public async Task InitializeAsync()
     {
         // First, set up the external resource
-        _harness = new DbTestHarness();
-        _harness.AutoDelete = false;
+        _harness = new DbTestHarness()
+        {
+            AutoDelete = false
+        };
         await _harness.InitializeAsync();
 
         // Then, set up the WebApplicationFactory using the resource's state
@@ -19,10 +21,12 @@ public class APiTestFixture : IAsyncLifetime, ICollectionFixture<APiTestFixture>
 
     public async Task DisposeAsync()
     {
-        // Dispose the WebApplicationFactory first
-        await _webFactory.DisposeAsync();
+        // Dispose the WebApplicationFactory first (guard in case init failed)
+        if (_webFactory is not null)
+            await _webFactory.DisposeAsync();
 
         // Then, dispose the external resource
-        await _harness.DisposeAsync();
+        if (_harness is not null)
+            await _harness.DisposeAsync();
     }
 }

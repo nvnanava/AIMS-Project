@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -71,10 +68,15 @@ namespace AIMS.Services
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
-                user = await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GraphObjectID == graphObjectId, ct);
-
+                // Another writer beat us; fetch the row that now exists
+                user = await _db.Users
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.GraphObjectID == graphObjectId, ct);
             }
-
+            // Guarantee non-null on all exit paths to satisfy the non-nullable return type
+            if (user == null)
+                throw new InvalidOperationException(
+                    $"Upsert failed: user with Graph ID '{graphObjectId}' was not found after save.");
 
             return user;
         }

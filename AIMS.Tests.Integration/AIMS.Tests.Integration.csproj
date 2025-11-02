@@ -32,7 +32,7 @@
     <!-- Test helpers -->
     <PackageReference Include="FluentAssertions" Version="8.6.0" PrivateAssets="all" />
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.2" />
 
     <!-- Web/EF bits used by integration tests -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.9" />
