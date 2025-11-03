@@ -22,9 +22,9 @@
 21,H-1021,Canon PIXMA G3270,Printer,Marked for Survey,Canon,G3270,SN-CAN-21,12/20/25,12/20/22,Marked for physical inspection,FALSE
 22,H-1022,MacBook Air M2,Laptop,Available,Apple,M2 Air,SN-MBA-M2-22,2/1/28,2/1/24,Available in IT storage,FALSE
 23,H-1023,Dell Latitude 5540,Laptop,Available,Dell,Latitude 5540,SN-DL-5540-23,7/15/28,7/15/24,Available backup for replacement,FALSE
-24,H-1024,Lenovo Dock Gen 2,Docking Station,In Use,Lenovo,Dock Gen 2,SN-LD-24,10/10/27,10/10/23,Assigned dock to Niyant Nanavati,FALSE
-25,H-1025,Logitech MX Keys Keyboard,Peripheral,In Use,Logitech,MX Keys,SN-MXK-25,3/15/27,3/15/24,Assigned keyboard to Cameron Lanzaro,FALSE
-26,H-1026,HP Z27q Monitor,Monitor,In Use,HP,Z27q,SN-Z27Q-26,9/12/27,9/12/23,Assigned monitor to Akal-Ustat Singh,FALSE
+24,H-1024,Lenovo Dock Gen 2,Docking Station,Assigned,Lenovo,Dock Gen 2,SN-LD-24,10/10/27,10/10/23,Assigned dock to Niyant Nanavati,FALSE
+25,H-1025,Logitech MX Keys Keyboard,Peripheral,Assigned,Logitech,MX Keys,SN-MXK-25,3/15/27,3/15/24,Assigned keyboard to Cameron Lanzaro,FALSE
+26,H-1026,HP Z27q Monitor,Monitor,Assigned,HP,Z27q,SN-Z27Q-26,9/12/27,9/12/23,Assigned monitor to Akal-Ustat Singh,FALSE
 27,H-1027,Mac Studio,Mini Workstation,Assigned,Apple,M1 Ultra,SN-MS-27,2/20/29,2/20/24,Assigned Mac Studio to Tyler Burguillos,FALSE
 28,H-1028,Dell Precision 5680,Laptop,In Repair,Dell,Precision 5680,SN-DP-28,6/5/27,6/5/23,Device sent to depot for display issue,FALSE
 29,H-1029,Samsung Galaxy Tab S9,Tablet,Assigned,Samsung,Tab S9,SN-TAB-S9-29,5/25/28,5/25/24,Assigned tablet to Isabella Rossi,FALSE
