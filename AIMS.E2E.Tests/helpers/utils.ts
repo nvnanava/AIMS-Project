@@ -31,7 +31,7 @@ export const isoMinutesAgo = (mins: number): string =>
     new Date(Date.now() - mins * 60_000).toISOString();
 
 //
-// ---------- Internal helpers (ID discovery) ----------
+// ---------- Internal helpers (ID discovery) with retries ----------
 //
 
 type Any = Record<string, any>;
@@ -59,54 +59,92 @@ async function safeJson<T = any>(call: () => Promise<APIResponse>): Promise<T | 
     }
 }
 
-// Fetch a single valid UserID from /api/diag/users.
-async function getAnyUserId(request: APIRequestContext): Promise<number> {
-    const data = await safeJson<any>(() =>
-        request.get('/api/diag/users', { headers: { Accept: 'application/json' } })
-    );
-
-    const rows: Any[] = Array.isArray(data)
+function rowsFrom(data: Any | null): Any[] {
+    return Array.isArray(data)
         ? data
-        : Array.isArray((data as Any)?.items)
-            ? (data as Any).items
-            : Array.isArray((data as Any)?.data)
-                ? (data as Any).data
+        : Array.isArray(data?.items)
+            ? data!.items
+            : Array.isArray(data?.data)
+                ? data!.data
                 : [];
-
-    for (const r of rows) {
-        const id = pickNumber(r, 'UserID', 'userID', 'userId', 'id');
-        if (id) return id;
-    }
-
-    throw new Error(
-        'E2E setup error: could not find a valid UserID from /api/diag/users. ' +
-        'Ensure that endpoint returns at least one user with a numeric ID.'
-    );
 }
 
-// Fetch a single valid HardwareID from /api/hardware/get-all.
-async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
-    const data = await safeJson<any>(() =>
-        request.get('/api/hardware/get-all', { headers: { Accept: 'application/json' } })
-    );
-
-    const rows: Any[] = Array.isArray(data)
-        ? data
-        : Array.isArray((data as Any)?.items)
-            ? (data as Any).items
-            : Array.isArray((data as Any)?.data)
-                ? (data as Any).data
-                : [];
-
+function pickFirstNumberRowId(rows: Any[], ...keys: string[]): number | null {
     for (const r of rows) {
-        const id = pickNumber(r, 'HardwareID', 'hardwareID', 'hardwareId', 'id');
+        const id = pickNumber(r, ...keys);
         if (id) return id;
     }
+    return null;
+}
 
-    throw new Error(
-        'E2E setup error: could not find a valid HardwareID from /api/hardware/get-all. ' +
-        'Ensure that endpoint returns at least one hardware asset with a numeric ID.'
+async function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+async function retryUntil<T>(
+    op: () => Promise<T | null>,
+    ok: (t: T | null) => boolean,
+    attempts = 40,          // ~10s @ 250ms
+    delayMs = 250,
+    label = 'retryUntil'
+): Promise<T> {
+    for (let i = 1; i <= attempts; i++) {
+        const val = await op();
+        if (ok(val)) return val as T;
+        if (i % 5 === 0) console.warn(`[${label}] attempt ${i}/${attempts}…`);
+        await sleep(delayMs);
+    }
+    throw new Error(`[${label}] timed out after ${attempts * delayMs}ms`);
+}
+
+// Fetch a single valid UserID with retries + endpoint fallbacks.
+async function getAnyUserId(request: APIRequestContext): Promise<number> {
+    const endpoints = ['/api/diag/users', '/api/users', '/api/users/get-all'];
+
+    const id = await retryUntil<number | null>(
+        async () => {
+            for (const ep of endpoints) {
+                const data = await safeJson<any>(() =>
+                    request.get(ep, { headers: { Accept: 'application/json' } })
+                );
+                const rows = rowsFrom(data);
+                const id = pickFirstNumberRowId(rows, 'UserID', 'userID', 'userId', 'id');
+                if (id) return id;
+            }
+            return null;
+        },
+        (v) => typeof v === 'number' && v > 0,
+        40,
+        250,
+        'getAnyUserId'
     );
+
+    return id!;
+}
+
+// Fetch a single valid HardwareID with retries + endpoint fallbacks.
+async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
+    const endpoints = ['/api/hardware/get-all', '/api/diag/hardware', '/api/hardware'];
+
+    const id = await retryUntil<number | null>(
+        async () => {
+            for (const ep of endpoints) {
+                const data = await safeJson<any>(() =>
+                    request.get(ep, { headers: { Accept: 'application/json' } })
+                );
+                const rows = rowsFrom(data);
+                const id = pickFirstNumberRowId(rows, 'HardwareID', 'hardwareID', 'hardwareId', 'id');
+                if (id) return id;
+            }
+            return null;
+        },
+        (v) => typeof v === 'number' && v > 0,
+        40,
+        250,
+        'getAnyHardwareId'
+    );
+
+    return id!;
 }
 
 // Optional validators to avoid 400s
@@ -114,28 +152,16 @@ async function isValidUserId(request: APIRequestContext, id: number): Promise<bo
     if (!id) return false;
     const res = await request.get('/api/diag/users', { headers: { Accept: 'application/json' } });
     const data = (await res.json().catch(() => null)) as Any | null;
-    const rows: Any[] = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.items)
-            ? data!.items
-            : Array.isArray(data?.data)
-                ? data!.data
-                : [];
-    return rows.some(r => pickNumber(r, 'UserID', 'userID', 'userId', 'id') === id);
+    const rows: Any[] = rowsFrom(data);
+    return rows.some((r) => pickNumber(r, 'UserID', 'userID', 'userId', 'id') === id);
 }
 
 async function isValidHardwareId(request: APIRequestContext, id: number): Promise<boolean> {
     if (!id) return false;
     const res = await request.get('/api/hardware/get-all', { headers: { Accept: 'application/json' } });
     const data = (await res.json().catch(() => null)) as Any | null;
-    const rows: Any[] = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.items)
-            ? data!.items
-            : Array.isArray(data?.data)
-                ? data!.data
-                : [];
-    return rows.some(r => pickNumber(r, 'HardwareID', 'hardwareID', 'hardwareId', 'id') === id);
+    const rows: Any[] = rowsFrom(data);
+    return rows.some((r) => pickNumber(r, 'HardwareID', 'hardwareID', 'hardwareId', 'id') === id);
 }
 
 //
@@ -167,7 +193,7 @@ export async function createAudit(
         externalId?: string;
     }> = {}
 ): Promise<APIResponse> {
-    // Prefer explicit param → env/cache (validated) → discovery
+    // Prefer explicit param → env/cache (validated) → discovery (with retries)
     let resolvedUserId =
         userId ??
         (await (async () =>
