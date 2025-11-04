@@ -22,14 +22,16 @@ services:
       # --- Secrets-first path ---
       AzureAd__ClientSecretFile: ${AZUREAD_CLIENT_SECRET_FILE}
 
-      # Seed toggle
-      AllowProdSeed: "${ALLOW_PROD_SEED}"
+      # --- Seeder controls ---
+      AIMS_SEED_MODE: ${AIMS_SEED_MODE:-basic}
+      AIMS_SEED_DIR: ${AIMS_SEED_DIR:-/src/seed}
+      AIMS_ALLOW_PROD_SEED: ${AIMS_ALLOW_PROD_SEED:-false}
 
     secrets:
       - azuread_client_secret
     depends_on:
       sqlserver-prod:
-        condition: service_started
+        condition: service_healthy
     networks:
       - new-bridge-net
 
@@ -47,11 +49,16 @@ services:
     restart: unless-stopped
     networks:
       - new-bridge-net
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${SA_PASSWORD}\" -No -Q \"SELECT 1\" -C" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 45s
 
 secrets:
   azuread_client_secret:
-    # In CI/infra, point this to our managed secret file;
-    # local prod testing can reuse dev’s path or a different one.
+    # In CI/infra, point this to a managed secret file.
     file: ./secrets/azuread_client_secret.txt
 
 networks:

@@ -361,8 +361,8 @@
             makeTD(userTxt),
             makeTD(evt.type || "—"),
             makeTD(evt.target || "—"),
-            makeTD(""), // prev
-            makeTD(""), // new
+            makeTD(evt.prevValue || ""),     // ← was ""
+            makeTD(evt.newValue || ""),     // ← was ""
             makeTD(evt.details || "")
         ]);
 

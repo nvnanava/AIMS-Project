@@ -25,6 +25,29 @@ rm -rf ./AIMS/bin ./AIMS/obj 2>/dev/null || true
 
 ENV=${1:-dev}
 
+# ---- Seed flags (shared) ----
+SEED_MODE="basic"       # basic | csv | merge
+SEED_DIR="./seed"
+ALLOW_PROD_SEED="false"
+
+# consume extra args/flags (skip the positional we already took)
+shift || true  # in build_containers.sh (we already consumed $1=ENV)
+# in db_ready.sh we consumed ENV + ACTION (+ optional HARD_FLAG), so:
+# shift 2 || true; [ -n "$HARD_FLAG" ] && shift || true
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --seed-mode)   SEED_MODE="${2:-$SEED_MODE}"; shift 2;;
+    --seed-dir)    SEED_DIR="${2:-$SEED_DIR}";   shift 2;;
+    --allow-prod-seed) ALLOW_PROD_SEED="true";   shift;;
+    *) break;;
+  esac
+done
+
+export AIMS_SEED_MODE="$SEED_MODE"
+export AIMS_SEED_DIR="$SEED_DIR"
+export AIMS_ALLOW_PROD_SEED="$ALLOW_PROD_SEED"
+
 # Choose compose file + service names
 if [ "$ENV" = "prod" ]; then
   echo "Starting production containers..."
@@ -94,6 +117,10 @@ if [ "$ENV" != "prod" ]; then
         dotnet build -c Debug /p:UseSharedCompilation=false
       fi
       export DOTNET_ENVIRONMENT='${DOTNET_ENV}'
+      export AIMS_SEED_MODE='${SEED_MODE}'
+      export AIMS_SEED_DIR='${SEED_DIR}'
+      export AIMS_ALLOW_PROD_SEED='${ALLOW_PROD_SEED}'
+      
       dotnet ef database update -c AimsDbContext --no-build
     "
     echo "EF migrations completed."

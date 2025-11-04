@@ -391,7 +391,7 @@ namespace AIMS.UnitTests.Controllers
             ctrl.ControllerContext.HttpContext.Request.QueryString = new QueryString("?take=-10");
             var res1 = await ctrl.GetEventsSince(DateTime.UtcNow.AddHours(-3).ToString("O"), CancellationToken.None) as OkObjectResult;
             var page1 = GetProp<IEnumerable<AuditEventDto>>(res1!.Value!, "items").ToList();
-            Assert.Equal(1, page1.Count);
+            Assert.Single(page1);
 
             // take=999 -> clamp to 200 (dataset smaller)
             ctrl.ControllerContext.HttpContext = new DefaultHttpContext();
@@ -475,7 +475,7 @@ namespace AIMS.UnitTests.Controllers
             var page = GetProp<IEnumerable<AuditEventDto>>(res!.Value!, "items").ToList();
 
             // Dedupe: only one "Update" (newest wins)
-            Assert.Single(page.Where(i => i.Type == "Update"));
+            Assert.Single(page, i => i.Type == "Update");
             Assert.Contains(page, i => i.Details == "newer-update");
             Assert.DoesNotContain(page, i => i.Details == "older-update");
 
@@ -552,7 +552,7 @@ namespace AIMS.UnitTests.Controllers
             var ok = await ctrl.GetEventsSince(DateTime.UtcNow.AddHours(-3).ToString("O"), CancellationToken.None) as OkObjectResult;
             var page = GetProp<IEnumerable<AuditEventDto>>(ok!.Value!, "items").ToList();
 
-            var ev = Assert.Single(page.Where(i => i.Type == "SoftIdNoExt"));
+            var ev = Assert.Single(page, i => i.Type == "SoftIdNoExt");
             Assert.Equal("Software#222", ev.Target);
             Assert.Equal("50", ev.Id);
         }
@@ -689,7 +689,7 @@ namespace AIMS.UnitTests.Controllers
             ctrl.ControllerContext.HttpContext.Request.QueryString = new QueryString("?take=-5");
             var ok1 = await ctrl.GetLatest(CancellationToken.None) as OkObjectResult;
             var items1 = GetProp<IEnumerable<AuditEventDto>>(ok1!.Value!, "items").ToList();
-            Assert.Equal(1, items1.Count);
+            Assert.Single(items1);
 
             // take=999 => clamp to 200 (but our dataset is smaller; just assert >= 2)
             ctrl.ControllerContext.HttpContext = new DefaultHttpContext();
@@ -740,7 +740,7 @@ namespace AIMS.UnitTests.Controllers
                 UserID = 42,
                 UserName = "Unit Tester",
                 Action = "NullDesc",
-                Description = null,                       // <-- forces the ?? "" branch
+                Description = null!,                       // <-- forces the ?? "" branch
                 AssetKind = AssetKind.Hardware,
                 HardwareID = null,
                 SoftwareID = null

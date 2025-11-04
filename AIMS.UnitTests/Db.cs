@@ -25,7 +25,7 @@ public static class Db
             .EnableSensitiveDataLogging()
             .Options;
 
-        var db = new AimsDbContext(options);
+        var db = new TestAimsDbContext(options);
         await db.Database.EnsureCreatedAsync();
         return (db, conn);
     }

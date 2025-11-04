@@ -93,9 +93,9 @@ namespace AIMS.Migrations
                         .IsUnique()
                         .HasFilter("[HardwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
 
-                    b.HasIndex("SoftwareID", "UnassignedAtUtc")
+                    b.HasIndex("SoftwareID", "UserID", "UnassignedAtUtc")
                         .IsUnique()
-                        .HasFilter("[SoftwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
+                        .HasFilter("[SoftwareID] IS NOT NULL AND [UserID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
 
                     b.ToTable("Assignments", "dbo", t =>
                         {

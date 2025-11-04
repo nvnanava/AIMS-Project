@@ -11,7 +11,7 @@ namespace AIMS.UnitTests
     public class SoftwareBulkEndpointTests
     {
         // Helper to create a SoftwareController with in-memory DB
-        private SoftwareController CreateControllerWithDb(string dbName, List<Software> seedSoftware = null)
+        private SoftwareController CreateControllerWithDb(string dbName, List<Software>? seedSoftware = null)
         {
             var options = new DbContextOptionsBuilder<AimsDbContext>()
                 .UseInMemoryDatabase(databaseName: dbName)
@@ -33,9 +33,10 @@ namespace AIMS.UnitTests
         public async Task AddBulkSoftware_ReturnsBadRequest_WhenNullList()
         {
             var controller = CreateControllerWithDb(Guid.NewGuid().ToString());
-            List<CreateSoftwareDto> dtos = null;
+            List<CreateSoftwareDto>? dtos = null;
 
-            var result = await controller.AddBulkSoftware(dtos);
+            // Explicity cast to match the controller signature
+            var result = await controller.AddBulkSoftware(dtos!);
             Assert.IsType<BadRequestObjectResult>(result);
         }
 
