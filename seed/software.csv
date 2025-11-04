@@ -1,0 +1,34 @@
+﻿SoftwareID,SoftwareName,SoftwareType,SoftwareVersion,SoftwareLicenseKey,SoftwareLicenseExpiration,SoftwareUsageData,SoftwareCost,LicenseTotalSeats,LicenseSeatsUsed,Comment,IsArchived
+1,Microsoft 365,Software,2024,M365-LIC-001,12/31/26,150,240,100,72,Assigned Microsoft 365 to Adam Lopez,FALSE
+2,Adobe Creative Cloud,Software,2024,ADOBE-LIC-002,6/15/25,80,420,50,38,Assigned Adobe Creative Cloud to Megan Tran,FALSE
+3,AutoCAD LT,Software,2023,AUTOCAD-003,9/1/26,40,990,20,17,Assigned AutoCAD LT to Ryan Kim,FALSE
+4,Zoom Pro,Software,2024,ZOOM-004,3/30/25,300,120,200,156,Assigned Zoom Pro to Taylor Johnson,FALSE
+5,Tableau Desktop,Software,2024,TBL-005,2/1/26,65,700,25,20,Assigned Tableau Desktop to Sophia Patel,FALSE
+6,Slack Standard,Software,2024,SLACK-006,12/31/25,500,96,400,240,Assigned Slack to Olivia Chen,FALSE
+7,Visual Studio Pro,Software,2022,VS-PRO-007,1/1/27,120,539,40,23,Assigned Visual Studio Pro to Ethan Clark,FALSE
+8,JetBrains IntelliJ IDEA,Software,2024,IntelliJ-008,2/1/27,60,499,30,12,Assigned IntelliJ IDEA to Emma Garcia,FALSE
+9,QuickBooks Online,Software,2024,QB-009,8/15/26,90,360,35,16,Assigned QuickBooks Online to Adam Lopez,FALSE
+10,OneDrive Storage 1TB,Software,2024,OD-1TB-010,12/31/26,900,60,300,210,Assigned OneDrive 1TB license to Megan Tran,FALSE
+11,GitHub Enterprise,Software,2024,GHE-011,10/10/26,400,252,150,104,Assigned GitHub Enterprise seat to Ryan Kim,FALSE
+12,Zoom Rooms,Software,2024,ZROOM-012,11/30/25,50,499,10,7,Assigned Zoom Rooms to San Jose room controller,FALSE
+13,Microsoft Visio Pro,Software,2024,VISIO-013,5/1/27,45,280,40,32,Assigned Visio Pro to Ava Martinez,FALSE
+14,Microsoft Project Professional,Software,2023,PROJ-014,11/20/26,70,360,50,28,Assigned Project Professional to Niyant Nanavati,FALSE
+15,VMware Workstation Pro,Software,2024,VMW-015,3/25/27,30,249,20,15,Assigned VMware Workstation Pro to Akal-Ustat Singh,FALSE
+16,PyCharm Professional,Software,2024,PYCH-016,4/10/27,25,199,25,10,Assigned PyCharm Pro to Tyler Burguillos,FALSE
+17,Notion Plus,Software,2024,NOTION-017,12/31/26,300,96,200,130,Assigned Notion Plus to Keerat Khandpur,FALSE
+18,Figma Professional,Software,2024,FIGMA-018,7/1/26,210,180,100,72,Assigned Figma Pro to Cameron Lanzaro,FALSE
+19,Microsoft Power BI,Software,2024,PBI-019,9/10/26,80,120,50,37,Assigned Power BI to Norin Phlong,FALSE
+20,Zoom Webinar,Software,2024,ZWEB-020,10/30/25,30,299,20,12,Assigned Zoom Webinar to Supervisor Team,FALSE
+21,Autodesk Revit,Software,2024,REVT-021,1/12/27,15,1520,10,7,Assigned Autodesk Revit to Taylor Johnson,FALSE
+22,Jira Software Cloud,Software,2024,JIRA-022,6/15/26,260,105,150,94,Assigned Jira Cloud to Suhail Najimudeen,FALSE
+23,Confluence Standard,Software,2024,CONF-023,6/15/26,130,90,100,62,Assigned Confluence Standard to Harpreet Kaur,FALSE
+24,Microsoft Teams,Software,2024,TEAMS-024,12/31/26,700,50,500,310,Assigned Microsoft Teams to all active users,FALSE
+25,Docker Desktop,Software,2024,DOCK-025,1/15/27,75,150,40,26,Assigned Docker Desktop to Emma Garcia,FALSE
+26,Zoom Basic,Software,2024,ZBSC-026,12/1/25,500,0,300,280,Default free Zoom Basic seats,FALSE
+27,Adobe Photoshop Elements,Software,2023,PSE-027,9/15/26,55,100,40,22,Assigned Photoshop Elements to Adam Lopez,FALSE
+28,Windows 11 Enterprise,Software,2024,WIN11-028,1/1/28,1200,250,500,340,Assigned Windows 11 Enterprise licenses to active devices,FALSE
+29,Apple Logic Pro,Software,2024,LOGIC-029,4/1/27,35,200,25,12,Assigned Logic Pro to Isabella Rossi,FALSE
+30,Adobe Premiere Pro,Software,2024,PRM-030,8/1/26,50,420,30,19,Assigned Premiere Pro to Niyant Supervisor,FALSE
+31,Norton 360 Endpoint Security,Software,2024,NORT-031,7/15/27,600,75,400,255,Assigned Norton 360 licenses to all workstations,FALSE
+32,Cisco AnyConnect VPN,Software,2023,CISCO-VPN-032,5/5/26,480,90,250,190,Assigned Cisco VPN to remote employees,FALSE
+33,Microsoft Office 2016 Legacy,Software,2016,OFF16-033,12/31/22,100,120,50,50,Replaced legacy Office 2016 license,TRUE

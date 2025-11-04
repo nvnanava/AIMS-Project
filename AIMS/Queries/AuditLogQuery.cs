@@ -152,9 +152,16 @@ namespace AIMS.Queries
                      (kind == AssetKind.Software && a.SoftwareID == assetId)))
                 .OrderByDescending(a => a.TimestampUtc)
                 .Take(take)
-                .Select(ProjectRecentDto())
+                .Select(ProjectFullDto())
                 .ToListAsync(ct);
         }
+        public async Task<List<GetAuditRecordDto>> GetEventsWindowAsync(DateTime sinceUtc, int take, CancellationToken ct = default)
+            => await _db.AuditLogs.AsNoTracking()
+                .Where(a => a.TimestampUtc > sinceUtc)
+                .OrderByDescending(a => a.TimestampUtc)
+                .Take(take)
+                .Select(ProjectFullDto())
+                .ToListAsync(ct);
 
         #endregion
 
@@ -218,14 +225,20 @@ namespace AIMS.Queries
             SoftwareID = a.SoftwareID,
             HardwareName = a.HardwareAsset != null ? a.HardwareAsset.AssetName : null,
             SoftwareName = a.SoftwareAsset != null ? a.SoftwareAsset.SoftwareName : null,
-            Changes = a.Changes.OrderBy(c => c.AuditLogChangeID)
-                .Select(c => new AuditLogChangeDto
-                {
-                    AuditLogChangeID = c.AuditLogChangeID,
-                    Field = c.Field,
-                    OldValue = c.OldValue,
-                    NewValue = c.NewValue
-                }).ToList()
+            SnapshotJson = a.SnapshotBytes != null ? Encoding.UTF8.GetString(a.SnapshotBytes) : null,
+            HasAttachment = a.AttachmentBytes != null && a.AttachmentBytes.Length > 0,
+            AttachmentContentType = a.AttachmentContentType,
+
+            Changes = a.Changes
+        .OrderBy(c => c.AuditLogChangeID)
+        .Select(c => new AuditLogChangeDto
+        {
+            AuditLogChangeID = c.AuditLogChangeID,
+            Field = c.Field,
+            OldValue = c.OldValue,
+            NewValue = c.NewValue
+        }).ToList()
+
         };
 
         private static Expression<Func<AuditLog, GetAuditRecordDto>> ProjectRecentDto() => a => new GetAuditRecordDto
@@ -494,6 +507,11 @@ namespace AIMS.Queries
                 .Select(u => u.FullName)
                 .FirstOrDefaultAsync(ct);
 
+            var last = await _db.AuditLogChanges.AsNoTracking()
+                .Where(c => c.AuditLogID == log.AuditLogID)
+                .OrderBy(c => c.AuditLogChangeID)
+                .LastOrDefaultAsync(ct);
+
             return new AIMS.Contracts.AuditEventDto
             {
                 Id = (log.ExternalId != Guid.Empty ? log.ExternalId.ToString() : log.AuditLogID.ToString()),
@@ -504,6 +522,9 @@ namespace AIMS.Queries
                     ? (log.HardwareID.HasValue ? $"Hardware#{log.HardwareID}" : "Hardware")
                     : (log.SoftwareID.HasValue ? $"Software#{log.SoftwareID}" : "Software"),
                 Details = log.Description ?? "",
+                ChangeField = last?.Field,
+                PrevValue = last?.OldValue,
+                NewValue = last?.NewValue,
                 Hash = ComputeEventHash(log)
             };
         }

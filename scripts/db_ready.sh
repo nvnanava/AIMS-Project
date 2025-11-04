@@ -34,6 +34,28 @@ ENV="${1:-dev}"        # dev | prod
 ACTION="${2:-ensure}"  # ensure | reseed
 HARD_FLAG="${3:-}"     # optional: --hard | hard | --volumes | -v
 
+# ---- Seed flags (shared) ----
+SEED_MODE="basic"
+SEED_DIR="./seed"
+ALLOW_PROD_SEED="false"
+
+# We've already parsed: ENV ACTION HARD_FLAG
+# So start consuming from $4 onward:
+shift 3 || true
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --seed-mode)   SEED_MODE="${2:-$SEED_MODE}"; shift 2;;
+    --seed-dir)    SEED_DIR="${2:-$SEED_DIR}";   shift 2;;
+    --allow-prod-seed) ALLOW_PROD_SEED="true";   shift;;
+    *) break;;
+  esac
+done
+
+export AIMS_SEED_MODE="$SEED_MODE"
+export AIMS_SEED_DIR="$SEED_DIR"
+export AIMS_ALLOW_PROD_SEED="$ALLOW_PROD_SEED"
+
 # Compose command
 if docker compose version >/dev/null 2>&1; then
   COMPOSE=(docker compose)
@@ -128,6 +150,9 @@ if [[ "$ENV" != "prod" ]]; then
     fi
 
     export DOTNET_ENVIRONMENT='${DOTNET_ENV}'
+    export AIMS_SEED_MODE='${SEED_MODE}'
+    export AIMS_SEED_DIR='${SEED_DIR}'
+    export AIMS_ALLOW_PROD_SEED='${ALLOW_PROD_SEED}'
 
     # If there are no migrations yet, scaffold the baseline one.
     if ! dotnet ef migrations list -c AimsDbContext --no-build 2>/dev/null | grep -Eq '^[0-9]{14}_.+'; then

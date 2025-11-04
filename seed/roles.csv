@@ -1,0 +1,5 @@
+﻿RoleID,RoleName,Description
+1,Admin,Full access to all modules
+2,IT Help Desk,"IT staff, no admin actions"
+3,Supervisor,Manages direct reports and their assets
+4,Employee,Standard user

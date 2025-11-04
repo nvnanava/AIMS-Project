@@ -166,10 +166,10 @@ namespace AIMS.Data
                 .HasFilter("[HardwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
                 .IsUnique();
 
-            // At most ONE active assignment per software asset
+            // At most ONE active assignment per (SoftwareID, UserID) (allows multi-seat)
             modelBuilder.Entity<Assignment>()
-                .HasIndex(a => new { a.SoftwareID, a.UnassignedAtUtc })
-                .HasFilter("[SoftwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
+                .HasIndex(a => new { a.SoftwareID, a.UserID, a.UnassignedAtUtc })
+                .HasFilter("[SoftwareID] IS NOT NULL AND [UserID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
                 .IsUnique();
 
             // Exactly one of (HardwareID, SoftwareID) must be set and match AssetKind

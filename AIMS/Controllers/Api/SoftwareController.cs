@@ -186,7 +186,7 @@ public class SoftwareController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddBulkSoftware([FromBody] List<CreateSoftwareDto> dtos, CancellationToken ct = default)
     {
-        //check empty lists
+        // check empty lists
         if (dtos == null || dtos.Count == 0)
         {
             ModelState.AddModelError("Dtos", "Input list cannot be empty.");
@@ -196,8 +196,10 @@ public class SoftwareController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        //collecting error messages to send back to client
+        // collecting error messages to send back to client
         var errors = new Dictionary<int, List<string>>();
+        // Use UTC 'today' to avoid local timezone edge cases
+        var todayUtc = DateOnly.FromDateTime(DateTime.UtcNow);
 
         // Validate each DTO in the list
         for (int i = 0; i < dtos.Count; i++)
@@ -228,7 +230,11 @@ public class SoftwareController : ControllerBase
                 itemErrors.Add("Software cost cannot be negative.");
             }
 
-            // Removed "expiration not in the past" here to avoid timezone false positives
+            // expiration must not be in the past (use UTC date only)
+            if (dto.SoftwareLicenseExpiration is DateOnly exp && exp < todayUtc)
+            {
+                itemErrors.Add("Software license expiration cannot be in the past.");
+            }
 
             if (itemErrors.Count > 0)
             {
@@ -243,13 +249,16 @@ public class SoftwareController : ControllerBase
 
         var newSoftwareAssets = dtos.Select(dto => new Software
         {
-            SoftwareName = dto.SoftwareName,
-            SoftwareVersion = dto.SoftwareVersion,
-            SoftwareLicenseKey = dto.SoftwareLicenseKey,
+            SoftwareName = dto.SoftwareName.Trim(),
+            SoftwareType = (dto.SoftwareType ?? string.Empty).Trim(),
+            SoftwareVersion = (dto.SoftwareVersion ?? string.Empty).Trim(),
+            SoftwareLicenseKey = dto.SoftwareLicenseKey.Trim(),
             SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration, // accept as provided
             SoftwareUsageData = dto.SoftwareUsageData,
             SoftwareCost = dto.SoftwareCost,
-            Comment = dto.Comment
+            LicenseTotalSeats = dto.LicenseTotalSeats,
+            LicenseSeatsUsed = dto.LicenseSeatsUsed,
+            Comment = (dto.Comment ?? string.Empty).Trim()
         }).ToList();
 
         _db.SoftwareAssets.AddRange(newSoftwareAssets);
