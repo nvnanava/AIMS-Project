@@ -11,6 +11,8 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -61,6 +63,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CanBulkUpload", policy =>
         policy.RequireRole("Admin", "Manager"));
 });
+
 
 // Query/DAO services
 builder.Services.AddScoped<UserQuery>();
@@ -129,7 +132,7 @@ builder.Services.AddScoped<AIMS.Services.IAuditEventBroadcaster, AIMS.Services.A
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", p =>
-        p.WithOrigins("http://localhost:5119")
+        p.WithOrigins("https://localhost:5119", "http://localhost:5119")
          .AllowAnyHeader()
          .AllowAnyMethod()
          .AllowCredentials());
@@ -369,8 +372,10 @@ else
 {
     app.UseExceptionHandler("/error/not-found"); // ensure proper error page
     app.UseHsts();
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection(); commenting out for developement. Uncomment in production.
 }
+
+app.UseHttpsRedirection(); // uses regardless of dev/prod. Delete after development and use above.
 
 // Dev impersonation helper (?impersonate=empIdOrEmail)
 if (app.Environment.IsDevelopment())

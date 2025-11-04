@@ -21,4 +21,4 @@ RUN dotnet restore AIMS/AIMS.csproj --disable-parallel -v minimal
 ENTRYPOINT []
 
 # Run with hot reload and bind to all interfaces for port mapping
-CMD ["dotnet", "watch", "run", "--project", "AIMS/AIMS.csproj", "--urls", "http://0.0.0.0:5119", "--non-interactive"]
+CMD ["dotnet", "watch", "run", "--project", "AIMS/AIMS.csproj", "--urls","https://+:443;http://+:80", "--non-interactive"]
