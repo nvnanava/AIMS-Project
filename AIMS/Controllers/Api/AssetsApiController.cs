@@ -97,6 +97,7 @@ public class AssetsApiController : ControllerBase
         [FromQuery] string scope = "all", // "all" | "my" | "reports"
         [FromQuery] string? impersonate = null,
         [FromQuery] string totalsMode = "lookahead",   // "lookahead" (default) or "exact"
+        [FromQuery] bool showArchived = false,
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
@@ -125,7 +126,7 @@ public class AssetsApiController : ControllerBase
 
         // ---- cache key includes version stamp so it auto-busts after assign/close ----
         var ver = CacheStamp.AssetsVersion;
-        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:tmode{totalsMode}:u{myEmpNumber}";
+        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:tmode{totalsMode}:u{myEmpNumber}:archived={showArchived}";
         if (_cache.TryGetValue<AssetsPagePayloadDto>(key, out var cached))
         {
             var firstTag = cached!.Items.FirstOrDefault()?.Tag ?? string.Empty;
@@ -144,8 +145,15 @@ public class AssetsApiController : ControllerBase
             .Where(a => a.UnassignedAtUtc == null)
             .Select(a => new { a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID, a.AssignedAtUtc });
 
+        IQueryable<Hardware> hwAssets = _db.HardwareAssets.AsNoTracking();
+
+        if (showArchived)
+            hwAssets = hwAssets.IgnoreQueryFilters();
+        else
+            hwAssets = hwAssets.Where(h => !h.IsArchived);
+
         var hardwareBase =
-            from h in _db.HardwareAssets.AsNoTracking()
+            from h in hwAssets
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Hardware)
                 on h.HardwareID equals aa.HardwareID into ha
             from aa in ha.DefaultIfEmpty()
@@ -165,8 +173,15 @@ public class AssetsApiController : ControllerBase
                 TotalSeats = null
             };
 
+        IQueryable<Software> swAssets = _db.SoftwareAssets.AsNoTracking();
+
+        if (showArchived)
+            swAssets = swAssets.IgnoreQueryFilters();
+        else
+            swAssets = swAssets.Where(s => !s.IsArchived);
+
         var softwareBase =
-            from s in _db.SoftwareAssets.AsNoTracking()
+            from s in swAssets
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Software)
                 on s.SoftwareID equals aa.SoftwareID into sa
             from aa in sa.DefaultIfEmpty()

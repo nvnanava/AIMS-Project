@@ -108,7 +108,6 @@ html {
 }
 
 .btn-mint,
-.download-csv-button,
 .new-report-button {
   background-color: #1abc9c !important;
   color: #fff !important;
@@ -120,7 +119,6 @@ html {
 }
 
 .btn-mint:hover,
-.download-csv-button:hover,
 .new-report-button:hover {
   background-color: #17a589 !important;
 }
@@ -177,6 +175,9 @@ html {
   .btn-mint {
     padding: 6px 12px;
     font-size: 0.85rem;
+  .new-report-button {
+    flex: 1 1 auto;
+    text-align: center;
   }
 }
 
