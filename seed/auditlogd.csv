@@ -1,0 +1,13 @@
+﻿externalid,timestamputc,useremail,action,description,assetkind,hardwareid,softwareid
+AL-0001,2025-01-05T18:25:30Z,niyant397@gmail.com,Assign,Assigned Lenovo ThinkPad E16 to Niyant,Hardware,,
+AL-0002,2025-01-05T18:26:00Z,niyant397@gmail.com,Assign,Assigned Dell S2421NX to Niyant,Hardware,,
+AL-0003,2025-01-06T16:02:00Z,niyant397@gmail.com,Assign,Allocated Microsoft 365 seat to Niyant,Software,,
+AL-0004,2025-01-08T17:14:00Z,tnburg@pacbell.net,Assign,Issued MX Keys + MX Master to Ty,Hardware,,
+AL-0005,2025-01-10T15:02:00Z,tnburg@pacbell.net,Assign,Activated Zoom Pro for Ty,Software,,
+AL-0006,2024-12-12T19:06:00Z,jordan.lee@aims.local,Assign,Assigned HP 27f to Jordan,Hardware,,
+AL-0007,2024-12-21T16:02:00Z,alice.kim@aims.local,Assign,Issued Adobe Photoshop to Alice,Software,,
+AL-0008,2025-02-15T17:05:00Z,jordan.lee@aims.local,Unassign,Unassigned Dell Latitude 5440 from Alice,Hardware,,
+AL-0009,2024-12-28T19:12:00Z,dana.patel@aims.local,Assign,Assigned MacBook Air M2 to Dana,Hardware,,
+AL-0010,2025-01-20T18:05:00Z,jordan.lee@aims.local,Update,Set Dana Mac repair status and reclaimed device,Hardware,,
+AL-0011,2025-01-07T17:46:00Z,faith.romero@aims.local,Assign,Assigned Slack to Faith,Software,,
+AL-0012,2025-01-09T17:06:00Z,evan.brooks@aims.local,Assign,Assigned CrowdStrike EDR to Evan,Software,,
