@@ -175,6 +175,8 @@ html {
   .btn-mint {
     padding: 6px 12px;
     font-size: 0.85rem;
+  }
+
   .new-report-button {
     flex: 1 1 auto;
     text-align: center;
@@ -182,16 +184,17 @@ html {
 }
 
 .page-title-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 1rem !important;
 }
 
 .page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--aims-ink, #34495e);
-  margin: 0;
+  font-size: 1.75rem !important;
+  font-weight: 700 !important;
+  color: var(--aims-ink, #34495e) !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
 }
 
