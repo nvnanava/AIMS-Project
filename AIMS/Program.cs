@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -151,7 +153,7 @@ builder.Services.AddScoped<AIMS.Services.IAuditEventBroadcaster, AIMS.Services.A
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost", p =>
-        p.WithOrigins("http://localhost:5119")
+        p.WithOrigins("https://localhost:5119", "http://localhost:5119")
          .AllowAnyHeader()
          .AllowAnyMethod()
          .AllowCredentials());
@@ -594,8 +596,10 @@ else
 {
     app.UseExceptionHandler("/error/not-found");
     app.UseHsts();
-    app.UseHttpsRedirection();
+    //app.UseHttpsRedirection(); commenting out for developement. Uncomment in production.
 }
+
+app.UseHttpsRedirection(); // uses regardless of dev/prod. Delete after development and use above.
 
 // Dev impersonation helper (?impersonate=empIdOrEmail)
 if (app.Environment.IsDevelopment())

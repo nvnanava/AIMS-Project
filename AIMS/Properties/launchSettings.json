@@ -1,24 +1,24 @@
 ﻿{
-    "$schema": "https://json.schemastore.org/launchsettings.json",
-    "profiles": {
-        "AIMS": {
-            "commandName": "Project",
-            "dotnetRunMessages": true,
-            "launchBrowser": true,
-            "applicationUrl": "http://localhost:5119",
-            "environmentVariables": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "AIMS": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5119;http://localhost:5118",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
             }
         },
-        "AIMS (E2E)": {
+"AIMS (E2E)": {
             "commandName": "Project",
             "dotnetRunMessages": true,
             "launchBrowser": false,
-            "applicationUrl": "http://localhost:5119",
+            "applicationUrl": "https://localhost:5119;http://localhost:5118",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "E2E",
                 "ConnectionStrings__DockerConnection": "Server=localhost,1433;Database=AIMS_Test_E2E;User Id=sa;Password=StrongP@ssword!;TrustServerCertificate=True;Encrypt=False"
-            }
-        }
+      }
     }
+  }
 } 
