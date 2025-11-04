@@ -2,6 +2,10 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +13,9 @@ namespace AIMS.Data;
 
 public static class DbSeeder
 {
+    private static bool DebugLogs =>
+        string.Equals(Environment.GetEnvironmentVariable("AIMS_SEED_LOG"), "debug", StringComparison.OrdinalIgnoreCase);
+
     private static bool DebugLogs =>
         string.Equals(Environment.GetEnvironmentVariable("AIMS_SEED_LOG"), "debug", StringComparison.OrdinalIgnoreCase);
 
@@ -25,10 +32,12 @@ public static class DbSeeder
             StringComparison.OrdinalIgnoreCase);
 
         if (isProd && !allowProdSeed && !IsProdSeedEnvTrue())
-        {
-            logger?.LogInformation("[DBSeeder] Skipped seeding in Production (allowed=false).");
-            return;
-        }
+            if (isProd && !allowProdSeed && !IsProdSeedEnvTrue())
+            {
+                logger?.LogInformation("[DBSeeder] Skipped seeding in Production (allowed=false).");
+                logger?.LogInformation("[DBSeeder] Skipped seeding in Production (allowed=false).");
+                return;
+            }
 
         var seedMode = (Environment.GetEnvironmentVariable("AIMS_SEED_MODE") ?? "basic")
             .Trim().ToLowerInvariant();                 // basic | csv | merge
@@ -400,7 +409,6 @@ public static class DbSeeder
 
                     // Make sure only this user has the asset open
                     await CloseOpenHardwareAssignmentsExceptAsync(db, hardwareId.Value, userId.Value, ct);
-                    await db.SaveChangesAsync(ct);
 
                     // Ensure the open assignment row exists (by day)
                     await EnsureAssignmentAsync(db, userId.Value, AssetKind.Hardware, hardwareId, null, assignedAt, ct);
@@ -442,7 +450,6 @@ public static class DbSeeder
 
                     // Make sure only this user has the seat open
                     await CloseOpenSoftwareAssignmentsExceptAsync(db, softwareId.Value, userId.Value, ct);
-                    await db.SaveChangesAsync(ct);
 
                     // Ensure the open assignment row exists (by day)
                     await EnsureAssignmentAsync(db, userId.Value, AssetKind.Software, null, softwareId, assignedAt, ct);
@@ -702,6 +709,7 @@ public static class DbSeeder
 
         int tylerId = usersByEmp["80003"].UserID;
         string[] reportsOfTyler = { "34532", "62241" };
+        string[] reportsOfTyler = { "34532", "62241" };
         foreach (var emp in reportsOfTyler)
         {
             if (usersByEmp.TryGetValue(emp, out var user))
@@ -709,6 +717,7 @@ public static class DbSeeder
         }
         await db.SaveChangesAsync(ct);
 
+        // Offices
         // Offices
         var officesWanted = new[]
         {
@@ -720,6 +729,7 @@ public static class DbSeeder
         await db.SaveChangesAsync(ct);
         var officeByName = await db.Offices.AsNoTracking().ToDictionaryAsync(o => o.OfficeName, ct);
 
+        // Thresholds
         // Thresholds
         var thresholdsWanted = new[]
         {
@@ -733,6 +743,7 @@ public static class DbSeeder
         foreach (var t in thresholdsWanted) await UpsertThresholdAsync(db, t, ct);
         await db.SaveChangesAsync(ct);
 
+        // Hardware
         // Hardware
         var hardwareWanted = new[]
         {
@@ -795,6 +806,7 @@ public static class DbSeeder
         }
 
         // Software
+        // Software
         var softwareWanted = new[]
         {
             new Software { SoftwareName = "Microsoft 365 Business", SoftwareType = "Software", SoftwareVersion = "1.0",
@@ -828,6 +840,7 @@ public static class DbSeeder
             .ToDictionaryAsync(s => (s.SoftwareName, s.SoftwareVersion), ct);
 
         // Agreements
+        // Agreements
         var agreementsWanted = new List<Agreement>
         {
             new Agreement
@@ -850,6 +863,7 @@ public static class DbSeeder
         foreach (var a in agreementsWanted) await UpsertAgreementAsync(db, a, ct);
         await db.SaveChangesAsync(ct);
 
+        // Reports
         // Reports
         var reportsWanted = new List<Report>
         {
@@ -876,10 +890,14 @@ public static class DbSeeder
         await db.SaveChangesAsync(ct);
 
         // Assignments
+        // Assignments
         usersByEmp = await db.Users.AsNoTracking().ToDictionaryAsync(u => u.EmployeeNumber!, ct);
 
         async Task TryAssignHW(string emp, string serial, DateTime whenUtc)
         {
+            if (!usersByEmp.TryGetValue(emp, out var user)) return;
+            if (!hardwareBySerial.TryGetValue(serial, out var hw)) return;
+
             if (!usersByEmp.TryGetValue(emp, out var user)) return;
             if (!hardwareBySerial.TryGetValue(serial, out var hw)) return;
 
@@ -889,6 +907,8 @@ public static class DbSeeder
 
         async Task TryAssignSW(string emp, string name, string ver, DateTime whenUtc)
         {
+            if (!usersByEmp.TryGetValue(emp, out var user)) return;
+            if (!softwareByKey.TryGetValue((name, ver), out var sw)) return;
             if (!usersByEmp.TryGetValue(emp, out var user)) return;
             if (!softwareByKey.TryGetValue((name, ver), out var sw)) return;
 
@@ -908,9 +928,21 @@ public static class DbSeeder
         await TryAssignHW("47283", "HS-0001", now.AddDays(-4));
         await TryAssignHW("34532", "CC-0019", now.AddDays(-3));
         await TryAssignHW("93232", "LT-0115", now.AddDays(-2));
+        await TryAssignHW("28809", "LT-0020", now.AddDays(-12));
+        await TryAssignHW("69444", "MN-0001", now.AddDays(-11));
+        await TryAssignHW("58344", "DT-0011", now.AddDays(-10));
+        await TryAssignSW("10971", "Microsoft 365 Business", "1.0", now.AddDays(-9));
+        await TryAssignHW("62241", "MN-0023", now.AddDays(-8));
+        await TryAssignHW("90334", "LT-0005", now.AddDays(-7));
+        await TryAssignHW("27094", "HS-0015", now.AddDays(-6));
+        await TryAssignHW("20983", "DT-0100", now.AddDays(-5));
+        await TryAssignHW("47283", "HS-0001", now.AddDays(-4));
+        await TryAssignHW("34532", "CC-0019", now.AddDays(-3));
+        await TryAssignHW("93232", "LT-0115", now.AddDays(-2));
 
         await db.SaveChangesAsync(ct);
 
+        // Audit logs (15 examples)
         // Audit logs (15 examples)
         var auditEvents = new List<(AuditLog log, IList<AuditLogChange> changes)>
         {
@@ -919,6 +951,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:assign:LT-0020:28809"),
                     TimestampUtc = now.AddDays(-12).AddMinutes(3),
+                    UserID       = usersByEmp["28809"].UserID,
                     UserID       = usersByEmp["28809"].UserID,
                     Action       = "Assign",
                     Description  = "Assigned Lenovo ThinkPad E16 to John Smith",
@@ -937,6 +970,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:assign:SW-0100:10971"),
                     TimestampUtc = now.AddDays(-9).AddMinutes(10),
                     UserID       = usersByEmp["10971"].UserID,
+                    UserID       = usersByEmp["10971"].UserID,
                     Action       = "Assign",
                     Description  = "Assigned Microsoft 365 Business seat to Robin Williams",
                     AssetKind    = AssetKind.Software,
@@ -952,6 +986,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:update:HS-0015:repair"),
                     TimestampUtc = now.AddDays(-5).AddMinutes(20),
+                    UserID       = usersByEmp["27094"].UserID,
                     UserID       = usersByEmp["27094"].UserID,
                     Action       = "Update",
                     Description  = "Set Logitech Zone Vibe 100 status to In Repair",
@@ -969,6 +1004,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:create:report:license-usage"),
                     TimestampUtc = now.AddDays(-3).AddMinutes(5),
                     UserID       = usersByEmp["47283"].UserID,
+                    UserID       = usersByEmp["47283"].UserID,
                     Action       = "Create",
                     Description  = "Generated License Usage Summary report",
                     AssetKind    = AssetKind.Software,
@@ -982,6 +1018,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:assign:MN-0001:69444"),
                     TimestampUtc = now.AddDays(-11).AddMinutes(7),
+                    UserID       = usersByEmp["69444"].UserID,
                     UserID       = usersByEmp["69444"].UserID,
                     Action       = "Assign",
                     Description  = "Assigned Dell S2421NX to Jane Doe",
@@ -1000,6 +1037,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:assign:DT-0011:58344"),
                     TimestampUtc = now.AddDays(-10).AddMinutes(12),
                     UserID       = usersByEmp["58344"].UserID,
+                    UserID       = usersByEmp["58344"].UserID,
                     Action       = "Assign",
                     Description  = "Assigned Lenovo IdeaCentre 3 to Randy Orton",
                     AssetKind    = AssetKind.Hardware,
@@ -1016,6 +1054,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:unassign:CC-0019:34532"),
                     TimestampUtc = now.AddDays(-3).AddMinutes(30),
+                    UserID       = usersByEmp["93232"].UserID,
                     UserID       = usersByEmp["93232"].UserID,
                     Action       = "Unassign",
                     Description  = "Unassigned j5create 100W Super Charger from Bruce Wayne",
@@ -1034,6 +1073,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:update:LT-0115:warranty:extended"),
                     TimestampUtc = now.AddDays(-2).AddMinutes(15),
                     UserID       = usersByEmp["93232"].UserID,
+                    UserID       = usersByEmp["93232"].UserID,
                     Action       = "Update",
                     Description  = "Extended warranty for Dell Inspiron 15 by 1 year",
                     AssetKind    = AssetKind.Hardware,
@@ -1049,6 +1089,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:update:MN-0023:notes"),
                     TimestampUtc = now.AddDays(-8).AddMinutes(40),
+                    UserID       = usersByEmp["62241"].UserID,
                     UserID       = usersByEmp["62241"].UserID,
                     Action       = "Update",
                     Description  = "Updated ergonomic notes for HP 527SH monitor",
@@ -1082,6 +1123,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:renew:ZoomPro:7.1"),
                     TimestampUtc = now.AddDays(-3).AddMinutes(50),
                     UserID       = usersByEmp["20983"].UserID,
+                    UserID       = usersByEmp["20983"].UserID,
                     Action       = "License Renewed",
                     Description  = "Renewed Zoom Pro (7.1) license for 12 months",
                     AssetKind    = AssetKind.Software,
@@ -1097,6 +1139,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:expire:Slack:5.3"),
                     TimestampUtc = now.AddDays(-2).AddMinutes(42),
+                    UserID       = usersByEmp["62241"].UserID,
                     UserID       = usersByEmp["62241"].UserID,
                     Action       = "License Expired",
                     Description  = "Slack (5.3) license reached end of term",
@@ -1114,6 +1157,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:unassign:M365:1.0:10971"),
                     TimestampUtc = now.AddDays(-2).AddMinutes(55),
                     UserID       = usersByEmp["47283"].UserID,
+                    UserID       = usersByEmp["47283"].UserID,
                     Action       = "Unassign",
                     Description  = "Unassigned Microsoft 365 Business (1.0) from Robin Williams",
                     AssetKind    = AssetKind.Software,
@@ -1130,6 +1174,7 @@ public static class DbSeeder
                     ExternalId   = FromString("audit:install:QuickBooks:2024:28809"),
                     TimestampUtc = now.AddDays(-1).AddMinutes(22),
                     UserID       = usersByEmp["28809"].UserID,
+                    UserID       = usersByEmp["28809"].UserID,
                     Action       = "Install",
                     Description  = "Installed QuickBooks Online (2024) for John Smith",
                     AssetKind    = AssetKind.Software,
@@ -1145,6 +1190,7 @@ public static class DbSeeder
                 new AuditLog {
                     ExternalId   = FromString("audit:remove:Photoshop:2024:47283"),
                     TimestampUtc = now.AddDays(-1).AddMinutes(40),
+                    UserID       = usersByEmp["47283"].UserID,
                     UserID       = usersByEmp["47283"].UserID,
                     Action       = "Remove",
                     Description  = "Removed Adobe Photoshop (2024) license from Emily Carter",
@@ -1170,9 +1216,20 @@ public static class DbSeeder
     private static bool IsProdSeedEnvTrue() =>
         string.Equals(Environment.GetEnvironmentVariable("AIMS_ALLOW_PROD_SEED"), "true", StringComparison.OrdinalIgnoreCase);
 
+    }
+
+    // ==============================
+    // ===== Helpers / Upserts  =====
+    // ==============================
+    private static bool IsProdSeedEnvTrue() =>
+        string.Equals(Environment.GetEnvironmentVariable("AIMS_ALLOW_PROD_SEED"), "true", StringComparison.OrdinalIgnoreCase);
+
     private static Guid FromString(string input)
     {
         using var sha1 = System.Security.Cryptography.SHA1.Create();
+        var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
+        Span<byte> bytes = new byte[16];
+        hash.AsSpan(0, 16).CopyTo(bytes);
         var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
         Span<byte> bytes = new byte[16];
         hash.AsSpan(0, 16).CopyTo(bytes);
@@ -1180,11 +1237,19 @@ public static class DbSeeder
     }
 
     // Deterministic 32-hex GraphObjectID generator
+    // Deterministic 32-hex GraphObjectID generator
     private static string GraphIdFor(User u)
     {
         var key = !string.IsNullOrWhiteSpace(u.EmployeeNumber)
             ? $"emp:{u.EmployeeNumber}"
             : $"email:{u.Email}";
+        return FromString("graph:" + key).ToString("N");
+    }
+
+    private static DateOnly ParseDateOnlyOrDefault(string v, DateOnly fallback)
+    {
+        var d = ParseDateOnly(v);
+        return d ?? fallback;
         return FromString("graph:" + key).ToString("N");
     }
 
@@ -1276,10 +1341,17 @@ public static class DbSeeder
         // Ensure incoming seats-used never exceeds incoming total
         incoming.LicenseSeatsUsed = Math.Min(incoming.LicenseSeatsUsed, incoming.LicenseTotalSeats);
 
+        // Ensure incoming seats-used never exceeds incoming total
+        incoming.LicenseSeatsUsed = Math.Min(incoming.LicenseSeatsUsed, incoming.LicenseTotalSeats);
+
         var existing = await db.SoftwareAssets
             .FirstOrDefaultAsync(s => s.SoftwareName == incoming.SoftwareName &&
                                       s.SoftwareVersion == incoming.SoftwareVersion, ct);
 
+        if (existing is null)
+        {
+            await db.SoftwareAssets.AddAsync(incoming, ct);
+        }
         if (existing is null)
         {
             await db.SoftwareAssets.AddAsync(incoming, ct);
@@ -1293,7 +1365,13 @@ public static class DbSeeder
             existing.SoftwareCost = incoming.SoftwareCost;
 
             // Update total first…
+
+            // Update total first…
             existing.LicenseTotalSeats = incoming.LicenseTotalSeats;
+
+            // …then cap used to both: max(existing, incoming) but never above total
+            var maxUsed = Math.Max(existing.LicenseSeatsUsed, incoming.LicenseSeatsUsed);
+            existing.LicenseSeatsUsed = Math.Min(maxUsed, existing.LicenseTotalSeats);
 
             // …then cap used to both: max(existing, incoming) but never above total
             var maxUsed = Math.Max(existing.LicenseSeatsUsed, incoming.LicenseSeatsUsed);
@@ -1415,13 +1493,13 @@ public static class DbSeeder
     }
 
     private static async Task EnsureAssignmentAsync(
-    AimsDbContext db,
-    int userId,
-    AssetKind assetKind,
-    int? hardwareId,
-    int? softwareId,
-    DateTime assignedAtUtc,
-    CancellationToken ct)
+        AimsDbContext db,
+        int userId,
+        AssetKind assetKind,
+        int? hardwareId,
+        int? softwareId,
+        DateTime assignedAtUtc,
+        CancellationToken ct)
     {
         int? hardwareIdToAssign;
         int? softwareIdToAssign;
@@ -1441,16 +1519,13 @@ public static class DbSeeder
             throw new InvalidOperationException("Unknown AssetKind for assignment seeding.");
         }
 
-        // --- Ensure at most ONE open row per asset by closing any existing open row first ---
-        var existingOpen = await db.Assignments
-            .Where(a => a.AssetKind == assetKind
-                     && a.UnassignedAtUtc == null
-                     && ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign)
-                      || (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)))
-            .OrderByDescending(a => a.AssignedAtUtc)
-            .FirstOrDefaultAsync(ct);
+        var assetHasOpen = await db.Assignments.AnyAsync(a =>
+            a.AssetKind == assetKind &&
+            a.UnassignedAtUtc == null &&
+            ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign) ||
+             (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)), ct);
 
-        if (existingOpen is not null)
+        if (assetHasOpen)
         {
             // If it's already open for this same user on the same day, nothing to do.
             if (existingOpen.UserID == userId && existingOpen.AssignedAtUtc.Date == assignedAtUtc.Date)
@@ -1468,27 +1543,25 @@ public static class DbSeeder
             await db.SaveChangesAsync(ct);
         }
 
-        // If we already inserted this exact (user, asset, day) row earlier in the run, skip dup.
-        var existsSameDay = await db.Assignments.AnyAsync(a =>
-            a.UserID == userId
-            && a.AssetKind == assetKind
-            && a.HardwareID == hardwareIdToAssign
-            && a.SoftwareID == softwareIdToAssign
-            && a.AssignedAtUtc.Date == assignedAtUtc.Date, ct);
+        var exists = await db.Assignments.AnyAsync(a =>
+            a.UserID == userId &&
+            a.AssetKind == assetKind &&
+            a.HardwareID == hardwareIdToAssign &&
+            a.SoftwareID == softwareIdToAssign &&
+            a.AssignedAtUtc.Date == assignedAtUtc.Date, ct);
 
-        if (existsSameDay)
-            return;
-
-        // Insert new open row
-        db.Assignments.Add(new Assignment
+        if (!exists)
         {
-            UserID = userId,
-            AssetKind = assetKind,
-            HardwareID = hardwareIdToAssign,
-            SoftwareID = softwareIdToAssign,
-            AssignedAtUtc = assignedAtUtc,
-            UnassignedAtUtc = null
-        });
+            db.Assignments.Add(new Assignment
+            {
+                UserID = userId,
+                AssetKind = assetKind,
+                HardwareID = hardwareIdToAssign,
+                SoftwareID = softwareIdToAssign,
+                AssignedAtUtc = assignedAtUtc,
+                UnassignedAtUtc = null
+            });
+        }
     }
     private static AssetKind ParseAssetKind(string v)
     {
