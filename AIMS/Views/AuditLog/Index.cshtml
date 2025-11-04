@@ -44,17 +44,17 @@
     <link rel="stylesheet" href="~/css/components/_Pager.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/auditlog.index.css" asp-append-version="true" />
 }
+<div class="page-title-wrapper mb-3">
+  <h2 class="page-title">Audit Log</h2>
+</div>
 
 <div class="audit-log-container">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h1 class="audit-log-title m-0">Audit Log</h1>
-
-        <!-- Filter icon (from Task 4A) -->
-        <div class="ms-3">
-            <partial name="_FilterIcon"
-                view-data='@new ViewDataDictionary(ViewData) { ["Id"]="auditLogFilter", ["Label"]="Search Logs" }' />
-        </div>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="ms-3">
+      <partial name="_FilterIcon"
+        view-data='@new ViewDataDictionary(ViewData) { ["Id"]="auditLogFilter", ["Label"]="Search Logs" }' />
     </div>
+  </div>
 
     @* hidden config for JS (polling interval / batch size / feature flags) *@
     <div id="auditlog-config"
