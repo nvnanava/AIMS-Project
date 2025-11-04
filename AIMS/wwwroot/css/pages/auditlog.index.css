@@ -240,3 +240,20 @@ tr.row-flash>td {
   margin: 0;
 }
 
+.audit-table td[title] {
+  cursor: default;   
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  transition: all 0.2s ease;
+}
+
+.audit-table td[title]:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #f8f9fa;
+  position: relative;
+  z-index: 5;
+}
+

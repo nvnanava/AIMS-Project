@@ -1,11 +1,14 @@
 .report-table {
-  border: 1px solid #34495e;
+  border: none;
   border-radius: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   table-layout: fixed;
   width: 100%;
+}
+.report-table {
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .report-table td:last-child,
@@ -198,3 +201,48 @@ html {
   line-height: 1.2 !important;
 }
 
+.reports-table-wrapper {
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.reports-table-wrapper table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.reports-container {
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+.reports-table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+.reports-table-wrapper table thead tr:first-child th:first-child {
+  border-top-left-radius: 8px;
+}
+.reports-table-wrapper table thead tr:first-child th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.reports-table-wrapper table,
+.reports-table-wrapper th,
+.reports-table-wrapper td {
+  border: none !important;
+  box-shadow: none !important;
+}
+.reports-table-wrapper table {
+  background: #fff;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.reports-table-wrapper thead {
+  background-color: #2f3f53; /* same dark blue from Audit Log */
+  color: #fff;
+}
