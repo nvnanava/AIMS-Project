@@ -1,5 +1,5 @@
 {
-  "REAL_USER_ID": 1,
-  "REAL_HARDWARE_ID": 1,
+  "REAL_USER_ID": 0,
+  "REAL_HARDWARE_ID": 0,
   "BASE_URL": "http://localhost:5119"
 }
