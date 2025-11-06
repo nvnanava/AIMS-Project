@@ -1,15 +1,15 @@
 ﻿{
-  "$schema": "https://json.schemastore.org/launchsettings.json",
-  "profiles": {
-    "AIMS": {
-      "commandName": "Project",
-      "dotnetRunMessages": true,
-      "launchBrowser": true,
-      "applicationUrl": "http://localhost:5119",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "UseTestAuth": "true"
-      }
+    "$schema": "https://json.schemastore.org/launchsettings.json",
+    "profiles": {
+        "AIMS": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": true,
+            "applicationUrl": "http://localhost:5119",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "UseTestAuth": "false"
+            }
+        }
     }
-  }
 }

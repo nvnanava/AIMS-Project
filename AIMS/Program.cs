@@ -11,6 +11,7 @@ using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>(); // current user helper
 
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
@@ -185,48 +187,26 @@ Console.WriteLine($"[Startup] UseTestAuth={useTestAuth}");
 
 if (useTestAuth)
 {
+    // Test auth setup with fallback to real authentication
     builder.Services
         .AddAuthentication(options =>
         {
-            options.DefaultScheme = TestAuthHandler.Scheme;
+            // Use OpenID Connect as the default for challenges and sign-outs
+            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
-            options.DefaultChallengeScheme = TestAuthHandler.Scheme;
+            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            options.DefaultSignOutScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
         .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
             TestAuthHandler.Scheme,
             o => { o.TimeProvider = TimeProvider.System; }
-        );
-}
-else
-{
-    // Hybrid scheme: OAuth web app for MVC, JWT for /api
-    builder.Services
-        .AddAuthentication(options =>
-        {
-            options.DefaultScheme = "AppOrApi";
-            options.DefaultAuthenticateScheme = "AppOrApi";
-            options.DefaultChallengeScheme = "AppOrApi";
-        })
-        .AddPolicyScheme("AppOrApi", "AppOrApi", options =>
-        {
-            options.ForwardDefaultSelector = ctx =>
-                ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-                    ? JwtBearerDefaults.AuthenticationScheme
-                    : OpenIdConnectDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
-            options.Audience = builder.Configuration["AzureAd:ApiAudience"];
-            options.RequireHttpsMetadata = false;
-        })
+        )
+        // Register Entra ID (OIDC) and cookie handler for real authentication
         .AddMicrosoftIdentityWebApp(options =>
         {
             builder.Configuration.Bind("AzureAd", options);
-            options.AccessDeniedPath = "/error/not-authorized";
-            options.TokenValidationParameters.RoleClaimType = "roles";
 
-            // For API calls, respond 401 instead of redirecting to AAD.
+            // Keep your API behavior consistent with prod: 401 instead of redirect for /api
             options.Events ??= new();
             options.Events.OnRedirectToIdentityProvider = ctx =>
             {
@@ -239,6 +219,28 @@ else
             };
         });
 }
+else
+{
+    // Production authentication (Entra ID only)
+    builder.Services
+        .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApp(options =>
+        {
+            builder.Configuration.Bind("AzureAd", options);
+
+            options.Events ??= new();
+            options.Events.OnRedirectToIdentityProvider = ctx =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    ctx.HandleResponse();
+                }
+                return Task.CompletedTask;
+            };
+        });
+}
+
 
 // -------------------- Microsoft Graph setup (secrets-first) --------------------
 string? clientSecret = null;
@@ -441,6 +443,6 @@ app.MapGet("/error/not-found-raw", () => Results.Content(
     "</body></html>",
     "text/html"));
 
-app.Run();
+    app.Run();
 
 public partial class Program { }

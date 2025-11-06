@@ -31,6 +31,21 @@
 
    ====================================================================== *@
 
+   @* <div style="padding:.5rem;margin:.5rem 0;border:1px dashed #ccc;font:12px/1.4 system-ui">
+  <strong>DEBUG</strong><br/>
+  oid: @ViewBag.DebugOid <br/>
+  preferred_username / Name: @ViewBag.DebugUpn <br/>
+  resolved UserID: @ViewBag.CurrentUserId
+</div>
+
+
+   @{
+    var userId = (int?)ViewBag.CurrentUserId;
+}
+
+<div id="page-root" data-user-id="@ViewBag.CurrentUserId"></div> *@
+
+
 @{
   ViewData["Title"] = "Reports";
   ViewData["User"] = @User?.Identity?.Name;
