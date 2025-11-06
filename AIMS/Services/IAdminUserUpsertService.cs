@@ -5,7 +5,7 @@ namespace AIMS.Services
 {
     public interface IAdminUserUpsertService
     {
-        Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, CancellationToken ct);
+        Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, int? officeId, CancellationToken ct);
     }
 
     public sealed class AdminUserUpsertService : IAdminUserUpsertService
@@ -19,7 +19,7 @@ namespace AIMS.Services
             _graphUserService = graphUserService ?? throw new ArgumentNullException(nameof(graphUserService));
         }
 
-        public async Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, CancellationToken ct)
+        public async Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, int? officeId, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(graphObjectId))
                 throw new ArgumentException("graphObjectId is required", nameof(graphObjectId));
@@ -46,6 +46,7 @@ namespace AIMS.Services
 
                 if (roleId.HasValue) user.RoleID = roleId.Value;
                 if (supervisorId.HasValue) user.SupervisorID = supervisorId.Value;
+                if (officeId.HasValue) user.OfficeID = officeId.Value;
 
                 _db.Users.Add(user);
             }
@@ -57,6 +58,7 @@ namespace AIMS.Services
 
                 if (roleId.HasValue) user.RoleID = roleId.Value;
                 if (supervisorId.HasValue) user.SupervisorID = supervisorId.Value;
+                if (officeId.HasValue) user.OfficeID = officeId.Value;
 
                 user.IsActive = true;
                 user.IsArchived = false;
