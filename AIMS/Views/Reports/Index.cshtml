@@ -129,54 +129,55 @@
       />
     </div>
 
-<!-- Right: Buttons -->
-<div class="right-section">
-  <button type="button" class="btn btn-mint">
-    <i class="bi bi-download"></i> Download CSV
-  </button>
-  <div class="dropdown">
+    <div class="right-section">
+      <button type="button" class="btn btn-mint">
+        <i class="bi bi-download"></i> Download CSV
+      </button>
+<div class="dropdown">
+<button
+  class="btn btn-mint dropdown-toggle"
+  type="button"
+  id="newReportDropdown"
+  data-bs-toggle="dropdown"
+  aria-expanded="false"
+>
+  <i class="bi bi-plus-circle"></i> New Report
+</button>
+<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="newReportDropdown">
+  <li>
     <button
-      class="btn btn-mint dropdown-toggle"
+      class="dropdown-item"
       type="button"
-      id="newReportDropdown"
-      data-bs-toggle="dropdown"
-      aria-expanded="false"
+      data-bs-toggle="modal"
+      data-bs-target="#generateAssignmentReport"
     >
-      <i class="bi bi-plus-circle"></i> New Report
+      Assignment Report
     </button>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="newReportDropdown">
-      <li>
-        <button
-          class="dropdown-item"
-          type="button"
-          data-bs-toggle="modal"
-          data-bs-target="#generalReportModal"
-        >
-          General Report
-        </button>
-      </li>
-      <li>
-        <button
-          class="dropdown-item"
-          type="button"
-          data-bs-toggle="modal"
-          data-bs-target="#inventoryReportModal"
-        >
-          Inventory Report
-        </button>
-      </li>
-      <li>
-        <button
-          class="dropdown-item"
-          type="button"
-          data-bs-toggle="modal"
-          data-bs-target="#softwareReportModal"
-        >
-          Software Report
-        </button>
-      </li>
-    </ul>
-  </div>
+  </li>
+  <li>
+    <button
+      class="dropdown-item"
+      type="button"
+      data-bs-toggle="modal"
+      data-bs-target="#generateOfficeReport"
+    >
+      Office Report
+    </button>
+  </li>
+  <li>
+    <button
+      class="dropdown-item"
+      type="button"
+      data-bs-toggle="modal"
+      data-bs-target="#generateCustomReport"
+    >
+      Custom Report
+    </button>
+  </li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 </div>
 
