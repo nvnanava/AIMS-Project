@@ -400,6 +400,7 @@ public static class DbSeeder
 
                     // Make sure only this user has the asset open
                     await CloseOpenHardwareAssignmentsExceptAsync(db, hardwareId.Value, userId.Value, ct);
+                    await db.SaveChangesAsync(ct);
 
                     // Ensure the open assignment row exists (by day)
                     await EnsureAssignmentAsync(db, userId.Value, AssetKind.Hardware, hardwareId, null, assignedAt, ct);
@@ -441,6 +442,7 @@ public static class DbSeeder
 
                     // Make sure only this user has the seat open
                     await CloseOpenSoftwareAssignmentsExceptAsync(db, softwareId.Value, userId.Value, ct);
+                    await db.SaveChangesAsync(ct);
 
                     // Ensure the open assignment row exists (by day)
                     await EnsureAssignmentAsync(db, userId.Value, AssetKind.Software, null, softwareId, assignedAt, ct);
@@ -1413,13 +1415,13 @@ public static class DbSeeder
     }
 
     private static async Task EnsureAssignmentAsync(
-        AimsDbContext db,
-        int userId,
-        AssetKind assetKind,
-        int? hardwareId,
-        int? softwareId,
-        DateTime assignedAtUtc,
-        CancellationToken ct)
+    AimsDbContext db,
+    int userId,
+    AssetKind assetKind,
+    int? hardwareId,
+    int? softwareId,
+    DateTime assignedAtUtc,
+    CancellationToken ct)
     {
         int? hardwareIdToAssign;
         int? softwareIdToAssign;
@@ -1439,42 +1441,54 @@ public static class DbSeeder
             throw new InvalidOperationException("Unknown AssetKind for assignment seeding.");
         }
 
-        var assetHasOpen = await db.Assignments.AnyAsync(a =>
-            a.AssetKind == assetKind &&
-            a.UnassignedAtUtc == null &&
-            ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign) ||
-             (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)), ct);
+        // --- Ensure at most ONE open row per asset by closing any existing open row first ---
+        var existingOpen = await db.Assignments
+            .Where(a => a.AssetKind == assetKind
+                     && a.UnassignedAtUtc == null
+                     && ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign)
+                      || (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)))
+            .OrderByDescending(a => a.AssignedAtUtc)
+            .FirstOrDefaultAsync(ct);
 
-        if (assetHasOpen)
+        if (existingOpen is not null)
         {
-            var intendedOpen = await db.Assignments.AnyAsync(a =>
-                a.AssetKind == assetKind &&
-                a.UnassignedAtUtc == null &&
-                a.UserID == userId &&
-                ((assetKind == AssetKind.Hardware && a.HardwareID == hardwareIdToAssign) ||
-                 (assetKind == AssetKind.Software && a.SoftwareID == softwareIdToAssign)), ct);
-            if (intendedOpen) return;
+            // If it's already open for this same user on the same day, nothing to do.
+            if (existingOpen.UserID == userId && existingOpen.AssignedAtUtc.Date == assignedAtUtc.Date)
+                return;
+
+            // Prevent backwards time: if CSV gives an earlier assignedAt than the existing open,
+            // keep the close time at the existing open's assigned time.
+            var closeAt = assignedAtUtc >= existingOpen.AssignedAtUtc
+                ? assignedAtUtc
+                : existingOpen.AssignedAtUtc;
+
+            existingOpen.UnassignedAtUtc = closeAt;
+
+            // Flush the close so the unique index (AssetID, UnassignedAtUtc=NULL) is clear before we insert a new open row.
+            await db.SaveChangesAsync(ct);
         }
 
-        var exists = await db.Assignments.AnyAsync(a =>
-            a.UserID == userId &&
-            a.AssetKind == assetKind &&
-            a.HardwareID == hardwareIdToAssign &&
-            a.SoftwareID == softwareIdToAssign &&
-            a.AssignedAtUtc.Date == assignedAtUtc.Date, ct);
+        // If we already inserted this exact (user, asset, day) row earlier in the run, skip dup.
+        var existsSameDay = await db.Assignments.AnyAsync(a =>
+            a.UserID == userId
+            && a.AssetKind == assetKind
+            && a.HardwareID == hardwareIdToAssign
+            && a.SoftwareID == softwareIdToAssign
+            && a.AssignedAtUtc.Date == assignedAtUtc.Date, ct);
 
-        if (!exists)
+        if (existsSameDay)
+            return;
+
+        // Insert new open row
+        db.Assignments.Add(new Assignment
         {
-            db.Assignments.Add(new Assignment
-            {
-                UserID = userId,
-                AssetKind = assetKind,
-                HardwareID = hardwareIdToAssign,
-                SoftwareID = softwareIdToAssign,
-                AssignedAtUtc = assignedAtUtc,
-                UnassignedAtUtc = null
-            });
-        }
+            UserID = userId,
+            AssetKind = assetKind,
+            HardwareID = hardwareIdToAssign,
+            SoftwareID = softwareIdToAssign,
+            AssignedAtUtc = assignedAtUtc,
+            UnassignedAtUtc = null
+        });
     }
     private static AssetKind ParseAssetKind(string v)
     {
