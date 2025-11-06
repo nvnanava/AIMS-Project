@@ -78,3 +78,29 @@ public class UpdateSoftwareDto
 
     public string? Comment { get; set; }
 }
+
+public sealed class AssignSeatRequestDto
+{
+    [Range(1, int.MaxValue)]
+    public int SoftwareID { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int UserID { get; set; }
+}
+
+public sealed class ReleaseSeatRequestDto
+{
+    [Range(1, int.MaxValue)]
+    public int SoftwareID { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int UserID { get; set; }
+}
+
+public sealed class SeatOperationResultDto
+{
+    public int SoftwareID { get; set; }
+    public int LicenseTotalSeats { get; set; }
+    public int LicenseSeatsUsed { get; set; }
+    public string Message { get; set; } = "";
+}
