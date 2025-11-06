@@ -31,4 +31,7 @@ public class Software
     public string Comment { get; set; } = string.Empty;
 
     public bool IsArchived { get; set; } = false;
+
+    [Timestamp]
+    public byte[]? RowVersion { get; set; }
 }
