@@ -35,6 +35,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
+builder.Services.AddScoped<SoftwareSeatService>();
 
 // Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
