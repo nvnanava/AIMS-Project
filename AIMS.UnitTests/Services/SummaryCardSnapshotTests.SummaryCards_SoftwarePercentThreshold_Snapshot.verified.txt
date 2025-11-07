@@ -1,0 +1,10 @@
+﻿[
+  {
+    AssetType: Software,
+    Total: 2,
+    Available: 1,
+    Threshold: 50,
+    IsLow: true,
+    AvailablePercent: 50.0
+  }
+]
