@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('bulk add 100 hardware assets with auto-generated tags', async ({ page }) => {
     // ---------- Step 1: Navigate to category ----------
-    await page.goto('https://localhost:5119/');
+    await page.goto('http://localhost:5119/');
     await page.addStyleTag({
         content: `.modal.fade, .fade { transition: none !important; animation: none !important; }`
     });
@@ -73,9 +73,9 @@ test('bulk add 100 hardware assets with auto-generated tags', async ({ page }) =
 
     // ---------- Step 7: Verification (optional API check) ----------
     for (let i = 0; i < 100; i++) {
-        const tagIndex = (12 + i).toString().padStart(7, '0');
+        const tagIndex = (100 + i).toString().padStart(8, '0');
         const tag = `MBC${tagIndex}`;
-        const res = await page.request.get(`https://localhost:5119/api/assets/one?tag=${encodeURIComponent(tag)}`);
+        const res = await page.request.get(`http://localhost:5119/api/assets/one?tag=${encodeURIComponent(tag)}`);
         expect(res.ok(), `DB lookup failed for tag ${tag}`).toBeTruthy();
     }
 

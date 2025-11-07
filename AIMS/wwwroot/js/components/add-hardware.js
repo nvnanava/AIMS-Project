@@ -369,8 +369,14 @@ document.addEventListener('DOMContentLoaded', function () {
             setError('tagNumber', 'Tag Number is required.');
             valid = false;
         }
+        if (tag.length > 16) {
+            console.warn("Tag too long:", tag.length);
+            setError('tagNumber', 'Tag Number cannot exceed 16 characters.');
+            valid = false;
+        }
 
         if (!valid) return false;
+
 
         if (items.some(i => i.SerialNumber === serial)) {
             setError('serialNumber', 'Duplicate serial number in this batch.');

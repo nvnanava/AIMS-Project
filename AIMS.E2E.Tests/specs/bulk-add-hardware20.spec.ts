@@ -2,9 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test('bulk add 20 hardware assets with auto-generated tags', async ({ page }) => {
   // ---------- Step 1: Navigate to category ----------
-  await page.goto('https://localhost:5119/');
+  await page.goto('http://localhost:5119/');
   await page.waitForLoadState('networkidle');
-  await page.getByRole('link', { name: 'Laptops' }).click();
+  await page.getByRole('link', { name: 'Desktops' }).click();
 
   // ---------- Step 2: Open Manage Asset -> Add Hardware ----------
   await page.getByRole('button', { name: 'Manage Asset' }).click();
@@ -69,7 +69,7 @@ test('bulk add 20 hardware assets with auto-generated tags', async ({ page }) =>
   for (let i = 0; i < 20; i++) {
     const tagIndex = (12 + i).toString().padStart(7, '0');
     const tag = `MBC${tagIndex}`;
-    const res = await page.request.get(`https://localhost:5119/api/assets/one?tag=${encodeURIComponent(tag)}`);
+    const res = await page.request.get(`http://localhost:5119/api/assets/one?tag=${encodeURIComponent(tag)}`);
     expect(res.ok(), `DB lookup failed for tag ${tag}`).toBeTruthy();
   }
 
