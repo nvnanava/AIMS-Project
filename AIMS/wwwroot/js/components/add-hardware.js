@@ -88,11 +88,20 @@ document.addEventListener('DOMContentLoaded', function () {
       Save/load progress functions. Only saving data locally in browser for now. We can discuss saving in database with client.
     */
     function saveProgress() {
+
+        const summaryAssetType = document.getElementById('summaryAssetType')?.textContent ?? '';
+        const summaryAssetName = document.getElementById('summaryAssetName')?.textContent ?? '';
+
         const data = {
             baseData,
             itemCount,               // use variable, not DOM lookup
             currentIndex: items.length,
-            items
+            items,
+            summary: {
+                AssetType: summaryAssetType,
+                AssetName: summaryAssetName
+            },
+            autoIncrementChecked: document.getElementById('autoIncrementTagChk')?.checked ?? false
         };
         localStorage.setItem('assetProgress', JSON.stringify(data));
         alert('Progress saved locally in browser.');
@@ -110,6 +119,18 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.baseData) baseData = data.baseData;
             if (data.itemCount) itemCount = data.itemCount;
             if (Array.isArray(data.items)) items = data.items;
+
+            // populate summary info
+            document.getElementById('summaryAssetType').textContent =
+                data.summary?.AssetType ?? baseData.AssetType ?? '';
+            document.getElementById('summaryAssetName').textContent =
+                data.summary?.AssetName ?? baseData.AssetName ?? '';
+
+            const autoChk = document.getElementById('autoIncrementTagChk');
+            if (autoChk) {
+                autoChk.checked = data.autoIncrementChecked ?? false;
+                if (autoChk.checked) autoChk.dispatchEvent(new Event('change'));
+            }
 
             //rebuilding the preview list
             renderPreviewList();
@@ -238,6 +259,12 @@ document.addEventListener('DOMContentLoaded', function () {
         previewList.innerHTML = "";
         clearError('serialNumber');
         clearError('tagNumber');
+
+        const tagInput = document.getElementById('tagNumber');
+        const autoChk = document.getElementById('autoIncrementTagChk');
+        if (autoChk) autoChk.checked = false;
+        if (tagInput) tagInput.readOnly = false;
+        window.generatedTags = [];
     });
 
     addAssetModal.addEventListener('show.bs.modal', function () {
@@ -348,6 +375,10 @@ document.addEventListener('DOMContentLoaded', function () {
         bootstrap.Modal.getInstance(addAssetModal).hide();
         new bootstrap.Modal(itemDetailsModal).show();
         inTransition = false;
+
+        //populate phase 2 form with summary details
+        document.getElementById('summaryAssetType').textContent = baseData.AssetType;
+        document.getElementById('summaryAssetName').textContent = `${baseData.Manufacturer} ${baseData.Model}`.trim();
         loadNextItem();
     });
 
