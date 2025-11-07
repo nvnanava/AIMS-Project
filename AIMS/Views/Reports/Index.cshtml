@@ -34,6 +34,7 @@
 @{
   ViewData["Title"] = "Reports";
   ViewData["User"] = @User?.Identity?.Name;
+  
 
     // Table headers (server-rendered; values used only for markup)
     var tableHeaders = new List<string> { "Report Name", "Type", "Description", "Office", "Date Created", "Created By" };
@@ -110,6 +111,12 @@
     };
 </script>
 
+<div>
+    @ViewData["CurrentUserId"]
+</div>
+<div>
+@ViewData["UserName"]
+</div>
 <div class="reports-page"> @* page-scoped wrapper for bg & spacing *@
     <div class="report-page-size">
         <h1>Reports</h1>
@@ -475,5 +482,5 @@
 
 
 @section Scripts {
-    <script src="~/js/pages/reports.index.js" asp-append-version="true" defer></script>
+    <script type="module" src="~/js/pages/reports.index.js" asp-append-version="true" defer></script>
 }

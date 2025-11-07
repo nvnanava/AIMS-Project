@@ -8,7 +8,7 @@
             "applicationUrl": "http://localhost:5119",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
-                "UseTestAuth": "true"
+                "UseTestAuth": "false"
             }
         }
     }

@@ -18,8 +18,10 @@
    - Keep selectors narrowly scoped to .report-table for row events
      so modal tables remain unaffected.
    ====================================================================== */
+import authService from '../base/auth.js';
 
 (() => {
+    
     // -------- Elements ---------------------------------------------------
     const tableBody = document.getElementById("reports-table-body");
     const searchInput = document.getElementById("reportSearch");
@@ -135,7 +137,7 @@
     async function loadReports() {
         setLoading();
         try {
-            const resp = await fetch("/api/reports/list", { cache: "no-store" });
+            const resp = await authService.fetch("/api/reports/list", { cache: "no-store" });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const reports = await resp.json();
             renderRows(reports);

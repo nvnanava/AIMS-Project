@@ -12,11 +12,15 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.TokenCacheProviders.InMemory;
 using Microsoft.Identity.Web.UI;
+using Microsoft.Identity.Web.TokenCacheProviders.Distributed;
+using Microsoft.AspNetCore.Authorization;
 
 
 var cultureInfo = new CultureInfo("en-US");
@@ -55,12 +59,6 @@ builder.Services
 // File system (ReportsController; mockable in tests)
 builder.Services.AddSingleton<IFileSystem, FileSystem>();
 
-// Policy for restricted routes (bulk upload). Supervisors excluded.
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("CanBulkUpload", policy =>
-        policy.RequireRole("Admin", "Manager"));
-});
 
 // Query/DAO services
 builder.Services.AddScoped<UserQuery>();
@@ -184,63 +182,6 @@ var useTestAuth =
 
 Console.WriteLine($"[Startup] UseTestAuth={useTestAuth}");
 
-if (useTestAuth)
-{
-    builder.Services
-        .AddAuthentication(options =>
-        {
-            options.DefaultScheme = TestAuthHandler.Scheme;
-            options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
-            options.DefaultChallengeScheme = TestAuthHandler.Scheme;
-        })
-        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-            TestAuthHandler.Scheme,
-            o => { o.TimeProvider = TimeProvider.System; }
-        );
-}
-else
-{
-    // Hybrid scheme: OAuth web app for MVC, JWT for /api
-    builder.Services
-        .AddAuthentication(options =>
-        {
-            options.DefaultScheme = "AppOrApi";
-            options.DefaultAuthenticateScheme = "AppOrApi";
-            options.DefaultChallengeScheme = "AppOrApi";
-        })
-        .AddPolicyScheme("AppOrApi", "AppOrApi", options =>
-        {
-            options.ForwardDefaultSelector = ctx =>
-                ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
-                    ? JwtBearerDefaults.AuthenticationScheme
-                    : OpenIdConnectDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
-            options.Audience = builder.Configuration["AzureAd:ApiAudience"];
-            options.RequireHttpsMetadata = false;
-        })
-        .AddMicrosoftIdentityWebApp(options =>
-        {
-            builder.Configuration.Bind("AzureAd", options);
-            options.AccessDeniedPath = "/error/not-authorized";
-            options.TokenValidationParameters.RoleClaimType = "roles";
-
-            // For API calls, respond 401 instead of redirecting to AAD.
-            options.Events ??= new();
-            options.Events.OnRedirectToIdentityProvider = ctx =>
-            {
-                if (ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
-                {
-                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    ctx.HandleResponse();
-                }
-                return Task.CompletedTask;
-            };
-        });
-}
-
 // -------------------- Microsoft Graph setup (secrets-first) --------------------
 string? clientSecret = null;
 var clientSecretPath = builder.Configuration["AzureAd:ClientSecretFile"];
@@ -264,24 +205,125 @@ else if (builder.Environment.IsDevelopment())
     Console.WriteLine($"✅ AzureAd ClientSecret loaded (len={clientSecret.Length}).");
 }
 
+if (useTestAuth)
+{
+    builder.Services
+        .AddAuthentication(options =>
+        {
+            options.DefaultScheme = TestAuthHandler.Scheme;
+            options.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
+            options.DefaultChallengeScheme = TestAuthHandler.Scheme;
+        })
+        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+            TestAuthHandler.Scheme,
+            o => { o.TimeProvider = TimeProvider.System; }
+        );
+}
+else
+{
+    // Add OIDC/Cookie Authentication
+    builder.Services
+        .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApp(options =>
+        {
+            // Bind settings from appsettings.json
+            builder.Configuration.Bind("AzureAd", options);
+
+            // Manually set properties for token saving
+            options.ClientSecret = clientSecret;
+            options.SaveTokens = true;
+            options.AccessDeniedPath = "/error/not-authorized";
+            options.TokenValidationParameters.RoleClaimType = "roles";
+
+            // Add required scopes
+            var apiAudience = builder.Configuration["AzureAd:ApiAudience"];
+            options.Scope.Add($"{apiAudience}/access_as_user");
+            options.Scope.Add("offline_access");
+
+            // Set up event handler to prevent redirects on API calls
+            options.Events ??= new();
+            options.Events.OnRedirectToIdentityProvider = ctx =>
+            {
+                if (ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    ctx.HandleResponse();
+                }
+                return Task.CompletedTask;
+            };
+        });
+
+    // Add JWT Bearer Authentication (separate logic from the previous OCID)
+    builder.Services
+        .AddAuthentication() // Retrieves the existing AuthenticationBuilder created above
+        .AddJwtBearer(options =>
+        {
+            options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
+            options.Audience = builder.Configuration["AzureAd:ApiAudience"];
+            options.RequireHttpsMetadata = false;
+
+            options.Events = new JwtBearerEvents
+            {
+                OnChallenge = context =>
+                {
+                    context.Response.StatusCode = 401;
+                    context.Response.ContentType = "text/plain";
+                    context.HandleResponse();
+                    return context.Response.WriteAsync("401 Unauthorized: Token is invalid or missing.");
+                }
+            };
+        });
+}
+
+// Add token services separately
+builder.Services.AddTokenAcquisition();
+
+// use distributed memory to store JWT Tokens
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddDistributedTokenCaches();
+
+// use session timeouts
+builder.Services.AddSession(options =>
+{
+    // Tokens are large, keep the timeout generous.
+    options.IdleTimeout = TimeSpan.FromMinutes(60);
+    options.Cookie.IsEssential = true;
+});
+
+
 var tenantID = builder.Configuration["AzureAd:TenantId"];
 var clientId = builder.Configuration["AzureAd:ClientId"];
 var graphScopes = new[] { "https://graph.microsoft.com/.default" };
 var graphCredential = new ClientSecretCredential(tenantID, clientId, clientSecret);
 builder.Services.AddSingleton(new GraphServiceClient(graphCredential, graphScopes));
 
-builder.Services.AddScoped<IGraphUserService, GraphUserService>();
+// builder.Services
 
-// Global "must be authenticated" by default
-builder.Services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = options.DefaultPolicy;
-});
+builder.Services.AddScoped<IGraphUserService, GraphUserService>();
 
 // this line scopes the IAdminUserUpsertService to the AdminUserUpsertService class
 builder.Services.AddScoped<IAdminUserUpsertService, AdminUserUpsertService>();
 
 
+// consolidate builder policies
+builder.Services.AddAuthorization(options =>
+{
+    // The default policy for the app (Razor Pages) is OIDC/Cookies.
+    options.DefaultPolicy = new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes(OpenIdConnectDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser()
+        .Build();
+
+    // A specific "ApiPolicy" that ONLY accepts JWT Bearer tokens (needs to be added in all controllers).
+    options.AddPolicy("ApiPolicy", new AuthorizationPolicyBuilder()
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .RequireAuthenticatedUser()
+        .Build());
+
+    // custom policy
+    options.AddPolicy("CanBulkUpload", policy =>
+     policy.RequireRole("Admin", "Manager"));
+});
 
 // Role helper policies (username allowlists)
 builder.Services.AddAuthorizationBuilder()
@@ -370,6 +412,8 @@ else
     app.UseExceptionHandler("/error/not-found"); // ensure proper error page
     app.UseHsts();
     app.UseHttpsRedirection();
+
+    app.UseStaticFiles(); // Essential for serving static files like JS
 }
 
 // Dev impersonation helper (?impersonate=empIdOrEmail)
@@ -402,6 +446,8 @@ if (app.Environment.IsDevelopment())
 // Order matters
 app.UseRouting();
 
+// use sessions for tokens
+app.UseSession();
 // Enable WebSockets for SignalR
 app.UseWebSockets();
 
@@ -424,11 +470,13 @@ app.MapStaticAssets();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+    .WithStaticAssets()
+    // require Auth for login
+    .RequireAuthorization();
 
 app.MapHub<AuditLogHub>("/hubs/audit"); // realtime
 app.MapControllers();
-app.MapRazorPages();
+app.MapRazorPages().RequireAuthorization();
 
 // Endpoint list + raw 404 page
 app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>

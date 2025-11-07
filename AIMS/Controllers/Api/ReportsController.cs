@@ -7,6 +7,7 @@ using AIMS.Models;
 using AIMS.Queries;
 using CsvHelper; // Requires CsvHelper NuGet package
 using CsvHelper.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,8 @@ namespace AIMS.Controllers.Api;
 
 // With EntraID wired, we gate via policy configured in Program.cs:
 // [Authorize(Policy = "mbcAdmin")]
+// [AllowAnonymous]
+[Authorize(Policy = "ApiPolicy")]
 [ApiController]
 [Route("api/reports")]
 public class ReportsController : ControllerBase
