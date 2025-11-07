@@ -1,79 +1,30 @@
-.report-table {
-  border: none;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  table-layout: fixed;
-  width: 100%;
-}
-.report-table {
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.report-table td:last-child,
-.report-table th:last-child {
-  max-width: 160px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.report-table thead th {
-  background-color: #34495e;
-  color: #fff;
-}
-
-.report-page-size {
-  width: 95%;
-  margin: 0 auto 20px auto;
-}
-
-.report-table tbody tr:nth-child(odd) {
-  background-color: #E0E4E5;
-}
-
-.report-table th,
-.report-table td {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 250px;
-}
-
-.report-table td[title] {
-  cursor: help;
-}
-
-.report-table td[title]:hover {
-  overflow: visible;
-  white-space: normal;
-  background-color: #f8f9fa;
-  position: relative;
-  z-index: 5;
-}
-
-.report-table input[type="checkbox"] {
-  accent-color: #1abc9c;
-}
-
 html {
   scroll-behavior: smooth;
 }
 
-.btn-mint,
-.add-btn {
-  background-color: #1abc9c;
-  border-color: #1abc9c;
-  color: #fff;
+.page-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
 }
 
-.btn-mint:hover,
-.add-btn:hover {
-  background-color: #17a589;
-  border-color: #17a589;
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #34495e;
+  margin: 0;
+  line-height: 1.2;
 }
 
+.reports-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* header */
 .report-header {
   display: flex;
   justify-content: space-between;
@@ -101,49 +52,73 @@ html {
   border: 1px solid #ccc;
   background-color: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s ease;
 }
 
-.report-search-pill:focus {
-  box-shadow: 0 0 0 3px rgba(56, 178, 172, 0.3);
-  outline: none;
-  border-color: #38b2ac;
-}
-
-.btn-mint,
-.new-report-button {
+.btn-mint {
   background-color: #1abc9c !important;
   color: #fff !important;
   border: none !important;
   font-weight: 500;
   border-radius: 999px;
   padding: 8px 18px;
-  transition: background-color 0.2s ease;
 }
 
-.btn-mint:hover,
-.new-report-button:hover {
+.btn-mint:hover {
   background-color: #17a589 !important;
+}
+
+/* table */
+.report-table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+.report-table thead th {
+  background-color: #2f3f53 !important;
+  color: #fff !important;
+  padding: 12px 16px !important;
+}
+
+.report-table th,
+.report-table td {
+  padding: 12px 16px !important;
+  border-top: 1px solid #dee2e6 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 250px !important;
+}
+
+/* ✅ force zebra striping, highest priority */
+.report-table tbody tr:nth-of-type(odd) td {
+  background-color: #e0e4e5 !important;
+}
+.report-table tbody tr:nth-of-type(even) td {
+  background-color: #ffffff !important;
+}
+
+/* hover (same as Audit Log) */
+.report-table tbody tr:hover td {
+  background-color: #f6f7f8 !important;
+}
+
+/* checkbox */
+.report-table input[type="checkbox"] {
+  accent-color: #1abc9c !important;
 }
 
 @media (max-width: 992px) {
   .report-header {
     flex-wrap: nowrap;
-    flex-direction: row;
-    align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
   }
 
   .report-header .left-section {
     flex: 1;
-  }
-
-  .report-header .right-section {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
   }
 
   .report-search-pill {
@@ -154,7 +129,6 @@ html {
 
 @media (max-width: 576px) {
   .report-header {
-    flex-wrap: nowrap;
     flex-direction: row;
     justify-content: space-between;
     gap: 0.5rem;
@@ -165,10 +139,9 @@ html {
   }
 
   .report-header .right-section {
-    display: flex;
-    align-items: center;
     gap: 0.4rem;
   }
+
   .report-search-pill {
     width: 100%;
     max-width: 200px;
@@ -178,70 +151,5 @@ html {
     padding: 6px 12px;
     font-size: 0.85rem;
   }
-
-  .new-report-button {
-    flex: 1 1 auto;
-    text-align: center;
-  }
 }
 
-.page-title-wrapper {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  margin-bottom: 1rem !important;
-}
-
-.page-title {
-  font-size: 1.75rem !important;
-  font-weight: 700 !important;
-  color: var(--aims-ink, #34495e) !important;
-  margin: 0 !important;
-  line-height: 1.2 !important;
-}
-
-.reports-table-wrapper {
-  background-color: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
-}
-
-.reports-table-wrapper table {
-  border-radius: 8px;
-  overflow: hidden;
-}
-.reports-container {
-  padding: 24px;
-  background: #f8f9fa;
-  border-radius: 12px;
-}
-.reports-table-wrapper {
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.05);
-  border: none;
-}
-.reports-table-wrapper table thead tr:first-child th:first-child {
-  border-top-left-radius: 8px;
-}
-.reports-table-wrapper table thead tr:first-child th:last-child {
-  border-top-right-radius: 8px;
-}
-
-.reports-table-wrapper table,
-.reports-table-wrapper th,
-.reports-table-wrapper td {
-  border: none !important;
-  box-shadow: none !important;
-}
-.reports-table-wrapper table {
-  background: #fff;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-.reports-table-wrapper thead {
-  background-color: #2f3f53; /* same dark blue from Audit Log */
-  color: #fff;
-}
