@@ -328,6 +328,7 @@
 
         if (!graphId) {
             alert("Please pick a user from the Azure AD suggestions first.");
+            btn?.removeAttribute("disabled"); // Re-enable button
             return;
         }
 
@@ -335,36 +336,45 @@
         const roleId = parseInt(roleVal, 10);
         if (!Number.isInteger(roleId)) {
             alert("Please choose a role.");
+            btn?.removeAttribute("disabled"); // Re-enable button
             return;
         }
 
-        const resp = await fetch("/api/admin/users", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ graphObjectId: graphId, roleId }), // roleId (camelCase)
-        });
+        try {
+            const resp = await fetch("/api/admin/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ graphObjectId: graphId, roleId }), // roleId (camelCase)
+            });
 
-        if (!resp.ok) {
-            const msg = await resp.text().catch(() => "");
-            alert(msg || "Failed to save user.");
-            return;
+            if (!resp.ok) {
+                const msg = await resp.text().catch(() => "");
+                alert(msg || "Failed to save user.");
+                btn?.removeAttribute("disabled"); // Re-enable button on error
+                return;
+            }
+
+            const saved = await resp.json();
+
+            // Insert the saved row into the table
+            insertUserRow({
+                Name: saved.fullName,
+                Email: saved.email,
+                Role: getRoleNameFromId(roleId) || "",
+                Status: status,
+                SeparationDate: "",
+            });
+
+            applyAdminTableFilters();
+            hideModalById("addUserModal");
+            document.getElementById("addUserForm")?.reset();
+            document.getElementById("aadUserResults")?.replaceChildren();
+            btn?.removeAttribute("disabled"); // Re-enable button after success
+        } catch (error) {
+            console.error("Error adding user:", error);
+            alert("An error occurred while adding the user. Please try again.");
+            btn?.removeAttribute("disabled"); // Re-enable button on error
         }
-
-        const saved = await resp.json();
-
-        // Insert the saved row into the table
-        insertUserRow({
-            Name: saved.fullName,
-            Email: saved.email,
-            Role: getRoleNameFromId(roleId) || "",
-            Status: status,
-            SeparationDate: "",
-        });
-
-        applyAdminTableFilters();
-        hideModalById("addUserModal");
-        document.getElementById("addUserForm")?.reset();
-        document.getElementById("aadUserResults")?.replaceChildren();
     }
 
     async function checkUserExists(graphId) {

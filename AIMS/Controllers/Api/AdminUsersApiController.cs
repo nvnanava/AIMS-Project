@@ -20,7 +20,7 @@ public class AdminUsersApiController : ControllerBase
         _db = db;
     }
 
-    public record AddAadUserRequest(string GraphObjectId, int? RoleId, int? SupervisorId); //defines the request body for adding an AAD user, used in the POST method
+    public record AddAadUserRequest(string GraphObjectId, int? RoleId, int? SupervisorId, int? OfficeId); //defines the request body for adding an AAD user, used in the POST method
 
     [HttpGet("exists")] // Endpoint to check if a user with the given GraphObjectId exists
     public async Task<IActionResult> Exists([FromQuery] string graphObjectId, CancellationToken ct) //checks if a user with the specified GraphObjectId exists in the database
@@ -38,7 +38,7 @@ public class AdminUsersApiController : ControllerBase
         if (string.IsNullOrWhiteSpace(req.GraphObjectId))
             return BadRequest("GraphObjectId is required.");
 
-        var saved = await _svc.UpsertAdminUserAsync(req.GraphObjectId, req.RoleId, req.SupervisorId, ct); //this calls the service to upsert the user from AAD
+        var saved = await _svc.UpsertAdminUserAsync(req.GraphObjectId, req.RoleId, req.SupervisorId, req.OfficeId, ct); //this calls the service to upsert the user from AAD
         return Ok(new //returns the saved user details as JSON
         {
             saved.UserID,

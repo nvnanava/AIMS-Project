@@ -25,7 +25,7 @@
             </div>
 
             <div class="modal-body aimsds-body">
-                <form id="addUserForm">
+                <form id="addUserForm" onsubmit="AIMS.Admin.addUser(event)">
                      <!-- Hidden: holds the Azure AD object id from the picker -->
                     <input type="hidden" id="graphObjectId" name="graphObjectId" />
                     <label for="userName" class="form-label fw-bold">Name</label>
