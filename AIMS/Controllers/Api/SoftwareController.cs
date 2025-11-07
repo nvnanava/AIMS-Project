@@ -3,6 +3,7 @@ using AIMS.Dtos.Assets;
 using AIMS.Dtos.Software;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Services;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -179,7 +180,7 @@ public class SoftwareController : ControllerBase
         return Ok(software);
     }
 
-    //add bulk software licenses 
+    // add bulk software licenses 
     [HttpPost("add-bulk")]
     [Authorize(Policy = "mbcAdmin")]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -206,7 +207,7 @@ public class SoftwareController : ControllerBase
         {
             var dto = dtos[i];
             var itemErrors = new List<string>();
-            //validate unique SoftwareLicenseKey
+            // validate unique SoftwareLicenseKey
 
             // required fields
             if (string.IsNullOrWhiteSpace(dto.SoftwareName) ||
@@ -224,7 +225,7 @@ public class SoftwareController : ControllerBase
                 }
             }
 
-            //validate SoftwareCost is non-negative
+            // validate SoftwareCost is non-negative
             if (dto.SoftwareCost < 0)
             {
                 itemErrors.Add("Software cost cannot be negative.");
@@ -349,5 +350,105 @@ public class SoftwareController : ControllerBase
             .FirstOrDefaultAsync();
 
         return Ok(Asset);
+    }
+
+    // -----------------------------
+    // BODY-ONLY SEAT ASSIGN / RELEASE
+    // -----------------------------
+
+    [HttpPost("assign")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AssignSeat(
+        [FromBody] AssignSeatRequestDto dto,
+        [FromServices] SoftwareSeatService svc,
+        CancellationToken ct = default)
+    {
+        // Expect dto.SoftwareID + dto.UserID
+        var exists = await _db.SoftwareAssets.AnyAsync(s => s.SoftwareID == dto.SoftwareID, ct);
+        if (!exists) return NotFound();
+
+        try
+        {
+            await svc.AssignSeatAsync(dto.SoftwareID, dto.UserID, ct);
+
+            // Return current counts
+            var sw = await _db.SoftwareAssets
+                .Where(s => s.SoftwareID == dto.SoftwareID)
+                .Select(s => new
+                {
+                    s.SoftwareID,
+                    s.LicenseTotalSeats,
+                    s.LicenseSeatsUsed
+                })
+                .SingleAsync(ct);
+
+            return Created("/api/software/assign", new
+            {
+                sw.SoftwareID,
+                sw.LicenseTotalSeats,
+                sw.LicenseSeatsUsed,
+                dto.UserID,
+                message = "Seat assigned."
+            });
+        }
+        catch (SeatCapacityException ex)
+        {
+            return Conflict(new { message = ex.Message }); // “No available seats…”
+        }
+        catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Assignments_SoftwareID_UserID_UnassignedAtUtc") == true)
+        {
+            // unique index on (SoftwareID, UserID, UnassignedAtUtc IS NULL) tripped
+            return Conflict(new { message = "User already has an active seat for this software." });
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "Concurrency conflict. Please try again." });
+        }
+    }
+
+    [HttpPost("release")]
+    [Authorize(Policy = "mbcAdmin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ReleaseSeat(
+        [FromBody] ReleaseSeatRequestDto dto,
+        [FromServices] SoftwareSeatService svc,
+        CancellationToken ct = default)
+    {
+        // Expect dto.SoftwareID + dto.UserID
+        var exists = await _db.SoftwareAssets.AnyAsync(s => s.SoftwareID == dto.SoftwareID, ct);
+        if (!exists) return NotFound();
+
+        try
+        {
+            await svc.ReleaseSeatAsync(dto.SoftwareID, dto.UserID, ct);
+
+            var sw = await _db.SoftwareAssets
+                .Where(s => s.SoftwareID == dto.SoftwareID)
+                .Select(s => new
+                {
+                    s.SoftwareID,
+                    s.LicenseTotalSeats,
+                    s.LicenseSeatsUsed
+                })
+                .SingleAsync(ct);
+
+            return Ok(new
+            {
+                sw.SoftwareID,
+                sw.LicenseTotalSeats,
+                sw.LicenseSeatsUsed,
+                dto.UserID,
+                message = "Seat released (idempotent if none was open)."
+            });
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "Concurrency conflict. Please try again." });
+        }
     }
 }
