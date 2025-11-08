@@ -54,6 +54,7 @@
 
 <script>
   window.pageData = {
+    // store the User's ID in the window object so that it can easily be called from other functions
     user: "@ViewData["CurrentUserId"]",
     };
 </script>
@@ -200,6 +201,7 @@
                <select id="officeName" name="officeName" class="form-select" required>
                             <option value="">Select Office</option>
                             
+                           @* Populate offices, using names as display values and IDs as actual values  *@
                           @{ var offices = ViewData["Offices"] as List<OfficeVm> ?? new List<OfficeVm>(); }
                           @foreach (var office in offices) { 
                             <option value="@office.OfficeID">@office.OfficeName</option>

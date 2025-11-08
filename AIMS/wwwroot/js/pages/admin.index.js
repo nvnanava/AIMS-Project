@@ -139,6 +139,7 @@
                 if (nameInput) nameInput.value = name;
                 if (emailInput) emailInput.value = email;
                 if (idInput) idInput.value = u.id || ""; // set AAD object id
+                // automatically populate the AAD office name
                 if (officeInput) officeInput.value = office;
 
                 //: preflight check
@@ -151,10 +152,15 @@
         resultsList.appendChild(frag);
     }
 
+
+    // if Admins wish to use existing offices from the local DB, they can
+    // enter text into the office field to search for those offices.
     async function searchOffices(query) {
         const resultsList = document.getElementById("officeResults");
+        // if DOM element not found, exit
         if (!resultsList) return;
         resultsList.innerHTML = "";
+        // if query is null, exit
         if (!query) return;
 
         if (aadAbortCtrl) aadAbortCtrl.abort();
@@ -162,6 +168,7 @@
 
         resultsList.innerHTML = `<div class="aad-hint">Searching…</div>`;
         try {
+            // use an automated builder to create the parameter structure
             const params = new URLSearchParams({
                 query: query
             });
@@ -175,15 +182,18 @@
         }
     }
 
+    // create elements for office results in the DOM
     async function renderOfficeResults(items, query) {
         const resultsList = document.getElementById("officeResults");
         if (!resultsList) return;
 
         resultsList.innerHTML = "";
         if (!Array.isArray(items) || items.length === 0) {
+            // let the user know that a new office will be added if it is not already found
+            // in the local db.
             resultsList.innerHTML = `<div class="aad-hint">No results for "${escapeHtml(
                 query
-            )}"</div>`;
+            )}. A new office will be added into the database."</div>`;
             return;
         }
 
@@ -193,6 +203,7 @@
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "aad-user-item";
+            // highlight office names/query matching
             btn.innerHTML = `
                 <div class="aad-line"><strong>${highlight(
                 officeName,
@@ -503,6 +514,7 @@
             });
         }
 
+        // wire office search functionality
         const officeInput = document.getElementById("userOffice");
         if (officeInput) {
             officeInput.addEventListener("input", () => {

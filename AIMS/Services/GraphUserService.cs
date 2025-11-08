@@ -18,6 +18,7 @@ public class GraphUserService : IGraphUserService
         var usersResponse = await _graphClient.Users.GetAsync(requestConfig =>
         {
             requestConfig.QueryParameters.Top = 10;
+            // in modern AAD, office names are stored under the officeLocation key
             requestConfig.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName", "officeLocation" };
             if (!string.IsNullOrEmpty(search))
             {

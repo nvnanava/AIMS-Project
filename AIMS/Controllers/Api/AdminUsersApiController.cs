@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 public class AdminUsersApiController : ControllerBase
 {
     private readonly IAdminUserUpsertService _svc; // Service to upsert admin users
+    // use OfficeQuery to abstract complex logic
     private readonly OfficeQuery _officeQuery;
     private readonly AimsDbContext _db;
     public AdminUsersApiController(IAdminUserUpsertService svc, AimsDbContext db, OfficeQuery officeQuery)
@@ -23,6 +24,7 @@ public class AdminUsersApiController : ControllerBase
         _officeQuery = officeQuery;
     }
 
+    // we use OfficeName here since that is what is held in common between AAD and the local DB
     public record AddAadUserRequest(string GraphObjectId, int? RoleId, int? SupervisorId, string? OfficeName); //defines the request body for adding an AAD user, used in the POST method
 
     [HttpGet("exists")] // Endpoint to check if a user with the given GraphObjectId exists
@@ -42,18 +44,25 @@ public class AdminUsersApiController : ControllerBase
             return BadRequest("GraphObjectId is required.");
 
 
+        // make sure that OfficeName is not null
         if (string.IsNullOrWhiteSpace(req.OfficeName))
         {
             return BadRequest("OfficeName is required.");
         }
 
+        // check if the database contains an office of the same name
         var office = await _db.Offices.Where(o => o.OfficeName.ToLower() == req.OfficeName.ToLower()).FirstOrDefaultAsync(ct);
+        // store the OfficeID
         var OfficeId = office is not null ? office.OfficeID : -1;
+
+        // if a new office is being added
         if (office is null)
         {
+            // create the new office and retrieve its ID in the local DB
             OfficeId = await _officeQuery.AddOffice(req.OfficeName);
         }
 
+        // pass on OfficeId to the UpsertService
         var saved = await _svc.UpsertAdminUserAsync(req.GraphObjectId, req.RoleId, req.SupervisorId, OfficeId, ct); //this calls the service to upsert the user from AAD
         return Ok(new //returns the saved user details as JSON
         {

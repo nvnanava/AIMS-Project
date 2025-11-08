@@ -63,7 +63,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> Create(
         [FromQuery] DateOnly start,
         [FromQuery] string reportName,
-        [FromQuery] string CreatorUserID,
+        [FromQuery] string CreatorUserID, // IDs from AAD are in string format. This is the common linkage between LocalDB and AAD.
         [FromQuery] string type,
         [FromQuery] DateOnly? end = null,
         [FromQuery] int? OfficeID = null,
@@ -83,6 +83,7 @@ public class ReportsController : ControllerBase
         }
         if (OfficeID is not null)
         {
+            // OfficeIDs are pulled from the Local DB on the frontend
             var office = await _db.Offices.Where(o => o.OfficeID == OfficeID).FirstOrDefaultAsync(ct);
 
             if (office is null)
@@ -92,7 +93,7 @@ public class ReportsController : ControllerBase
             }
         }
 
-        // check user
+        // check user, using GraphObjectID
         var user = await _db.Users.Where(u => u.GraphObjectID == CreatorUserID).FirstOrDefaultAsync(ct);
         if (user is null)
         {
@@ -159,6 +160,7 @@ public class ReportsController : ControllerBase
             Description = desc,
 
             // Who/Where generated
+            // Reports are tied to local DB users. So, use the PK associated with local DB.
             GeneratedByUserID = user.UserID,
 
             GeneratedForOfficeID = OfficeID,
