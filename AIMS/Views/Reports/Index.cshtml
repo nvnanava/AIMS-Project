@@ -1,3 +1,4 @@
+@using AIMS.ViewModels
 @* ======================================================================
    AIMS View: Reports/Index
    ----------------------------------------------------------------------
@@ -33,7 +34,6 @@
 
 @{
   ViewData["Title"] = "Reports";
-  ViewData["User"] = @User?.Identity?.Name;
 
     // Table headers (server-rendered; values used only for markup)
     var tableHeaders = new List<string> { "Report Name", "Type", "Description", "Office", "Date Created", "Created By" };
@@ -43,58 +43,6 @@
     var officeHeaders = new List<string> { "Office", "Asset", "Status" };
     var assetHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assigned To", "Status" };
 
-    var userData = new List<Dictionary<string, string>> {
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Lenovo ThinkPad E16"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Dell S2421NX"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Logitech Zone 300"},{"Status","Inactive"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Lenovo IdeaCentre 3"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Microsoft 365 Business"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP 527SH"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Logitech Zone Vibe 100"},{"Status","Inactive"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Dell Inspirion 3030"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Inactive"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
-        new() { {"Name","John Smith"},{"Email","Jsmith@email.com"},{"Role","Admin"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
-    };
-
-    var officeData = new List<Dictionary<string, string>> {
-        new() { {"Office","10"},{"Asset","Lenovo Thinkpad E16"},{"Status","Active"} },
-        new() { {"Office","31"},{"Asset","Dell S2421NX"},{"Status","Inactive"} },
-        new() { {"Office","14"},{"Asset","Logitech Zone 300"},{"Status","Active"} },
-        new() { {"Office","28"},{"Asset","Lenovo IdeaCentre 3"},{"Status","Active"} },
-        new() { {"Office","14"},{"Asset","Microsoft 365 Business"},{"Status","Active"} },
-        new() { {"Office","26"},{"Asset","HP 527SH"},{"Status","Active"} },
-        new() { {"Office","13"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
-        new() { {"Office","21"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
-        new() { {"Office","28"},{"Asset","Logitech Zone Vibe 100"},{"Status","Inactive"} },
-        new() { {"Office","29"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Active"} },
-        new() { {"Office","46"},{"Asset","Dell Inspirion 3030"},{"Status","Active"} },
-        new() { {"Office","51"},{"Asset","Samsung Galaxy Book4"},{"Status","Active"} },
-        new() { {"Office","38"},{"Asset","Belkin BoostCharge 3.3ft USB-C"},{"Status","Inactive"} },
-        new() { {"Office","21"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
-        new() { {"Office","42"},{"Asset","HP Pavilion TP01-2234"},{"Status","Inactive"} },
-    };
-
-    var assetData = new List<Dictionary<string, string>> {
-        new() { {"Asset Name","Lenovo ThinkPad E16"},{"Type","Laptop"},{"Tag #","LT-0020"},{"Assigned To","John Smith"},{"Status","Damaged"} },
-        new() { {"Asset Name","Dell S2421NX"},{"Type","Laptop"},{"Tag #","MN-0001"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","Logitech Zone 300"},{"Type","Headphone"},{"Tag #","HS-0080"},{"Assigned To","Unassigned"},{"Status","Available"} },
-        new() { {"Asset Name","Lenovo IdeaCentre 3"},{"Type","Laptop"},{"Tag #","DT-0011"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","Microsoft 365 Business"},{"Type","Laptop"},{"Tag #","SW-0100"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","HP 527SH"},{"Type","Laptop"},{"Tag #","MN-0023"},{"Assigned To","Unassigned"},{"Status","Damaged"} },
-        new() { {"Asset Name","HP Pavilion TP01-2234"},{"Type","Laptop"},{"Tag #","DT-0075"},{"Assigned To","John Smith"},{"Status","Due Soon"} },
-        new() { {"Asset Name","Logitech Zone Vibe 100"},{"Type","Monitor"},{"Tag #","HS-0015"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","Belkin BoostCharge 3.3ft USB-C"},{"Type","Keyboard"},{"Tag #","CC-0088"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","Dell Inspirion 3030"},{"Type","Mouse"},{"Tag #","SW-0100"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","Samsung Galaxy Book4"},{"Type","Monitor"},{"Tag #","MN-0023"},{"Assigned To","Unassigned"},{"Status","Available"} },
-        new() { {"Asset Name","Belkin BoostCharge 3.3ft  USB-C"},{"Type","Laptop"},{"Tag #","DT-0075"},{"Assigned To","John Smith"},{"Status","In Repair"} },
-        new() { {"Asset Name","HP Pavilion TP01-2234"},{"Type","Laptop"},{"Tag #","LT-0005"},{"Assigned To","John Smith"},{"Status","Assigned"} },
-        new() { {"Asset Name","HP Pavilion TP01-2234"},{"Type","Laptop"},{"Tag #","HS-0015"},{"Assigned To","John Smith"},{"Status","In Repair"} },
-    };
 }
 
 @section Styles {
@@ -105,7 +53,9 @@
 }
 
 <script>
-  window.pageData = { user: "@ViewData["User"]" };
+  window.pageData = {
+    user: "@ViewData["CurrentUserId"]",
+    };
 </script>
 
 
@@ -115,6 +65,7 @@
 
 <div class="page-wrapper">
   <div class="table-wrapper reports-page">
+<div class="reports-page"> @* page-scoped wrapper for bg & spacing *@
     <div class="report-page-size">
 
 <div class="report-management">
@@ -129,54 +80,25 @@
       />
     </div>
 
-    <div class="right-section">
-      <button type="button" class="btn btn-mint">
-        <i class="bi bi-download"></i> Download CSV
-      </button>
-<div class="dropdown">
-<button
-  class="btn btn-mint dropdown-toggle"
-  type="button"
-  id="newReportDropdown"
-  data-bs-toggle="dropdown"
-  aria-expanded="false"
->
-  <i class="bi bi-plus-circle"></i> New Report
-</button>
-<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="newReportDropdown">
-  <li>
-    <button
-      class="dropdown-item"
-      type="button"
-      data-bs-toggle="modal"
-      data-bs-target="#generateAssignmentReport"
-    >
-      Assignment Report
-    </button>
-  </li>
-  <li>
-    <button
-      class="dropdown-item"
-      type="button"
-      data-bs-toggle="modal"
-      data-bs-target="#generateOfficeReport"
-    >
-      Office Report
-    </button>
-  </li>
-  <li>
-    <button
-      class="dropdown-item"
-      type="button"
-      data-bs-toggle="modal"
-      data-bs-target="#generateCustomReport"
-    >
-      Custom Report
-    </button>
-  </li>
-</ul>
-</div>
-</div>
+    <!-- Right: Buttons -->
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-mint download-csv-button">
+            Download CSV
+        </button>
+        <div class="dropdown">
+            <button class="btn btn-mint dropdown-toggle" type="button" id="newReportDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-plus-circle"></i> New Report
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="newReportDropdown">
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#generateAssignmentReport">Assignment Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal"
+                    data-bs-target="#generateOfficeReport">Office Report</button></li>
+                <li><button class="dropdown-item" type="button" data-bs-toggle="modal"
+                    data-bs-target="#generateCustomReport">Custom Report</button></li>
+            </ul>
+        </div>
+    </div>
 </div>
 </div>
 </div>
@@ -274,8 +196,15 @@
           </div>
 
           <div class="col-12">
-            <label for="officeName" class="form-label">Office Number <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="officeName" name="officeName" required />
+            <label for="officeName" class="form-label">Office Name <span class="text-danger">*</span></label>
+               <select id="officeName" name="officeName" class="form-select" required>
+                            <option value="">Select Office</option>
+                            
+                          @foreach (var office in  (List<OfficeVm>)ViewData["Offices"]) { 
+                            <option value="@office.OfficeID">@office.OfficeName</option>
+                          }
+                        </select>
+              
           </div>
 
           <div class="col-md-6">
@@ -395,39 +324,6 @@
             </thead>
 
             <tbody id="asset-report-tbody">
-              @if (assetData.Count == 0)
-              {
-                <tr>
-                  <td colspan="@assetHeaders.Count" style="text-align:center;">No data available</td>
-                </tr>
-              }
-              else
-              {
-                @foreach (var row in assetData)
-                {
-                  <tr>
-                    @foreach (var header in assetHeaders)
-                    {
-                      if (header == "Status")
-                      {
-                        <td>
-                          <span class="status @row[header].ToLower().Replace(" ", "")">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                      else
-                      {
-                        <td>
-                          <span class="cell-text">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                    }
-                  </tr>
-                }
-              }
             </tbody>
           </table>
         </div>
@@ -458,39 +354,6 @@
             </thead>
 
             <tbody id="custom-report-tbody">
-              @if (assetData.Count == 0)
-              {
-                <tr>
-                  <td colspan="@assetHeaders.Count" style="text-align:center;">No data available</td>
-                </tr>
-              }
-              else
-              {
-                @foreach (var row in assetData)
-                {
-                  <tr>
-                    @foreach (var header in assetHeaders)
-                    {
-                      if (header == "Status")
-                      {
-                        <td>
-                          <span class="status @row[header].ToLower().Replace(" ", "")">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                      else
-                      {
-                        <td>
-                          <span class="cell-text">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                    }
-                  </tr>
-                }
-              }
             </tbody>
           </table>
         </div>
@@ -521,39 +384,6 @@
             </thead>
 
             <tbody id="user-report-tbody">
-              @if (userData.Count == 0)
-              {
-                <tr>
-                  <td colspan="@userHeaders.Count" style="text-align:center;">No data available</td>
-                </tr>
-              }
-              else
-              {
-                @foreach (var row in userData)
-                {
-                  <tr>
-                    @foreach (var header in userHeaders)
-                    {
-                      if (header == "Status")
-                      {
-                        <td>
-                          <span class="status @row[header].ToLower().Replace(" ", "")">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                      else
-                      {
-                        <td>
-                          <span class="cell-text">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                    }
-                  </tr>
-                }
-              }
             </tbody>
           </table>
         </div>
@@ -584,40 +414,6 @@
             </thead>
 
             <tbody id="office-report-tbody">
-              @if (officeData.Count == 0)
-              {
-                <tr>
-                  <td colspan="@officeHeaders.Count" style="text-align:center;">No data available</td>
-                </tr>
-              }
-              else
-              {
-                @foreach (var row in officeData)
-                {
-                  <tr>
-                    @foreach (var header in officeHeaders)
-                    {
-                      if (header == "Status")
-                      {
-                        <td>
-                          <span class="status @row[header].ToLower().Replace(" ", "")">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                      else
-                      {
-                        <td>
-                          <span class="cell-text">
-                            @(row.ContainsKey(header) ? row[header] : "-")
-                          </span>
-                        </td>
-                      }
-                    }
-                  </tr>
-                }
-              }
-            </tbody>
           </table>
         </div>
       </div>

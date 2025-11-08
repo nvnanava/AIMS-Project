@@ -73,6 +73,7 @@ builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
 builder.Services.AddScoped<ReportsQuery>();
+builder.Services.AddScoped<OfficeQuery>();
 
 // SignalR for real-time audit updates
 builder.Services.AddSignalR(o =>

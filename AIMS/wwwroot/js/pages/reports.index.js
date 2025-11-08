@@ -223,9 +223,7 @@
             const startDate = document.getElementById("dateRange1")?.value || "";
             const endDate = document.getElementById("dateRange2")?.value || "";
             const description = (document.getElementById("inputDescription")?.value || "").trim();
-            const CreatorUserID = 4; // replace with real user id
-
-            // alert(window.pageData.user);
+            const CreatorUserID = window.pageData.user; // replace with real user id
 
             if (!reportName) return alert("Please enter a report name.");
             if (!startDate) return alert("Please select a start date.");
@@ -255,7 +253,7 @@
             const startDate = document.getElementById("officeStartDate")?.value || "";
             const endDate = document.getElementById("officeEndDate")?.value || "";
             const description = (document.getElementById("officeDescription")?.value || "").trim();
-            const CreatorUserID = 1;
+            const CreatorUserID = window.pageData.user;
 
             if (!reportName) return alert("Please enter a report name.");
             if (!officeId) return alert("Please select an office number.");
@@ -285,7 +283,7 @@
             const startDate = document.getElementById("customStartDate")?.value || "";
             const endDate = document.getElementById("customEndDate")?.value || "";
             const description = (document.getElementById("customDescription")?.value || "").trim();
-            const CreatorUserID = 1;
+            const CreatorUserID = window.pageData.user;
 
             const customOptions = {
                 seeHardware: document.getElementById("seeHardware")?.checked ?? true,

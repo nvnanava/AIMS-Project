@@ -63,7 +63,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> Create(
         [FromQuery] DateOnly start,
         [FromQuery] string reportName,
-        [FromQuery] int CreatorUserID,
+        [FromQuery] string CreatorUserID,
         [FromQuery] string type,
         [FromQuery] DateOnly? end = null,
         [FromQuery] int? OfficeID = null,
@@ -93,7 +93,7 @@ public class ReportsController : ControllerBase
         }
 
         // check user
-        var user = await _db.Users.Where(u => u.UserID == CreatorUserID).FirstOrDefaultAsync(ct);
+        var user = await _db.Users.Where(u => u.GraphObjectID == CreatorUserID).FirstOrDefaultAsync(ct);
         if (user is null)
         {
             ModelState.AddModelError(nameof(CreatorUserID), "Please specify a valid CreatorUserID.");
@@ -159,7 +159,7 @@ public class ReportsController : ControllerBase
             Description = desc,
 
             // Who/Where generated
-            GeneratedByUserID = CreatorUserID,
+            GeneratedByUserID = user.UserID,
 
             GeneratedForOfficeID = OfficeID,
             Content = reportBytes
@@ -217,7 +217,7 @@ public class ReportsController : ControllerBase
 
                 // Assignee info
                 Assignee = a.User!.FullName,
-                AssigneeOffice = (a.User == null || a.User.Office == null || a.User.Office.OfficeName == null) ? "N/A" : a.User.Office.OfficeName,
+                AssigneeOffice = (a.User == null || a.User.Office == null || string.IsNullOrEmpty(a.User.Office.OfficeName)) ? "N/A" : a.User.Office.OfficeName,
 
                 // Asset Info
                 AssetType = a.AssetKind,
