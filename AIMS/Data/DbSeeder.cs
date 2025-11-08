@@ -111,11 +111,19 @@ public static class DbSeeder
 
         // Preload Roles map for later
         var roleByName = await db.Roles.AsNoTracking().ToDictionaryAsync(r => r.RoleName, ct);
+        var roleById = await db.Roles.AsNoTracking().ToDictionaryAsync(r => r.RoleID, ct);
 
         // 3) Users (key: Email). Columns (case-insensitive):
-        // FullName, Email, EmployeeNumber, IsActive, RoleName
+        // Recommended headers:
+        //   UserID (optional, CSV id only)
+        //   FullName, Email, EmployeeNumber, IsActive,
+        //   RoleName (or RoleID), OfficeID, IsArchived, SupervisorID (CSV id of supervisor)
+        //
+        // Supervisor relationships are derived from the SupervisorID column in users.csv
+        // and then resolved via EmployeeNumber -> real DB UserID mapping.
         await ApplyCsvAsync(db, Path.Combine(dir, "users.csv"), async rows =>
         {
+            // ---------- First pass: upsert users (no supervisor links yet) ----------
             foreach (var r in rows)
             {
                 var email = Get(r, "email");
@@ -123,17 +131,87 @@ public static class DbSeeder
                 var officeIdRaw = ParseInt(Get(r, "officeid"), 0);
                 int? officeId = officeIdRaw == 0 ? null : officeIdRaw;
 
+                // Try RoleName first
+                var roleNameRaw = Get(r, "rolename");
+                var roleIdRaw = ParseInt(Get(r, "roleid"), 0);
+
+                int resolvedRoleId;
+
+                if (!string.IsNullOrWhiteSpace(roleNameRaw) &&
+                    roleByName.TryGetValue(roleNameRaw, out var roleFromName))
+                {
+                    resolvedRoleId = roleFromName.RoleID;
+                }
+                else if (roleIdRaw != 0 && roleById.TryGetValue(roleIdRaw, out var roleFromId))
+                {
+                    resolvedRoleId = roleFromId.RoleID;
+                }
+                else
+                {
+                    // Final fallback: Employee
+                    resolvedRoleId = roleByName.GetValueOrDefault("Employee")?.RoleID ?? 0;
+                }
+
                 var incoming = new User
                 {
                     FullName = Get(r, "fullname"),
                     Email = email,
                     EmployeeNumber = Get(r, "employeenumber"),
                     IsArchived = ParseBool(Get(r, "isArchived"), defaultValue: true),
-                    RoleID = roleByName.TryGetValue(Get(r, "rolename"), out var rr) ? rr.RoleID : roleByName.GetValueOrDefault("Employee")?.RoleID ?? 0,
-                    OfficeID = officeId
+                    RoleID = resolvedRoleId,
+                    OfficeID = officeId,
+                    GraphObjectID = Get(r, "graphobjectid")
                 };
+
                 await UpsertUserAsync(db, incoming, ct);
             }
+
+            await db.SaveChangesAsync(ct);
+
+            // ---------- Second pass: wire SupervisorID relationships ----------
+            // Build map: CSV UserID -> EmployeeNumber from users.csv
+            var csvIdToEmp = new Dictionary<int, string>();
+            foreach (var r in rows)
+            {
+                var csvUserId = ParseInt(Get(r, "userid"), 0);
+                var emp = Get(r, "employeenumber");
+
+                if (csvUserId != 0 && !string.IsNullOrWhiteSpace(emp))
+                {
+                    csvIdToEmp[csvUserId] = emp;
+                }
+            }
+
+            // Load actual users from DB keyed by EmployeeNumber
+            var usersByEmp = await db.Users.AsNoTracking()
+                .Where(u => u.EmployeeNumber != null)
+                .ToDictionaryAsync(u => u.EmployeeNumber!, ct);
+
+            // For each CSV row, resolve its supervisor via SupervisorID -> EmployeeNumber
+            foreach (var r in rows)
+            {
+                var emp = Get(r, "employeenumber");
+                var supervisorCsvId = ParseInt(Get(r, "supervisorid"), 0);
+
+                // No employee number or no supervisor -> nothing to link
+                if (string.IsNullOrWhiteSpace(emp) || supervisorCsvId == 0)
+                    continue;
+
+                // Find supervisor's EmployeeNumber by their CSV UserID
+                if (!csvIdToEmp.TryGetValue(supervisorCsvId, out var supervisorEmp))
+                    continue; // supervisor not found in users.csv
+
+                // Resolve both user and supervisor from DB
+                if (!usersByEmp.TryGetValue(emp, out var user))
+                    continue;
+
+                if (!usersByEmp.TryGetValue(supervisorEmp, out var supervisor))
+                    continue;
+
+                // Use existing helper to set SupervisorID if it differs
+                await EnsureSupervisorAsync(db, user, supervisor.UserID, ct);
+            }
+
             await db.SaveChangesAsync(ct);
         }, logger);
 

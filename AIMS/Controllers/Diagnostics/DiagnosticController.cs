@@ -29,6 +29,39 @@ public class DiagnosticsController : ControllerBase
         _assetQuery = assetQuery;
     }
 
+    // ---------- 0) Debug offices helpers ----------
+    // GET /api/diag/offices
+    [HttpGet("offices")]
+    public async Task<IActionResult> GetOffices()
+    {
+        var offices = await _db.Offices
+            .AsNoTracking()
+            .Select(o => new { o.OfficeID, o.OfficeName })
+            .ToListAsync();
+
+        return Ok(offices);
+    }
+
+    // POST /api/diag/seed-offices
+    [HttpPost("seed-offices")]
+    public async Task<IActionResult> SeedOffices()
+    {
+        if (await _db.Offices.AnyAsync())
+            return Ok("Offices already exist — no action taken.");
+
+        var offices = new[]
+        {
+            new Office { OfficeName = "Houston",  Location = "Houston, TX" },
+            new Office { OfficeName = "San Ramon", Location = "San Ramon, CA" },
+            new Office { OfficeName = "Remote",   Location = "Remote" }
+        };
+
+        _db.Offices.AddRange(offices);
+        await _db.SaveChangesAsync();
+
+        return Ok("Seeded 3 offices successfully.");
+    }
+
     // ---------- 1) Quick sanity: table counts ----------
     [HttpGet("db-summary")]
     public async Task<IActionResult> GetDbSummary()

@@ -141,16 +141,18 @@
             const typeLower = (asset.type || "").toLowerCase();
 
             if (typeLower.includes("software")) {
-                // Software: show assigned seats vs total seats, or "—" if no data
-                const assigned = asset.assignedSeats ?? asset.SeatsUsed ?? 0;
-                const total = asset.totalSeats ?? asset.SeatsTotal ?? "?";
+                // -------------- REAL SEAT VALUES ------------
+                const used = Number(asset.licenseSeatsUsed ?? 0);
+                const total = Number(asset.licenseTotalSeats ?? 0);
 
-                asset.displaySeatOrTag = (assigned || total !== "?")
-                    ? `Seat ${assigned} of ${total}`
-                    : "—";
+                asset.displaySeatOrTag =
+                    (!Number.isNaN(used) && !Number.isNaN(total) && total > 0)
+                        ? `Seat ${used} of ${total}`
+                        : "—";
             } else {
-                // Hardware: display tag or ID
-                asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
+                // Hardware tag display
+                asset.displaySeatOrTag =
+                    asset.assetTag || asset.tag || asset.hardwareID || "N/A";
             }
 
             renderRow(asset);
@@ -222,10 +224,8 @@
         let fourthCellHtml = "";
 
         if (isSoftware) {
-            const usedRaw = asset.licenseSeatsUsed;
-            const totalRaw = asset.licenseTotalSeats;
-            const used = (usedRaw == null ? NaN : Number(usedRaw));
-            const total = (totalRaw == null ? NaN : Number(totalRaw));
+            const used = Number(asset.licenseSeatsUsed ?? 0);
+            const total = Number(asset.licenseTotalSeats ?? 0);
 
             const expVal = asset.softwareLicenseExpiration ?? asset.licenseExpiration ?? asset.expiration;
             const expired = isExpired(expVal);
@@ -378,7 +378,7 @@
 
             clearTable();
             applyEmpty(false);
-            renderRow(asset);
+            renderRows([asset]);
             pager.hidden = true;
         } catch (err) {
             console.error(err);
@@ -473,16 +473,22 @@
     // Listen for archived filter toggle
     document.addEventListener('aims:filter:changed', async (ev) => {
         const { id, showArchived } = ev.detail || {};
-        if (id !== 'detailsFilters') return; // ignore if not this page’s filter
+        if (id !== 'detailsFilters') return;
 
         // Save preference globally if needed
         localStorage.setItem('filter:assetdetails:showArchived', String(showArchived));
 
-        // Reload data with new filter
+        const urlParams = new URLSearchParams(window.location.search);
+        const tag = urlParams.get("tag");
         const category = getCurrentCategory ? getCurrentCategory() : null;
+
         pageCache?.clear?.();
 
-        if (typeof loadCategoryPaged === "function" && category) {
+        if (tag) {
+            // Stay in single-asset mode
+            await loadOneByTag(tag);
+        } else if (typeof loadCategoryPaged === "function" && category) {
+            // Only use paged mode when we’re not on a deep link
             await loadCategoryPaged(category, 1);
         } else if (typeof loadSearchResults === "function") {
             await loadSearchResults(1);

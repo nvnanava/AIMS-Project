@@ -127,6 +127,7 @@ button.accept-policy {
 }
 
 .error-toast-container {
+  z-index: 9999;
   position: fixed;
   bottom: 1rem;
   right: 1rem;

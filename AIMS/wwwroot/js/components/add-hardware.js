@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ---------------- Phase 2 - per-item (tags/serials) ----------------
 
-    function addCurrentInputsAsItem() {
+    async function addCurrentInputsAsItem() {
         const serial = document.getElementById('serialNumber').value.trim();
         const tag = document.getElementById('tagNumber').value.trim();
 
@@ -401,14 +401,13 @@ document.addEventListener('DOMContentLoaded', function () {
             valid = false;
         }
         if (tag.length > 16) {
-            console.warn("Tag too long:", tag.length);
             setError('tagNumber', 'Tag Number cannot exceed 16 characters.');
             valid = false;
         }
 
         if (!valid) return false;
 
-
+        // Check duplicates within this batch
         if (items.some(i => i.SerialNumber === serial)) {
             setError('serialNumber', 'Duplicate serial number in this batch.');
             return false;
@@ -418,21 +417,44 @@ document.addEventListener('DOMContentLoaded', function () {
             return false;
         }
 
+        const dupCheck = await fetch("/api/hardware/check-duplicates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                dtos: [{ serialNumber: serial, assetTag: tag }]
+            })
+        });
+
+        if (dupCheck.ok) {
+            const result = await dupCheck.json();
+
+            if (result.existingSerials?.some(s => s.toLowerCase() === serial.toLowerCase())) {
+                setError('serialNumber', 'Serial number already exists.');
+                return false;
+            }
+
+            if (result.existingTags?.some(t => t.toLowerCase() === tag.toLowerCase())) {
+                setError('tagNumber', 'Tag number already exists.');
+                return false;
+            }
+        }
+
+        // Valid → add item
         items.push({
             ...baseData,
-            AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim(),
             SerialNumber: serial,
-            AssetTag: tag
+            AssetTag: tag,
+            AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim()
         });
 
         renderPreviewList();
-
         return true;
     }
 
-    nextItemBtn.addEventListener('click', function (e) {
+    nextItemBtn.addEventListener('click', async function (e) {
         e.preventDefault();
 
+        // If we're already at or beyond the count, just switch to review mode.
         if (items.length >= itemCount) {
             itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
             document.getElementById('itemInputs').style.display = "none";
@@ -441,7 +463,12 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (!addCurrentInputsAsItem()) return;
+        // Wait for validation/add to finish.
+        const added = await addCurrentInputsAsItem();
+        if (!added) {
+            // Validation failed keep current inputs + .is-invalid classes visible
+            return;
+        }
 
         if (items.length >= itemCount) {
             itemStep.textContent = `All ${itemCount} items entered. Review and submit`;
@@ -480,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const serial = document.getElementById('serialNumber').value.trim();
             const tag = document.getElementById('tagNumber').value.trim();
             if (serial && tag) {
-                const added = addCurrentInputsAsItem();
+                const added = await addCurrentInputsAsItem();
                 if (!added) return;
             }
         }
@@ -506,7 +533,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const preRes = await fetch("/api/hardware/check-duplicates", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ dtos: cleaned })
+                body: JSON.stringify({
+                    dtos: cleaned.map(r => ({
+                        serialNumber: r.SerialNumber,
+                        assetTag: r.AssetTag
+                    }))
+                })
             });
 
             if (preRes.ok) {

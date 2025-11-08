@@ -1,0 +1,57 @@
+<div class="modal fade" id="seatModeModal" tabindex="-1"
+     aria-labelledby="seatModeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+        <div class="modal-content aimsds-shell seat-mode-modal">
+            <div class="modal-header aimsds-header">
+                <h5 class="modal-title" id="seatModeModalLabel" data-role="seat-mode-title">
+                    Manage software seats
+                </h5>
+                <button type="button"
+                        class="btn-close aimsds-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body aimsds-body">
+                <p class="text-muted mb-1" data-role="seat-mode-asset">
+                    Selected software asset
+                </p>
+
+                <p class="mb-3" data-role="seat-mode-summary">
+                    This software has both seats in use and seats available. What would you like to do?
+                </p>
+
+                <div class="seat-mode-actions">
+                    <button type="button"
+                            class="add-btn assign-btn w-100 mb-2"
+                            data-role="seat-mode-assign">
+                        Assign a new seat
+                    </button>
+
+                    <button type="button"
+                            class="add-btn upload-btn w-100"
+                            data-role="seat-mode-unassign">
+                        Unassign an existing seat
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer aimsds-footer justify-content-between">
+                <small class="text-muted" data-role="seat-mode-footnote">
+                    You can change this again later from Assign / Unassign.
+                </small>
+
+                <button type="button"
+                        class="btn btn-link"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+            </div>
+
+            <!-- Hidden fields to stash context for JS -->
+            <input type="hidden" data-role="seat-mode-assetTag" />
+            <input type="hidden" data-role="seat-mode-assetNumericId" />
+            <input type="hidden" data-role="seat-mode-assetKind" />
+        </div>
+    </div>
+</div>

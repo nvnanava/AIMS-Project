@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Xunit.Abstractions;
@@ -24,17 +26,30 @@ public class AssetsAPITests
         // Optional types that may or may not exist depending on seed mode
         var optional = new List<string> { "Charging Cable" };
 
-        List<string>? actual = null;
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        // --- Warm-up call: let the app/seeders/EF spin up once ---
+        try
+        {
+            await _client.GetAsync("/api/assets/types/unique");
+            await Task.Delay(500);
+        }
+        catch
+        {
+            // Swallow warmup errors – real assertions come below
+        }
+
+        List<string>? actual = null;
 
         // Retry up to ~15s for cold start/seed settle
         for (var attempt = 1; attempt <= 60; attempt++)
         {
             actual = await _client.GetFromJsonAsync<List<string>>("/api/assets/types/unique", options);
+
             if (actual is not null && required.All(x => actual.Contains(x)))
                 break;
 
-            _output.WriteLine($"Attempt {attempt}: [{string.Join(", ", actual ?? new())}]");
+            _output.WriteLine($"Attempt {attempt}: [{string.Join(", ", actual ?? new List<string>())}]");
             await Task.Delay(250);
         }
 

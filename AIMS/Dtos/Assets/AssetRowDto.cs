@@ -1,3 +1,5 @@
+using AIMS.Dtos.Assignments;
+
 namespace AIMS.Dtos.Assets;
 
 public sealed class AssetRowDto
@@ -18,5 +20,16 @@ public sealed class AssetRowDto
     public bool IsArchived { get; set; }
     public int? LicenseSeatsUsed { get; set; }
     public int? LicenseTotalSeats { get; set; }
+
+    // For multi-seat software rows: all active seat assignments on this page.
+    public List<SeatAssignmentChipDto> SeatAssignments { get; set; } = new();
+}
+
+// DTO for software seat chips
+public sealed class SeatAssignmentChipDto
+{
+    public int UserId { get; init; }
+    public string? DisplayName { get; init; }
+    public string? EmployeeNumber { get; init; }
 }
 

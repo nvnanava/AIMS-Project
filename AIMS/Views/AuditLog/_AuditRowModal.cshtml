@@ -1,0 +1,57 @@
+@* Audit Row Modal — read-only *@
+
+<div class="modal fade" id="auditRowModal" tabindex="-1" aria-labelledby="auditRowModalLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+        <div class="modal-content aimsds-shell">
+
+            <div class="modal-header aimsds-header">
+                <h5 class="modal-title" id="auditRowModalLabel">Audit Entry</h5>
+                <button type="button" class="btn-close aimsds-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body aimsds-body">
+                <dl class="row audit-row-fields">
+                    <dt class="col-sm-3">Log ID</dt>
+                    <dd class="col-sm-9" id="ar-id"></dd>
+
+                    <dt class="col-sm-3">Timestamp</dt>
+                    <dd class="col-sm-9" id="ar-ts"></dd>
+
+                    <dt class="col-sm-3">User ID</dt>
+                    <dd class="col-sm-9" id="ar-user"></dd>
+
+                    <dt class="col-sm-3">Action</dt>
+                    <dd class="col-sm-9" id="ar-action"></dd>
+
+                    <dt class="col-sm-3">Asset ID</dt>
+                    <dd class="col-sm-9" id="ar-asset"></dd>
+
+                    <dt class="col-sm-3">Previous Value</dt>
+                    <dd class="col-sm-9" id="ar-prev"></dd>
+
+                    <dt class="col-sm-3">New Value</dt>
+                    <dd class="col-sm-9" id="ar-new"></dd>
+                </dl>
+
+                <div class="mb-1 fw-semibold">Description</div>
+                <textarea id="ar-desc" class="form-control audit-desc-box" rows="6" readonly></textarea>
+            </div>
+
+            <div class="modal-footer aimsds-footer">
+                <div class="aimsds-footer-right w-100 d-flex justify-content-between align-items-center gap-3">
+                    <button type="button" id="auditPreviewBtn" class="add-btn preview-btn flex-grow-1 flex-md-grow-0"
+                        disabled>
+                        Preview Agreement 📄
+                    </button>
+
+                    <button type="button" class="add-btn close-btn flex-grow-1 flex-md-grow-0" data-bs-dismiss="modal">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

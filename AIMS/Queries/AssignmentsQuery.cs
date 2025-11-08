@@ -10,7 +10,9 @@ public class AssignmentsQuery
     public AssignmentsQuery(AimsDbContext db) => _db = db;
 
     // status: "active" (default), "closed", or "all"
-    public async Task<List<GetAssignmentDto>> GetAllAssignmentsAsync(string status = "active", CancellationToken ct = default)
+    public async Task<List<GetAssignmentDto>> GetAllAssignmentsAsync(
+        string status = "active",
+        CancellationToken ct = default)
     {
         var norm = (status ?? "active").Trim().ToLowerInvariant();
         var q = _db.Assignments.AsNoTracking();
@@ -29,17 +31,27 @@ public class AssignmentsQuery
             {
                 AssignmentID = a.AssignmentID,
                 AssetKind = a.AssetKind,
+
                 UserID = a.UserID ?? 0,
                 User = a.User != null ? a.User.FullName : string.Empty,
-                HardwareID = a.HardwareID,     // ✅ was AssetTag
+                EmployeeNumber = a.User != null ? a.User.EmployeeNumber : null,
+
+                HardwareID = a.HardwareID,
                 SoftwareID = a.SoftwareID,
+
                 AssignedAtUtc = a.AssignedAtUtc,
-                UnassignedAtUtc = a.UnassignedAtUtc
+                UnassignedAtUtc = a.UnassignedAtUtc,
+
+                // Agreement info for UI
+                HasAgreementFile = a.AgreementFile != null && a.AgreementFile.Length > 0,
+                AgreementFileName = a.AgreementFileName
             })
             .ToListAsync(ct);
     }
 
-    public async Task<GetAssignmentDto?> GetAssignmentAsync(int assignmentId, CancellationToken ct = default)
+    public async Task<GetAssignmentDto?> GetAssignmentAsync(
+        int assignmentId,
+        CancellationToken ct = default)
     {
         return await _db.Assignments
             .AsNoTracking()
@@ -48,12 +60,20 @@ public class AssignmentsQuery
             {
                 AssignmentID = a.AssignmentID,
                 AssetKind = a.AssetKind,
+
                 UserID = a.UserID ?? 0,
                 User = a.User != null ? a.User.FullName : string.Empty,
-                HardwareID = a.HardwareID,     // ✅ was AssetTag
+                EmployeeNumber = a.User != null ? a.User.EmployeeNumber : null,
+
+                HardwareID = a.HardwareID,
                 SoftwareID = a.SoftwareID,
+
                 AssignedAtUtc = a.AssignedAtUtc,
-                UnassignedAtUtc = a.UnassignedAtUtc
+                UnassignedAtUtc = a.UnassignedAtUtc,
+
+                // Agreement info for detail view
+                HasAgreementFile = a.AgreementFile != null && a.AgreementFile.Length > 0,
+                AgreementFileName = a.AgreementFileName
             })
             .FirstOrDefaultAsync(ct);
     }

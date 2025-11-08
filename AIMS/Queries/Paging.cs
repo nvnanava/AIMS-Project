@@ -19,7 +19,7 @@ public static class Paging
         TimeSpan? ttl = null)
     {
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 5, 200);
+        pageSize = Math.Clamp(pageSize, 25, 200);
         var skip = (page - 1) * pageSize;
 
         // 1) cache the COUNT by the base key (independent of page/size)
@@ -61,7 +61,7 @@ public static class Paging
         TimeSpan? ttl = null)
     {
         page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 5, 200);
+        pageSize = Math.Clamp(pageSize, 25, 200);
         var skip = (page - 1) * pageSize;
 
         var key = $"{cacheKeyBase}:page={page}:size={pageSize}";

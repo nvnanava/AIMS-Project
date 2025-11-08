@@ -1,13 +1,14 @@
+using System.Threading;
+using System.Threading.Tasks;
 using AIMS.Controllers;
+using AIMS.Controllers.Api;
 using AIMS.Data;
 using AIMS.Dtos.Software;
 using AIMS.Models;
+using AIMS.Queries;
 using AIMS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Controllers.Api;
-using System.Threading.Tasks;
-using AIMS.Queries;
 using Xunit;
 
 namespace AIMS.UnitTests.Controllers;
@@ -17,17 +18,28 @@ public class SoftwareControllerTests
     private readonly AimsDbContext _db;
     private readonly SoftwareController _controller;
 
+    // Simple stub for ICurrentUser used by the controller
+    private sealed class StubCurrentUser : ICurrentUser
+    {
+        public string? GraphObjectId => "TEST-GRAPH-ID";
+
+        public Task<int?> GetUserIdAsync(CancellationToken ct = default)
+            => Task.FromResult<int?>(1); // fixed user id for tests
+    }
+
     public SoftwareControllerTests()
     {
         var options = new DbContextOptionsBuilder<AimsDbContext>()
             .UseInMemoryDatabase($"AimsTestDb_Controller_{Guid.NewGuid()}")
             .Options;
+
         _db = new AimsDbContext(options);
 
         var service = new SoftwareUpdateService(_db);
         var query = new SoftwareQuery(_db);
+        var currentUser = new StubCurrentUser();
 
-        _controller = new SoftwareController(_db, query, service);
+        _controller = new SoftwareController(_db, query, service, currentUser);
     }
 
     [Fact]
@@ -52,11 +64,11 @@ public class SoftwareControllerTests
         var result = await _controller.EditSoftware(software.SoftwareID, dto);
 
         var obj = Assert.IsType<ObjectResult>(result);
-        Assert.IsType<ValidationProblemDetails>(obj.Value);
+        var vpd = Assert.IsType<ValidationProblemDetails>(obj.Value);
 
         // ValidationProblem() sets no StatusCode
         Assert.Null(obj.StatusCode);
-
+        Assert.NotNull(vpd);
     }
 
     [Fact]

@@ -1,51 +1,222 @@
-.modal-content {
-    border: 3px solid #34495E;
-    border-radius: 8px;
-    background-color: #ECF0F1;
-    color: #34495E;
-    overflow: hidden;
+/* ======================================================================
+   AIMS Component Styles: Unassign Asset Modal
+   - Mirrors assign modal look/feel
+   - Software: includes user picker (same component styles)
+   ====================================================================== */
+
+#unassignAssetModal .aimsds-body {
+    padding: 16px 18px;
 }
 
-.modal-header {
-    background-color: #2C3E50;
-    border-bottom: 3px solid #34495E;
-    color: #ECF0F1;
-    overflow: hidden;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+#unassignAssetModal .modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.btn-close {
-    background-color: red;
-    cursor: pointer;
-    box-shadow: 0px 4px 4px 0px #0000003e;
-    transition: all 0.3s ease-in-out;
+#unassignAssetModal .modal-body label {
+    font-weight: 700;
+    color: var(--aims-ink);
 }
 
-.form-select {
-    color: #34495E;
-    cursor: pointer;
+/* Selected asset summary box */
+#unassignAssetModal #unSelectedAssetBox .border,
+#unassignAssetModal #unSelectedAssetBox .rounded {
+    border-color: rgba(52, 73, 94, .35) !important;
+    background: #ffffff;
 }
 
-.custom-modal-btn {
-    border: 3px solid #2C3E50;
+/* ======================================================================
+   USER SEARCH (software only) – reuse assign modal styles
+   ====================================================================== */
+
+#unassignAssetModal .aims-userpicker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+}
+
+#unassignAssetModal .aims-userpicker__search {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 41px;
+    border: 1px solid #ccc;
+    background-color: #fff;
     border-radius: 20px;
-    width: 200px;
-    text-align: center;
+    padding: 5px 12px;
+    transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-.custom-upload-btn {
+#unassignAssetModal .aims-userpicker__search .search-input {
+    flex: 1;
     background-color: transparent;
-    color: #2C3E50;
+    text-align: start;
+    border: none;
+    outline: none;
+    padding: 0;
 }
 
-.custom-submit-btn {
-    background-color: #4CAF50;
-    color: white;
+#unassignAssetModal .aims-userpicker__search .search-input:focus {
+    box-shadow: none;
 }
 
-.custom-upload-btn:hover,
-.custom-submit-btn:hover {
-    border: 3px solid #1abc9c;
-    transition: all 150ms ease-out;
+#unassignAssetModal .aims-userpicker::before {
+    content: none !important;
+}
+
+/* List of assigned users */
+#unassignAssetModal .aims-userpicker__list {
+    margin-top: 4px;
+    border: 2px solid rgba(52, 73, 94, .35);
+    border-radius: 8px;
+    background: #ffffff;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, .12);
+}
+
+/* Individual user row */
+#unassignAssetModal .aims-userpicker__option {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+    transition: background-color .12s ease, box-shadow .12s ease, transform .06s ease;
+}
+
+#unassignAssetModal .aims-userpicker__option:hover,
+#unassignAssetModal .aims-userpicker__option[data-active="true"] {
+    background: rgba(26, 188, 156, .12);
+}
+
+#unassignAssetModal .aims-userpicker__option:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 3px var(--aims-focus);
+    background: rgba(26, 188, 156, .12);
+}
+
+/* Checkmark for selected user */
+#unassignAssetModal .aims-userpicker__option[aria-selected="true"]::after {
+    content: "✓";
+    margin-inline-start: auto;
+    font-weight: 700;
+}
+
+#unassignAssetModal .aims-userpicker__empty {
+    padding: 8px 10px;
+    font-style: italic;
+    color: #7f8c8d;
+}
+
+/* Guard */
+#unassignAssetModal .aims-userpicker__list select,
+#unassignAssetModal .aims-userpicker__list .form-select {
+    all: unset;
+}
+
+/* ======================================================================
+   FOOTER + BUTTON (mirror Assign's pill button)
+   ====================================================================== */
+
+#unassignAssetModal .aimsds-footer {
+    border-top: 3px solid #34495e;
+    background: var(--aims-bg);
+}
+
+#unassignAssetModal .aimsds-footer-right {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+    justify-content: center;
+}
+
+/* Base pill layout (copied from Assign, but scoped here) */
+#unassignAssetModal .add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    text-align: center;
+
+    border-radius: 999px;
+    padding-inline: 24px;
+    padding-block: 10px;
+
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        transform .1s ease,
+        box-shadow .15s ease,
+        filter .15s ease,
+        background-color .15s ease,
+        color .15s ease;
+
+    border-width: 2px;
+    border-style: solid;
+}
+
+/* Primary: Unassign Asset */
+#unassignAssetModal .add-btn.assign-btn {
+    background-color: var(--aims-accent);
+    border-color: var(--aims-accent);
+    color: #ffffff;
+    width: 100%;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+}
+
+#unassignAssetModal .add-btn.assign-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .22);
+    filter: brightness(1.02);
+}
+
+#unassignAssetModal .add-btn.assign-btn:focus,
+#unassignAssetModal .add-btn.assign-btn:focus-visible {
+    outline: none;
+    box-shadow:
+        0 4px 10px rgba(0, 0, 0, .22),
+        0 0 0 3px var(--aims-focus);
+    transform: translateY(-1px);
+}
+
+#unassignAssetModal .add-btn.assign-btn:active {
+    filter: brightness(0.98);
+    transform: translateY(0);
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+    #unassignAssetModal .aimsds-footer-right {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #unassignAssetModal .add-btn.assign-btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+/* Narrower dialog for Unassign (~500px) */
+#unassignAssetModal .modal-dialog {
+    max-width: 500px;
+}
+
+.form-control:focus {
+    outline: none;
+    /* Remove default browser outline */
+    box-shadow: 0 0 0 .25rem rgba(255, 193, 7, .25);
+    /* Example: Use a yellow shadow */
+    border-color: #ffc107;
+    /* Optional: Change border color */
 }

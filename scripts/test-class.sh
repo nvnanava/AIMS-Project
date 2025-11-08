@@ -462,15 +462,17 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
       --logger "trx;LogFileName=$(basename "$INT_OUT/coverage.trx")" \
       --results-directory "$INT_OUT" \
       -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
-         DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
-
+        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*;**/Views/*;**/Razor/*;**/*.cshtml" \
+        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*]AspNetCoreGeneratedDocument.Views_*"
+    
     dotnet test "$UNIT_PROJ" -c "$CONFIG" --no-build \
       --collect:"XPlat Code Coverage" \
       --logger "trx;LogFileName=$(basename "$UNIT_OUT/coverage.trx")" \
       --results-directory "$UNIT_OUT" \
       -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
-         DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
-
+        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*;**/Views/*;**/Razor/*;**/*.cshtml" \
+        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*]AspNetCoreGeneratedDocument.Views_*"
+    
     COV_XML_INT="$(find "$INT_OUT" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
     COV_XML_UNIT="$(find "$UNIT_OUT" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
     if [[ -z "${COV_XML_INT:-}" && -z "${COV_XML_UNIT:-}" ]]; then
@@ -518,21 +520,23 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
     fi
   else
     # Single suite
-    if [ "${#COV_FILTER_ARGS[@]}" -gt 0 ]; then
+    if (( ${#COV_FILTER_ARGS[@]:-0} > 0 )); then
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         "${COV_FILTER_ARGS[@]}" \
         --collect:"XPlat Code Coverage" \
         --logger "trx;LogFileName=$(basename "$COVERAGE_DIR/coverage.trx")" \
         --results-directory "$COVERAGE_DIR" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
-           DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*;**/Views/*;**/Razor/*;**/*.cshtml" \
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*]AspNetCoreGeneratedDocument.Views_*"          
     else
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         --collect:"XPlat Code Coverage" \
         --logger "trx;LogFileName=$(basename "$COVERAGE_DIR/coverage.trx")" \
         --results-directory "$COVERAGE_DIR" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
-           DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*;**/Views/*;**/Razor/*;**/*.cshtml" \
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*]AspNetCoreGeneratedDocument.Views_*"
     fi
 
     COV_XML="$(find "$COVERAGE_DIR" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"

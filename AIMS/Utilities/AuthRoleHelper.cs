@@ -33,14 +33,16 @@ public static class AuthRoleHelper
         user?.FindFirst("preferred_username")?.Value
         ?? user?.Identity?.Name;
 
+    // ---- role-based first, allow-list second ----
+
     public static bool IsAdmin(ClaimsPrincipal user)
-        => IsInList(user, AdminUsernames);
+        => HasRole(user, "Admin") || IsInList(user, AdminUsernames);
 
     public static bool IsHelpdesk(ClaimsPrincipal user)
-        => IsInList(user, HelpdeskUsernames);
+        => HasRole(user, "HelpDesk") || IsInList(user, HelpdeskUsernames);
 
     public static bool IsSupervisor(ClaimsPrincipal user)
-        => IsInList(user, SupervisorUsernames);
+        => HasRole(user, "Supervisor") || IsInList(user, SupervisorUsernames);
 
     public static bool IsAdminOrHelpdesk(ClaimsPrincipal user)
         => IsAdmin(user) || IsHelpdesk(user);
@@ -50,5 +52,14 @@ public static class AuthRoleHelper
         var upn = GetUpn(user);
         return !string.IsNullOrWhiteSpace(upn)
                && list.Contains(upn, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool HasRole(ClaimsPrincipal user, string roleName)
+    {
+        if (user == null) return false;
+
+        return user.Claims.Any(c =>
+            (c.Type == ClaimTypes.Role || c.Type.Equals("roles", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(c.Value, roleName, StringComparison.OrdinalIgnoreCase));
     }
 }

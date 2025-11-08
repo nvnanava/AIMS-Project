@@ -5,9 +5,9 @@ using AIMS.Data;
 using AIMS.Dtos.Reports;
 using AIMS.Models;
 using AIMS.Queries;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Hosting;
 using Moq;
 using Xunit.Abstractions;
 
