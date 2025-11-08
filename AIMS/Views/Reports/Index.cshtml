@@ -200,7 +200,8 @@
                <select id="officeName" name="officeName" class="form-select" required>
                             <option value="">Select Office</option>
                             
-                          @foreach (var office in  (List<OfficeVm>)ViewData["Offices"]) { 
+                          @{ var offices = ViewData["Offices"] as List<OfficeVm> ?? new List<OfficeVm>(); }
+                          @foreach (var office in offices) { 
                             <option value="@office.OfficeID">@office.OfficeName</option>
                           }
                         </select>

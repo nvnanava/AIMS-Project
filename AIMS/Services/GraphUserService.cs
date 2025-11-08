@@ -18,7 +18,7 @@ public class GraphUserService : IGraphUserService
         var usersResponse = await _graphClient.Users.GetAsync(requestConfig =>
         {
             requestConfig.QueryParameters.Top = 10;
-            requestConfig.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName" };
+            requestConfig.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName", "officeLocation" };
             if (!string.IsNullOrEmpty(search))
             {
                 requestConfig.QueryParameters.Filter = $"startswith(displayName,'{search}')";

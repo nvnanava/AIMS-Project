@@ -121,6 +121,7 @@
         items.forEach((u) => {
             const name = u.displayName || "";
             const email = u.mail || u.userPrincipalName || "";
+            const office = u.officeLocation || "";
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "aad-user-item";
@@ -134,13 +135,72 @@
                 const nameInput = document.getElementById("userName");
                 const emailInput = document.getElementById("userEmail");
                 const idInput = document.getElementById("graphObjectId");
+                const officeInput = document.getElementById("userOffice");
                 if (nameInput) nameInput.value = name;
                 if (emailInput) emailInput.value = email;
                 if (idInput) idInput.value = u.id || ""; // set AAD object id
+                if (officeInput) officeInput.value = office;
 
                 //: preflight check
                 if (u.id) checkUserExists(u.id);
 
+                resultsList.innerHTML = "";
+            };
+            frag.appendChild(btn);
+        });
+        resultsList.appendChild(frag);
+    }
+
+    async function searchOffices(query) {
+        const resultsList = document.getElementById("officeResults");
+        if (!resultsList) return;
+        resultsList.innerHTML = "";
+        if (!query) return;
+
+        if (aadAbortCtrl) aadAbortCtrl.abort();
+        aadAbortCtrl = new AbortController();
+
+        resultsList.innerHTML = `<div class="aad-hint">Searching…</div>`;
+        try {
+            const params = new URLSearchParams({
+                query: query
+            });
+            const url = `/api/office/search?${params.toString()}`;
+            const offices = await aimsFetch(url, { signal: aadAbortCtrl.signal });
+            renderOfficeResults(offices, query);
+        } catch (e) {
+            if (e.name === "AbortError") return;
+            resultsList.innerHTML = `<div class="aad-error">Error searching</div>`;
+            console.error(e);
+        }
+    }
+
+    async function renderOfficeResults(items, query) {
+        const resultsList = document.getElementById("officeResults");
+        if (!resultsList) return;
+
+        resultsList.innerHTML = "";
+        if (!Array.isArray(items) || items.length === 0) {
+            resultsList.innerHTML = `<div class="aad-hint">No results for "${escapeHtml(
+                query
+            )}"</div>`;
+            return;
+        }
+
+        const frag = document.createDocumentFragment();
+        items.forEach((o) => {
+            const officeName =  o.officeName || "";
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "aad-user-item";
+            btn.innerHTML = `
+                <div class="aad-line"><strong>${highlight(
+                officeName,
+                query
+            )}</strong></div>`;
+            btn.onclick = () => {
+                const officeInput = document.getElementById("userOffice");
+                if (officeInput) officeInput.value = officeName;
                 resultsList.innerHTML = "";
             };
             frag.appendChild(btn);
@@ -325,6 +385,7 @@
         const role = document.getElementById("userRole")?.value;
         const status = document.getElementById("userStatus")?.value || "Active";
         const graphId = document.getElementById("graphObjectId")?.value;
+        const officeName = document.getElementById("userOffice")?.value;
 
         if (!graphId) {
             alert("Please pick a user from the Azure AD suggestions first.");
@@ -344,14 +405,13 @@
             const resp = await fetch("/api/admin/users", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ graphObjectId: graphId, roleId }), // roleId (camelCase)
+                body: JSON.stringify({ graphObjectId: graphId, roleId, officeName }), // roleId (camelCase)
             });
 
             if (!resp.ok) {
                 const msg = await resp.text().catch(() => "");
-                alert(msg || "Failed to save user.");
                 btn?.removeAttribute("disabled"); // Re-enable button on error
-                return;
+                throw new Error(msg || "Failed to save user.");
             }
 
             const saved = await resp.json();
@@ -365,7 +425,8 @@
                 SeparationDate: "",
             });
 
-            applyAdminTableFilters();
+            // applyAdminTableFilters(); // this function no longer exists, so calling 
+            // it will cause this try-catch block to fail
             hideModalById("addUserModal");
             document.getElementById("addUserForm")?.reset();
             document.getElementById("aadUserResults")?.replaceChildren();
@@ -439,6 +500,15 @@
                 const q = nameInput.value.trim();
                 clearTimeout(aadDebounceTimer);
                 aadDebounceTimer = setTimeout(() => searchAAD(q), 250);
+            });
+        }
+
+        const officeInput = document.getElementById("userOffice");
+        if (officeInput) {
+            officeInput.addEventListener("input", () => {
+                const q = officeInput.value.trim();
+                clearTimeout(aadDebounceTimer);
+                aadDebounceTimer = setTimeout(() => searchOffices(q), 250);
             });
         }
 
