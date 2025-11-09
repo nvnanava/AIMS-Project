@@ -122,10 +122,9 @@
     @* -------------------------------------------------------------------- *@
 </div>
 
-@* Include the existing modal from Task 4A *@
 @await Html.PartialAsync("_SearchLogsModal")
 
-@* ---------- NEW: Row Details Modal (read-only) ------------------------ *@
+@* ---------- Row Details Modal (read-only) ------------------------ *@
 <div class="modal fade" id="auditRowModal" tabindex="-1" aria-labelledby="auditRowModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
@@ -157,31 +156,4 @@
 @section Scripts {
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/pages/auditlog.index.js" asp-append-version="true" defer></script>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Target the FilterIcon button from Task 4A
-            const root = document.querySelector('[data-component="filter-icon"][data-id="auditLogFilter"]');
-            if (!root) return;
-
-            const btn = root.querySelector('.aims-filter-btn');
-            const dropdown = root.querySelector('.dropdown-menu');
-            if (dropdown) dropdown.remove(); // remove old dropdown menu
-
-            if (btn) {
-                btn.removeAttribute('data-bs-toggle');
-                btn.removeAttribute('aria-expanded');
-                btn.setAttribute('type', 'button');
-            }
-
-            const modalEl = document.getElementById('searchLogsModal');
-            if (btn && modalEl && window.bootstrap && bootstrap.Modal) {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                });
-            }
-        });
-    </script>
 }

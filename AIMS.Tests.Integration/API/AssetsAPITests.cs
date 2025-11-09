@@ -45,7 +45,7 @@ public class AssetsAPITests
         _output.WriteLine("Missing required: " + string.Join(", ", missingRequired));
         Assert.True(!missingRequired.Any(), "Still missing required types after retries.");
 
-        // If an optional appears, ensure there are no duplicates and ordering is stable for what we check
+        // Assert there are no unknown surprises (beyond required + optional)
         var known = required.Concat(optional).ToList();
 
         // Assert there are no unknown surprises
@@ -53,8 +53,8 @@ public class AssetsAPITests
         _output.WriteLine("Unknown extras: " + string.Join(", ", unknown));
         Assert.True(!unknown.Any(), "Unexpected types present.");
 
-        // Order check only across the items that are actually present from (required ∪ optional)
-        var expectedInOrder = known.Where(actual.Contains).ToList();
-        Assert.Equal(expectedInOrder, actual);
+        // ---- Ordering: the API returns an alphabetical list. Assert that, rather than a hard-coded order. ----
+        var alpha = actual.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
+        Assert.Equal(alpha, actual);
     }
 }

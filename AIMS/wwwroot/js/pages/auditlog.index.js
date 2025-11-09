@@ -25,7 +25,32 @@
     const $ = (sel) => document.querySelector(sel);
     const $all = (sel) => Array.from(document.querySelectorAll(sel));
 
-    // ----- Filter dropdown ------------------------------------------------
+    // ----- Hook FilterIcon → open Search modal -----
+    document.addEventListener("DOMContentLoaded", function () {
+        const root = document.querySelector('[data-component="filter-icon"][data-id="auditLogFilter"]');
+        if (!root) return;
+
+        const btn = root.querySelector('.aims-filter-btn');
+        const dropdown = root.querySelector('.dropdown-menu');
+        if (dropdown) dropdown.remove(); // remove old dropdown menu
+
+        if (btn) {
+            btn.removeAttribute('data-bs-toggle');
+            btn.removeAttribute('aria-expanded');
+            btn.setAttribute('type', 'button');
+        }
+
+        const modalEl = document.getElementById('searchLogsModal');
+        if (btn && modalEl && window.bootstrap && window.bootstrap.Modal) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            });
+        }
+    });
+
+    // ----- Filter dropdown (page local) ----------------------------------
     function setDropdownOpen(isOpen) {
         const btn = $("#filter-button-toggle");
         const dd = $("#filterDropdown");
@@ -65,7 +90,7 @@
         const rows = $all(".audit-log-table tbody tr, .admin-table-body tbody tr");
         const wanted = (action || "All").trim();
         rows.forEach(row => {
-            const cell = row.cells?.[3]; // Action column
+            const cell = row.cells?.[3];
             const current = (cell?.innerText || "").trim();
             row.style.display = (wanted === "All" || current === wanted) ? "" : "none";
         });
@@ -89,7 +114,7 @@
         if (tr.classList.contains("pending-flash")) {
             tr.classList.remove("pending-flash");
             tr.classList.remove("row-flash");
-            void tr.offsetWidth; // reflow
+            void tr.offsetWidth;
             tr.classList.add("row-flash");
             setTimeout(() => tr.classList.remove("row-flash"), 1500);
         }
@@ -149,9 +174,7 @@
     }
     function refreshVisibleTooltips() {
         const rows = $all(".admin-table-body tbody tr:not([hidden])");
-        rows.forEach(tr => {
-            Array.from(tr.cells).forEach(setSmartTooltip);
-        });
+        rows.forEach(tr => { Array.from(tr.cells).forEach(setSmartTooltip); });
     }
     window.addEventListener("resize", () => { refreshVisibleTooltips(); });
 
@@ -170,7 +193,7 @@
         document.getElementById("ar-desc").value = cells[7] || "";
 
         if (window.bootstrap?.Modal) {
-            const m = bootstrap.Modal.getOrCreateInstance(document.getElementById("auditRowModal"));
+            const m = window.bootstrap.Modal.getOrCreateInstance(document.getElementById("auditRowModal"));
             m.show();
         }
     }
@@ -239,19 +262,19 @@
     // Spinner parity with Search (initial only)
     const MIN_SPINNER_MS = 500;
     let spinnerShownAt = 0;
-    function showSpinner() { if (window.GlobalSpinner?.show) { spinnerShownAt = performance.now(); GlobalSpinner.show(); } }
+    function showSpinner() { if (window.GlobalSpinner?.show) { spinnerShownAt = performance.now(); window.GlobalSpinner.show(); } }
     async function hideSpinner() {
         if (window.GlobalSpinner?.hide) {
             const elapsed = performance.now() - spinnerShownAt;
             const wait = Math.max(0, MIN_SPINNER_MS - elapsed);
             if (wait) await new Promise(r => setTimeout(r, wait));
-            GlobalSpinner.hide();
+            window.GlobalSpinner.hide();
         }
     }
 
     const seen = new Map();
-    let sinceCursor = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(); // 30 days
-    let seeded = false;                 // ← key: initial backfill done?
+    let sinceCursor = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    let seeded = false;
     let pollTimeout = null;
     let backoff = POLL_MS;
     const MAX_BACKOFF = 30000;
@@ -263,8 +286,8 @@
     let consecutiveFailures = 0;
 
     const aborter = new AbortController();
-    const now = () => Date.now();                               // ← keep single definition
-    const haveRows = () => tbody.querySelector("tr") !== null;  // ← keep single definition
+    const now = () => Date.now();
+    const haveRows = () => tbody.querySelector("tr") !== null;
 
     // ---------- Banner ----------
     function ensureBanner() {
@@ -327,13 +350,7 @@
     }
 
     function keyOf(evt) { return evt?.id || evt?.hash || ""; }
-
-    // Create <td> helper (no title by default; tooltips set later if ellipsed)
-    function makeTD(text) {
-        const c = document.createElement("td");
-        c.textContent = (text == null) ? "" : String(text);
-        return c;
-    }
+    function makeTD(text) { const c = document.createElement("td"); c.textContent = (text == null) ? "" : String(text); return c; }
 
     // Recompute tooltip eligibility for a given row
     function refreshTooltipsForRow(tr) {
@@ -361,15 +378,15 @@
             makeTD(userTxt),
             makeTD(evt.type || "—"),
             makeTD(evt.target || "—"),
-            makeTD(evt.prevValue || ""),     // ← was ""
-            makeTD(evt.newValue || ""),     // ← was ""
+            makeTD(evt.prevValue || ""),
+            makeTD(evt.newValue || ""),
             makeTD(evt.details || "")
         ]);
 
         if (existing) {
             while (existing.firstChild) existing.removeChild(existing.firstChild);
             cells().forEach(c => existing.appendChild(c));
-            refreshTooltipsForRow(existing); // tooltips for overflow only
+            refreshTooltipsForRow(existing);
 
             if (!seed) {
                 if (!existing.hidden) {
@@ -386,7 +403,7 @@
         cells().forEach(c => tr.appendChild(c));
         tbody.insertBefore(tr, tbody.firstChild);
 
-        refreshTooltipsForRow(tr);      // tooltips only for ellipsed cells
+        refreshTooltipsForRow(tr);
         if (!seed) tr.classList.add("pending-flash");
 
         if (k) seen.set(k, tr);
@@ -404,7 +421,7 @@
         if (!changed) return;
         if (window.AuditPager?.renderCurrentPage) {
             window.AuditPager.renderCurrentPage();
-            window.__Audit_RefreshVisibleTooltips?.(); // recompute visible tooltips
+            window.__Audit_RefreshVisibleTooltips?.();
         }
     }
 
@@ -465,14 +482,14 @@
 
     async function pollCycle() {
         try {
-            const res = await fetchEventsSince(false); // normal mode after seed
+            const res = await fetchEventsSince(false);
             if (res.ok) { scheduleNext(true); return; }
 
             consecutiveFailures++;
 
             if (!seeded) {
                 showStatus("Server warming up; loading latest audit entries…");
-                const seededOk = await fetchLatestPageFallback(true /* seed mode: no flashing */);
+                const seededOk = await fetchLatestPageFallback(true);
                 if (seededOk) { seeded = true; scheduleNext(true); return; }
             } else {
                 if (shouldShowStatus()) {
@@ -486,7 +503,7 @@
             consecutiveFailures++;
             if (!seeded) {
                 showStatus("Reconnecting to audit log…");
-                const ok = await fetchLatestPageFallback(true /* seed mode */);
+                const ok = await fetchLatestPageFallback(true);
                 if (ok) { seeded = true; scheduleNext(true); return; }
             } else {
                 if (shouldShowStatus()) showStatus("Network error; retrying…");
@@ -508,12 +525,12 @@
     (async () => {
         showSpinner();
         try {
-            const res = await fetchEventsSince(true); // seed mode: NO flashing
+            const res = await fetchEventsSince(true);
             if (!res.ok) {
                 const ok = await fetchLatestPageFallback(true);
                 if (!ok && !tbody.querySelector("tr")) showStatus("Unable to load audit log. Retrying…");
             }
-            seeded = true; // from here on, new items may flash
+            seeded = true;
         } catch {
             if (!tbody.querySelector("tr")) showStatus("Unable to load audit log. Retrying…");
         } finally {
@@ -546,6 +563,8 @@
                 });
 
                 await connection.start();
+                // Expose a simple flag for tests that choose to wait on it
+                window.__auditHubConnected = true;
             } catch (e) {
                 console.warn("[audit] SignalR start failed; continuing with polling.", e);
             }

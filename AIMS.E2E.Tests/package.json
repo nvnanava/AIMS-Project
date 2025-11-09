@@ -8,12 +8,13 @@
     "test:e2e": "playwright test --config=playwright.config.ts",
     "test:headed": "playwright test --config=playwright.config.ts --headed",
     "test:trace": "playwright test --config=playwright.config.ts --trace on",
-    "test:local": "cross-env BASE_URL=http://localhost:5119 USE_TEST_AUTH=true playwright test --config=playwright.config.ts"
+    "test:local": "cross-env BASE_URL=http://localhost:5119 USE_TEST_AUTH=false playwright test --config=playwright.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.9.1",
     "cross-env": "^7.0.3",
+    "dotenv": "^17.2.3",
     "typescript": "^5.9.3"
   },
   "main": "index.js",

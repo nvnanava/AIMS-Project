@@ -27,12 +27,17 @@ public sealed class DbTestHarness : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Make sure schema exists and migrations are applied
+        // Always start from a clean database to avoid "object already exists" when history is missing/mismatched.
         await using var ctx = MigrateDb.CreateContext(ConnectionString);
-        await ctx.Database.EnsureCreatedAsync(); // no-op if already created
-        await ctx.Database.MigrateAsync();       // apply latest migration
 
-        // Start each test class from a known-clean state
+        // Drop the database if it exists, then create via migrations.
+        await ctx.Database.EnsureDeletedAsync();
+        await ctx.Database.MigrateAsync();
+
+        // Prefer snapshot reads during tests to reduce writer/reader blocking
+        await EnsureRCSIAsync();
+
+        // Start each test class from a known-clean state (fast FK-safe wipe)
         await ResetDatabaseAsync();
 
         // Seed minimal baseline data needed by tests
@@ -45,15 +50,39 @@ public sealed class DbTestHarness : IAsyncLifetime
             await ResetDatabaseAsync();
     }
 
-    // ---------- FIXED: delete children -> parents in FK-safe order ----------
+    // Enable READ_COMMITTED_SNAPSHOT on the test DB once (best-effort)
+    private async Task EnsureRCSIAsync()
+    {
+        var dbName = new SqlConnectionStringBuilder(ConnectionString).InitialCatalog;
+        if (string.IsNullOrWhiteSpace(dbName)) return;
+
+        const string sql = @"
+IF EXISTS (SELECT 1 FROM sys.databases WHERE name = DB_NAME() AND is_read_committed_snapshot_on = 0)
+BEGIN
+    DECLARE @stmt nvarchar(4000) = N'ALTER DATABASE [' + DB_NAME() + N'] SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE';
+    EXEC (@stmt);
+END";
+        await using var con = new SqlConnection(ConnectionString);
+        await con.OpenAsync();
+        await con.ExecuteAsync(sql);
+    }
+
+    // ---------- FK-safe wipe + exclusive applock + retry on deadlock ----------
     private async Task ResetDatabaseAsync()
     {
-        using var con = new SqlConnection(ConnectionString);
-        await con.OpenAsync();
-
-        // Keep the whole wipe atomic and fail-fast on errors
-        var sql = @"
+        var wipeSql = @"
 SET XACT_ABORT ON;
+
+DECLARE @gotLock int;
+EXEC @gotLock = sp_getapplock
+    @Resource = 'AIMS_DB_WIPE',
+    @LockMode = 'Exclusive',
+    @LockOwner = 'Session',
+    @LockTimeout = 15000; -- 15s
+
+IF (@gotLock < 0)
+    THROW 50001, 'Failed to acquire DB wipe applock.', 1;
+
 BEGIN TRAN;
 
 -- Pure children first
@@ -86,8 +115,26 @@ IF OBJECT_ID('dbo.Assignments','U')      IS NOT NULL DBCC CHECKIDENT('dbo.Assign
 IF OBJECT_ID('dbo.Reports','U')          IS NOT NULL DBCC CHECKIDENT('dbo.Reports', RESEED, 0);
 IF OBJECT_ID('dbo.AuditLogs','U')        IS NOT NULL DBCC CHECKIDENT('dbo.AuditLogs', RESEED, 0);
 IF OBJECT_ID('dbo.AuditLogChanges','U')  IS NOT NULL DBCC CHECKIDENT('dbo.AuditLogChanges', RESEED, 0);
+
+EXEC sp_releaseapplock @Resource = 'AIMS_DB_WIPE', @LockOwner = 'Session';
 ";
-        await con.ExecuteAsync(sql);
+
+        const int maxAttempts = 3;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                await using var con = new SqlConnection(ConnectionString);
+                await con.OpenAsync();
+                await con.ExecuteAsync(wipeSql);
+                break; // success
+            }
+            catch (SqlException ex) when (ex.Number == 1205 && attempt < maxAttempts) // deadlock
+            {
+                await Task.Delay(200 * attempt);
+                continue;
+            }
+        }
     }
 
     private static string NewSerial() =>

@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
+using Microsoft.IdentityModel.Tokens;
 
 
 var cultureInfo = new CultureInfo("en-US");
@@ -225,6 +226,14 @@ else
             options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
             options.Audience = builder.Configuration["AzureAd:ApiAudience"];
             options.RequireHttpsMetadata = false;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidAudiences = new[]
+                {
+                    builder.Configuration["AzureAd:ApiAudience"],
+                    builder.Configuration["AzureAd:ClientId"]
+                }
+            };
         })
         .AddMicrosoftIdentityWebApp(options =>
         {
@@ -232,11 +241,16 @@ else
             options.AccessDeniedPath = "/error/not-authorized";
             options.TokenValidationParameters.RoleClaimType = "roles";
 
-            // For API calls, respond 401 instead of redirecting to AAD.
             options.Events ??= new();
             options.Events.OnRedirectToIdentityProvider = ctx =>
             {
-                if (ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+                // If the caller sent a Bearer token or is clearly an API/JSON caller, don't redirect — return 401.
+                var hasBearer = ctx.Request.Headers["Authorization"]
+                    .ToString()
+                    .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
+                var wantsJson = ctx.Request.Headers["Accept"].ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase);
+
+                if (hasBearer || wantsJson || ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
                 {
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     ctx.HandleResponse();
@@ -325,6 +339,23 @@ builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 
 // -------------------- App pipeline --------------------
 var app = builder.Build();
+
+// Readiness ping for E2E cold-start stabilization (non-prod only)
+if (!app.Environment.IsProduction())
+{
+    app.MapGet("/_ready", async (AIMS.Data.AimsDbContext db) =>
+    {
+        try
+        {
+            await db.Database.CanConnectAsync();
+            return Results.Ok(new { ok = true });
+        }
+        catch
+        {
+            return Results.Problem("DB not ready", statusCode: 503);
+        }
+    }).AllowAnonymous();
+}
 
 app.UseStaticFiles(new StaticFileOptions
 {
@@ -422,6 +453,29 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// TestAuth browser sign-in helper (Playwright UI)
+// Only active when UseTestAuth=true and NOT in Production
+if (!app.Environment.IsProduction() && app.Configuration.GetValue<bool>("UseTestAuth", false))
+{
+    app.MapGet("/test/signin", async (HttpContext ctx) =>
+    {
+        var asUser = ctx.Request.Query["as"].ToString();
+        if (string.IsNullOrWhiteSpace(asUser)) asUser = "tburguillos@csus.edu";
+
+        var claims = new[]
+        {
+            new System.Security.Claims.Claim("preferred_username", asUser),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, asUser),
+            new System.Security.Claims.Claim("roles", "Admin"),
+        };
+        var id = new System.Security.Claims.ClaimsIdentity(claims, AIMS.Utilities.TestAuthHandler.Scheme);
+        var principal = new System.Security.Claims.ClaimsPrincipal(id);
+
+        await ctx.SignInAsync(AIMS.Utilities.TestAuthHandler.Scheme, principal);
+        ctx.Response.Redirect("/");
+    }).AllowAnonymous();
+}
+
 app.UseStatusCodePagesWithReExecute("/error/{0}");
 
 app.MapStaticAssets();
@@ -437,7 +491,7 @@ app.MapRazorPages();
 
 // Endpoint list + raw 404 page
 app.MapGet("/_endpoints", (Microsoft.AspNetCore.Routing.EndpointDataSource eds) =>
-    string.Join("\n", eds.Endpoints.Select(e => e.DisplayName)));
+    string.Join("\n", eds.Endpoints.Select(e => e.DisplayName))).AllowAnonymous();
 
 app.MapGet("/error/not-found-raw", () => Results.Content(
     "<!doctype html><html><head><meta charset='utf-8'><title>404</title></head>" +
