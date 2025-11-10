@@ -261,18 +261,23 @@ namespace AIMS.UnitTests.Controllers
         /// <summary>
         /// Ensures <c>GET /api/auditlog</c> returns a paged result with items.
         /// </summary>
-        /// <returns>
-        /// A task representing the asynchronous test execution. The task completes successfully
-        /// when an <see cref="OkObjectResult"/> with a <see cref="PagedResult{T}"/> is returned.
-        /// </returns>
+        /// <remarks>
+        /// Updated to include the new <see cref="bool"/> parameter before the <see cref="CancellationToken"/>.
+        /// </remarks>
         [Fact]
         public async Task Search_Ok()
         {
             using var db = MakeDb(nameof(Search_Ok));
             var ctrl = MakeController(MakeQuery(db));
 
-            var res = await ctrl.Search(1, 10, null, null, null, null, null, null, null, null, CancellationToken.None)
-                as OkObjectResult;
+            // Add 'false' for the new bool parameter
+            var res = await ctrl.Search(
+                1, 10,
+                null, null, null, null, null, null, null, null,
+                false,                // new parameter
+                CancellationToken.None
+            ) as OkObjectResult;
+
             Assert.NotNull(res);
             var page = Assert.IsType<PagedResult<AuditLogRowDto>>(res!.Value);
             Assert.True(page.Items.Count >= 1);
