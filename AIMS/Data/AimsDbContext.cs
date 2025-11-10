@@ -91,6 +91,10 @@ namespace AIMS.Data
                              //No filter added - every user must have a GraphObjectID and come from AAD
                              //This allows us to only add users that exist in AAD, if not in AAD you cannot add them to our system
 
+            modelBuilder.Entity<User>()
+                .Property(u => u.IsArchived)
+                .HasDefaultValue(false); // Default to false for IsArchived
+
             // -------------------------
             // HARDWARE
             // -------------------------

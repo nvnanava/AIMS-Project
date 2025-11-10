@@ -4,16 +4,19 @@ using AIMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AIMS.Migrations
+namespace AIMS.Migrations._local_sync
 {
     [DbContext(typeof(AimsDbContext))]
-    partial class AimsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251108215942_UserArchive_AddArchivedAtUtc_DropIsActive")]
+    partial class UserArchive_AddArchivedAtUtc_DropIsActive
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

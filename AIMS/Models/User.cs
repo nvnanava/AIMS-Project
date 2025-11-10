@@ -19,7 +19,7 @@ public class User
     [Required, MaxLength(32)]
     public string EmployeeNumber { get; set; } = string.Empty;
 
-    public bool IsActive { get; set; } = true;
+
 
     public int RoleID { get; set; }
     public Role Role { get; set; } = null!;
@@ -31,6 +31,8 @@ public class User
     public Office? Office { get; set; }
 
     public bool IsArchived { get; set; } = false;
+
+    public DateTime? ArchivedAtUtc { get; set; }
 
     public ICollection<User> DirectReports { get; set; } = new List<User>();
 

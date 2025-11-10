@@ -26,6 +26,8 @@
 
             <div class="modal-body aimsds-body">
                 <form id="editUserForm" onsubmit="AIMS.Admin.saveUserEdit(event)">
+                    <input type="hidden" id="editUserId" />
+                    <input type="hidden" id="editUserIsArchived" />
                     <input type="hidden" id="editUserIndex" />
 
                     <label for="editUserName" class="form-label fw-bold">Name</label>
@@ -40,10 +42,10 @@
                         <option value="User">User</option>
                     </select>
 
-                    <label for="editUserStatus" class="form-label fw-bold mt-2">Status</label>
+                    <label for="editUserStatus" class="form-label fw-bold mt-2">Archive Status</label>
                     <select id="editUserStatus" class="aims-select" required>
-                        <option value="Active">Active</option>
-                        <option value="Inactive">Inactive</option>
+                        <option value="Active">Active (Not Archived)</option>
+                        <option value="Inactive">Archived</option>
                     </select>
 
                     <label for="editUserSeparationDate" class="form-label fw-bold mt-2">Separation Date</label>

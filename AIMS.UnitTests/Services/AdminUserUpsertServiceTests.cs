@@ -54,13 +54,12 @@ public class AdminUserUpsertServiceTests
 
         var svc = new AdminUserUpsertService(db, graph.Object);
 
-        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 5, supervisorId: null, CancellationToken.None);
+        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 5, supervisorId: null, officeId: null, CancellationToken.None);
 
         Assert.NotNull(saved);
         Assert.Equal(graphId, saved.GraphObjectID);
         Assert.Equal("Ada Lovelace", saved.FullName);
         Assert.Equal("ada@contoso.com", saved.Email);
-        Assert.True(saved.IsActive);
         Assert.False(saved.IsArchived);
         Assert.Equal(5, saved.RoleID);
 
@@ -84,7 +83,6 @@ public class AdminUserUpsertServiceTests
             FullName = "Old Name",
             Email = "old@contoso.com",
             EmployeeNumber = "abcdef01",
-            IsActive = false,
             IsArchived = false,
             RoleID = 1
         });
@@ -92,12 +90,11 @@ public class AdminUserUpsertServiceTests
 
         var svc = new AdminUserUpsertService(db, graph.Object);
 
-        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 7, supervisorId: 3, CancellationToken.None);
+        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 7, supervisorId: 3, officeId: null, CancellationToken.None);
 
         Assert.NotNull(saved);
         Assert.Equal("Updated Name", saved.FullName);
         Assert.Equal("updated@contoso.com", saved.Email);
-        Assert.True(saved.IsActive);
         Assert.False(saved.IsArchived);
         Assert.Equal(7, saved.RoleID);
         Assert.Equal(3, saved.SupervisorID);
@@ -122,7 +119,6 @@ public class AdminUserUpsertServiceTests
             FullName = "Archived Name",
             Email = "archived@contoso.com",
             EmployeeNumber = "aaaa0001",
-            IsActive = false,
             IsArchived = true,
             RoleID = 2
         });
@@ -130,12 +126,11 @@ public class AdminUserUpsertServiceTests
 
         var svc = new AdminUserUpsertService(db, graph.Object);
 
-        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 9, supervisorId: null, CancellationToken.None);
+        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 9, supervisorId: null, officeId: null, CancellationToken.None);
 
         Assert.NotNull(saved);
         Assert.Equal("Resurrected", saved.FullName);
         Assert.Equal("back@contoso.com", saved.Email);
-        Assert.True(saved.IsActive);
         Assert.False(saved.IsArchived);
         Assert.Equal(9, saved.RoleID);
 
@@ -160,7 +155,6 @@ public class AdminUserUpsertServiceTests
                 FullName = "Already There",
                 Email = "already@contoso.com",
                 EmployeeNumber = "seed0001",
-                IsActive = true,
                 IsArchived = false,
                 RoleID = 1
             });
@@ -172,7 +166,7 @@ public class AdminUserUpsertServiceTests
         var svc = new AdminUserUpsertService(throwingDb, graph.Object);
 
         await Assert.ThrowsAsync<DbUpdateException>(async () =>
-            await svc.UpsertAdminUserAsync(graphId, roleId: 10, supervisorId: null, CancellationToken.None));
+            await svc.UpsertAdminUserAsync(graphId, roleId: 10, supervisorId: null, officeId: null, CancellationToken.None));
     }
 
     [Fact]
@@ -188,7 +182,7 @@ public class AdminUserUpsertServiceTests
         var svc = new AdminUserUpsertService(db, graph.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.UpsertAdminUserAsync(graphId, null, null, CancellationToken.None));
+            svc.UpsertAdminUserAsync(graphId, null, null, null, CancellationToken.None));
     }
 
 
