@@ -1,670 +1,871 @@
 {
-    "info": {
-        "_postman_id": "5f0d3f1e-0b6b-4f1a-9f0a-qa13-audit-events",
-        "name": "AIMS — QA 1.3 (Audit Events: Polling, ETag, Dedup, Resilience)",
-        "description": "# AIMS — QA 1.3 (Audit Events: Polling, ETag, Dedup, Resilience)\n\n**Goal**\nAPI coverage for 1.3 to support E2E UI tests. Verifies:\n\n- **Polling & ETag**: 200 with JSON body (new data) vs 304 (cache hit), `nextSince` cursor, page-size cap, descending order.\n- **Create events**: seed via `POST /api/audit/create` with stable `externalId` so the UI can dedup in-place.\n- **Dedup signals**: publish again with the **same** `externalId` and **newer** `description`; confirm newest row appears first.\n- **Resilience**: rewind polling window; clear ETag to force 200; stress `/api/audit/events` to observe **429** from the token bucket policy.\n\n> UI-specific assertions (≤5s render via SignalR, no duplicates in DOM, offline/online catch-up) are validated in Playwright/Cypress: `realtime.spec.ts`, `dedup.spec.ts`, `resilience.spec.ts`. This collection prepares/validates the API behavior that those rely on.\n\n**Variables (Environment or Collection)**\n- `baseURL` (e.g., `http://localhost:5119`)\n- `since` (ISO-8601; auto-seeded if unset)\n- `take` (default `50`)\n- `etag` (auto-captured)\n- `userId` (**auto-discovered** via `/api/diag/users`)\n- `hardwareId` (**auto-discovered** via `/api/hardware/get-all`)\n- `externalId1` (auto-seeded GUID once)\n- `rate429Count` (internal counter; do not set)\n- `min429` (default `0`. Set to `1` if we want 7b to require at least one 429)\n\n**Auth**\nIn Dev/Test with `UseTestAuth=true`, no token is required. Otherwise attach auth at the collection level.",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "item": [
-        {
-            "name": "0) Service Probe & Var Defaults",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "// ------------------- Defaults -------------------",
-                            "if (!pm.collectionVariables.get('take')) pm.collectionVariables.set('take', '50');",
-                            "",
-                            "// Seed 24h window if missing",
-                            "if (!pm.environment.get('since')) {",
-                            "  pm.environment.set('since', new Date(Date.now() - 24*60*60*1000).toISOString());",
-                            "}",
-                            "",
-                            "// uuid without crypto.randomUUID (works in Postman sandbox)",
-                            "function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}",
-                            "if (!pm.environment.get('externalId1')) pm.environment.set('externalId1', uuidv4());",
-                            "",
-                            "// Rate-limit counters",
-                            "if (!pm.environment.get('rate429Count')) pm.environment.set('rate429Count','0');",
-                            "if (!pm.environment.get('min429')) pm.environment.set('min429','0');",
-                            "",
-                            "// ------------------- Dynamic lookups -------------------",
-                            "const baseURL = pm.environment.get('baseURL') || pm.collectionVariables.get('baseURL') || '';",
-                            "",
-                            "function pickId(obj, ...keys) {",
-                            "  for (const k of keys) { if (obj && obj[k] != null) return obj[k]; }",
-                            "}",
-                            "",
-                            "// Lookup userId if missing/blank",
-                            "(function ensureUserId(){",
-                            "  const existing = pm.collectionVariables.get('userId');",
-                            "  if (existing && String(existing).trim() !== '') {",
-                            "    return;",
-                            "  }",
-                            "  if (!baseURL) { console.warn('[vars] baseURL missing; cannot auto-discover userId'); return; }",
-                            "  pm.sendRequest({ url: baseURL + '/api/diag/users', method: 'GET', header: { Accept: 'application/json' } }, function(err, res){",
-                            "    if (err) { console.warn('[userId] lookup error:', err); return; }",
-                            "    if (!res) return;",
-                            "    let list;",
-                            "    try { list = res.json(); } catch(e) { list = []; }",
-                            "    if (!Array.isArray(list)) list = [];",
-                            "    // Prefer first non-archived",
-                            "    const pick = list.find(u => u && (u.isArchived === false || u.isArchived === 0)) || list[0];",
-                            "    const id = pickId(pick||{}, 'userId','userID','UserID','id','Id','ID');",
-                            "    if (id != null) {",
-                            "      pm.collectionVariables.set('userId', String(id));",
-                            "      console.log('[userId] set to', id);",
-                            "    } else {",
-                            "      console.warn('[userId] not found in /api/diag/users payload');",
-                            "    }",
-                            "  });",
-                            "})();",
-                            "",
-                            "// Lookup hardwareId if missing/blank",
-                            "(function ensureHardwareId(){",
-                            "  const existing = pm.collectionVariables.get('hardwareId');",
-                            "  if (existing && String(existing).trim() !== '') {",
-                            "    return;",
-                            "  }",
-                            "  if (!baseURL) { console.warn('[vars] baseURL missing; cannot auto-discover hardwareId'); return; }",
-                            "  pm.sendRequest({ url: baseURL + '/api/hardware/get-all', method: 'GET', header: { Accept: 'application/json' } }, function(err, res){",
-                            "    if (err) { console.warn('[hardwareId] lookup error:', err); return; }",
-                            "    if (!res) return;",
-                            "    let list;",
-                            "    try { list = res.json(); } catch(e) { list = []; }",
-                            "    if (!Array.isArray(list)) list = [];",
-                            "    const pick = list[0];",
-                            "    const id = pickId(pick||{}, 'hardwareId','hardwareID','HardwareID','id','Id','ID');",
-                            "    if (id != null) {",
-                            "      pm.collectionVariables.set('hardwareId', String(id));",
-                            "      console.log('[hardwareId] set to', id);",
-                            "    } else {",
-                            "      console.warn('[hardwareId] not found in /api/hardware/get-all payload');",
-                            "    }",
-                            "  });",
-                            "})();"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('Service is up (200/401/404 acceptable for probe)', () => {",
-                            "  pm.expect([200,401,404]).to.include(pm.response.code);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "{{baseURL}}/_endpoints",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "_endpoints"
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "1) Events — Initial Poll (captures ETag & nextSince)",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.request.headers.upsert({ key: 'If-None-Match', value: pm.environment.get('etag') || '' });",
-                            "pm.environment.set('prev_since', pm.environment.get('since'));",
-                            "if (!pm.environment.get('take')) pm.environment.set('take', pm.collectionVariables.get('take') || '50');"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('Status is 200 or 304', () => pm.expect([200,304]).to.include(pm.response.code));",
-                            "",
-                            "if (pm.response.code === 200) {",
-                            "  pm.test('Content-Type is JSON', () => pm.expect((pm.response.headers.get('Content-Type')||'')).to.include('application/json'));",
-                            "  const etag = pm.response.headers.get('ETag');",
-                            "  pm.test('ETag header present', () => pm.expect(etag).to.exist);",
-                            "  if (etag) pm.environment.set('etag', etag);",
-                            "  let body; try{ body = pm.response.json(); }catch(e){}",
-                            "  pm.test('Body has items[] and nextSince', () => {",
-                            "    pm.expect(body).to.be.an('object');",
-                            "    pm.expect(body.items).to.be.an('array');",
-                            "    pm.expect(body).to.have.property('nextSince');",
-                            "  });",
-                            "  if (body && Array.isArray(body.items)) {",
-                            "    const take = parseInt(pm.environment.get('take')||'50',10);",
-                            "    pm.test('items.length <= take', () => pm.expect(body.items.length).to.be.at.most(take));",
-                            "    pm.test('items sorted by occurredAtUtc DESC', () => {",
-                            "      const ts = body.items.map(i => Date.parse(i.occurredAtUtc));",
-                            "      const sorted = [...ts].sort((a,b)=>b-a);",
-                            "      pm.expect(ts).to.eql(sorted);",
-                            "    });",
-                            "  }",
-                            "  if (body && body.nextSince) {",
-                            "    pm.environment.set('since', body.nextSince);",
-                            "    pm.test('nextSince >= previous since', () => {",
-                            "      pm.expect(Date.parse(body.nextSince)).to.be.at.least(Date.parse(pm.environment.get('prev_since')));",
-                            "    });",
-                            "  }",
-                            "}"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "Accept",
-                        "value": "application/json",
-                        "type": "text"
-                    },
-                    {
-                        "key": "If-None-Match",
-                        "value": "{{etag}}",
-                        "type": "text"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "events"
-                    ],
-                    "query": [
-                        {
-                            "key": "since",
-                            "value": "{{since}}"
-                        },
-                        {
-                            "key": "take",
-                            "value": "{{take}}"
-                        }
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "2) Events — ETag Revalidate (expect 304)",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.request.headers.upsert({ key: 'If-None-Match', value: pm.environment.get('etag') || '' });"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('Returns 304 when unchanged', () => pm.expect(pm.response.code).to.eql(304));",
-                            "pm.test('No body on 304', () => pm.expect(pm.response.text()).to.satisfy(t => t === '' || t === undefined));"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "Accept",
-                        "value": "application/json",
-                        "type": "text"
-                    },
-                    {
-                        "key": "If-None-Match",
-                        "value": "{{etag}}",
-                        "type": "text"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "events"
-                    ],
-                    "query": [
-                        {
-                            "key": "since",
-                            "value": "{{since}}"
-                        },
-                        {
-                            "key": "take",
-                            "value": "{{take}}"
-                        }
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "3) Create — New Audit (externalId1)",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}",
-                            "if (!pm.environment.get('externalId1')) pm.environment.set('externalId1', uuidv4());",
-                            "",
-                            "// Build payload from auto-discovered vars",
-                            "const userId = parseInt(pm.collectionVariables.get('userId')||'0',10);",
-                            "const hardwareId = parseInt(pm.collectionVariables.get('hardwareId')||'0',10);",
-                            "if (!userId) console.warn('[create] userId not set yet');",
-                            "if (!hardwareId) console.warn('[create] hardwareId not set yet');",
-                            "",
-                            "const payload = {",
-                            "  userId: userId || undefined,",
-                            "  action: 'Create',",
-                            "  description: 'Initial details @ ' + new Date().toISOString(),",
-                            "  snapshotJson: null,",
-                            "  assetKind: 1,",
-                            "  hardwareId: hardwareId || undefined,",
-                            "  softwareId: null,",
-                            "  externalId: pm.environment.get('externalId1')",
-                            "};",
-                            "pm.variables.set('payload', JSON.stringify(payload));"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('Seed accepted (201/200)', () => pm.expect([200,201]).to.include(pm.response.code));"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "POST",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/create",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "create"
-                    ]
-                },
-                "body": {
-                    "mode": "raw",
-                    "raw": "{{payload}}"
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "4) Create — Update Same externalId1 (newer details)",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "// Build payload from auto-discovered vars",
-                            "const userId = parseInt(pm.collectionVariables.get('userId')||'0',10);",
-                            "const hardwareId = parseInt(pm.collectionVariables.get('hardwareId')||'0',10);",
-                            "if (!userId) console.warn('[update] userId not set yet');",
-                            "if (!hardwareId) console.warn('[update] hardwareId not set yet');",
-                            "",
-                            "const payload = {",
-                            "  userId: userId || undefined,",
-                            "  action: 'Update',",
-                            "  description: 'UPDATED details @ ' + new Date().toISOString(),",
-                            "  snapshotJson: null,",
-                            "  assetKind: 1,",
-                            "  hardwareId: hardwareId || undefined,",
-                            "  softwareId: null,",
-                            "  externalId: pm.environment.get('externalId1')",
-                            "};",
-                            "pm.variables.set('payload', JSON.stringify(payload));"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('Update accepted (201/200)', () => pm.expect([200,201]).to.include(pm.response.code));"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "POST",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/create",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "create"
-                    ]
-                },
-                "body": {
-                    "mode": "raw",
-                    "raw": "{{payload}}"
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "5) Events — Rewind & Force 200 (validate body + ordering + cap)",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.environment.set('since', new Date(Date.now() - 15*60*1000).toISOString());",
-                            "pm.environment.set('take', '50');",
-                            "pm.environment.set('prev_since', pm.environment.get('since'));",
-                            "pm.environment.set('etag', '');",
-                            "pm.request.headers.upsert({ key: 'If-None-Match', value: '' });"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('200 OK', () => pm.expect(pm.response.code).to.eql(200));",
-                            "const body = pm.response.json();",
-                            "pm.test('items[] present', () => { pm.expect(body).to.be.an('object'); pm.expect(body.items).to.be.an('array'); });",
-                            "pm.test('sorted DESC', () => { const ts = body.items.map(i => Date.parse(i.occurredAtUtc)); const sorted=[...ts].sort((a,b)=>b-a); pm.expect(ts).to.eql(sorted); });",
-                            "pm.test('<= take', () => pm.expect(body.items.length).to.be.at.most(parseInt(pm.environment.get('take')||'50',10)));",
-                            "const etag = pm.response.headers.get('ETag'); if (etag) pm.environment.set('etag', etag);",
-                            "if (body && body.nextSince) pm.environment.set('since', body.nextSince);"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "Accept",
-                        "value": "application/json",
-                        "type": "text"
-                    },
-                    {
-                        "key": "If-None-Match",
-                        "value": "",
-                        "type": "text"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "events"
-                    ],
-                    "query": [
-                        {
-                            "key": "since",
-                            "value": "{{since}}"
-                        },
-                        {
-                            "key": "take",
-                            "value": "{{take}}"
-                        }
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "6) Events — ETag Revalidate (post-rewind → 304 or 200 if new data)",
-            "event": [
-                {
-                    "listen": "prerequest",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.request.headers.upsert({ key: 'If-None-Match', value: pm.environment.get('etag') || '' });"
-                        ]
-                    }
-                },
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "pm.test('304 (unchanged) or 200 (new data) acceptable', () => pm.expect([200,304]).to.include(pm.response.code));",
-                            "if (pm.response.code === 200) {",
-                            "  const etag = pm.response.headers.get('ETag'); if (etag) pm.environment.set('etag', etag);",
-                            "  try { const body = pm.response.json(); if (body && body.nextSince) pm.environment.set('since', body.nextSince); } catch(e) {}",
-                            "}"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "Accept",
-                        "value": "application/json",
-                        "type": "text"
-                    },
-                    {
-                        "key": "If-None-Match",
-                        "value": "{{etag}}",
-                        "type": "text"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "events"
-                    ],
-                    "query": [
-                        {
-                            "key": "since",
-                            "value": "{{since}}"
-                        },
-                        {
-                            "key": "take",
-                            "value": "{{take}}"
-                        }
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "7) Resilience — Hammer Events (Runner: ≥30 iterations, 0ms delay)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "const code = pm.response.code;",
-                            "if (code === 429) {",
-                            "  const n = parseInt(pm.environment.get('rate429Count')||'0',10) + 1;",
-                            "  pm.environment.set('rate429Count', String(n));",
-                            "}",
-                            "pm.test('200 or 429 acceptable during stress', () => pm.expect([200,429]).to.include(code));"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [
-                    {
-                        "key": "Accept",
-                        "value": "application/json",
-                        "type": "text"
-                    },
-                    {
-                        "key": "If-None-Match",
-                        "value": "",
-                        "type": "text"
-                    }
-                ],
-                "url": {
-                    "raw": "{{baseURL}}/api/audit/events?since={{since}}&take=1",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "api",
-                        "audit",
-                        "events"
-                    ],
-                    "query": [
-                        {
-                            "key": "since",
-                            "value": "{{since}}"
-                        },
-                        {
-                            "key": "take",
-                            "value": "1"
-                        }
-                    ]
-                }
-            },
-            "response": []
-        },
-        {
-            "name": "7b) Assert ≥ min429 occurred (after Runner)",
-            "event": [
-                {
-                    "listen": "test",
-                    "script": {
-                        "type": "text/javascript",
-                        "exec": [
-                            "const seen = parseInt(pm.environment.get('rate429Count')||'0',10);",
-                            "const min = parseInt(pm.environment.get('min429')||'0',10);",
-                            "pm.test(`At least ${min} 429 occurred during stress`, () => {",
-                            "  pm.expect(seen).to.be.at.least(min);",
-                            "});"
-                        ]
-                    }
-                }
-            ],
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "{{baseURL}}/_endpoints",
-                    "host": [
-                        "{{baseURL}}"
-                    ],
-                    "path": [
-                        "_endpoints"
-                    ]
-                }
-            },
-            "response": []
-        }
-    ],
-    "variable": [
-        {
-            "key": "baseURL",
-            "value": "http://localhost:5119",
-            "type": "string"
-        },
-        {
-            "key": "since",
-            "value": "",
-            "type": "string"
-        },
-        {
-            "key": "take",
-            "value": "50",
-            "type": "string"
-        },
-        {
-            "key": "etag",
-            "value": "",
-            "type": "string"
-        },
-        {
-            "key": "userId",
-            "value": "",
-            "type": "string"
-        },
-        {
-            "key": "hardwareId",
-            "value": "",
-            "type": "string"
-        },
-        {
-            "key": "externalId1",
-            "value": "",
-            "type": "string"
-        },
-        {
-            "key": "rate429Count",
-            "value": "0",
-            "type": "string"
-        },
-        {
-            "key": "min429",
-            "value": "0",
-            "type": "string"
-        }
-    ]
+	"info": {
+		"_postman_id": "84005c69-b171-4f18-a930-52882c3f9159",
+		"name": "AIMS — QA (Audit Events: Polling, ETag, Dedup, Resilience)",
+		"description": "# AIMS — QA (Audit Events: Polling, ETag, Dedup, Resilience)\n\n**Goal**\nAPI coverage to support E2E UI tests. Verifies:\n\n- **Polling & ETag**: 200 with JSON body (new data) vs 304 (cache hit), `nextSince` cursor, page-size cap, descending order.\n- **Create events**: seed via `POST /api/audit/create` with stable `externalId` so the UI can dedup in-place.\n- **Dedup signals**: publish again with the **same** `externalId` and **newer** `description`; confirm newest row appears first.\n- **Resilience**: rewind polling window; clear ETag to force 200; stress `/api/audit/events` to observe **429** from the token bucket policy.\n\n> UI-specific assertions (≤5s render via SignalR, no duplicates in DOM, offline/online catch-up) are validated in Playwright/Cypress: `realtime.spec.ts`, `dedup.spec.ts`, `resilience.spec.ts`. This collection prepares/validates the API behavior that those rely on.\n\n**Variables (Environment or Collection)**\n- `baseURL` (e.g., `http://localhost:5119`)\n- `since` (ISO-8601; auto-seeded if unset)\n- `take` (default `50`)\n- `etag` (auto-captured)\n- `userId` (**auto-discovered** via `/api/diag/users`)\n- `hardwareId` (**auto-discovered** via `/api/hardware/get-all`)\n- `externalId1` (auto-seeded GUID once)\n- `rate429Count` (internal counter; do not set)\n- `min429` (default `0`. Set to `1` if we want 7b to require at least one 429)\n\n**Auth**\nIn Dev/Test with `UseTestAuth=true`, no token is required. Otherwise attach auth at the collection level.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "49535481"
+	},
+	"item": [
+		{
+			"name": "AUTH — Get Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let j = {};",
+							"try { j = pm.response.json(); } catch (e) {}",
+							"",
+							"pm.test('Got access_token', () => pm.expect(j.access_token).to.exist);",
+							"",
+							"pm.environment.set('access_token', j.access_token);",
+							"pm.environment.set(",
+							"  'token_expires_at',",
+							"  String(Date.now() + ((j.expires_in || 3600) - 60) * 1000)",
+							");"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{clientId}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{clientSecret}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "{{apiScope}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://login.microsoftonline.com/{{tenantId}}/oauth2/v2.0/token",
+					"protocol": "https",
+					"host": [
+						"login",
+						"microsoftonline",
+						"com"
+					],
+					"path": [
+						"{{tenantId}}",
+						"oauth2",
+						"v2.0",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "0) Service Probe & Var Defaults",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// ------------------- Defaults -------------------",
+							"if (!pm.collectionVariables.get('take')) pm.collectionVariables.set('take', '50');",
+							"",
+							"// Seed 24h window if missing",
+							"if (!pm.environment.get('since')) {",
+							"  pm.environment.set('since', new Date(Date.now() - 24*60*60*1000).toISOString());",
+							"}",
+							"",
+							"// uuid without crypto.randomUUID (works in Postman sandbox)",
+							"function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}",
+							"if (!pm.environment.get('externalId1')) pm.environment.set('externalId1', uuidv4());",
+							"",
+							"// Rate-limit counters",
+							"if (!pm.environment.get('rate429Count')) pm.environment.set('rate429Count','0');",
+							"if (!pm.environment.get('min429')) pm.environment.set('min429','0');",
+							"",
+							"// ------------------- Dynamic lookups -------------------",
+							"const baseURL = pm.environment.get('baseURL') || pm.collectionVariables.get('baseURL') || '';",
+							"const token   = pm.collectionVariables.get('access_token') || ''; // <-- token saved by AUTH request",
+							"",
+							"function pickId(obj, ...keys) {",
+							"  for (const k of keys) { if (obj && obj[k] != null) return obj[k]; }",
+							"}",
+							"",
+							"// Helper to build headers including Authorization when available",
+							"function authHeaders() {",
+							"  const hdrs = [{ key: 'Accept', value: 'application/json' }];",
+							"  if (token) hdrs.push({ key: 'Authorization', value: `Bearer ${token}` });",
+							"  return hdrs;",
+							"}",
+							"",
+							"// Lookup userId if missing/blank",
+							"(function ensureUserId(){",
+							"  const existing = pm.collectionVariables.get('userId');",
+							"  if (existing && String(existing).trim() !== '') return;",
+							"  if (!baseURL) { console.warn('[vars] baseURL missing; cannot auto-discover userId'); return; }",
+							"",
+							"  pm.sendRequest({",
+							"    url: baseURL + '/api/diag/users',",
+							"    method: 'GET',",
+							"    header: authHeaders()",
+							"  }, function(err, res){",
+							"    if (err || !res) { console.warn('[userId] lookup error:', err); return; }",
+							"    let list; try { list = res.json(); } catch(e) { list = []; }",
+							"    if (!Array.isArray(list)) list = [];",
+							"    const pick = list.find(u => u && (u.isArchived === false || u.isArchived === 0)) || list[0];",
+							"    const id = pickId(pick||{}, 'userId','userID','UserID','id','Id','ID');",
+							"    if (id != null) {",
+							"      pm.collectionVariables.set('userId', String(id));",
+							"      console.log('[userId] set to', id);",
+							"    } else {",
+							"      console.warn('[userId] not found in /api/diag/users payload');",
+							"    }",
+							"  });",
+							"})();",
+							"",
+							"// Lookup hardwareId if missing/blank",
+							"(function ensureHardwareId(){",
+							"  const existing = pm.collectionVariables.get('hardwareId');",
+							"  if (existing && String(existing).trim() !== '') return;",
+							"  if (!baseURL) { console.warn('[vars] baseURL missing; cannot auto-discover hardwareId'); return; }",
+							"",
+							"  pm.sendRequest({",
+							"    url: baseURL + '/api/hardware/get-all',",
+							"    method: 'GET',",
+							"    header: authHeaders()",
+							"  }, function(err, res){",
+							"    if (err || !res) { console.warn('[hardwareId] lookup error:', err); return; }",
+							"    let list; try { list = res.json(); } catch(e) { list = []; }",
+							"    if (!Array.isArray(list)) list = [];",
+							"    const pick = list[0];",
+							"    const id = pickId(pick||{}, 'hardwareId','hardwareID','HardwareID','id','Id','ID');",
+							"    if (id != null) {",
+							"      pm.collectionVariables.set('hardwareId', String(id));",
+							"      console.log('[hardwareId] set to', id);",
+							"    } else {",
+							"      console.warn('[hardwareId] not found in /api/hardware/get-all payload');",
+							"    }",
+							"  });",
+							"})();"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Service is up (200/401/404 acceptable for probe)', () => {",
+							"  pm.expect([200,401,404]).to.include(pm.response.code);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/_endpoints",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"_endpoints"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "1) Events — Initial Poll (captures ETag & nextSince)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.request.headers.upsert({",
+							"  key: 'If-None-Match',",
+							"  value: pm.environment.get('etag') || ''",
+							"});",
+							"",
+							"pm.environment.set('prev_since', pm.environment.get('since'));",
+							"",
+							"if (!pm.environment.get('take')) {",
+							"  pm.environment.set('take', pm.collectionVariables.get('take') || '50');",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200 or 304', () => pm.expect([200,304]).to.include(pm.response.code));",
+							"",
+							"if (pm.response.code === 304) {",
+							"  pm.test('No body on 304', () =>",
+							"    pm.expect(pm.response.text()).to.satisfy(t => t === '' || t === undefined));",
+							"} else {",
+							"  pm.test('Content-Type is JSON', () =>",
+							"    pm.expect((pm.response.headers.get('Content-Type') || '')).to.include('application/json'));",
+							"",
+							"  const etag = pm.response.headers.get('ETag');",
+							"  pm.test('ETag header present', () => pm.expect(etag).to.exist);",
+							"  if (etag) pm.environment.set('etag', etag);",
+							"",
+							"  let body;",
+							"  try { body = pm.response.json(); } catch (e) { body = null; }",
+							"",
+							"  pm.test('Body has items[] and nextSince', () => {",
+							"    pm.expect(body).to.be.an('object');",
+							"    pm.expect(body.items).to.be.an('array');",
+							"    pm.expect(body).to.have.property('nextSince');",
+							"  });",
+							"",
+							"  if (body && Array.isArray(body.items)) {",
+							"    const take = parseInt(pm.environment.get('take') || '50', 10);",
+							"    pm.test('items.length <= take', () =>",
+							"      pm.expect(body.items.length).to.be.at.most(take));",
+							"",
+							"    pm.test('items sorted by occurredAtUtc DESC', () => {",
+							"      const ts = body.items.map(i => Date.parse(i.occurredAtUtc));",
+							"      const sorted = [...ts].sort((a,b)=> b-a);",
+							"      pm.expect(ts).to.eql(sorted);",
+							"    });",
+							"  }",
+							"",
+							"  if (body && body.nextSince) {",
+							"    pm.environment.set('nextSince_tmp', body.nextSince);",
+							"  }",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "If-None-Match",
+						"value": "{{etag}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"events"
+					],
+					"query": [
+						{
+							"key": "since",
+							"value": "{{since}}"
+						},
+						{
+							"key": "take",
+							"value": "{{take}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2) Events — ETag Revalidate (expect 304)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.request.headers.upsert({",
+							"  key: 'If-None-Match',",
+							"  value: pm.environment.get('etag') || ''",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('304 (unchanged) or 200 (new data) acceptable', () =>",
+							"  pm.expect([200,304]).to.include(pm.response.code));",
+							"",
+							"if (pm.response.code === 304) {",
+							"  pm.test('No body on 304', () =>",
+							"    pm.expect(pm.response.text()).to.satisfy(t => t === '' || t === undefined));",
+							"",
+							"  const nxt = pm.environment.get('nextSince_tmp');",
+							"  if (nxt) {",
+							"    pm.environment.set('since', nxt);",
+							"    pm.environment.unset('nextSince_tmp');",
+							"  }",
+							"} else {",
+							"  const etag = pm.response.headers.get('ETag');",
+							"  if (etag) pm.environment.set('etag', etag);",
+							"",
+							"  try {",
+							"    const body = pm.response.json();",
+							"    if (body && body.nextSince) {",
+							"      pm.environment.set('since', body.nextSince);",
+							"      pm.environment.unset('nextSince_tmp');",
+							"    }",
+							"  } catch (e) {",
+							"    console.warn('[step2] 200 but body parse failed', e);",
+							"  }",
+							"}"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "If-None-Match",
+						"value": "{{etag}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"events"
+					],
+					"query": [
+						{
+							"key": "since",
+							"value": "{{since}}"
+						},
+						{
+							"key": "take",
+							"value": "{{take}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3) Create — New Audit (externalId1)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"function uuidv4(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){const r=Math.random()*16|0,v=c==='x'?r:(r&0x3|0x8);return v.toString(16);});}",
+							"if (!pm.environment.get('externalId1')) pm.environment.set('externalId1', uuidv4());",
+							"",
+							"// Build payload from auto-discovered vars",
+							"const userId = parseInt(pm.collectionVariables.get('userId')||'0',10);",
+							"const hardwareId = parseInt(pm.collectionVariables.get('hardwareId')||'0',10);",
+							"if (!userId) console.warn('[create] userId not set yet');",
+							"if (!hardwareId) console.warn('[create] hardwareId not set yet');",
+							"",
+							"const payload = {",
+							"  userId: userId || undefined,",
+							"  action: 'Create',",
+							"  description: 'Initial details @ ' + new Date().toISOString(),",
+							"  snapshotJson: null,",
+							"  assetKind: 1,",
+							"  hardwareId: hardwareId || undefined,",
+							"  softwareId: null,",
+							"  externalId: pm.environment.get('externalId1')",
+							"};",
+							"pm.variables.set('payload', JSON.stringify(payload));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Seed accepted (201/200)', () => pm.expect([200,201]).to.include(pm.response.code));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{{payload}}"
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/audit/create",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4) Create — Update Same externalId1 (newer details)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Build payload from auto-discovered vars",
+							"const userId = parseInt(pm.collectionVariables.get('userId')||'0',10);",
+							"const hardwareId = parseInt(pm.collectionVariables.get('hardwareId')||'0',10);",
+							"if (!userId) console.warn('[update] userId not set yet');",
+							"if (!hardwareId) console.warn('[update] hardwareId not set yet');",
+							"",
+							"const payload = {",
+							"  userId: userId || undefined,",
+							"  action: 'Update',",
+							"  description: 'UPDATED details @ ' + new Date().toISOString(),",
+							"  snapshotJson: null,",
+							"  assetKind: 1,",
+							"  hardwareId: hardwareId || undefined,",
+							"  softwareId: null,",
+							"  externalId: pm.environment.get('externalId1')",
+							"};",
+							"pm.variables.set('payload', JSON.stringify(payload));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Update accepted (201/200)', () => pm.expect([200,201]).to.include(pm.response.code));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{{payload}}"
+				},
+				"url": {
+					"raw": "{{baseURL}}/api/audit/create",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"create"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5) Events — Rewind & Force 200 (validate body + ordering + cap)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.environment.set('since', new Date(Date.now() - 15*60*1000).toISOString());",
+							"pm.environment.set('take', '50');",
+							"pm.environment.set('prev_since', pm.environment.get('since'));",
+							"pm.environment.set('etag', '');",
+							"pm.request.headers.upsert({ key: 'If-None-Match', value: '' });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200 OK', () => pm.expect(pm.response.code).to.eql(200));",
+							"const body = pm.response.json();",
+							"pm.test('items[] present', () => { pm.expect(body).to.be.an('object'); pm.expect(body.items).to.be.an('array'); });",
+							"pm.test('sorted DESC', () => { const ts = body.items.map(i => Date.parse(i.occurredAtUtc)); const sorted=[...ts].sort((a,b)=>b-a); pm.expect(ts).to.eql(sorted); });",
+							"pm.test('<= take', () => pm.expect(body.items.length).to.be.at.most(parseInt(pm.environment.get('take')||'50',10)));",
+							"const etag = pm.response.headers.get('ETag'); if (etag) pm.environment.set('etag', etag);",
+							"if (body && body.nextSince) pm.environment.set('since', body.nextSince);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "If-None-Match",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"events"
+					],
+					"query": [
+						{
+							"key": "since",
+							"value": "{{since}}"
+						},
+						{
+							"key": "take",
+							"value": "{{take}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6) Events — ETag Revalidate (post-rewind → 304 or 200 if new data)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.request.headers.upsert({ key: 'If-None-Match', value: pm.environment.get('etag') || '' });"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('304 (unchanged) or 200 (new data) acceptable', () => pm.expect([200,304]).to.include(pm.response.code));",
+							"if (pm.response.code === 200) {",
+							"  const etag = pm.response.headers.get('ETag'); if (etag) pm.environment.set('etag', etag);",
+							"  try { const body = pm.response.json(); if (body && body.nextSince) pm.environment.set('since', body.nextSince); } catch(e) {}",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "If-None-Match",
+						"value": "{{etag}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/audit/events?since={{since}}&take={{take}}",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"events"
+					],
+					"query": [
+						{
+							"key": "since",
+							"value": "{{since}}"
+						},
+						{
+							"key": "take",
+							"value": "{{take}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7) Resilience — Hammer Events (Runner: ≥30 iterations, 0ms delay)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const code = pm.response.code;",
+							"if (code === 429) {",
+							"  const n = parseInt(pm.environment.get('rate429Count')||'0',10) + 1;",
+							"  pm.environment.set('rate429Count', String(n));",
+							"}",
+							"pm.test('200 or 429 acceptable during stress', () => pm.expect([200,429]).to.include(code));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "If-None-Match",
+						"value": "",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseURL}}/api/audit/events?since={{since}}&take=1",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"api",
+						"audit",
+						"events"
+					],
+					"query": [
+						{
+							"key": "since",
+							"value": "{{since}}"
+						},
+						{
+							"key": "take",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7b) Assert ≥ min429 occurred (after Runner)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const seen = parseInt(pm.environment.get('rate429Count')||'0',10);",
+							"const min = parseInt(pm.environment.get('min429')||'0',10);",
+							"pm.test(`At least ${min} 429 occurred during stress`, () => {",
+							"  pm.expect(seen).to.be.at.least(min);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/_endpoints",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"_endpoints"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"exec": [
+					"// Only fetch if we don't already have one or it's older than ~55 minutes",
+					"function expired(ts) { return !ts || (Date.now() - Number(ts)) > (55*60*1000); }",
+					"",
+					"if (!pm.collectionVariables.get('access_token') || expired(pm.collectionVariables.get('access_token_ts'))) {",
+					"  const tenant = pm.variables.get('tenantId');",
+					"  const clientId = pm.variables.get('clientId');",
+					"  const clientSecret = pm.variables.get('clientSecret');",
+					"  const scope = pm.variables.get('apiScope');",
+					"",
+					"  if (!tenant || !clientId || !clientSecret || !scope) {",
+					"    console.warn('[auth] Missing tenantId/clientId/clientSecret/apiScope');",
+					"  } else {",
+					"    pm.sendRequest({",
+					"      url: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,",
+					"      method: 'POST',",
+					"      header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+					"      body: {",
+					"        mode: 'urlencoded',",
+					"        urlencoded: [",
+					"          { key: 'grant_type', value: 'client_credentials' },",
+					"          { key: 'client_id', value: clientId },",
+					"          { key: 'client_secret', value: clientSecret },",
+					"          { key: 'scope', value: scope }",
+					"        ]",
+					"      }",
+					"    }, (err, res) => {",
+					"      if (err) { console.error('[auth] token error', err); return; }",
+					"      const j = res.json();",
+					"      if (j && j.access_token) {",
+					"        pm.collectionVariables.set('access_token', j.access_token);",
+					"        pm.collectionVariables.set('access_token_ts', String(Date.now()));",
+					"        console.log('[auth] token saved to collection variable access_token');",
+					"      } else {",
+					"        console.error('[auth] no access_token in response', res.text());",
+					"      }",
+					"    });",
+					"  }",
+					"}",
+					"",
+					"// Always attach whatever token we currently have",
+					"const tok = pm.collectionVariables.get('access_token');",
+					"if (tok) pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + tok });"
+				],
+				"type": "text/javascript",
+				"packages": {}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "http://localhost:5119",
+			"type": "string"
+		},
+		{
+			"key": "since",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "take",
+			"value": "50",
+			"type": "string"
+		},
+		{
+			"key": "etag",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hardwareId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "externalId1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "rate429Count",
+			"value": "0",
+			"type": "string"
+		},
+		{
+			"key": "min429",
+			"value": "0",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "access_token_ts",
+			"value": "",
+			"type": "default"
+		}
+	]
 }

@@ -13,8 +13,8 @@ test("Search caching: Desktop → Laptop → Desktop does not re-request Desktop
     }
   });
 
-  await page.goto("http://localhost:5119/");
-  await page.waitForLoadState("networkidle");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle").catch(() => { });
 
   const searchInput = page.getByRole("textbox", { name: /search/i });
   await expect(searchInput).toBeVisible();
