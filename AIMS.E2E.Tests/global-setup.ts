@@ -8,6 +8,7 @@ if (fs.existsSync(envPath)) dotenv.config({ path: envPath });
 
 type Any = Record<string, any>;
 const CACHE_PATH = path.resolve(__dirname, '.e2e-cache.json');
+const STORAGE_STATE_PATH = 'storageState.json';
 
 function pickNumber(obj: Any, ...keys: string[]): number | null {
     for (const k of keys) {
@@ -88,51 +89,45 @@ export default async function globalSetup(config: FullConfig) {
 
     const USE_TEST_AUTH = (process.env.USE_TEST_AUTH || 'true').toLowerCase() === 'true';
 
+    // Clean old storage; each run re-establishes a fresh session
+    try { if (fs.existsSync(STORAGE_STATE_PATH)) fs.unlinkSync(STORAGE_STATE_PATH); } catch { }
+
     if (USE_TEST_AUTH) {
-        // Browser sign-in via TestAuth and persist storage
+        // ==== TestAuth: sign in via /test/signin and persist cookie ====
         const browser = await chromium.launch();
         const page = await browser.newPage({ baseURL });
 
         const user = process.env.TEST_USER || 'tburguillos@csus.edu';
         await page.goto(`/test/signin?as=${encodeURIComponent(user)}`);
 
-        // 🔥 Pre-warm: compile views, init hubs, etc.
+        // Pre-warm: compile views, init hubs, etc.
         await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.waitForLoadState('domcontentloaded');
-        await page.waitForSelector('header, nav, main', { timeout: 10_000 }).catch(() => { });
-        // Optional readiness ping (added in Program.cs)
         await page.request.get('/_ready', { timeout: 20_000 }).catch(() => { });
 
-        // NEW: Pre-warm AuditLog (hydrate Razor + load hub script once)
-        await page.goto('/AuditLog', { waitUntil: 'domcontentloaded' });
+        // Pre-warm AuditLog (hydrates Razor & hub script)
+        await page.goto('/AuditLog', { waitUntil: 'domcontentloaded' }).catch(() => { });
         await page.waitForSelector('#auditTable', { state: 'attached', timeout: 10_000 }).catch(() => { });
 
-        // Save cookies/localStorage so every spec starts authenticated
-        await page.context().storageState({ path: 'storageState.json' });
+        await page.context().storageState({ path: STORAGE_STATE_PATH });
         await browser.close();
 
-        const cache = {
+        fs.writeFileSync(CACHE_PATH, JSON.stringify({
             REAL_USER_ID: 0,
             REAL_HARDWARE_ID: 0,
             BASE_URL: baseURL,
             ACCESS_TOKEN: '',
             TOKEN_SOURCE: 'testauth'
-        };
-        fs.writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2));
+        }, null, 2));
         return;
     }
 
-    // === Bearer mode (API/client-credentials) ===
+    // ==== Bearer mode: get token, exchange via /e2e/bearer-login for cookie, persist storage ====
     const t = await getAccessToken();
     if (!t?.token) throw new Error('Failed to obtain AAD access token in global-setup.');
     const accessToken = t.token;
 
-    const api = await request.newContext({
-        baseURL,
-        extraHTTPHeaders: { Authorization: `Bearer ${accessToken}` }
-    });
-
-    // Ensure app is up before discovery
+    const api = await request.newContext({ baseURL, extraHTTPHeaders: { Authorization: `Bearer ${accessToken}` } });
     await api.get('/_ready', { timeout: 20_000 }).catch(() => { });
 
     const userId =
@@ -140,15 +135,27 @@ export default async function globalSetup(config: FullConfig) {
     const hardwareId =
         await fetchAnyId(api, '/api/hardware/get-all', ['HardwareID', 'hardwareID', 'hardwareId', 'id']);
 
-    // Write cache file (safe to be missing one of them; helpers will still fall back)
-    const cache = {
+    fs.writeFileSync(CACHE_PATH, JSON.stringify({
         REAL_USER_ID: userId ?? 0,
         REAL_HARDWARE_ID: hardwareId ?? 0,
         BASE_URL: baseURL,
         ACCESS_TOKEN: accessToken,
         TOKEN_SOURCE: 'client_credentials'
-    };
-    fs.writeFileSync(CACHE_PATH, JSON.stringify(cache, null, 2));
-
+    }, null, 2));
     await api.dispose();
+
+    // Perform the bearer→cookie bridge and save storage state
+    const browser = await chromium.launch();
+    const page = await browser.newPage({ baseURL });
+
+    // Hit the bridge; it validates the token and issues the normal auth cookie
+    await page.goto(`/e2e/bearer-login?token=${encodeURIComponent(accessToken)}`);
+    // Landed on "/", warm the important pages/hubs just like TestAuth
+    await page.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => { });
+    await page.request.get('/_ready', { timeout: 20_000 }).catch(() => { });
+    await page.goto('/AuditLog', { waitUntil: 'domcontentloaded' }).catch(() => { });
+    await page.waitForSelector('#auditTable', { state: 'attached', timeout: 10_000 }).catch(() => { });
+
+    await page.context().storageState({ path: STORAGE_STATE_PATH });
+    await browser.close();
 }

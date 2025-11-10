@@ -9,7 +9,11 @@ if (fs.existsSync(envPath)) dotenv.config({ path: envPath });
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5119';
 const USE_TEST_AUTH = (process.env.USE_TEST_AUTH || 'true').toLowerCase() === 'true';
 
-// Read cache from global-setup (only used for bearer mode)
+// Always use storageState if it exists (bearer-login will create it in global-setup)
+const STORAGE_STATE_PATH = 'storageState.json';
+const STORAGE_STATE = fs.existsSync(STORAGE_STATE_PATH) ? STORAGE_STATE_PATH : (USE_TEST_AUTH ? STORAGE_STATE_PATH : undefined);
+
+// Read cache from global-setup (only used for bearer-mode API calls)
 const CACHE_PATH = path.resolve(__dirname, '.e2e-cache.json');
 let extraHTTPHeaders: Record<string, string> | undefined;
 if (!USE_TEST_AUTH && fs.existsSync(CACHE_PATH)) {
@@ -18,15 +22,11 @@ if (!USE_TEST_AUTH && fs.existsSync(CACHE_PATH)) {
         if (cached?.ACCESS_TOKEN) {
             extraHTTPHeaders = {
                 Authorization: `Bearer ${cached.ACCESS_TOKEN}`,
-                // Prefer JSON for API calls; HTML pages still render normally
                 Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8'
             };
         }
     } catch { /* ignore */ }
 }
-
-// When using TestAuth, the browser needs a cookie/session we save to storageState.json
-const STORAGE_STATE = USE_TEST_AUTH ? 'storageState.json' : undefined;
 
 export default defineConfig({
     testDir: './specs',
@@ -45,14 +45,17 @@ export default defineConfig({
         navigationTimeout: 30_000,
         extraHTTPHeaders
     },
-    // Boot the app in the same env when using TestAuth
+    // Make the app and tests agree on auth mode by passing UseTestAuth to the server.
     webServer: USE_TEST_AUTH ? {
-        command: 'ASPNETCORE_ENVIRONMENT=Playwright dotnet run --no-build --project ../AIMS',
+        command: 'ASPNETCORE_ENVIRONMENT=Playwright UseTestAuth=true dotnet run --no-build --project ../AIMS',
         url: BASE_URL,
         reuseExistingServer: true,
         timeout: 180_000
-    } : undefined,
-    projects: [
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] } }
-    ]
+    } : {
+        command: 'ASPNETCORE_ENVIRONMENT=Playwright UseTestAuth=false dotnet run --no-build --project ../AIMS',
+        url: BASE_URL,
+        reuseExistingServer: true,
+        timeout: 180_000
+    },
+    projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]
 });
