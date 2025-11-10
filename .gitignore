@@ -475,3 +475,4 @@ AIMS.E2E.Tests/.e2e-cache.json
 AIMS.E2E.Tests/storageState.json
 AIMS.E2E.Tests/playwright-report/data/
 *.md
+storageState.json
