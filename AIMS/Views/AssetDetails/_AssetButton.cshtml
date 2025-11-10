@@ -6,21 +6,25 @@
   var category = ViewData["Category"]?.ToString() ?? "Unknown";
 }
 
-<div class="assetManage">
-  <button class="dropbtn"> Manage Asset</button>
-  <div id="myassetManage" class="assetManage-content">
+<div class="dropdown">
+  <button class="btn dropdown-toggle" type="button" id="manageAssetDropdown" data-bs-toggle="dropdown"
+    aria-expanded="false">
+    Manage Asset
+  </button>
+  <ul class="dropdown-menu" aria-labelledby="manageAssetDropdown">
     @if (category.Equals("Software", StringComparison.OrdinalIgnoreCase))
     {
-      <a href="#" data-bs-toggle="modal" data-bs-target="#addSoftwareModal">&#10133; Add Software</a>
-      <a href="#" id="loadSoftwareProgressBtn">&#128190; Load Saved Progress</a>
+      <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addSoftwareModal">➕ Add Software</a>
+      </li>
+      <li><a class="dropdown-item" href="#" id="loadSoftwareProgressBtn">💾 Load Saved Progress</a></li>
     }
     else
     {
-      <!-- Hardware asset has a separate menu that allows bulk addition of assets -->
-      <a href="#" data-bs-toggle="modal" data-bs-target="#addAssetModal"> &#10133; Add Hardware</a>
-      <a href="#" id="loadProgressBtn">&#128190; Load Saved Progress</a>
-      <a href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">&#128194; Add New Category</a>
+      <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addAssetModal">➕ Add Hardware</a></li>
+      <li><a class="dropdown-item" href="#" id="loadProgressBtn">💾 Load Saved Progress</a></li>
+      <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">📁 Add New
+          Category</a></li>
     }
-
-  </div>
+  </ul>
+</div>
 </div>

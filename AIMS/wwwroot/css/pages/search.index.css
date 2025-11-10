@@ -483,8 +483,3 @@
     /* avoid pushing it to a new line */
     vertical-align: middle;
 }
-
-.assign-btn:focus {
-    outline: 2px solid #005fcc;
-    border-radius: 4px;
-}
