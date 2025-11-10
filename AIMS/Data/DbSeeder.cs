@@ -743,7 +743,7 @@ public static class DbSeeder
             new Hardware { AssetName="Dell Inspiron 15", AssetType="Laptop", Status="Assigned", Manufacturer="Dell", Model="Inspiron 15", SerialNumber="LT-0115",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-10)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(2)) },
 
-            new Hardware { AssetName="Dell S2421NX", AssetType ="Monitor", Status="Assigned", Manufacturer="Dell", Model ="S2421NX", SerialNumber="MN-0001",
+            new Hardware { AssetName="Dell S2421NX", AssetType ="Monitor", Status="Archived", Manufacturer="Dell", Model ="S2421NX", SerialNumber="MN-0001",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)) },
             new Hardware { AssetName="HP 527SH", AssetType="Monitor", Status="Assigned", Manufacturer="HP", Model="527SH", SerialNumber="MN-0023",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-4)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(2)) },
