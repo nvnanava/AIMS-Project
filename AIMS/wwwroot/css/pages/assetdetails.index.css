@@ -19,13 +19,10 @@
   background: #2c3e50;
   color: #fff;
   overflow: hidden;
-  /* ensures rounded corners clip correctly */
 }
 
-/* Round only the top corners of the blue header */
 .asset-table {
   border-collapse: separate;
-  /* important: allows radius to appear */
   border-spacing: 0;
 }
 
