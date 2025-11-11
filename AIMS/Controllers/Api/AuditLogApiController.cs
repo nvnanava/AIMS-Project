@@ -92,6 +92,7 @@ public partial class AuditLogApiController : ControllerBase
         [FromQuery] AssetKind? kind = null,
         [FromQuery] int? hardwareId = null,
         [FromQuery] int? softwareId = null,
+        [FromQuery] bool includeArchived = false,
         CancellationToken ct = default)
     {
         var result = await _auditQuery.SearchAsync(
