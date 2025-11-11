@@ -10,20 +10,18 @@
 
 /* ---------- Container & Title ---------------------------------------- */
 .audit-log-container {
-  background: #ECF0F1;
-  padding: 2rem;
+  background: var(--aims-bg-contrast, #f7f9fa);
+  padding: 0;
+  margin: 0 auto;
   border-radius: 8px;
-  min-height: 100vh;
-  width: 95%;
-  margin: 20px auto;
+  width: 100%;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
-
 .audit-log-title {
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-bottom: 1.5rem;
-  color: #333;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--aims-ink, #34495e);
 }
 
 /* ---------- Admin chrome column sizing (Audit columns) ---------------- */
@@ -228,3 +226,34 @@ tr.row-flash>td {
     padding: 1rem;
   }
 }
+.page-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--aims-ink, #34495e);
+  margin: 0;
+}
+
+.audit-table td[title] {
+  cursor: default;   
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  transition: all 0.2s ease;
+}
+
+.audit-table td[title]:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #f8f9fa;
+  position: relative;
+  z-index: 5;
+}
+
