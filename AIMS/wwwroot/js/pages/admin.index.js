@@ -231,25 +231,25 @@
         hideModalById("addUserModal");
     }
 
-    function openEditUserModal(button) {
-        const row = button.closest("tr");
-        const index = Array.from(row.parentNode.children).indexOf(row);
-        document.getElementById("editUserIndex").value = index;
+    // function openEditUserModal(button) {
+    //     const row = button.closest("tr");
+    //     const index = Array.from(row.parentNode.children).indexOf(row);
+    //     document.getElementById("editUserIndex").value = index;
 
-        const cells = row.getElementsByTagName("td");
-        document.getElementById("editUserName").value =
-            cells[1].innerText.trim();
-        document.getElementById("editUserEmail").value =
-            cells[2].innerText.trim();
-        document.getElementById("editUserRole").value =
-            cells[3].innerText.trim();
-        document.getElementById("editUserStatus").value =
-            cells[4].innerText.trim();
-        document.getElementById("editUserSeparationDate").value =
-            cells[5].innerText.trim();
+    //     const cells = row.getElementsByTagName("td");
+    //     document.getElementById("editUserName").value =
+    //         cells[1].innerText.trim();
+    //     document.getElementById("editUserEmail").value =
+    //         cells[2].innerText.trim();
+    //     document.getElementById("editUserRole").value =
+    //         cells[3].innerText.trim();
+    //     document.getElementById("editUserStatus").value =
+    //         cells[4].innerText.trim();
+    //     document.getElementById("editUserSeparationDate").value =
+    //         cells[5].innerText.trim();
 
-        showModalById("editUserModal");
-    }
+    //     showModalById("editUserModal");
+    // }
     function closeEditUserModal() {
         hideModalById("editUserModal");
     }
@@ -318,38 +318,49 @@
     // }
     // Add this somewhere after other helper functions, near your other AIMS.Admin methods
 
-    AIMS.Admin.applyAdminTableFilters = function () {
-        const showInactive = document.getElementById("showInactive")?.checked ?? true;
-        const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
-        const searchQuery = document.getElementById("userSearch")?.value.trim().toLowerCase() || "";
+    function applyAdminTableFilters() {
+        const showInactive =
+            document.getElementById("showInactive")?.checked ?? true;
+        const roleFilter =
+            document.getElementById("roleFilter")?.value ?? "All";
+        const searchQuery =
+            document.getElementById("userSearch")?.value.trim().toLowerCase() ||
+            "";
 
         const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
 
+        // If no search query, hide all users
         if (searchQuery === "") {
-            rows.forEach(row => (row.style.display = "none"));
-            AIMS.Admin.stripeAdminTable?.();
+            rows.forEach((row) => (row.style.display = "none"));
+            stripeAdminTable();
             return;
         }
 
-        rows.forEach(row => {
+        rows.forEach((row) => {
             const isInactive = row.classList.contains("inactive");
             const userRole = row.cells[3]?.innerText.trim() || "";
             const name = row.cells[1]?.innerText.trim().toLowerCase() || "";
+            const email = row.cells[2]?.innerText.trim().toLowerCase() || "";
 
             let visible = true;
-            if (!showInactive && isInactive) visible = false;
-            if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
 
-            const matchesSearch = name.includes(searchQuery);
-            if (!matchesSearch) visible = false;
+            // Apply inactive filter
+            if (!showInactive && isInactive) visible = false;
+
+            // Apply role filter
+            if (roleFilter !== "All" && userRole !== roleFilter)
+                visible = false;
+
+            // Apply search filter - search in both name and email
+            if (!name.includes(searchQuery) && !email.includes(searchQuery)) {
+                visible = false;
+            }
 
             row.style.display = visible ? "" : "none";
         });
 
-        AIMS.Admin.stripeAdminTable?.();
-    };
-
-
+        stripeAdminTable();
+    }
 
     // ----- Insert / Save -------------------------------------------------
     function insertUserRow(u) {
@@ -386,6 +397,72 @@
         else tbody.appendChild(tr);
 
         stripeAdminTable();
+    }
+
+    async function fetchUsers(includeArchived) {
+        const url = includeArchived
+            ? "/api/admin/users?includeArchived=true"
+            : "/api/admin/users";
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`GET ${url} failed`);
+        return resp.json();
+    }
+
+    function renderUsers(users) {
+        const tbody = document.querySelector("#adminTable tbody");
+        if (!tbody) return;
+
+        const frag = document.createDocumentFragment();
+        users.forEach((u) => {
+            const tr = document.createElement("tr");
+            tr.className = `user-row ${u.isArchived ? "inactive" : "active"}`;
+
+            // Columns: Actions | Name | Email | Office | Status | Separation Date
+            tr.innerHTML = `
+      <td class="actions">
+        <button
+          class="icon-btn js-edit-user"
+          title="Edit"
+          data-id="${u.userID}"
+          data-name="${u.name ?? ""}"
+          data-email="${u.email ?? ""}"
+          data-status="${u.isArchived ? "Inactive" : "Active"}"
+          data-archivedat="${u.archivedAtUtc ?? ""}"
+          data-bs-toggle="modal"
+          data-bs-target="#editUserModal"
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+            <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
+          </svg>
+        </button>
+      </td>
+      <td>${escapeHtml(u.name ?? "")}</td>
+      <td>${escapeHtml(u.email ?? "")}</td>
+      <td>${escapeHtml(u.officeName ?? "—")}</td>
+      <td><span class="badge ${u.isArchived ? "inactive" : "active"}">${
+                u.isArchived ? "Inactive" : "Active"
+            }</span></td>
+      <td>${
+          u.isArchived && u.archivedAtUtc
+              ? escapeHtml(new Date(u.archivedAtUtc + "Z").toLocaleString())
+              : ""
+      }</td>
+    `;
+            frag.appendChild(tr);
+        });
+
+        tbody.replaceChildren(frag);
+
+        // keep your existing UX helpers
+        applyAdminTableFilters();
+        stripeAdminTable();
+    }
+
+    async function refreshUserTable() {
+        const includeArchived =
+            document.getElementById("showInactive")?.checked ?? false;
+        const users = await fetchUsers(includeArchived);
+        renderUsers(users);
     }
 
     async function addUser(e) {
@@ -476,34 +553,30 @@
         }
     }
 
-    function saveUserEdit(event) {
-        event.preventDefault();
-        const idx = document.getElementById("editUserIndex").value;
-        const row = document.querySelectorAll(".user-row")[idx];
-        if (!row) return;
+    // function saveUserEdit(event) {
+    //     event.preventDefault();
+    //     const idx = document.getElementById("editUserIndex").value;
+    //     const row = document.querySelectorAll(".user-row")[idx];
+    //     if (!row) return;
 
-        row.cells[1].innerText = document.getElementById("editUserName").value;
-        row.cells[2].innerText = document.getElementById("editUserEmail").value;
-        row.cells[3].innerText = document.getElementById("editUserRole").value;
+    //     row.cells[1].innerText = document.getElementById("editUserName").value;
+    //     row.cells[2].innerText = document.getElementById("editUserEmail").value;
+    //     row.cells[3].innerText = document.getElementById("editUserRole").value;
 
-        const status = document.getElementById("editUserStatus").value;
-        row.cells[4].innerHTML = `<span class="badge ${status.toLowerCase()}">${status}</span>`;
-        row.classList.remove("active", "inactive");
-        row.classList.add(status.toLowerCase());
+    //     const status = document.getElementById("editUserStatus").value;
+    //     row.cells[4].innerHTML = `<span class="badge ${status.toLowerCase()}">${status}</span>`;
+    //     row.classList.remove("active", "inactive");
+    //     row.classList.add(status.toLowerCase());
 
-        row.cells[5].innerText =
-            document.getElementById("editUserSeparationDate").value || " ";
-        hideModalById("editUserModal");
-        applyAdminTableFilters();
-        stripeAdminTable();
-    }
+    //     row.cells[5].innerText =
+    //         document.getElementById("editUserSeparationDate").value || " ";
+    //     hideModalById("editUserModal");
+    //     applyAdminTableFilters();
+    //     stripeAdminTable();
+    // }
 
     // ----- DOM Ready -----------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
-        // ----- Hide all users initially -----
-        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
-        rows.forEach(row => (row.style.display = "none"));
-
         // ----- Typeahead search for AAD (debounced) -----
         const nameInput = document.getElementById("userName");
         if (nameInput) {
@@ -513,6 +586,36 @@
                 aadDebounceTimer = setTimeout(() => searchAAD(q), 250);
             });
         }
+        // Fetch on page load
+        refreshUserTable();
+
+        // Wire the “Show Archived” (showInactive) toggle to call the API
+        const toggleArchived = document.getElementById("showInactive");
+        if (toggleArchived) {
+            toggleArchived.addEventListener("change", () => {
+                refreshUserTable();
+            });
+        }
+
+        // Delegate Archive/Unarchive clicks
+        document.addEventListener("click", async (e) => {
+            const archBtn = e.target.closest(".js-archive");
+            const unarchBtn = e.target.closest(".js-unarchive");
+            if (archBtn) {
+                const id = archBtn.dataset.id;
+                await fetch(`/api/admin/users/archive/${id}`, {
+                    method: "POST",
+                });
+                await refreshUserTable();
+            }
+            if (unarchBtn) {
+                const id = unarchBtn.dataset.id;
+                await fetch(`/api/admin/users/unarchive/${id}`, {
+                    method: "POST",
+                });
+                await refreshUserTable();
+            }
+        });
 
         // wire office search functionality
         const officeInput = document.getElementById("userOffice");
@@ -537,6 +640,20 @@
                 box.innerHTML = "";
             }
         });
+        // ----- Activate search bar userSearch -----
+        const userSearchInput = document.getElementById("userSearch");
+        if (userSearchInput) {
+            // Handle input events for real-time search
+            userSearchInput.addEventListener("input", applyAdminTableFilters);
+
+            // Handle Enter key press
+            userSearchInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    applyAdminTableFilters();
+                }
+            });
+        }
 
         // ----- Keep striping updated -----
         stripeAdminTable();
@@ -546,15 +663,14 @@
     Object.assign(AIMS.Admin, {
         openAddUserModal,
         closeAddUserModal,
-        openEditUserModal,
         closeEditUserModal,
         addUser,
-        saveUserEdit,
         toggleInactiveUsers,
         filterByRole,
         sortTable,
+        applyAdminTableFilters: applyAdminTableFilters,
+        stripeAdminTable: stripeAdminTable,
     });
-
 
     // document.addEventListener("DOMContentLoaded", () => {
     //     // Focus on search bar for convenience
@@ -564,11 +680,96 @@
     //     AIMS.Admin.applyAdminTableFilters();
     // });
 
-    document.addEventListener("DOMContentLoaded", () => {
-        // Hide all users initially
-        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
-        rows.forEach(row => (row.style.display = "none"));
+    document.addEventListener("click", (e) => {
+        const editBtn = e.target.closest(".js-edit-user");
+        if (editBtn) AIMS.Admin.openEditUserModal(editBtn);
     });
 
+    AIMS.Admin.openEditUserModal = function (btn) {
+        console.log("Opening Edit Modal Debug:");
+        console.log("- Button data-id:", btn.dataset.id);
+        console.log("- Button data-status:", btn.dataset.status);
+        console.log("- Button data-name:", btn.dataset.name);
+        console.log("- Button data-email:", btn.dataset.email);
 
+        document.getElementById("editUserId").value = btn.dataset.id;
+        document.getElementById("editUserIsArchived").value =
+            btn.dataset.status === "Inactive" ? "true" : "false";
+
+        document.getElementById("editUserName").value = btn.dataset.name || "";
+        document.getElementById("editUserEmail").value =
+            btn.dataset.email || "";
+
+        const statusSelect = document.getElementById("editUserStatus");
+        statusSelect.value =
+            btn.dataset.status === "Inactive" ? "Inactive" : "Active";
+
+        console.log(
+            "- Set editUserId to:",
+            document.getElementById("editUserId").value
+        );
+        console.log(
+            "- Set editUserIsArchived to:",
+            document.getElementById("editUserIsArchived").value
+        );
+        console.log("- Set editUserStatus to:", statusSelect.value);
+
+        const sep = document.getElementById("editUserSeparationDate");
+        sep.value = btn.dataset.archivedat
+            ? new Date(btn.dataset.archivedat + "Z").toLocaleDateString()
+            : "";
+    };
+
+    AIMS.Admin.saveUserEdit = async function (e) {
+        e.preventDefault();
+
+        const id = document.getElementById("editUserId").value;
+        const wasArchived =
+            document.getElementById("editUserIsArchived").value === "true";
+        const desired = document.getElementById("editUserStatus").value; // "Active" | "Inactive"
+        const wantsArchived = desired === "Inactive";
+
+        console.log("Save User Edit Debug:");
+        console.log("- User ID:", id);
+        console.log("- Was Archived:", wasArchived);
+        console.log("- Desired Status:", desired);
+        console.log("- Wants Archived:", wantsArchived);
+        console.log("- Status Changed:", wantsArchived !== wasArchived);
+
+        try {
+            if (wantsArchived !== wasArchived) {
+                const url = wantsArchived
+                    ? `/api/admin/users/archive/${id}`
+                    : `/api/admin/users/unarchive/${id}`;
+                console.log("Making API call to:", url);
+                const res = await fetch(url, { method: "POST" });
+                console.log("API Response:", res.status, res.statusText);
+                if (!res.ok) throw new Error(`${url} failed: ${res.status}`);
+                console.log("API call successful");
+            } else {
+                console.log("No status change needed");
+            }
+
+            // close modal
+            const modalEl = document.getElementById("editUserModal");
+            const bsModal =
+                bootstrap.Modal.getInstance(modalEl) ||
+                new bootstrap.Modal(modalEl);
+            bsModal.hide();
+
+            // refresh table honoring the Show Inactive toggle
+            await refreshUserTable();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to save changes. Please try again.");
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Start with empty table - users must search to see results
+        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
+        rows.forEach((row) => (row.style.display = "none"));
+
+        stripeAdminTable();
+    });
 })();

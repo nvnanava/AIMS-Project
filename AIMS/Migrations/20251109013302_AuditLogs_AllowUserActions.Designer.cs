@@ -4,16 +4,19 @@ using AIMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AIMS.Migrations
+namespace AIMS.Migrations._local_sync
 {
     [DbContext(typeof(AimsDbContext))]
-    partial class AimsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251109013302_AuditLogs_AllowUserActions")]
+    partial class AuditLogs_AllowUserActions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -386,11 +389,6 @@ namespace AIMS.Migrations
 
                     b.Property<int>("LicenseTotalSeats")
                         .HasColumnType("int");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
 
                     b.Property<decimal>("SoftwareCost")
                         .HasColumnType("decimal(10,2)");

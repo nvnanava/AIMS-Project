@@ -42,11 +42,8 @@
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-
-    var users = new AIMS.Models.User[]
-    {
-    };
-    }
+    var users = Model ?? new List<AIMS.Models.User>();
+}
 
 @section Styles {
     <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
@@ -96,7 +93,7 @@
           <th class="admin-col-1">Actions</th>
           <th class="admin-col-2">Name</th>
           <th class="admin-col-3">Email</th>
-          <th class="admin-col-4">Role</th>
+          <th class="admin-col-4">Office</th>
           <th class="admin-col-5" style="cursor:pointer;" onclick="AIMS.Admin.sortTable(4)">Status ⬍</th>
           <th class="admin-col-6">Separation Date</th>
         </tr>
@@ -106,10 +103,9 @@
     <!-- Body table -->
     <table id="adminTable" class="admin-table-body" data-sort-dir="asc">
       <tbody>
-        @for (int i = 0; i < users.Length; i++)
+        @foreach (var user in users)
         {
-            var user = users[i];
-            var statusClass = "active";
+            var statusClass = user.IsArchived ? "inactive" : "active";
             <tr class="user-row @statusClass">
                 <td>
                     <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
@@ -117,12 +113,12 @@
                             <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
                         </svg>
                     </button>
-       	         </td>
-	@* <td>@user.Name</td> *@
-	<td>@user.Email</td>
-	<td>@user.Role</td>
-	@* <td><span class="badge @statusClass">@user.Status</span></td> *@
-	@* <td>@user.SeparationDate</td> *@
+                 </td>
+                <td>@user.FullName</td>
+                <td>@user.Email</td>
+                <td>@(user.Role?.RoleName ?? "No Role")</td>
+                <td><span class="badge @statusClass">@(user.IsArchived ? "Inactive" : "Active")</span></td>
+                <td>@(user.IsArchived ? "N/A" : "")</td>
             </tr>
         }
       </tbody>

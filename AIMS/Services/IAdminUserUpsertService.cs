@@ -40,7 +40,7 @@ namespace AIMS.Services
                     FullName = g.DisplayName ?? "Unknown",
                     Email = g.Mail ?? g.UserPrincipalName ?? "",
                     EmployeeNumber = Guid.NewGuid().ToString("N")[..8],
-                    IsActive = true,
+                    //IsActive = true,
                     IsArchived = false
                 };
 
@@ -60,7 +60,7 @@ namespace AIMS.Services
                 if (supervisorId.HasValue) user.SupervisorID = supervisorId.Value;
                 if (officeId.HasValue) user.OfficeID = officeId.Value;
 
-                user.IsActive = true;
+                //user.IsActive = true;
                 user.IsArchived = false;
             }
             try
