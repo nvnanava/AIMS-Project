@@ -79,6 +79,7 @@ builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
 builder.Services.AddScoped<ReportsQuery>();
+builder.Services.AddScoped<OfficeQuery>();
 
 // SignalR for real-time audit updates
 builder.Services.AddSignalR(o =>
@@ -207,7 +208,7 @@ if (useTestAuth)
 }
 else
 {
-    // Hybrid scheme: OAuth web app for MVC, JWT for /api
+    // Hybrid scheme: OAuth web app for MVC, JWT for callers that actually send Bearer tokens
     builder.Services
         .AddAuthentication(options =>
         {
@@ -222,7 +223,7 @@ else
                 var authz = ctx.Request.Headers.Authorization.ToString();
                 var hasBearer = authz.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
 
-                // 🔧 Never challenge to OIDC from APIs/Hub handshakes
+                // Never challenge to OIDC from APIs/Hub handshakes
                 if (IsApiOrHub(ctx.Request))
                     return hasBearer
                         ? JwtBearerDefaults.AuthenticationScheme
@@ -474,9 +475,9 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/e2e/bearer-login", async(
+app.MapGet("/e2e/bearer-login", async (
     HttpContext http,
-    [FromServices] IOptionsMonitor < JwtBearerOptions > jwtOpts,
+    [FromServices] IOptionsMonitor<JwtBearerOptions> jwtOpts,
     [FromServices] IConfiguration cfg,
     string token) =>
 {

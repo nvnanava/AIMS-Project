@@ -63,7 +63,7 @@ public class ReportsController : ControllerBase
     public async Task<IActionResult> Create(
         [FromQuery] DateOnly start,
         [FromQuery] string reportName,
-        [FromQuery] int CreatorUserID,
+        [FromQuery] string CreatorUserID, // IDs from AAD are in string format. This is the common linkage between LocalDB and AAD.
         [FromQuery] string type,
         [FromQuery] DateOnly? end = null,
         [FromQuery] int? OfficeID = null,
@@ -83,6 +83,7 @@ public class ReportsController : ControllerBase
         }
         if (OfficeID is not null)
         {
+            // OfficeIDs are pulled from the Local DB on the frontend
             var office = await _db.Offices.Where(o => o.OfficeID == OfficeID).FirstOrDefaultAsync(ct);
 
             if (office is null)
@@ -92,8 +93,8 @@ public class ReportsController : ControllerBase
             }
         }
 
-        // check user
-        var user = await _db.Users.Where(u => u.UserID == CreatorUserID).FirstOrDefaultAsync(ct);
+        // check user, using GraphObjectID
+        var user = await _db.Users.Where(u => u.GraphObjectID == CreatorUserID).FirstOrDefaultAsync(ct);
         if (user is null)
         {
             ModelState.AddModelError(nameof(CreatorUserID), "Please specify a valid CreatorUserID.");
@@ -159,7 +160,8 @@ public class ReportsController : ControllerBase
             Description = desc,
 
             // Who/Where generated
-            GeneratedByUserID = CreatorUserID,
+            // Reports are tied to local DB users. So, use the PK associated with local DB.
+            GeneratedByUserID = user.UserID,
 
             GeneratedForOfficeID = OfficeID,
             Content = reportBytes
@@ -217,7 +219,7 @@ public class ReportsController : ControllerBase
 
                 // Assignee info
                 Assignee = a.User!.FullName,
-                AssigneeOffice = (a.User == null || a.User.Office == null || a.User.Office.OfficeName == null) ? "N/A" : a.User.Office.OfficeName,
+                AssigneeOffice = (a.User == null || a.User.Office == null || string.IsNullOrEmpty(a.User.Office.OfficeName)) ? "N/A" : a.User.Office.OfficeName,
 
                 // Asset Info
                 AssetType = a.AssetKind,
