@@ -236,7 +236,7 @@ else
                 var authz = ctx.Request.Headers.Authorization.ToString();
                 var hasBearer = authz.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
 
-                // 🔧 Never challenge to OIDC from APIs/Hub handshakes
+                // Never challenge to OIDC from APIs/Hub handshakes
                 if (IsApiOrHub(ctx.Request))
                     return hasBearer
                         ? JwtBearerDefaults.AuthenticationScheme
