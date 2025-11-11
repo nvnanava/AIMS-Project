@@ -52,8 +52,8 @@ nav {
   border-radius: 50%;
   border: 3px solid #1e2b3b;
   background-color: #1e2b3b;
-  background-image: url('/img/filter-icon-blue.png');
-  background-size: 70%;
+  background-image: url('/images/filter-icon-blue.png');
+  background-size: 100%;
   background-repeat: no-repeat;
   background-position: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
@@ -72,6 +72,98 @@ nav {
   outline-offset: 3px;
 }
 
+/* Icon button chrome (match Admin look & feel) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: #bdc3c7;           /* default fallback */
+  color: #fff;
+  box-shadow: 0 4px 4px #0000003e;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, filter .15s ease;
+}
+.icon-btn svg { display: block; fill: currentColor; }
+
+/* Mint variant for assign */
+.icon-btn--mint {
+  background: var(--aims-accent, #1abc9c);
+}
+.icon-btn--mint:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px rgba(0,0,0,.18);
+}
+.icon-btn--mint:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,.18);
+}
+.icon-btn--mint:focus-visible {
+  outline: 3px solid var(--aims-focus, rgba(26,188,156,.35));
+  outline-offset: 2px;
+}
+
+/* Disabled state for the assignment icon */
+.icon-btn--disabled {
+  background: #bdc3c7 !important;
+  border-color: #bdc3c7 !important;
+  color: #7f8c8d !important;
+  cursor: not-allowed !important;
+  filter: grayscale(1) opacity(.75);
+  box-shadow: none !important;
+}
+
+.icon-btn--disabled:hover,
+.icon-btn--disabled:active,
+.icon-btn--disabled:focus,
+.icon-btn--disabled:focus-visible {
+  transform: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Keep legacy assign-btn focus ring consistent just in case */
+.assign-btn:focus {
+  outline: 3px solid var(--aims-focus, rgba(26,188,156,.35));
+  border-radius: 50%;
+}
+
+/* Small action icon buttons */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(26, 188, 156, .10);
+  border: 2px solid var(--aims-accent, #1abc9c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .14);
+  transition: transform .05s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
+  background: rgba(26, 188, 156, .18);
+}
+
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18), 0 0 0 3px var(--aims-focus, rgba(26, 188, 156, .35));
+}
+
+.icon-btn svg {
+  pointer-events: none;
+  fill: var(--aims-ink, #34495e);
+}
+
 /* Shell */
 .table-wrapper {
   background: #fff;
@@ -79,6 +171,12 @@ nav {
   padding: 12px;
   border: 1px solid #34495e;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+  min-height: 87vh;
+}
+
+/* if the next sibling pager is visible (not [hidden]) → tighten to 83vh */
+.table-wrapper:has(+ #search-pager:not([hidden])) {
+  min-height: 83vh;
 }
 
 .admin-table-wrapper {
@@ -238,6 +336,8 @@ nav {
   border-radius: 8px;
   padding: 6px;
   box-shadow: 0 8px 14px rgba(0, 0, 0, .14);
+  /* ensure inside viewport */
+  max-inline-size: calc(100vw - 24px);
 }
 
 /* Items */
@@ -301,6 +401,27 @@ nav {
   border: 1px solid #e6e9ec;
 }
 
+/* When a row is expanded, unwrap cells so content can flow */
+.asset-table-body tr.expand-row td {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Keep the expanded row visually above neighbors and slightly highlighted */
+.asset-table-body tr.expand-row {
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 0 12px rgba(46, 204, 113, .25);
+}
+
+/* Emphasize the hovered cell in the expanded row */
+.asset-table-body tr.expand-row td.expanded-source {
+  outline: 2px solid rgba(26, 188, 156, .35);
+  outline-offset: -2px;
+  background-clip: padding-box;
+}
+
 .asset-table-body tr:nth-child(even) {
   background: #ECF0F1;
 }
@@ -355,30 +476,52 @@ nav {
   border: 0 !important;
 }
 
-/* Status badges */
-.status {
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 20px;
-  font-size: 18px;
+/* ===== Status capsule (match dashboard settings) ===== */
+.asset-table-body .status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 600;
   color: #34495e;
-  box-shadow: 0 4px 4px 0 #0000003e;
+  box-shadow: 0 4px 4px #0000003e;
+  border: 2px solid transparent;
+  background: #e5e8e8;
+  /* safe default */
 }
 
-.status.assigned {
-  background: #0080ff29;
+/* Map Search statuses to dashboard-style colorways */
+.asset-table-body .status.available {
+  /* like "ok" */
+  background: #d5f5e3;
+  border-color: #2ecc71;
 }
 
-.status.available {
-  background: #4caf4f29;
+.asset-table-body .status.assigned {
+  /* blue accent so it's distinct from "Available" */
+  background: #d6eaf8;
+  border-color: #3498db;
 }
 
-.status.inrepair {
-  background: #fff20029;
+.asset-table-body .status.inrepair {
+  /* warning/yellow */
+  background: #fcf3cf;
+  border-color: #f1c40f;
 }
 
-.status.damaged {
-  background: #ff000029;
+.asset-table-body .status.damaged {
+  /* red (like "low") */
+  background: #fadbd8;
+  border-color: #e74c3c;
+}
+
+.asset-table-body .status.archived {
+  /* gray (like "empty") */
+  background: #e5e8e8;
+  border-color: #95a5a6;
 }
 
 #table-body>tr.zebra-even td {
@@ -478,6 +621,7 @@ nav {
   gap: 12px;
   padding: 10px 0 14px;
   background: transparent;
+  margin-top: 12px;
 }
 
 .search-pager .pager-btn {
@@ -565,12 +709,133 @@ nav {
   box-shadow: 0 8px 16px rgba(0, 0, 0, .12);
   padding: 10px 12px;
   z-index: 2000;
+  max-inline-size: calc(100vw - 24px);
 }
 
-.filter-popover .chk-row {
-  display: inline-flex;
+/* Mint checkbox style */
+.aims-check input[type="checkbox"] {
+  accent-color: var(--aims-accent);
+}
+
+.aims-check input[type="checkbox"]:focus-visible {
+  outline: 3px solid var(--aims-focus);
+  outline-offset: 2px;
+}
+.search-empty {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 600;
+  justify-content: center;
+  width: 100%;
+  min-height: 32vh;
+  padding: 24px 12px;
+  text-align: center;
+  font-size: clamp(1.35rem, 2vw + 1rem, 1.5rem);
+  font-weight: 400;
+  font-style: italic;
   color: #34495e;
+}
+
+.is-blank .table-toolbar,
+.is-blank #filter-fab {
+  display: none !important;
+}
+/* For old browsers that lack accent-color */
+@supports not (accent-color: red) {
+  .aims-check input[type="checkbox"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #34495e;
+    border-radius: 4px;
+    display: inline-block;
+    position: relative;
+    background: #fff;
+  }
+
+  .aims-check input[type="checkbox"]:checked {
+    background: var(--aims-accent);
+    border-color: var(--aims-accent);
+  }
+
+  .aims-check input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 2px solid #fff;
+    border-top: 0;
+    border-left: 0;
+    transform: rotate(45deg);
+  }
+}
+
+/* Keep horizontal scroll on the whole table area */
+.admin-table-scroll {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* Make ONLY the body scroll vertically */
+.asset-table-body {
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 74.4vh;
+  margin: 0;
+  border-top: 0;
+}
+
+/* Preserve table layout for the rows inside the scrolling tbody */
+.asset-table-body>tbody {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Kill the seam: toolbar and tbody should look glued together */
+.admin-table-scroll .table-toolbar {
+  border-bottom: 0;
+  margin: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Also ensure the header’s bottom edges aren’t rounded into the toolbar */
+.asset-table-header th {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Expanded row should unwrap and be allowed to show full content */
+.asset-table-body tr.expand-row td {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none;
+}
+
+/* Make sure the expanding row can render over neighbors inside the scroll container */
+.asset-table-body tr.expand-row {
+  position: relative;
+  z-index: 3;
+}
+
+/* one source of truth for truncation */
+.ellip {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* on expand, unwrap only the source spans */
+.asset-table-body tr.expand-row .ellip {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* keep the row above neighbors inside the scroll container */
+.asset-table-body tr.expand-row {
+  position: relative;
+  z-index: 3;
 }

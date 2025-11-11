@@ -88,20 +88,20 @@
         </div>
     </div>
 
-    <div class="search-pager" id="search-pager" hidden>
-        <button type="button" id="pg-prev" class="pager-btn">Prev</button>
-        <span id="pg-status" class="pager-status"></span>
-        <button type="button" id="pg-next" class="pager-btn">Next</button>
-    </div>
-
     <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
 </div>
 
-<!-- Floating popover used by AIMSFilterIcon + FAB -->
+<div class="search-pager" id="search-pager" hidden>
+    <button type="button" id="pg-prev" class="pager-btn">Prev</button>
+    <span id="pg-status" class="pager-status"></span>
+    <button type="button" id="pg-next" class="pager-btn">Next</button>
+</div>
+
+<!-- Anchor for FAB popover -->
 <button id="searchFilters" type="button" class="filter-anchor" aria-hidden="true"></button>
 <div class="filter-popover" data-component="filter-icon" data-id="searchFilters" hidden>
   <div class="filter-popover__inner">
-    <label class="chk-row">
+    <label class="chk-row aims-check">
       <input type="checkbox" data-role="show-archived-toggle" />
       <span>Show archived assets</span>
     </label>

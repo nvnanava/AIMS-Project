@@ -48,14 +48,16 @@ public sealed class AssetSearchQuery
             type = category;
 
         // ----- building base IQueryable based on Archived filter ---------------
-        var hardwareQuery = showArchived
-        ? _db.HardwareAssets.AsNoTracking().IgnoreQueryFilters()
-        : _db.HardwareAssets.AsNoTracking();
+        // Explicitly filter archived assets out when showArchived == false
+        var hardwareQuery = _db.HardwareAssets.AsNoTracking();
+        hardwareQuery = showArchived
+            ? hardwareQuery.IgnoreQueryFilters()                      // include both
+            : hardwareQuery.Where(h => !h.IsArchived);                // only active
 
-        var softwareQuery = showArchived
-        ? _db.SoftwareAssets.AsNoTracking().IgnoreQueryFilters()
-        : _db.SoftwareAssets.AsNoTracking();
-
+        var softwareQuery = _db.SoftwareAssets.AsNoTracking();
+        softwareQuery = showArchived
+            ? softwareQuery.IgnoreQueryFilters()
+            : softwareQuery.Where(s => !s.IsArchived);
 
         // ---------------- Base projection (Hardware ∪ Software) ----------------
         IQueryable<AssetRowDto> baseQ =
@@ -68,14 +70,17 @@ public sealed class AssetSearchQuery
                 Tag = h.AssetTag ?? "",
                 IsArchived = h.IsArchived,
 
-                Status = _db.Assignments
-                    .Where(a => a.AssetKind == Models.AssetKind.Hardware
-                             && a.HardwareID == h.HardwareID
-                             && a.UnassignedAtUtc == null)
-                    .Any()
-                        ? "Assigned"
-                        : (string.IsNullOrWhiteSpace(h.Status) ? "Available" : h.Status),
-
+                Status = h.IsArchived
+                    ? "Archived"
+                    : (
+                        _db.Assignments
+                        .Where(a => a.AssetKind == Models.AssetKind.Hardware
+                                && a.HardwareID == h.HardwareID
+                                && a.UnassignedAtUtc == null)
+                        .Any()
+                            ? "Assigned"
+                            : (string.IsNullOrWhiteSpace(h.Status) ? "Available" : h.Status)
+                    ),
                 AssignedTo = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Hardware
                              && a.HardwareID == h.HardwareID

@@ -45,39 +45,234 @@
     const inputAssn = document.querySelector('[name="Assignment"]');
     const selectStat = document.querySelector('[name="Status"]');
 
-    // Role flags
-    const CAN_ADMIN = (window.__CAN_ADMIN__ === true || window.__CAN_ADMIN__ === "true");
-    const IS_SUPERVISOR = (window.__IS_SUPERVISOR__ === true || window.__IS_SUPERVISOR__ === "true");
+    const archivedToggle = document.querySelector('[data-role="show-archived-toggle"]');
 
-    // ----- Paging / cache state -----------------------------------------------
+    // Role flags
+    const asBool = v => String(v).toLowerCase() === "true" || String(v) === "1";
+    const CAN_ADMIN = asBool(window.__CAN_ADMIN__);
+    const IS_SUPERVISOR = asBool(window.__IS_SUPERVISOR__);
+
+    // ---- Normalizers ------------------------------------------------------------
+    const getTag = (row) => String(row.assetTag ?? row.AssetTag ?? row.tag ?? row.Tag ?? "")
+    
+    // ----- Paging / cache state ---------------------------------------------
     let currentPage = 1;
     let pageSize = 5;           // keep in sync with default on server
     let lastResultMeta = null;  // { total, page, pageSize }
     let lastQuery = null;
 
-    // ----- Show archived state -------------------------------------------------
+    // ----- Show archived state ----------------------------------------------
+    // Always start FALSE; user must explicitly opt-in each session.
     let showArchived = false;
+    // During boot we ignore archive toggle notifications so we never prefetch archived.
+    let _bootArchiveGuard = true;
 
-    // ----- Client cache for cross-page filtering ------------------------------
+    // ----- Client cache for cross-page filtering ----------------------------
     const MAX_CLIENT_CACHE = 5000;
-    let cacheKey = null;           // `${q}|${archived?1:0}`
-    let cacheAllItems = [];        // full result set for current cacheKey
+    // Global registry: key = `${q}|${archived?1:0}` → { items, loadedPages, pageSize, ts }
+    const CACHE = new Map();
+    let cacheKey = null;       // currently active key
+    let cacheAllItems = [];    // active working set for current view
     let cacheLoadedPages = new Set();
-    let filteredItems = [];        // result after client filters
+    let filteredItems = [];    // result after client filters
     let activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+
+    // ----- Persistence (reloads only) -------------------------------------------
+    const STORAGE_TOGGLE_KEY = "aims.search.showArchived";
+    const STORAGE_CACHE_KEY = "aims.search.cache";
+
+    // nav type: 'reload' vs 'navigate' (modern)
+    const _navType = (performance.getEntriesByType?.("navigation")?.[0]?.type) || "navigate";
+    // legacy fallback for some Safari/old browsers
+    if (_navType === "navigate" && performance.navigation?.type === 1) { /* reload */ }
+
+    // Restore toggle only on reloads; clear on navigations from other pages
+    (function primeShowArchivedFromStorage() {
+        try {
+            if (_navType === "reload") {
+                const saved = localStorage.getItem(STORAGE_TOGGLE_KEY);
+                if (saved != null) showArchived = (saved === "1");
+            } else {
+                // coming from another page → start clean per requirement
+                localStorage.removeItem(STORAGE_TOGGLE_KEY);
+            }
+        } catch { }
+    })();
+
+    // Persist the whole CACHE Map into sessionStorage (scoped to this tab)
+    function persistCacheToSession() {
+        try {
+            const payload = {
+                ver: String(window.__ASSETS_VER__ ?? ""),
+                entries: Object.fromEntries(
+                    Array.from(CACHE.entries()).map(([k, v]) => [
+                        k,
+                        {
+                            items: v.items,
+                            loadedPages: Array.from(v.loadedPages || []),
+                            pageSize: v.pageSize,
+                            ts: v.ts
+                        }
+                    ])
+                )
+            };
+            sessionStorage.setItem(STORAGE_CACHE_KEY, JSON.stringify(payload));
+        } catch (e) { /* non-fatal */ }
+    }
+
+    // Hydrate CACHE from sessionStorage on load (same tab, survives reload)
+    function hydrateCacheFromSession() {
+        try {
+            const raw = sessionStorage.getItem(STORAGE_CACHE_KEY);
+            if (!raw) return;
+            const obj = JSON.parse(raw);
+            const verOk = String(obj?.ver ?? "") === String(window.__ASSETS_VER__ ?? "");
+            if (!verOk) return;
+            const entries = obj?.entries || {};
+            Object.entries(entries).forEach(([k, v]) => {
+                CACHE.set(k, {
+                    items: v.items || [],
+                    loadedPages: new Set(v.loadedPages || []),
+                    pageSize: v.pageSize || pageSize,
+                    ts: v.ts || Date.now()
+                });
+            });
+        } catch (e) { /* ignore */ }
+    }
+
+    // --- TTL so cached views don't live forever ---
+    const CACHE_TTL_MS = 15 * 60_000; // Cache expires every 15 minutes so view isn't stale
+    const getEntry = (key) => {
+        const e = CACHE.get(key);
+        if (!e) return null;
+        if (e.ts && (Date.now() - e.ts) > CACHE_TTL_MS) {
+            CACHE.delete(key);
+            return null;
+        }
+        return e;
+    };
+    const setEntry = (key, entry) => {
+        CACHE.set(key, entry);
+        // persist on every write so reload is instant
+        persistCacheToSession();
+    };
 
     const debounce = (fn, ms = 250) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
     const debouncedApply = debounce(() => applyFiltersAndRender({ page: 1 }), 250);
 
-    const makeCacheKey = (q, archived) => `${(q || "").trim().toLowerCase()}|${archived ? "1" : "0"}`;
+    const makeCacheKey = (q, archivedFlag) =>
+         `${(q || "").trim().toLowerCase()}|${archivedFlag ? "1" : "0"}`;
+
+    // ----- Helpers: detect archived on any DTO shape -----
+    const isArchivedRow = (r) => {
+        const flag = (r?.isArchived ?? r?.IsArchived ?? r?.archived ?? r?.Archived) === true;
+        const statusText = String(r?.status ?? r?.Status ?? "").trim().toLowerCase();
+        return flag || statusText === "archived";
+    };
+
+    // ---------- Overlay positioning helpers (no accumulated transforms) ----------
+    function placeOverlayBelowAnchor(anchorEl, overlayEl, offsetY = 8) {
+        if (!anchorEl || !overlayEl) return;
+        // Ensure overlay has display so measurements work
+        const prevDisplay = overlayEl.style.display;
+        if (getComputedStyle(overlayEl).display === "none") overlayEl.style.display = "block";
+
+        const a = anchorEl.getBoundingClientRect();
+        const pad = 12;
+
+        // size first so clamping is correct
+        const w = overlayEl.offsetWidth || 0;
+        const desiredLeft = a.left;
+        const desiredTop = Math.round(a.bottom + offsetY);
+
+        const maxLeft = Math.max(pad, window.innerWidth - pad - w);
+        const left = Math.min(Math.max(desiredLeft, pad), maxLeft);
+
+        overlayEl.style.position = "fixed";
+        overlayEl.style.left = `${Math.round(left)}px`;
+        overlayEl.style.top = `${desiredTop}px`;
+        overlayEl.style.transform = "none"; // never accumulate deltas
+
+        // restore display if we changed it and caller wants it hidden
+        if (prevDisplay === "none") overlayEl.style.display = "none";
+    }
+
+    // Track & continuously reposition while open; returns a cleanup() fn.
+    function trackOverlay(anchorEl, overlayEl, offsetY = 8) {
+        const reposition = () => placeOverlayBelowAnchor(anchorEl, overlayEl, offsetY);
+        const onScroll = () => reposition();
+        const onResize = () => reposition();
+        const ro = (window.ResizeObserver)
+            ? new ResizeObserver(() => reposition())
+            : null;
+
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onResize, { passive: true });
+        ro?.observe(anchorEl);
+
+        // initial place
+        reposition();
+
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", onResize);
+            ro?.disconnect?.();
+        };
+    }
+
+    // ----- Loading min time ----------------------------------------------------
+    const LOCAL_MIN_VISIBLE_MS = 500;
+    let localShownAt = 0;
+
+    function startLoading() {
+        localShownAt = performance.now();
+        clearBody();
+        setEmpty(false);
+        if (adminWrapper) adminWrapper.classList.remove("table-has-rows");
+        if (window.GlobalSpinner?.show) GlobalSpinner.show();
+    }
+
+    function waitForMinimum() {
+        const elapsed = performance.now() - localShownAt;
+        const wait = Math.max(0, LOCAL_MIN_VISIBLE_MS - elapsed);
+        return new Promise(resolve => setTimeout(resolve, wait));
+    }
 
     // Initialize global filter icon logic (archive-filter.js from _Layout)
     try {
         AIMSFilterIcon.init("searchFilters", {
             onChange: ({ showArchived: newVal }) => {
+                // Ignore any initial notify while booting; we will do our own first fetch.
+                if (_bootArchiveGuard) return;
                 showArchived = newVal;
+                localStorage.setItem(STORAGE_TOGGLE_KEY, newVal ? "1" : "0");
                 const q = (lastQuery ?? activeQuery() ?? "").trim();
-                fetchInitial(q, 1, pageSize);
+                // Try to reuse cached results for this q+flag; otherwise fetch.
+                const key = makeCacheKey(q, showArchived);
+                const hit = getEntry(key);
+                if (hit) {
+                    cacheKey = key;
+                    cacheAllItems = hit.items.slice(0, MAX_CLIENT_CACHE);
+                    cacheLoadedPages = new Set(hit.loadedPages || []);
+                    pageSize = hit.pageSize || pageSize;
+                    activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+                    applyFiltersAndRender({ page: 1 });
+                } else {
+                    // If turning OFF archived and we don't have an active-only cache yet,
+                    // derive it from the current items immediately to keep UI snappy.
+                    if (!newVal && cacheAllItems.length) {
+                        const derived = cacheAllItems.filter(r => !isArchivedRow(r)).slice(0, MAX_CLIENT_CACHE);
+                        const k = makeCacheKey(q, /*archived*/ false);
+                        setEntry(k, { items: derived, loadedPages: [], pageSize, ts: Date.now() });
+                        cacheKey = k;
+                        cacheAllItems = derived;
+                        cacheLoadedPages = new Set();
+                        activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+                        applyFiltersAndRender({ page: 1 });
+                    } else {
+                        fetchInitial(q, 1, pageSize);
+                    }     
+                }
             }
         });
     } catch (e) {
@@ -114,32 +309,46 @@
         const pop = document.querySelector('[data-component="filter-icon"][data-id="searchFilters"]');
         if (!pop) return;
 
-        const closePop = (ev) => {
-            if (!pop.classList.contains('open')) return;
-            const inside = pop.contains(ev.target) || filterFab.contains(ev.target);
-            if (!inside) {
-                pop.classList.remove('open');
-                pop.hidden = true;
-            }
+        let cleanupTracker = null;
+
+        const closePop = () => {
+            if (!pop.classList.contains("open")) return;
+            pop.classList.remove("open");
+            pop.hidden = true;
+            cleanupTracker?.();
+            cleanupTracker = null;
         };
 
+        // Close on outside click
+        document.addEventListener("click", (ev) => {
+            if (!pop.classList.contains("open")) return;
+            const inside = pop.contains(ev.target) || filterFab.contains(ev.target);
+            if (!inside) closePop();
+        });
+
         filterFab.addEventListener("click", () => {
+            // keep the invisible anchor centered on the FAB (for any consumers)
             const r = filterFab.getBoundingClientRect();
             hiddenFilterAnchor.style.position = "fixed";
             hiddenFilterAnchor.style.left = Math.round(r.left + r.width * 0.5) + "px";
             hiddenFilterAnchor.style.top = Math.round(r.top + r.height * 0.5) + "px";
 
-            // position popover
-            pop.style.position = "fixed";
-            pop.style.left = Math.max(8, r.left - 8) + "px";
-            pop.style.top = Math.round(r.bottom + 8) + "px";
-            const willOpen = !pop.classList.contains('open');
-            pop.hidden = !willOpen;
-            pop.classList.toggle('open', willOpen);
-            if (willOpen) pop.querySelector('[data-role="show-archived-toggle"]')?.focus();
-        });
+            const opening = !pop.classList.contains("open");
+            pop.hidden = !opening;
+            pop.classList.toggle("open", opening);
 
-        document.addEventListener("click", closePop);
+            if (opening) {
+                // size hints so clamping is sane on first paint
+                pop.style.minWidth = "220px";
+                pop.style.maxInlineSize = "calc(100vw - 24px)";
+
+                // place & start live tracking; no transform-based nudges
+                cleanupTracker = trackOverlay(filterFab, pop, 8);
+                pop.querySelector('[data-role="show-archived-toggle"]')?.focus();
+            } else {
+                closePop();
+            }
+        });
     }
 
     // If CSS background image failed, inject an <img> fallback so the icon appears
@@ -148,7 +357,7 @@
         const bg = getComputedStyle(filterFab).backgroundImage || "";
         if (bg === "none" || bg.trim() === "") {
             const img = document.createElement("img");
-            img.src = "/img/filter-icon-blue.png";
+            img.src = "/images/filter-icon-blue.png";
             img.alt = "";
             img.width = 24;
             img.height = 24;
@@ -156,7 +365,7 @@
             img.loading = "eager";
             img.style.pointerEvents = "none";
             filterFab.appendChild(img);
-            img.addEventListener("error", () => { img.src = "../../img/filter-icon-blue.png"; });
+            img.addEventListener("error", () => { img.src = "../../images/filter-icon-blue.png"; });
         }
     })();
 
@@ -177,8 +386,69 @@
     const initialQ = (params.get("searchQuery") || "").trim();
 
     // ----- Helpers -------------------------------------------------------------
-    const clearBody = () => { while (tbody.firstChild) tbody.removeChild(tbody.firstChild); };
-    const setEmpty = (isEmpty) => { empty.hidden = !isEmpty; };
+    function clearBody() {
+        while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    }
+    function setEmpty(isEmpty) {
+        empty.hidden = !isEmpty;
+    }
+
+    // Normalize status text across DTO shapes
+    const getStatus = (row) => String(row.status ?? row.Status ?? "").trim().toLowerCase();
+
+    // Lightweight notifier (uses AIMS toast if present; falls back to alert)
+    const notify = (msg) =>
+        (window.AIMS?.Toast?.show?.(msg) || window.AIMS?.notify?.(msg) || window.toastr?.info?.(msg) || alert(msg));
+
+    function setToolbarVisible(visible) {
+        if (toolbar) toolbar.hidden = !visible;
+        if (filterFab) filterFab.hidden = !visible;
+        document.body.classList.toggle("is-blank", !visible);
+    }
+
+    function setArchivedToggleState({ checked = false, disabled = false } = {}) {
+        showArchived = !!checked;
+        if (archivedToggle) {
+            archivedToggle.checked = !!checked;
+            archivedToggle.disabled = !!disabled;
+        }
+        // Keep popover closed when disabled
+        const pop = document.querySelector('[data-component="filter-icon"][data-id="searchFilters"]');
+        if (disabled && pop) {
+            pop.classList.remove("open");
+            pop.hidden = true;
+        }
+    }
+
+    // --- Ellipsis helpers  ---
+    function isEllipsed(td) {
+        const target = td.querySelector('.ellip') || td;
+        const cs = getComputedStyle(target);
+
+        const singleLine = cs.whiteSpace === "nowrap";
+        const ellipsing = (cs.textOverflow === "ellipsis") || (cs.overflow === "hidden");
+        if (!singleLine || !ellipsing) return false;
+
+        // Try fast path on the actual target
+        if ((target.scrollWidth - target.clientWidth) > 0.5) return true;
+
+        // Fallback: measure text realistically (handles nested spans/buttons nearby)
+        const r = document.createRange();
+        r.selectNodeContents(target);
+        const rects = r.getBoundingClientRect();
+        const textW = r.getBoundingClientRect().width; // width of inline content
+        const cellW = target.getBoundingClientRect().width;
+        return textW > (cellW + 0.8);
+    }
+
+    // Re-run tooltips after any layout change (keeps titles accurate)
+    function refreshVisibleTooltips() {
+        const visibleRows = Array.from(document.querySelectorAll("#table-body > tr:not([hidden])"));
+        visibleRows.forEach(tr => Array.from(tr.cells).forEach(td => {
+            if (isEllipsed(td)) td.title = td.textContent.trim();
+            else td.removeAttribute("title");
+        }));
+    }
 
     // ----- Public refresh helpers ---------------------------------------------
     AIMS.Search.refresh = function refresh() {
@@ -250,7 +520,7 @@
 
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "assign-btn";
+        btn.className = "icon-btn";
         btn.setAttribute("data-testid", "assign-user-btn");
 
         // normalize API ids
@@ -259,14 +529,34 @@
         const numericId = swId ?? hwId;
         const kind = (swId != null) ? 2 : 1; // 1=hardware, 2=software
 
-        btn.dataset.assetTag = (row.tag ?? "") + "";
+        btn.dataset.assetTag = getTag(row);
         btn.dataset.assetNumericId = (numericId != null ? String(numericId) : "");
         btn.dataset.assetKind = String(kind);
         btn.dataset.currentUserId = currentUserId;
 
-        btn.title = "Assign / change user";
-        btn.setAttribute("aria-label", `Assign user to ${row.assetName || "asset"}`);
-        btn.textContent = "👤";
+        // Decide enabled vs disabled based on STATUS
+        const statusL = getStatus(row); // "assigned", "available", "in repair", "archived", etc.
+        const isActionable = (statusL === "assigned" || statusL === "available");
+
+        if (isActionable) {
+            // mint (enabled) style
+            btn.classList.add("icon-btn--mint");
+            btn.title = (statusL === "assigned") ? "Unassign user" : "Assign user";
+            btn.setAttribute("aria-label", (statusL === "assigned") ? "Unassign user" : "Assign user");
+            btn.dataset.disabled = "0";
+        } else {
+            // disabled (gray) style
+            btn.classList.add("icon-btn--disabled");
+            btn.title = "Asset must be Available in order to assign";
+            btn.setAttribute("aria-disabled", "true");
+            btn.dataset.disabled = "1";
+        }
+
+        // inline person icon
+        btn.innerHTML = `
+        <svg class="icon-person" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false">
+            <path d="M8 9c3.314 0 6 2.239 6 5 0 .552-.448 1-1 1H3c-.552 0-1-.448-1-1 0-2.761 2.686-5 6-5Zm0-1a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"></path>
+        </svg>`;
         applyScope(btn);
 
         const wrapper = document.createDocumentFragment();
@@ -281,6 +571,7 @@
         for (const row of (items || [])) {
             const tr = document.createElement("tr");
             tr.className = "result";
+            tr.dataset.archived = isArchivedRow(row) ? "1" : "0";
 
             // Deep-link to AssetDetails if admin/helpdesk
             const canDeepLink = !!CAN_ADMIN;
@@ -296,7 +587,8 @@
             tr.setAttribute("applied-filters", "0");
 
             // data-* for quick lookups
-            tr.dataset.tag = row.tag || "";
+            const normTag = getTag(row);
+            tr.dataset.tag = normTag || "";
             tr.dataset.type = row.type || "";
             const swId = row.softwareID ?? row.SoftwareID ?? row.softwareId ?? null;
             const hwId = row.hardwareID ?? row.HardwareID ?? row.hardwareId ?? null;
@@ -316,7 +608,7 @@
 
             const tdTag = document.createElement("td");
             tdTag.className = "col-tag";
-            tdTag.textContent = row.tag || "-";
+            tdTag.textContent = normTag || "-";
             applyScope(tdTag);
 
             const tdAssn = document.createElement("td");
@@ -326,7 +618,11 @@
 
             const tdStat = document.createElement("td");
             tdStat.className = "col-status";
-            tdStat.textContent = row.status || "-";
+            const statusText = String(row.status ?? row.Status ?? "-").trim();
+            const pill = document.createElement("span");
+            pill.className = "status " + (statusText ? statusText.toLowerCase().replace(/\s+/g, "") : "");
+            pill.textContent = statusText;
+            tdStat.appendChild(pill);
             applyScope(tdStat);
 
             tr.append(tdName, tdType, tdTag, tdAssn, tdStat);
@@ -335,69 +631,112 @@
         ensureNoResultsRow();
         applyZebra();
         updateToolbarCorners();
+        refreshVisibleTooltips();
     }
+
+    // --- Expand row on hover *only* if the hovered cell is ellipsed ---
+    tbody.addEventListener("mouseover", (e) => {
+        const td = e.target.closest("td");
+        if (!td) return;
+        if (!tbody.contains(td)) return;
+
+        // Only expand when the hovered cell is actually truncated
+        if (isEllipsed(td)) {
+            const tr = td.parentElement;
+            tr.classList.add("expand-row");
+            td.classList.add("expanded-source");
+        }
+    });
+
+    tbody.addEventListener("mouseout", (e) => {
+        const td = e.target.closest("td");
+        if (!td) return;
+        if (!tbody.contains(td)) return;
+
+        const tr = td.parentElement;
+        // Only remove classes if we were the source that triggered expansion
+        td.classList.remove("expanded-source");
+        tr.classList.remove("expand-row");
+    });
 
     // Click handling (delegated)
     tbody.addEventListener("click", (e) => {
-        const btn = e.target.closest(".assign-btn");
-        if (btn) {
+        // 1) Assign / Unassign button click (let the modal flows handle it)
+        const iconBtn = e.target.closest(".assign-btn, .icon-btn");
+        if (iconBtn) {
             e.preventDefault();
             e.stopPropagation();
 
-            const rowEl = btn.closest("tr");
-            const tag = rowEl?.dataset.tag || "";
-            const numericId = btn.dataset.assetNumericId || "";
-            const assetKind = Number(btn.dataset.assetKind || "1");
+            // If disabled, show friendly message and exit
+            if (iconBtn.dataset.disabled === "1" || iconBtn.classList.contains("icon-btn--disabled")) {
+                notify("Asset must be Available in order to assign.");
+                return;
+            }
 
-            const currentUserId = btn.dataset.currentUserId || "";
+            const rowEl = iconBtn.closest("tr.result");
+            const tag = rowEl?.dataset.tag || "";
+            const numericId = iconBtn.dataset.assetNumericId || rowEl?.dataset.assetId || "";
+            const assetKind = Number(iconBtn.dataset.assetKind || "1");
+            const currentUserId = iconBtn.dataset.currentUserId || "";
             const nameEl = rowEl ? rowEl.querySelector(".assigned-name") : null;
             const currentDisplayName = (nameEl?.textContent || "Unassigned").trim();
 
-            const isAssigned = (rowEl?.dataset.status || "").toLowerCase() === "assigned"
-                || (currentUserId && currentUserId !== "");
+            const isAssigned =
+                (rowEl?.dataset.status || "").toLowerCase() === "assigned" ||
+                (!!currentUserId);
 
             if (isAssigned) {
                 window.dispatchEvent(new CustomEvent("unassign:open", {
                     detail: { currentUserId: currentUserId || null, assetTag: tag || null, assetNumericId: numericId || null, assetKind }
                 }));
-                return;
+            } else {
+                window.dispatchEvent(new CustomEvent("assign:open", {
+                    detail: { assetTag: tag, assetNumericId: numericId, assetKind, currentUserId, currentDisplayName }
+                }));
             }
-
-            window.dispatchEvent(new CustomEvent("assign:open", {
-                detail: { assetTag: tag, assetNumericId: numericId, assetKind, currentUserId, currentDisplayName }
-            }));
             return;
         }
 
+        // 2) Row → navigate to AssetDetails (Admins only)
         if (!CAN_ADMIN) return;
+
         const tr = e.target.closest("tr.result");
         if (!tr) return;
 
-        const tag = tr.dataset.tag || "";
-        const type = (tr.dataset.type || "").trim();
-        if (!tag) return;
+        // Ignore clicks on interactive controls inside the row
+        if (e.target.closest("button, a, input, select, textarea, [role='button'], [role='link']")) return;
 
-        const url = new URL("/AssetDetails/Index", window.location.origin);
-        url.searchParams.set("category", type || "Laptop");
+        const type = (tr.dataset.type || "Laptop").trim();
+        const tag = (tr.dataset.tag || "").trim();
+        if (!tag) { console.warn("Row click: missing Tag/AssetTag; not navigating.", tr); return; }
+
+        // ALWAYS go to http://localhost:5119/AssetDetails/Index?category={type}&tag={tag}
+        const url = new URL("http://localhost:5119/AssetDetails/Index");
+        url.searchParams.set("category", type);
         url.searchParams.set("tag", tag);
-        window.location.href = url.toString();
+        window.location.assign(url.toString());
     });
 
     // ----- Local filtering + render (replaces DOM-only filtering) --------------
     function applyFiltersAndRender({ page = 1 } = {}) {
         const v = (s) => (s || "").trim().toLowerCase();
 
+        // The checkbox is the source of truth. If it’s checked, we must include archived.
+        if (archivedToggle) showArchived = !!archivedToggle.checked;
+
         filteredItems = cacheAllItems.filter(row => {
+            // Absolute rule: if toggle is OFF, archived rows never participate in paging or filters.
+            if (!showArchived && isArchivedRow(row)) return false;
             if (activeFilters.name && !(row.assetName || "").toLowerCase().includes(v(activeFilters.name))) return false;
             if (activeFilters.type && (row.type || "").toLowerCase() !== v(activeFilters.type)) return false;
-            if (activeFilters.tag && !(row.tag || "").toLowerCase().includes(v(activeFilters.tag))) return false;
+            if (activeFilters.tag && !getTag(row).toLowerCase().includes(v(activeFilters.tag))) return false;
             if (activeFilters.assignment) {
                 const disp = (row.assignedEmployeeNumber && row.assignedTo)
                     ? `${row.assignedTo} (${row.assignedEmployeeNumber})`
                     : (row.assignedTo || "Unassigned");
                 if (!disp.toLowerCase().includes(v(activeFilters.assignment))) return false;
             }
-            if (activeFilters.status && (row.status || "").toLowerCase() !== v(activeFilters.status)) return false;
+            if (activeFilters.status && String(row.status ?? row.Status ?? "").toLowerCase() !== v(activeFilters.status)) return false;
             return true;
         });
 
@@ -417,30 +756,13 @@
         tbody.classList.toggle("is-empty", total === 0);
 
         updateToolbarCorners();
+        refreshVisibleTooltips();
     }
 
     // Inputs/selects → live (debounced) local filtering
     inputName?.addEventListener("input", e => { activeFilters.name = e.target.value; debouncedApply(); });
     inputTag?.addEventListener("input", e => { activeFilters.tag = e.target.value; debouncedApply(); });
     inputAssn?.addEventListener("input", e => { activeFilters.assignment = e.target.value; debouncedApply(); });
-
-    // ----- Loading min time ----------------------------------------------------
-    const LOCAL_MIN_VISIBLE_MS = 500;
-    let localShownAt = 0;
-
-    function startLoading() {
-        localShownAt = performance.now();
-        clearBody();
-        setEmpty(false);
-        if (adminWrapper) adminWrapper.classList.remove("table-has-rows");
-        if (window.GlobalSpinner?.show) GlobalSpinner.show();
-    }
-
-    function waitForMinimum() {
-        const elapsed = performance.now() - localShownAt;
-        const wait = Math.max(0, LOCAL_MIN_VISIBLE_MS - elapsed);
-        return new Promise(resolve => setTimeout(resolve, wait));
-    }
 
     // ----- Pager helpers (local slice only) -----------------------------------
     function updatePager() {
@@ -482,22 +804,34 @@
             clearBody();
             setEmpty(true);
             tbody.classList.add("is-empty");
+
+            setToolbarVisible(false);
+            setArchivedToggleState({ checked: false, disabled: true });
+
             if (pager) pager.hidden = true;
             if (adminWrapper) adminWrapper.classList.remove("table-has-rows");
             return;
         }
 
-        lastQuery = q ?? "";
-        const key = makeCacheKey(lastQuery, showArchived);
-        const sameCache = (key === cacheKey);
+        // non-blank path → ensure UI is shown and toggle enabled
+        setToolbarVisible(true);
+        setArchivedToggleState({ checked: showArchived, disabled: false })
 
-        // If same query+archive-state, reuse cache (no server hit)
-        if (sameCache && cacheAllItems.length > 0) {
+        lastQuery = q ?? "";// First-load rule: never query archived unless the user explicitly toggled it on.
+        const key = makeCacheKey(lastQuery, showArchived);
+        const cached = getEntry(key);
+        // If we already have a cache entry, use it immediately.
+        if (cached && (cached.items?.length || 0) > 0) {
+            cacheKey = key;
+            cacheAllItems = cached.items.slice(0, MAX_CLIENT_CACHE);
+            cacheLoadedPages = new Set(cached.loadedPages || []);
+            pageSize = cached.pageSize || pageSizeArg;
+            activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
             applyFiltersAndRender({ page: 1 });
             return;
         }
 
-        // New cache
+        // Prepare fresh working set for this key only (do not clear other keys)
         cacheKey = key;
         cacheAllItems = [];
         cacheLoadedPages = new Set();
@@ -521,8 +855,41 @@
             await waitForMinimum();
 
             cacheAllItems = (data.items || []).slice(0, MAX_CLIENT_CACHE);
+            // Strip archived rows on client if showArchived == false (defensive)
+            if (!showArchived) {
+                cacheAllItems = cacheAllItems.filter(r => !isArchivedRow(r));
+            }
             cacheLoadedPages.add(data.page || page);
             pageSize = data.pageSize ?? pageSizeArg;
+
+            // Persist this view in the registry
+            setEntry(key, {
+                items: cacheAllItems.slice(0, MAX_CLIENT_CACHE),
+                loadedPages: Array.from(cacheLoadedPages),
+                pageSize,
+                ts: Date.now()
+            });
+
+            // If we just fetched ALL (showArchived=true), try to also seed an ACTIVE-ONLY cache
+            // so flipping the toggle back can be instant without a re-fetch.
+            if (showArchived) {
+                const keyActive = makeCacheKey(lastQuery, /*archived*/ false);
+                if (!getEntry(keyActive)) {
+                    // Derive if an isArchived-like flag exists; otherwise skip derivation.
+                    const sample = cacheAllItems[0] || {};
+                    const hasFlag = ("isArchived" in sample) || ("IsArchived" in sample) || ("archived" in sample) || ("Archived" in sample);
+                    if (hasFlag) {
+                        const isArch = (r) => !!(r.isArchived ?? r.IsArchived ?? r.archived ?? r.Archived);
+                        const activeOnly = cacheAllItems.filter(r => !isArch(r)).slice(0, MAX_CLIENT_CACHE);
+                        setEntry(keyActive, {
+                            items: activeOnly,
+                            loadedPages: [],   // derived
+                            pageSize,
+                            ts: Date.now()
+                        });
+                    }
+                }
+            }
 
             // reset filter state on new query
             activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
@@ -553,6 +920,14 @@
                                 cacheAllItems.push(it);
                             }
                             cacheLoadedPages.add(d.page || p);
+
+                            // Update the registry entry as pages arrive
+                            setEntry(key, {
+                                items: cacheAllItems.slice(0, MAX_CLIENT_CACHE),
+                                loadedPages: Array.from(cacheLoadedPages),
+                                pageSize,
+                                ts: Date.now()
+                            });
                         } catch (e) {
                             console.warn("Prefetch failed page", p, e);
                         }
@@ -621,6 +996,10 @@
         list.setAttribute("role", "listbox");
         list.setAttribute("tabindex", "-1");
 
+        // size hints so clamping is sane
+        list.style.minWidth = "0px"; // will be set on open
+        list.style.maxWidth = "none";
+
         const opts = Array.from(selectEl.options || []);
         let activeIndex = Math.max(0, opts.findIndex(o => o.selected) || 0);
 
@@ -666,23 +1045,23 @@
         }
         updateButtonLabel();
 
-        // Position the listbox as a fixed overlay under the button (no layout shift)
+        // Position/listbox tracking (no transform drift)
         function positionListbox() {
             const r = btn.getBoundingClientRect();
-            list.style.position = "fixed";
-            list.style.left = `${Math.round(r.left)}px`;
-            list.style.top = `${Math.round(r.bottom + 4)}px`;
             list.style.minWidth = `${Math.round(r.width)}px`;
             list.style.maxWidth = `${Math.round(Math.max(r.width, 240))}px`;
-            list.style.zIndex = "2000";
+            placeOverlayBelowAnchor(btn, list, 4);
         }
 
         function open() {
             wrapper.classList.add("aims-custom-select--open");
             btn.setAttribute("aria-expanded", "true");
-            positionListbox();
             list.style.display = "block";
-            list.focus({ preventScroll: true });
+
+            // initial position + begin live tracking while open
+            positionListbox();
+            if (!list._cleanupTracker) list._cleanupTracker = trackOverlay(btn, list, 4);
+
             const cur = list.querySelector('.aims-custom-select__option[aria-current="true"]');
             cur?.scrollIntoView({ block: "nearest" });
         }
@@ -690,6 +1069,10 @@
             wrapper.classList.remove("aims-custom-select--open");
             btn.setAttribute("aria-expanded", "false");
             list.style.display = "none";
+
+            // stop tracking on close
+            if (list._cleanupTracker) { list._cleanupTracker(); list._cleanupTracker = null; }
+
             if (reason === "keyboard" || reason === "button") {
                 if (document.activeElement !== btn) btn.focus({ preventScroll: true });
             }
@@ -724,9 +1107,10 @@
             if (isOpen) close({ reason: "button" }); else open();
         });
 
-        // keep the overlay stuck to button on resize/scroll
-        window.addEventListener("resize", () => { if (wrapper.classList.contains("aims-custom-select--open")) positionListbox(); }, { passive: true });
-        window.addEventListener("scroll", () => { if (wrapper.classList.contains("aims-custom-select--open")) positionListbox(); }, { passive: true });
+        // keep the overlay stuck to button on resize/scroll (via tracker)
+        window.addEventListener("load", () => {
+            if (wrapper.classList.contains("aims-custom-select--open")) positionListbox();
+        });
 
         list.addEventListener("click", (e) => {
             const item = e.target.closest(".aims-custom-select__option");
@@ -781,6 +1165,8 @@
 
     // ----- Init ----------------------------------------------------------------
     (async function init() {
+        hydrateCacheFromSession();
+        setArchivedToggleState({ checked: showArchived, disabled: false });
         wireFilterFab();
         initCustomDropdowns();
         scheduleSync(); // sync toolbar widths on boot
@@ -793,7 +1179,19 @@
             return;
         }
         if (initialQ.length > 0) {
-            await fetchInitial(initialQ, 1, pageSize);
+            // Prefer cache for (q, archived=false)
+            const key = makeCacheKey(initialQ, showArchived);
+            const hit = getEntry(key);
+            if (hit) {
+                cacheKey = key;
+                cacheAllItems = hit.items.slice(0, MAX_CLIENT_CACHE);
+                cacheLoadedPages = new Set(hit.loadedPages || []);
+                pageSize = hit.pageSize || pageSize;
+                activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+                applyFiltersAndRender({ page: 1 });
+            } else {
+                await fetchInitial(initialQ, 1, pageSize);
+            }
         } else {
             cacheAllItems = []; filteredItems = [];
             clearBody();
@@ -801,7 +1199,13 @@
             tbody.classList.add("is-empty");
             if (pager) pager.hidden = true;
             applyZebra();
+
+            // Hide toolbar + FAB; force archived OFF + disable toggle
+            setToolbarVisible(false);
+            setArchivedToggleState({ checked: false, disabled: true });
         }
+        // Now we allow the archive toggle to start notifying.
+        _bootArchiveGuard = false;
         scheduleSync();
     })();
 
@@ -830,17 +1234,28 @@
             nameSpan.textContent = userDisplay || "Unassigned";
             nameSpan.dataset.userId = userId || "";
         }
-        const iconBtn = row.querySelector(".assign-btn");
+        const iconBtn = row.querySelector(".icon-btn, .assign-btn");
         if (iconBtn) iconBtn.dataset.currentUserId = userId || "";
 
+        // Update status pill + dataset
         const statusCell = row.querySelector(".col-status");
-        if (statusCell) statusCell.textContent = "Assigned";
+        const pill = statusCell?.querySelector(".status");
+        if (pill) {
+            pill.textContent = "Assigned";
+            pill.className = "status assigned";
+        } else if (statusCell) {
+            statusCell.textContent = "Assigned";
+        }
         row.dataset.status = "Assigned";
 
         // Update cache too
         const tag = row.dataset.tag;
         const cid = row.dataset.assetId;
-        const hit = cacheAllItems.find(it => (it.tag && it.tag === tag) || (String(it.hardwareID ?? it.softwareID ?? "") === String(cid)));
+        const hit = cacheAllItems.find(it => {
+            const t = getTag(it);
+            const numId = String(it.hardwareID ?? it.HardwareID ?? it.softwareID ?? it.SoftwareID ?? "");
+            return (t && t === tag) || numId === String(cid);
+        });
         if (hit) {
             hit.assignedTo = userDisplay || "Unassigned";
             hit.assignedUserId = userId || "";
