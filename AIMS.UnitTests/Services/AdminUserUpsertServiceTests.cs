@@ -54,7 +54,12 @@ public class AdminUserUpsertServiceTests
 
         var svc = new AdminUserUpsertService(db, graph.Object);
 
-        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 5, supervisorId: null, officeId: null, CancellationToken.None);
+        var saved = await svc.UpsertAdminUserAsync(
+            graphId,
+            roleId: 5,
+            supervisorId: null,
+            officeId: null,
+            ct: CancellationToken.None);
 
         Assert.NotNull(saved);
         Assert.Equal(graphId, saved.GraphObjectID);
@@ -90,7 +95,12 @@ public class AdminUserUpsertServiceTests
 
         var svc = new AdminUserUpsertService(db, graph.Object);
 
-        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 7, supervisorId: 3, officeId: null, CancellationToken.None);
+        var saved = await svc.UpsertAdminUserAsync(
+            graphId,
+            roleId: 7,
+            supervisorId: 3,
+            officeId: null,
+            ct: CancellationToken.None);
 
         Assert.NotNull(saved);
         Assert.Equal("Updated Name", saved.FullName);
@@ -126,7 +136,12 @@ public class AdminUserUpsertServiceTests
 
         var svc = new AdminUserUpsertService(db, graph.Object);
 
-        var saved = await svc.UpsertAdminUserAsync(graphId, roleId: 9, supervisorId: null, officeId: null, CancellationToken.None);
+        var saved = await svc.UpsertAdminUserAsync(
+            graphId,
+            roleId: 9,
+            supervisorId: null,
+            officeId: null,
+            ct: CancellationToken.None);
 
         Assert.NotNull(saved);
         Assert.Equal("Resurrected", saved.FullName);
@@ -166,7 +181,12 @@ public class AdminUserUpsertServiceTests
         var svc = new AdminUserUpsertService(throwingDb, graph.Object);
 
         await Assert.ThrowsAsync<DbUpdateException>(async () =>
-            await svc.UpsertAdminUserAsync(graphId, roleId: 10, supervisorId: null, officeId: null, CancellationToken.None));
+            await svc.UpsertAdminUserAsync(
+                graphId,
+                roleId: 10,
+                supervisorId: null,
+                officeId: null,
+                ct: CancellationToken.None));
     }
 
     [Fact]
@@ -182,9 +202,13 @@ public class AdminUserUpsertServiceTests
         var svc = new AdminUserUpsertService(db, graph.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            svc.UpsertAdminUserAsync(graphId, null, null, null, CancellationToken.None));
+            svc.UpsertAdminUserAsync(
+                graphId,
+                roleId: null,
+                supervisorId: null,
+                officeId: null,
+                ct: CancellationToken.None));
     }
-
 
     private sealed class ThrowOnceOnSaveAimsDbContext : AimsDbContext
     {
@@ -207,6 +231,4 @@ public class AdminUserUpsertServiceTests
             return await base.SaveChangesAsync(cancellationToken);
         }
     }
-
-
 }

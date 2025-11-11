@@ -141,6 +141,10 @@ namespace AIMS.Data
             modelBuilder.Entity<Software>().Property(s => s.SoftwareVersion).HasMaxLength(64);
             modelBuilder.Entity<Software>().Property(s => s.SoftwareLicenseKey).HasMaxLength(128);
 
+            modelBuilder.Entity<Software>()
+                .Property(s => s.RowVersion)
+                .IsRowVersion();
+
             // -------------------------
             // ASSIGNMENTS
             // -------------------------

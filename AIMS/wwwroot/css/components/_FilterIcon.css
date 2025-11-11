@@ -18,7 +18,7 @@
 }
 
 
-.aims-filter .aims-filter-btn {
+.aims-filter {
     height: 36px;
 
     padding: 0 10px;
@@ -28,4 +28,49 @@
 
 .table-toolbar .toolbar-actions .aims-filter {
     margin-left: 8px;
+}
+
+/* Filter icon button styling (based on settings button) */
+.aims-filter-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #1e2b3b;
+    background-color: var(--primary, #1e2b3b);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
+}
+
+/* Hover: green accent and lift */
+.aims-filter-btn:hover {
+    border-color: #2ecc71;
+    background-color: #263b53;
+    box-shadow: 0 0 8px rgba(46, 204, 113, .4);
+    transform: translateY(-1px);
+}
+
+/* Focus (keyboard users): green outline */
+.aims-filter-btn:focus-visible {
+    outline: 3px solid #2ecc71;
+    outline-offset: 2px;
+}
+
+/* SVG icon inside the button */
+.aims-filter-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    transition: fill .2s ease;
+}
+
+/* Hover also affects the SVG color */
+.aims-filter-btn:hover svg {
+    fill: #2ecc71;
 }

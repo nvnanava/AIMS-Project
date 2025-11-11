@@ -49,35 +49,39 @@
     <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
 }
 
-<div class="table-wrapper">
+<div class="page-title-wrapper mb-3">
+  <h2 class="page-title">Admin</h2>
+</div>
 
-    <!-- Table Controls -->
-    <div class="admin-table-controls">
-        <div>
-            <button class="add-btn" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                Add User
-            </button>
-            <input
-                type="text"
-                id="userSearch"
-                class="aims-input"
-                placeholder="Search Users..."
-            />
-        </div>
-        <div class="admin-table-controls-right">
-            <label class="toggle-container">
-                <input type="checkbox" id="showInactive" />
-                <span class="slider"></span>
-                Show Inactive Users
-            </label>
-            @* <select id="roleFilter" class="aims-select" onchange="AIMS.Admin.filterByRole()">
-                <option value="All">All Roles</option>
-                <option value="Admin">Admin</option>
-                <option value="Supervisor">Supervisor</option>
-                <option value="User">User</option>
-            </select> *@
-        </div>
+<div class="table-wrapper">
+  <div class="admin-table-controls d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <button class="btn btn-mint px-4" type="button" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        <i class="bi bi-person-plus"></i> Add User
+      </button>
+      <input
+        type="text"
+        id="userSearch"
+        class="admin-search-pill"
+        placeholder="Search Users..."
+        oninput="AIMS.Admin.applyAdminTableFilters()"
+      />
     </div>
+
+    <div class="d-flex align-items-center gap-3 flex-wrap admin-table-controls-right">
+      <label class="toggle-container d-flex align-items-center gap-2 m-0">
+        <input type="checkbox" id="showInactive" onchange="AIMS.Admin.toggleInactiveUsers()" />
+        <span class="slider"></span>
+        Show Inactive Users
+      </label>
+
+      <select id="roleFilter" class="aims-select" onchange="AIMS.Admin.filterByRole()">
+        <option value="All">All Roles</option>
+        <option value="Admin">Admin</option>
+        <option value="User">User</option>
+      </select>
+    </div>
+  </div>
 
 <!-- Chrome wrapper: header (fixed) + body (scrolls) -->
 <div class="admin-table-wrapper">

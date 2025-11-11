@@ -311,5 +311,78 @@ namespace AIMS.UnitTests.Services
             var second = await svc.GetSummaryAsync(new[] { "  " + Type.ToUpperInvariant() + "  " });
             Assert.Same(first, second);
         }
+
+        [Fact]
+        public async Task Software_Threshold_Percentage_IsLow_True_When_UsedPct_GreaterOrEqual()
+        {
+            using var db = NewDb(nameof(Software_Threshold_Percentage_IsLow_True_When_UsedPct_GreaterOrEqual));
+            await SeedAsync(db, d =>
+            {
+                // 3 software assets (titles), each with 2 seats
+                d.SoftwareAssets.AddRange(
+                    new Software { SoftwareID = 1, SoftwareType = "Software", LicenseTotalSeats = 2 },
+                    new Software { SoftwareID = 2, SoftwareType = "Software", LicenseTotalSeats = 2 },
+                    new Software { SoftwareID = 3, SoftwareType = "Software", LicenseTotalSeats = 2 }
+                );
+
+                // Make 2 out of 3 fully assigned (2 open assignments each)
+                d.Assignments.AddRange(
+                    // SoftwareID = 1 (full)
+                    new Assignment { AssignmentID = 101, AssetKind = AssetKind.Software, SoftwareID = 1, UnassignedAtUtc = null },
+                    new Assignment { AssignmentID = 102, AssetKind = AssetKind.Software, SoftwareID = 1, UnassignedAtUtc = null },
+
+                    // SoftwareID = 2 (full)
+                    new Assignment { AssignmentID = 201, AssetKind = AssetKind.Software, SoftwareID = 2, UnassignedAtUtc = null },
+                    new Assignment { AssignmentID = 202, AssetKind = AssetKind.Software, SoftwareID = 2, UnassignedAtUtc = null }
+
+                // SoftwareID = 3 has 0 → available
+                );
+
+                // 2 of 3 full => 66.7% ~ 67% used. Threshold 67 → should mark low.
+                d.Thresholds.Add(new Threshold { AssetType = "Software", ThresholdValue = 67 });
+            });
+
+            var svc = NewSvc(db);
+            var row = Assert.Single(await svc.GetSummaryAsync(new[] { "Software" }));
+
+            Assert.Equal(3, row.Total);               // three titles
+            Assert.Equal(1, row.Available);           // only ID=3 is available
+            Assert.Equal(67, row.Threshold);
+            Assert.True(row.IsLow);                   // 67% used >= 67% → low
+        }
+
+        [Fact]
+        public async Task Software_Threshold_Percentage_IsLow_False_When_UsedPct_Less()
+        {
+            using var db = NewDb(nameof(Software_Threshold_Percentage_IsLow_False_When_UsedPct_Less));
+            await SeedAsync(db, d =>
+            {
+                // 3 software assets (titles), each with 2 seats
+                d.SoftwareAssets.AddRange(
+                    new Software { SoftwareID = 11, SoftwareType = "Software", LicenseTotalSeats = 2 },
+                    new Software { SoftwareID = 12, SoftwareType = "Software", LicenseTotalSeats = 2 },
+                    new Software { SoftwareID = 13, SoftwareType = "Software", LicenseTotalSeats = 2 }
+                );
+
+                // Make only 1 out of 3 fully assigned (2 open assignments)
+                d.Assignments.AddRange(
+                    new Assignment { AssignmentID = 301, AssetKind = AssetKind.Software, SoftwareID = 11, UnassignedAtUtc = null },
+                    new Assignment { AssignmentID = 302, AssetKind = AssetKind.Software, SoftwareID = 11, UnassignedAtUtc = null }
+
+                // IDs 12,13 remain available
+                );
+
+                // 1 of 3 full => 33% used. Threshold 67 → NOT low.
+                d.Thresholds.Add(new Threshold { AssetType = "Software", ThresholdValue = 67 });
+            });
+
+            var svc = NewSvc(db);
+            var row = Assert.Single(await svc.GetSummaryAsync(new[] { "Software" }));
+
+            Assert.Equal(3, row.Total);
+            Assert.Equal(2, row.Available);           // two titles still available
+            Assert.Equal(67, row.Threshold);
+            Assert.False(row.IsLow);                  // 33% used < 67% → not low
+        }
     }
 }

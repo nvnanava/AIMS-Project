@@ -62,6 +62,17 @@
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
   --shadow-lg: 0 6px 12px rgba(0, 0, 0, 0.2);
+
+  /* ------------------------------
+     Shared tokens to unify dropdown menus
+     ------------------------------ */
+  --aims-dropdown-bg: var(--neutral-bg);
+  --aims-dropdown-border: var(--secondary);
+  --aims-dropdown-text: var(--secondary);
+  --aims-dropdown-hover-bg: var(--accent);
+  --aims-dropdown-hover-text: #fff;
+
+
 }
 
 html {
@@ -245,4 +256,78 @@ body {
   border-radius: 8px;
   padding: 12px;
   min-height: 89vh;
+}
+
+/* === Unified Dropdown / Select Styling === */
+
+.dropdown-menu,
+.aims-select-menu {
+  background-color: #f7f9fa;
+  border: 2px solid var(--secondary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  color: var(--secondary);
+}
+
+.dropdown-item,
+.aims-select-item {
+  display: block;
+  padding: 8px 12px;
+  color: var(--secondary);
+  background: transparent;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.dropdown-item:hover,
+.aims-select-item:hover,
+.dropdown-item.active,
+.dropdown-item:active,
+.aims-select-item[aria-selected="true"],
+.aims-select-item[data-active="true"] {
+  background-color: var(--accent) !important;
+  color: #fff;
+}
+
+.btn.dropdown-toggle,
+.aims-select-toggle {
+  background: var(--neutral-bg);
+  border: 2px solid var(--secondary);
+  color: var(--secondary);
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  padding: 6px 12px;
+  transition: all 0.15s ease;
+}
+
+.btn.dropdown-toggle:hover,
+.aims-select-toggle:hover,
+.btn.dropdown-toggle:focus,
+.aims-select-toggle:focus {
+  background-color: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.35);
+  outline: none;
+}
+
+.btn.dropdown-toggle::after,
+.aims-select-caret {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  border-top-color: currentColor;
+}
+
+/* Smaller AIMS select variant — used on Search page */
+.aims-select-sm,
+.aims-select-sm+.aims-select-toggle {
+  font-size: 0.9rem;
+  padding: 4px 10px;
+  height: 34px;
+  line-height: 1.2;
+}
+
+.aims-select-sm .aims-select-item {
+  padding: 6px 10px;
+  font-size: 0.9rem;
 }

@@ -1,0 +1,8 @@
+﻿{
+  AssetType: Laptop,
+  Total: 3,
+  Available: 2,
+  AvailablePercent: 67.0,
+  Threshold: 2,
+  IsLow: false
+}

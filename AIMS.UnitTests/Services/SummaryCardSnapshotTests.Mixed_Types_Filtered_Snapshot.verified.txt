@@ -1,0 +1,18 @@
+﻿[
+  {
+    AssetType: Laptop,
+    Total: 1,
+    Available: 1,
+    AvailablePercent: 100.0,
+    Threshold: 5,
+    IsLow: true
+  },
+  {
+    AssetType: Software,
+    Total: 1,
+    Available: 1,
+    AvailablePercent: 100.0,
+    Threshold: 50,
+    IsLow: false
+  }
+]

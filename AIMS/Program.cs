@@ -9,6 +9,7 @@ using AIMS.Services;
 using AIMS.Utilities; // TestAuthHandler
 using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.RateLimiting;
@@ -35,6 +36,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
+builder.Services.AddScoped<SoftwareSeatService>();
 
 // Route constraint for allow-listed asset types (used for /assets/{type:allowedAssetType})
 builder.Services.Configure<RouteOptions>(o =>
@@ -71,6 +73,7 @@ builder.Services.AddScoped<AuditLogQuery>();
 // builder.Services.AddScoped<FeedbackQuery>(); # Scaffolded
 builder.Services.AddScoped<AssetSearchQuery>();
 builder.Services.AddScoped<ReportsQuery>();
+builder.Services.AddScoped<OfficeQuery>();
 
 // SignalR for real-time audit updates
 builder.Services.AddSignalR(o =>
@@ -199,7 +202,7 @@ if (useTestAuth)
 }
 else
 {
-    // Hybrid scheme: OAuth web app for MVC, JWT for /api
+    // Hybrid scheme: OAuth web app for MVC, JWT for callers that actually send Bearer tokens
     builder.Services
         .AddAuthentication(options =>
         {
@@ -210,9 +213,13 @@ else
         .AddPolicyScheme("AppOrApi", "AppOrApi", options =>
         {
             options.ForwardDefaultSelector = ctx =>
-                ctx.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase)
+            {
+                var authz = ctx.Request.Headers.Authorization.ToString();
+                var hasBearer = authz.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
+                return hasBearer
                     ? JwtBearerDefaults.AuthenticationScheme
-                    : OpenIdConnectDefaults.AuthenticationScheme;
+                    : OpenIdConnectDefaults.AuthenticationScheme; // <- forward to OIDC (Microsoft Identity Web manages Cookies)
+            };
         })
         .AddJwtBearer(options =>
         {
