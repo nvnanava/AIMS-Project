@@ -181,6 +181,60 @@
                     bootstrap.Modal.getOrCreateInstance(modalEl).show();
                 });
             }
+
+            const form = document.getElementById("searchLogsForm");
+            if (!form) return;
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                const fromDateStr = document.getElementById("fromDate")?.value;
+                const toDateStr = document.getElementById("toDate")?.value;
+                const actorId = document.getElementById("actorInput")?.value?.trim();
+                const actionType  = document.getElementById("actionType")?.value;
+
+                const fromDate = fromDateStr ? new Date(fromDateStr + "T00:00:00") : null;
+                const toDate   = toDateStr   ? new Date(toDateStr + "T23:59:59.999") : null;
+
+                const rows = document.querySelectorAll(".audit-log-table tbody tr, .admin-table-body tbody tr");
+
+                rows.forEach(row => {
+                    const tsCell = row.cells?.[1]; // Timestamp column
+                    const userCell = row.cells?.[2]; // User column
+                    const actionCell = row.cells?.[3]; // Action column
+
+                    if (!tsCell || !userCell || !actionCell) return;
+
+                    const rowDate = new Date(tsCell.textContent.trim());
+                    const rowUser = (userCell.textContent || "").trim();
+                    const rowAction = (actionCell.textContent || "").trim();
+
+                    let show = true;
+
+                    // Apply date filter
+                    if (fromDate && rowDate < fromDate) show = false;
+                    if (toDate && rowDate > toDate) show = false;
+
+                    // Apply actor filter
+                    if (actorId && rowUser !== actorId) show = false;
+
+                    // Apply action filter
+                    if (actionType && actionType !== "" && rowAction !== actionType) show = false;
+
+                    row.style.display = show ? "" : "none";
+                });
+
+                // Reset pagination to first page
+                if (window.AuditPager) window.AuditPager.applyPagination(true);
+
+                // Close the modal
+                const modalEl = document.getElementById('searchLogsModal');
+                if (modalEl && window.bootstrap && bootstrap.Modal) {
+                    bootstrap.Modal.getInstance(modalEl)?.hide();
+                }
+                
+            });
+
         });
     </script>
 }

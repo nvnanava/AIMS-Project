@@ -15,7 +15,7 @@ public class AssetsController : Controller
 
         var tableData = new List<Dictionary<string, string>> {
             new() { {"Asset Name", "Lenovo ThinkPad E16"}, {"Type", "Laptop"}, {"Tag #", "LT-0020"}, {"Status", "Assigned"} },
-            new() { {"Asset Name", "Dell S2421NX"}, {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Status", "Assigned"} },
+            new() { {"Asset Name", "Dell S2421NX"}, {"Type", "Monitor"}, {"Tag #", "MN-0001"}, {"Status", "Archived"} },
             new() { {"Asset Name", "HP EliteBook 840 G7"}, {"Type", "Laptop"}, {"Tag #", "DT-0011"}, {"Status", "Surveyed"} },
             new() { {"Asset Name", "iMac Pro"}, {"Type", "Desktop"}, {"Tag #", "DT-2020"}, {"Status", "Assigned"} },
             new() { {"Asset Name", "Macbook Pro 2021"}, {"Type", "Laptop"}, {"Tag #", "SW-0100"}, {"Status", "Assigned"} },
