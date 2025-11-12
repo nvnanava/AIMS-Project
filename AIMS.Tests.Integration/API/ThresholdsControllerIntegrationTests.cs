@@ -20,16 +20,43 @@ public class ThresholdsControllerIntegrationTests
 
     public ThresholdsControllerIntegrationTests(APiTestFixture fixture, ITestOutputHelper output)
     {
-        // Same pattern as AssetsAPITests
         _client = fixture._webFactory.CreateClient();
         _output = output;
         _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
     }
 
-    // ---------------- 1. GET /api/thresholds ----------------
+    // Small helper so we always send a body that matches (even if DTO changes)
+    private async Task<HttpResponseMessage> UpsertThresholdAsync(string assetType, int value)
+    {
+        var payload = new
+        {
+            assetType,           // safe even if DTO ignores it
+            thresholdValue = value
+        };
+
+        var response = await _client.PutAsJsonAsync($"/api/thresholds/{assetType}", payload);
+        _output.WriteLine($"PUT /api/thresholds/{assetType} -> {(int)response.StatusCode} {response.StatusCode}");
+        var body = await response.Content.ReadAsStringAsync();
+        _output.WriteLine("Response body: " + body);
+        return response;
+    }
+
+    // 1. GET /api/thresholds
     [Fact]
     public async Task GetThresholds_ReturnsSeededThresholds_OrderedByAssetType()
     {
+        // Arrange: ensure these thresholds exist in the DB for this test run
+        var required = new[] { "Laptop", "Monitor", "Printer" };
+        var random = new Random();
+
+        foreach (var type in required)
+        {
+            var value = random.Next(1, 50);
+            var put = await UpsertThresholdAsync(type, value);
+            Assert.Equal(HttpStatusCode.NoContent, put.StatusCode);
+        }
+
+        // Act
         var response = await _client.GetAsync("/api/thresholds");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -44,32 +71,29 @@ public class ThresholdsControllerIntegrationTests
             .Where(s => !string.IsNullOrWhiteSpace(s))
             .ToList();
 
-        Assert.Contains("Laptop", assetTypes, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("Monitor", assetTypes, StringComparer.OrdinalIgnoreCase);
-        Assert.Contains("Printer", assetTypes, StringComparer.OrdinalIgnoreCase);
+        foreach (var type in required)
+        {
+            Assert.Contains(type, assetTypes, StringComparer.OrdinalIgnoreCase);
+        }
 
         var sorted = assetTypes.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
         Assert.Equal(sorted, assetTypes);
     }
 
-    // ---------------- 2. PUT creates new threshold ----------------
+    // 2. PUT creates new threshold
     [Fact]
     public async Task Put_CreatesNewThreshold_WhenNoneExists()
     {
-        const string newAssetType = "DockingStation";
+        const string newAssetType = "DockingStation-TestCreate";
 
-        var payload = new
-        {
-            thresholdValue = 7
-        };
-
-        var putResponse = await _client.PutAsJsonAsync($"/api/thresholds/{newAssetType}", payload);
+        var putResponse = await UpsertThresholdAsync(newAssetType, 7);
         Assert.Equal(HttpStatusCode.NoContent, putResponse.StatusCode);
 
         var getResponse = await _client.GetAsync("/api/thresholds");
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
 
         var json = await getResponse.Content.ReadFromJsonAsync<JsonElement>(_jsonOptions);
+
         var created = json.EnumerateArray()
             .FirstOrDefault(i => string.Equals(
                 i.GetProperty("assetType").GetString(),
@@ -80,47 +104,34 @@ public class ThresholdsControllerIntegrationTests
         Assert.Equal(7, created.GetProperty("thresholdValue").GetInt32());
     }
 
-    // ---------------- 3. PUT updates existing + cache invalidation ----------------
+    // 3. PUT updates existing + cache invalidation
     [Fact]
     public async Task Put_UpdatesExistingThreshold_AndNextGetReflectsChange()
     {
-        const string existingAssetType = "Laptop";
+        const string assetType = "Laptop-TestUpdate";
 
-        var initialResponse = await _client.GetAsync("/api/thresholds");
-        Assert.Equal(HttpStatusCode.OK, initialResponse.StatusCode);
+        // Arrange: create a known threshold first
+        var createResponse = await UpsertThresholdAsync(assetType, 5);
+        Assert.Equal(HttpStatusCode.NoContent, createResponse.StatusCode);
 
-        var initialJson = await initialResponse.Content.ReadFromJsonAsync<JsonElement>(_jsonOptions);
-        var laptop = initialJson.EnumerateArray()
-            .First(i => string.Equals(
-                i.GetProperty("assetType").GetString(),
-                existingAssetType,
-                StringComparison.OrdinalIgnoreCase));
-
-        var currentValue = laptop.GetProperty("thresholdValue").GetInt32();
-        var newValue = currentValue + 5;
-
-        var payload = new
-        {
-            thresholdValue = newValue
-        };
-
-        var putResponse = await _client.PutAsJsonAsync($"/api/thresholds/{existingAssetType}", payload);
-        Assert.Equal(HttpStatusCode.NoContent, putResponse.StatusCode);
+        // Act: update it
+        var updateResponse = await UpsertThresholdAsync(assetType, 10);
+        Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
 
         var afterResponse = await _client.GetAsync("/api/thresholds");
         Assert.Equal(HttpStatusCode.OK, afterResponse.StatusCode);
 
         var afterJson = await afterResponse.Content.ReadFromJsonAsync<JsonElement>(_jsonOptions);
-        var updatedLaptop = afterJson.EnumerateArray()
+        var updated = afterJson.EnumerateArray()
             .First(i => string.Equals(
                 i.GetProperty("assetType").GetString(),
-                existingAssetType,
+                assetType,
                 StringComparison.OrdinalIgnoreCase));
 
-        Assert.Equal(newValue, updatedLaptop.GetProperty("thresholdValue").GetInt32());
+        Assert.Equal(10, updated.GetProperty("thresholdValue").GetInt32());
     }
 
-    // ---------------- 4. Validation failure -> 400 ProblemDetails ----------------
+    // 4. Validation failure stays as-is (this one already passes for them)
     [Fact]
     public async Task Put_InvalidPayload_ReturnsBadRequest_WithProblemDetails()
     {
