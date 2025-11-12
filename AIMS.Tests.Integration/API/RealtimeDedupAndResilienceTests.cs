@@ -108,7 +108,6 @@ namespace AIMS.Tests.Integration
                 ExternalId = Guid.NewGuid(),
                 // Non-nullable in model: supply a dummy GraphObjectID
                 GraphObjectID = Guid.NewGuid().ToString("D"),
-                IsActive = true,
                 IsArchived = false,
                 RoleID = role.RoleID,
                 SupervisorID = null

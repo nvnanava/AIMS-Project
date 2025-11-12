@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AIMS.Contracts;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Queries;
 using AIMS.Services;
 using AIMS.UnitTests;
 using Microsoft.AspNetCore.Mvc;
@@ -42,11 +43,12 @@ namespace AIMS.Tests.Api
             _conn.Dispose();
         }
 
-        private static AdminUsersApiController MakeController(AimsDbContext db)
+        private static AdminUsersApiController MakeController(AIMS.Data.AimsDbContext db)
         {
             return new AdminUsersApiController(
                 svc: new FakeUpsertService(), // not used in these tests
-                db: db
+                db: db,
+                officeQuery: new OfficeQuery(db)
             );
         }
 

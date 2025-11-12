@@ -1,11 +1,11 @@
 using System.Threading; // for CancellationToken
+using AIMS.Contracts;
 using AIMS.Data;
+using AIMS.Models;   // for User model
 using AIMS.Queries;
 using AIMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using AIMS.Contracts;
-using AIMS.Models;   // for User model
 using Microsoft.EntityFrameworkCore;
 
 
@@ -147,45 +147,47 @@ public class AdminUsersApiController : ControllerBase
 
         return NoContent();
     }
-// POST /api/admin/users/unarchive/{id}
-[HttpPost("unarchive/{id:int}")]
-public async Task<IActionResult> Unarchive(
-    int id,
-    [FromServices] IAuditEventBroadcaster audit,
-    CancellationToken ct)
-{
-    var u = await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.UserID == id, ct);
-    if (u is null) return NotFound();
-
-    if (u.IsArchived)
+    // POST /api/admin/users/unarchive/{id}
+    [HttpPost("unarchive/{id:int}")]
+    public async Task<IActionResult> Unarchive(
+        int id,
+        [FromServices] IAuditEventBroadcaster audit,
+        CancellationToken ct)
     {
-        u.IsArchived = false;
-        u.ArchivedAtUtc = null;
-        await _db.SaveChangesAsync(ct);
+        var u = await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.UserID == id, ct);
+        if (u is null) return NotFound();
 
-        _db.AuditLogs.Add(new AuditLog {
-            Action       = "Unarchive User",
-            AssetKind    = AssetKind.User,
-            HardwareID   = null,
-            SoftwareID   = null,
-            Description  = $"Unarchived user {u.FullName} ({u.UserID})",
-            TimestampUtc = DateTime.UtcNow,
-            UserID       = u.UserID
-        });
-        await _db.SaveChangesAsync(ct);
+        if (u.IsArchived)
+        {
+            u.IsArchived = false;
+            u.ArchivedAtUtc = null;
+            await _db.SaveChangesAsync(ct);
 
-        await audit.BroadcastAsync(new AuditEventDto {
-            Id            = u.UserID.ToString(),
-            OccurredAtUtc = DateTime.UtcNow,
-            Type          = "Unarchive User",
-            User          = $"{u.FullName} ({u.UserID})",
-            Target        = $"User#{u.UserID}",
-            Details       = "Unarchived"
-        });
+            _db.AuditLogs.Add(new AuditLog
+            {
+                Action = "Unarchive User",
+                AssetKind = AssetKind.User,
+                HardwareID = null,
+                SoftwareID = null,
+                Description = $"Unarchived user {u.FullName} ({u.UserID})",
+                TimestampUtc = DateTime.UtcNow,
+                UserID = u.UserID
+            });
+            await _db.SaveChangesAsync(ct);
+
+            await audit.BroadcastAsync(new AuditEventDto
+            {
+                Id = u.UserID.ToString(),
+                OccurredAtUtc = DateTime.UtcNow,
+                Type = "Unarchive User",
+                User = $"{u.FullName} ({u.UserID})",
+                Target = $"User#{u.UserID}",
+                Details = "Unarchived"
+            });
+        }
+
+        return NoContent();
     }
-
-    return NoContent();
-}
 
 }
 

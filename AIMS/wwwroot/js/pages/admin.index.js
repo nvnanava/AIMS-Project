@@ -627,16 +627,6 @@
             });
         }
 
-        // wire office search functionality
-        const officeInput = document.getElementById("userOffice");
-        if (officeInput) {
-            officeInput.addEventListener("input", () => {
-                const q = officeInput.value.trim();
-                clearTimeout(aadDebounceTimer);
-                aadDebounceTimer = setTimeout(() => searchOffices(q), 250);
-            });
-        }
-
         // ----- Click-away to close the AAD suggestion list -----
         document.addEventListener("click", (e) => {
             const box = document.getElementById("aadUserResults");

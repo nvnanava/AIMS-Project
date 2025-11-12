@@ -64,7 +64,6 @@ namespace AIMS.Tests.Integration.Controllers
                 EmployeeNumber = "U-001",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true,
                 IsArchived = false,
                 RoleID = 0
             };
@@ -160,7 +159,7 @@ namespace AIMS.Tests.Integration.Controllers
                 EmployeeNumber = "U-NA",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true
+                IsArchived = false
             };
             ctx.Users.Add(u);
             await ctx.SaveChangesAsync();
@@ -239,7 +238,7 @@ namespace AIMS.Tests.Integration.Controllers
                 EmployeeNumber = "U-1",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true
+                IsArchived = false
             };
             var sw = new Software
             {

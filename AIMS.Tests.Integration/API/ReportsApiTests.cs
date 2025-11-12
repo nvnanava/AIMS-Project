@@ -171,7 +171,6 @@ public class ReportsApiTests
             EmployeeNumber = "ITEST-001",
             ExternalId = Guid.NewGuid(),
             GraphObjectID = Guid.NewGuid().ToString("D"),
-            IsActive = true,
             IsArchived = false,
             RoleID = role.RoleID,
         };

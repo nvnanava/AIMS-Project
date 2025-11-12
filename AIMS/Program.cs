@@ -45,6 +45,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
 builder.Services.AddScoped<SoftwareSeatService>();
+builder.Services.AddScoped<OfficeQuery>();
 
 builder.Services.Configure<RouteOptions>(o =>
 {
