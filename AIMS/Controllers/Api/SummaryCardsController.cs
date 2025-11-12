@@ -8,11 +8,12 @@ namespace AIMS.Controllers.Api;
 [ApiController]
 [Route("api/summary")]
 public class SummaryCardsController : ControllerBase
+// SummaryCard Interface for testing
 {
-    private readonly SummaryCardService _svc;
+    private readonly ISummaryCardService _svc;
     private readonly ILogger<SummaryCardsController> _logger;
 
-    public SummaryCardsController(SummaryCardService svc, ILogger<SummaryCardsController> logger)
+    public SummaryCardsController(ISummaryCardService svc, ILogger<SummaryCardsController> logger)
     {
         _svc = svc;
         _logger = logger;
