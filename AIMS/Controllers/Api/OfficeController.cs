@@ -16,6 +16,7 @@ public class DebugController : ControllerBase
         _context = context;
     }
 
+    // Get a List of Offices in the local DB
     [HttpGet("offices")]
     public async Task<IActionResult> GetOffices()
     {
@@ -25,6 +26,7 @@ public class DebugController : ControllerBase
 
         return Ok(offices);
     }
+
 
     [HttpPost("seed-offices")]
     public async Task<IActionResult> SeedOffices()

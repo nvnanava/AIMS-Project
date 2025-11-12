@@ -26,25 +26,37 @@
 
             <div class="modal-body aimsds-body">
                 <form id="addUserForm" onsubmit="AIMS.Admin.addUser(event)">
-                    <label for="userName" class="form-label fw-bold">Name</label>
+                     <!-- Hidden: holds the Azure AD object id from the picker -->
+                    <input type="hidden" id="graphObjectId" name="graphObjectId" />
+                    <label for="userName" class="form-label fw-bold">Name <span class="text-danger">*</span>
+                        </label>
                     <input type="text" id="userName" class="form-control" placeholder="Start typing a name.."
                         autocomplete="off" />
                     <div id="aadUserResults" class="aad-user-results"></div>
 
-                    <label for="userEmail" class="form-label fw-bold mt-2">Email</label>
+                    <label for="userEmail" class="form-label fw-bold mt-2">Email <span class="text-danger">*</span></label>
                     <input type="email" id="userEmail" class="form-control" required />
 
-                    <label for="userRole" class="form-label fw-bold mt-2">Role</label>
-                    <select id="userRole" class="aims-select" required>
-                        <option value="Admin">Admin</option>
-                        <option value="User">User</option>
+                    <label for="userRole" class="form-label fw-bold mt-2">Role <span class="text-danger">*</span></label>
+                    <select id="userRole" class="form-select">
+                    <option value="">-- choose --</option>
+                    <option value="1">Admin</option>
+                    <option value="2">Supervisor</option>
+                    <option value="3">User</option>
                     </select>
 
-                    <label for="userStatus" class="form-label fw-bold mt-2">Status</label>
+                    <label for="userOffice" class="form-label fw-bold mt-2">Office <span class="text-danger">*</span></label>
+                    <input type="text" id="userOffice" class="form-control" required />
+                     <div id="officeResults" class="office-results"></div>
+
+                    <label for="userStatus" class="form-label fw-bold mt-2">Status <span class="text-danger">*</span></label>
                     <select id="userStatus" class="aims-select" required>
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
                     </select>
+                    <div id="userExistsNotice" class="text-danger d-none" role="alert">
+                    User is already in the system.
+                                            </div>
 
                     <button type="submit" class="add-btn mt-4 w-100">Add User</button>
                 </form>

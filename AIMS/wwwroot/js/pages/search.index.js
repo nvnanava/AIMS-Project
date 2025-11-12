@@ -48,14 +48,17 @@
     let lastQuery = null;
 
     // ----- Show archived state ----------------------------------------------
-    const showArchivedSwitch = document.getElementById("showArchivedSwitch");
     let showArchived = false;
-    if (showArchivedSwitch) {
-        showArchivedSwitch.addEventListener("change", async () => {
-            showArchived = showArchivedSwitch.checked;
-            await fetchInitial(activeQuery(), 1, pageSize);
-        });
-    }
+
+    // archive-filter.js is loaded globally from _Layout
+    AIMSFilterIcon.init("searchFilters", {
+        onChange: ({ showArchived: newVal }) => {
+            showArchived = newVal;
+            // Re-fetch using existing AIMS.Search infrastructure
+            const q = (lastQuery ?? activeQuery() ?? "").trim();
+            fetchInitial(q, 1, pageSize);
+        }
+    });
 
     // ----- Scoped CSS attr (Blazor/razor isolation friendly) ----------------
     const scopeAttrName = (() => {
@@ -79,6 +82,20 @@
     // ----- Helpers -----------------------------------------------------------
     const clearBody = () => { while (tbody.firstChild) tbody.removeChild(tbody.firstChild); };
     const setEmpty = (isEmpty) => { empty.hidden = !isEmpty; };
+
+    // ----- Public refresh helpers ---------------------------------------------
+    AIMS.Search.refresh = function refresh() {
+        const q = (lastQuery ?? activeQuery() ?? "").trim();
+        fetchInitial(q, currentPage, pageSize);
+    };
+
+    // new helper to refresh with explicit query (used by navbar)
+    AIMS.Search.refreshQuery = async function (newQuery) {
+        const clean = (newQuery ?? "").trim();
+        if (!clean) return;
+        lastQuery = clean;
+        await fetchInitial(clean, 1, pageSize);
+    };
 
     // Zebra striping on visible rows
     function applyZebra() {
@@ -402,15 +419,15 @@
         const ver = (window.__ASSETS_VER__ ? String(window.__ASSETS_VER__) : String(Date.now()));
         url.searchParams.set("_v", ver);
 
+        //cancel old request if still in progress
+        aimsFetch.abort(url.toString());
+
         startLoading();
 
         try {
-            const res = await fetch(url.toString(), {
-                cache: "no-store",
-                headers: { "Cache-Control": "no-cache, no-store" }
+            const data = await aimsFetch(url.toString(), {
+                ttl: 30,
             });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
 
             await waitForMinimum();
 

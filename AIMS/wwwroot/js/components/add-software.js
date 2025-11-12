@@ -359,34 +359,39 @@ document.addEventListener('DOMContentLoaded', function () {
                 Comment: (l.Comment || '').trim()
             }));
 
-            const res = await fetch('/api/software/add-bulk', {
+            const data = await aimsFetch('/api/software/add-bulk', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                ttl: 0, //don't cache
                 body: JSON.stringify(cleaned)
             });
 
-            if (res.ok) {
-                const modal = bootstrap.Modal.getInstance(softwareDetailsModal);
-                if (modal) modal.hide();
-
-                await new Promise(r => setTimeout(r, 250));
-                clearSaveProgress();
-                await refreshSoftwareList();
+            const modal = bootstrap.Modal.getInstance(softwareDetailsModal);
+            if (modal) modal.hide();
+            await new Promise(r => setTimeout(r, 250));
+            clearSaveProgress();
+            await refreshSoftwareList();
+            return;
+        } catch (err) {
+            if (err.name === 'AbortError') {
                 return;
             }
-
-            let data;
-            try { data = await res.json(); }
-            catch { data = { title: `HTTP ${res.status}`, detail: await res.text() }; }
-
-            console.warn('add-bulk failed:', data);
-            showServerErrorsInline(data);
-        } catch (error) {
-            showServerErrors({ error: 'Server response error: ' + (error?.message || error || 'Unknown error') });
-        } finally {
-            isSubmitting = false;
+            if (err.isValidation && err.data) {
+                showServerErrorsInline(err.data);
+                return;
+            }
+            // 3) Fallback unexpected error
+            showErrorMessages(
+                {
+                    title: "Server error",
+                    detail: err?.data?.message || err?.message || "Unexpected error"
+                },
+                errorBox
+            );
         }
+
+        isSubmitting = false;
     });
+
 
     // ---------------- save/load progress ----------------
     const saveBtn = document.getElementById('saveSoftwareProgress');

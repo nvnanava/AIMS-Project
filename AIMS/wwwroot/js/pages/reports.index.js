@@ -47,11 +47,18 @@
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td><input class="form-check-input report-checkbox" type="checkbox" data-id="${r.reportID}"></td>
-                <td class="cell-name"><span class="cell-text">${r.name || "-"}</span></td>
+                <td class="cell-name">
+                    <span class="report-preview-btn"
+                            data-report-id="${r.reportID}"
+                            style="cursor: pointer;">
+                        ${r.name || "-"}
+                    </span>
+                </td>
                 <td><span class="cell-text">${r.type || "-"}</span></td>
                 <td><span class="cell-text">${r.description || "-"}</span></td>
                 <td><span class="cell-text">${r.generatedByOfficeString || "-"}</span></td>
                 <td><span class="cell-text">${r.dateCreated ? new Date(r.dateCreated).toLocaleString() : "-"}</span></td>
+                <td><span class="cell-text">${r.generatedByUserName || "-"}</span></td>
             `;
             frag.appendChild(tr);
         });
@@ -60,32 +67,69 @@
         wireRowModalOpeners();
     }
 
-    // Open preview modal based on “Type” column in the main table only
+    // Dynamically open preview modal and load content
     function wireRowModalOpeners() {
-        const rows = document.querySelectorAll(".report-table tbody tr");
-        rows.forEach(row => {
-            const nameCell = row.querySelector("td:nth-child(2)");
-            const typeCell = row.querySelector("td:nth-child(3)");
-            if (!nameCell || !typeCell) return;
+        tableBody.addEventListener("click", async (e) => {
+            const btn = e.target.closest(".report-preview-btn");
+            if (!btn) return;
 
-            nameCell.style.cursor = "pointer";
-            nameCell.addEventListener("click", () => {
-                const reportType = typeCell.textContent.trim();
-                let modalId = "";
-                switch (reportType) {
-                    case "Asset Report": modalId = "#assetReportModal"; break;
-                    case "Custom Report": modalId = "#customReportModalView"; break;
-                    case "Asset Assignments to Users": modalId = "#assetAssignmentsToUsersModal"; break;
-                    case "Assets Assigned to an Office": modalId = "#assetsAssignedToOfficeModal"; break;
-                    default: modalId = ""; break;
+            const reportId = btn.dataset.reportId;
+            const modalEl = document.getElementById("reportPreviewModal");
+            const modalTitle = document.getElementById("reportPreviewModalLabel");
+            const modalBody = document.getElementById("reportPreviewContent");
+            const modal = new bootstrap.Modal(modalEl);
+
+            // Show the modal immediately
+            modalTitle.textContent = "Loading report preview...";
+            modalBody.innerHTML = `<div class="text-center text-muted p-4">Loading...</div>`;
+            modal.show();
+
+            try {
+                const resp = await fetch(`/api/reports/preview/${reportId}`, { cache: "no-store" });
+                if (!resp.ok) throw new Error(`Failed to load report (HTTP ${resp.status})`);
+
+                const data = await resp.json();
+
+                // Set modal title to the report name
+                modalTitle.textContent = data.name || `Report ${reportId}`;
+
+                if (!data.previewRows || data.previewRows.length === 0) {
+                    modalBody.innerHTML = `<p class="text-muted text-center p-4">No data available in this report.</p>`;
+                    return;
                 }
-                if (modalId) {
-                    const el = document.querySelector(modalId);
-                    if (el) new bootstrap.Modal(el).show();
-                }
-            });
+
+                // Build table dynamically
+                const headers = Object.keys(data.previewRows[0])
+
+                const titleCaseHeaders = headers.map(h => h.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
+                let html = `
+                <p><strong>Created:</strong> ${new Date(data.dateCreated).toLocaleString()}</p>
+                <p><strong>Total Rows:</strong> ${data.totalRows}</p>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm align-middle">
+                        <thead class="table-light">
+                            <tr>${titleCaseHeaders.map(h => `<th>${h}</th>`).join("")}</tr>
+                        </thead>
+                        <tbody>
+                            ${data.previewRows.map(row => `
+                                <tr>${headers.map(h => `<td>${row[h] ?? ""}</td>`).join("")}</tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+                modalBody.innerHTML = html;
+
+            } catch (err) {
+                console.error(err);
+                modalTitle.textContent = "Error loading report";
+                modalBody.innerHTML = `<div class="text-danger text-center p-4">${err.message}</div>`;
+            }
         });
     }
+
+
 
     // -------- Data load --------------------------------------------------
     async function loadReports() {
@@ -139,7 +183,7 @@
         for (const cb of selected) {
             const id = cb.getAttribute("data-id");
             try {
-                const resp = await fetch(`/download/${id}`);
+                const resp = await fetch(`api/reports/download/${id}`);
                 if (!resp.ok) throw new Error(`Failed to download report ${id}`);
 
                 // Try to pick filename from content-disposition
@@ -179,7 +223,7 @@
             const startDate = document.getElementById("dateRange1")?.value || "";
             const endDate = document.getElementById("dateRange2")?.value || "";
             const description = (document.getElementById("inputDescription")?.value || "").trim();
-            const CreatorUserID = 1; // replace with real user id
+            const CreatorUserID = window.pageData.user; // replace with real user id
 
             if (!reportName) return alert("Please enter a report name.");
             if (!startDate) return alert("Please select a start date.");
@@ -191,7 +235,7 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, { method: "POST" });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateAssignmentReport"))?.hide();
                 reportToast?.show();
@@ -209,7 +253,7 @@
             const startDate = document.getElementById("officeStartDate")?.value || "";
             const endDate = document.getElementById("officeEndDate")?.value || "";
             const description = (document.getElementById("officeDescription")?.value || "").trim();
-            const CreatorUserID = 1;
+            const CreatorUserID = window.pageData.user;
 
             if (!reportName) return alert("Please enter a report name.");
             if (!officeId) return alert("Please select an office number.");
@@ -222,7 +266,7 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, { method: "POST" });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateOfficeReport"))?.hide();
                 reportToast?.show();
@@ -239,7 +283,7 @@
             const startDate = document.getElementById("customStartDate")?.value || "";
             const endDate = document.getElementById("customEndDate")?.value || "";
             const description = (document.getElementById("customDescription")?.value || "").trim();
-            const CreatorUserID = 1;
+            const CreatorUserID = window.pageData.user;
 
             const customOptions = {
                 seeHardware: document.getElementById("seeHardware")?.checked ?? true,
@@ -258,10 +302,15 @@
             });
             if (endDate) params.append("end", endDate);
             if (description) params.append("desc", description);
-            params.append("customOptions", JSON.stringify(customOptions));
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(customOptions)
+                });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateCustomReport"))?.hide();
                 reportToast?.show();

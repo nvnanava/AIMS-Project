@@ -1,0 +1,6 @@
+﻿{
+  AssetType: Software,
+  Total: 1,
+  Threshold: 100,
+  IsLow: true
+}

@@ -18,7 +18,8 @@ public class GraphUserService : IGraphUserService
         var usersResponse = await _graphClient.Users.GetAsync(requestConfig =>
         {
             requestConfig.QueryParameters.Top = 10;
-            requestConfig.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName" };
+            // in modern AAD, office names are stored under the officeLocation key
+            requestConfig.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName", "officeLocation" };
             if (!string.IsNullOrEmpty(search))
             {
                 requestConfig.QueryParameters.Filter = $"startswith(displayName,'{search}')";
@@ -31,5 +32,24 @@ public class GraphUserService : IGraphUserService
     {
         var result = await _graphClient.Users[userId].MemberOf.GetAsync();
         return result?.Value?.ToList() ?? new List<DirectoryObject>();
+    }
+
+    // Fetch a single user by Graph object id
+    public async Task<User?> GetUserByIdAsync(string graphObjectId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(graphObjectId)) //guardrail in case of invalid input
+            throw new ArgumentException("Graph object id is required.", nameof(graphObjectId));
+
+        try
+        {
+            return await _graphClient.Users[graphObjectId].GetAsync(cfg =>
+            {
+                cfg.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName" }; //this can be extended as needed
+            }, ct);
+        }
+        catch (Microsoft.Graph.Models.ODataErrors.ODataError ex) when (ex.Error?.Code == "Request_ResourceNotFound")
+        {
+            return null; // not found in AAD
+        }
     }
 }

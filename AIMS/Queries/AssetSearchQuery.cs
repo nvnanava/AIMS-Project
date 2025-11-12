@@ -47,10 +47,6 @@ public sealed class AssetSearchQuery
         if (string.IsNullOrWhiteSpace(type) && !string.IsNullOrWhiteSpace(category))
             type = category;
 
-
-        var countFiltered = await _db.HardwareAssets.CountAsync();
-        var countIgnored = await _db.HardwareAssets.IgnoreQueryFilters().CountAsync();
-
         // ----- building base IQueryable based on Archived filter ---------------
         var hardwareQuery = showArchived
         ? _db.HardwareAssets.AsNoTracking().IgnoreQueryFilters()
@@ -69,7 +65,7 @@ public sealed class AssetSearchQuery
                 SoftwareID = null,
                 AssetName = h.AssetName ?? "",
                 Type = h.AssetType ?? "",
-                Tag = h.SerialNumber ?? "",
+                Tag = h.AssetTag ?? "",
                 IsArchived = h.IsArchived,
 
                 Status = _db.Assignments
@@ -313,20 +309,40 @@ public sealed class AssetSearchQuery
         }
         else
         {
-            var email =
-                http.User.FindFirst("preferred_username")?.Value
-                ?? http.User.FindFirstValue(ClaimTypes.Email)
-                ?? http.User.Identity?.Name;
+            // 1) Try AAD Object ID (Graph Object ID) from claims
+            var oid = http.User.FindFirst("oid")?.Value
+                ?? http.User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
 
-            var emp =
-                http.User.FindFirst("employee_number")?.Value
-                ?? http.User.FindFirst("employeeNumber")?.Value;
+            if (!string.IsNullOrWhiteSpace(oid))
+            {
+                user = await _db.Users.AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.GraphObjectID == oid, ct);
+            }
 
-            if (!string.IsNullOrWhiteSpace(email))
-                user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
+            // 2) Fallback to email / employee number if OID not present or not matched
+            if (user is null)
+            {
+                var email =
+                    http.User.FindFirst("preferred_username")?.Value
+                    ?? http.User.FindFirstValue(ClaimTypes.Email)
+                    ?? http.User.Identity?.Name;
 
-            if (user is null && !string.IsNullOrWhiteSpace(emp))
-                user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.EmployeeNumber == emp, ct);
+                var emp =
+                    http.User.FindFirst("employee_number")?.Value
+                    ?? http.User.FindFirst("employeeNumber")?.Value;
+
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    user = await _db.Users.AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Email == email, ct);
+                }
+
+                if (user is null && !string.IsNullOrWhiteSpace(emp))
+                {
+                    user = await _db.Users.AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.EmployeeNumber == emp, ct);
+                }
+            }
         }
 
         if (user is null) return (null, null);

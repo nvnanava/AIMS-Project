@@ -42,6 +42,12 @@
         if (!row) {
             dot?.classList.remove("green", "red");
             dot?.classList.add("yellow");
+
+            const txt = card.querySelector(".availability, .runningLow");
+            if (txt) {
+                txt.classList.remove("runningLow", "availability");
+                txt.classList.add("availability");
+            }
             return;
         }
 
@@ -49,17 +55,36 @@
         const available = Number(row.available ?? row.Available ?? 0);
         const threshold = Number(row.threshold ?? row.Threshold ?? 0);
         const availablePercent = total ? Math.round((available / total) * 100) : 0;
+        const isSoftware = (String(card.dataset.assetType || "").trim().toLowerCase() === "software");
+
+        // Software uses percent used; all other types use available count
+        const used = Math.max(0, total - available);
+        const usedPct = total ? Math.round((used / total) * 100) : 0;
+        const isLow = isSoftware
+            ? (threshold > 0 && usedPct >= threshold)
+            : (threshold > 0 && available < threshold);
 
         if (elTotal) elTotal.textContent = total;
         if (elAvail) elAvail.textContent = available;
         if (elPct) elPct.textContent = availablePercent;
 
         dot?.classList.remove("green", "red", "yellow");
-        dot?.classList.add(threshold > 0 && available < threshold ? "red" : (total === 0 ? "yellow" : "green"));
+        if (total === 0) dot?.classList.add("yellow");
+        else dot?.classList.add(isLow ? "red" : "green");
 
-        card.title = threshold > 0
-            ? `Threshold: ${threshold} • Available: ${available}/${total}`
-            : `Available: ${available}/${total}`;
+        card.title = isSoftware
+            ? (threshold > 0
+                ? `Threshold: ${threshold}% used • Used: ${used}/${total} (${usedPct}%)`
+                : `Used: ${used}/${total} (${usedPct}%)`)
+            : (threshold > 0
+                ? `Threshold: ${threshold} • Available: ${available}/${total}`
+                : `Available: ${available}/${total}`);
+
+        const txt = card.querySelector(".availability, .runningLow");
+        if (txt) {
+            txt.classList.remove("runningLow", "availability");
+            txt.classList.add(isLow ? "runningLow" : "availability");
+        }
     }
 
     // ---- ICONS ----
@@ -91,17 +116,16 @@
         let rows = [];
 
         try {
-            const res = await fetch(`/api/summary/cards?types=${qs}`, { cache: "no-store" });
-            if (res.ok) rows = await res.json();
+            const url = `/api/summary/cards?types=${qs}&ts=${Date.now()}`; // cache-bust
+            aimsFetch.abort(url);
+            const res = await aimsFetch(url, { ttl: 0, cache: "no-store" }); // no client cache
+            rows = Array.isArray(res) ? res : [];
         } catch {
             // ignore network errors; leave existing numbers in place
         }
 
-        const byType = new Map(
-            rows.map(r => [String(r.assetType || r.AssetType).toLowerCase(), r])
-        );
-
-        cards.forEach((card) => {
+        const byType = new Map(rows.map(r => [String(r.assetType || r.AssetType).toLowerCase(), r]));
+        cards.forEach(card => {
             const key = String(card.dataset.assetType || "").toLowerCase();
             const row = byType.get(key);
             paintNumbersAndStatusFromRow(card, row);
