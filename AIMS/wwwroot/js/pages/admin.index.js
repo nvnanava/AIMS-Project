@@ -373,11 +373,20 @@
 
         const tdActions = document.createElement("td");
         tdActions.innerHTML = `
-            <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
-                <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
-                    <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
-                </svg>
-            </button>`;
+        <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
+            <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
+                <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
+            </svg>
+        </button>`;
+
+        const editBtn = tdActions.querySelector("button.icon-btn");
+        if (editBtn) {
+            editBtn.dataset.id = u.Id != null ? String(u.Id) : "";
+            editBtn.dataset.name = u.Name ?? "";
+            editBtn.dataset.email = u.Email ?? "";
+            editBtn.dataset.status = u.Status ?? "Active";
+            editBtn.dataset.isArchived = u.IsArchived ? "true" : "false";
+        }
 
         const tdName = document.createElement("td");
         text(tdName, u.Name);
@@ -385,10 +394,8 @@
         text(tdEmail, u.Email);
         const tdRole = document.createElement("td");
         text(tdRole, u.Role);
-
         const tdStatus = document.createElement("td");
         tdStatus.innerHTML = `<span class="badge ${statusClass}">${u.Status}</span>`;
-
         const tdSep = document.createElement("td");
         text(tdSep, u.SeparationDate || " ");
 
@@ -506,10 +513,12 @@
 
             // Insert the saved row into the table
             insertUserRow({
+                Id: saved.userID ?? saved.userId ?? null,
                 Name: saved.fullName,
                 Email: saved.email,
                 Role: getRoleNameFromId(roleId) || "",
                 Status: status,
+                IsArchived: false,
                 SeparationDate: "",
             });
 
@@ -697,8 +706,7 @@
             btn.dataset.status === "Inactive" ? "true" : "false";
 
         document.getElementById("editUserName").value = btn.dataset.name || "";
-        document.getElementById("editUserEmail").value =
-            btn.dataset.email || "";
+        document.getElementById("editUserEmail").value = btn.dataset.email || "";
 
         const statusSelect = document.getElementById("editUserStatus");
         statusSelect.value =
@@ -718,6 +726,8 @@
         sep.value = btn.dataset.archivedat
             ? new Date(btn.dataset.archivedat + "Z").toLocaleDateString()
             : "";
+        
+        showModalById("editUserModal");
     };
 
     AIMS.Admin.saveUserEdit = async function (e) {
