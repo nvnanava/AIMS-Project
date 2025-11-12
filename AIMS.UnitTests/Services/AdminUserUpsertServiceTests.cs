@@ -65,7 +65,6 @@ public class AdminUserUpsertServiceTests
         Assert.Equal(graphId, saved.GraphObjectID);
         Assert.Equal("Ada Lovelace", saved.FullName);
         Assert.Equal("ada@contoso.com", saved.Email);
-        Assert.True(saved.IsActive);
         Assert.False(saved.IsArchived);
         Assert.Equal(5, saved.RoleID);
 
@@ -89,7 +88,6 @@ public class AdminUserUpsertServiceTests
             FullName = "Old Name",
             Email = "old@contoso.com",
             EmployeeNumber = "abcdef01",
-            IsActive = false,
             IsArchived = false,
             RoleID = 1
         });
@@ -107,7 +105,6 @@ public class AdminUserUpsertServiceTests
         Assert.NotNull(saved);
         Assert.Equal("Updated Name", saved.FullName);
         Assert.Equal("updated@contoso.com", saved.Email);
-        Assert.True(saved.IsActive);
         Assert.False(saved.IsArchived);
         Assert.Equal(7, saved.RoleID);
         Assert.Equal(3, saved.SupervisorID);
@@ -132,7 +129,6 @@ public class AdminUserUpsertServiceTests
             FullName = "Archived Name",
             Email = "archived@contoso.com",
             EmployeeNumber = "aaaa0001",
-            IsActive = false,
             IsArchived = true,
             RoleID = 2
         });
@@ -150,7 +146,6 @@ public class AdminUserUpsertServiceTests
         Assert.NotNull(saved);
         Assert.Equal("Resurrected", saved.FullName);
         Assert.Equal("back@contoso.com", saved.Email);
-        Assert.True(saved.IsActive);
         Assert.False(saved.IsArchived);
         Assert.Equal(9, saved.RoleID);
 
@@ -175,7 +170,6 @@ public class AdminUserUpsertServiceTests
                 FullName = "Already There",
                 Email = "already@contoso.com",
                 EmployeeNumber = "seed0001",
-                IsActive = true,
                 IsArchived = false,
                 RoleID = 1
             });

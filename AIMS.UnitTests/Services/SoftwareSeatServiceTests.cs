@@ -86,7 +86,6 @@ namespace AIMS.UnitTests.Services
                 EmployeeNumber = "U-001",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true,
                 IsArchived = false,
                 RoleID = 0
             };
@@ -133,7 +132,6 @@ namespace AIMS.UnitTests.Services
                 EmployeeNumber = employeeNumber,
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true,
                 IsArchived = false,
                 RoleID = 0
             };
@@ -206,7 +204,6 @@ namespace AIMS.UnitTests.Services
                 EmployeeNumber = employeeNumber ?? "",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true,
                 IsArchived = false,
                 RoleID = 0
             };
@@ -311,7 +308,7 @@ namespace AIMS.UnitTests.Services
                 EmployeeNumber = "U-002",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true,
+                IsArchived = false,
                 RoleID = 0
             };
             var u3 = new User
@@ -321,7 +318,7 @@ namespace AIMS.UnitTests.Services
                 EmployeeNumber = "U-003",
                 ExternalId = Guid.NewGuid(),
                 GraphObjectID = Guid.NewGuid().ToString("N"),
-                IsActive = true,
+                IsArchived = false,
                 RoleID = 0
             };
             ctx.Users.AddRange(u2, u3);

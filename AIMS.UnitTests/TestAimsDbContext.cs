@@ -1,4 +1,5 @@
 using AIMS.Data;
+using AIMS.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -31,5 +32,19 @@ public sealed class TestAimsDbContext : AimsDbContext
                 }
             }
         }
+
+        // Update the AuditLog constraint to allow User actions (AssetKind = 3)
+        modelBuilder.Entity<AIMS.Models.AuditLog>()
+            .ToTable(tb => tb.HasCheckConstraint(
+                "CK_AuditLog_ExactlyOneAsset",
+                @"
+                (
+                    ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)
+                    OR
+                    ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)
+                    OR
+                    ([AssetKind] = 3 AND [HardwareID] IS NULL AND [SoftwareID] IS NULL)
+                )"
+            ));
     }
 }

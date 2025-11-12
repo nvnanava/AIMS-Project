@@ -90,12 +90,25 @@
         const rows = types.map(t => {
             const key = t.toLowerCase();
             const s = byTypeSummary.get(key);
+
+            const total = Number(s?.total ?? 0);
+            const available = Number(s?.available ?? 0);
+            const threshold = byTypeThreshold.get(key) ?? 0;
+
+            const isSoftware = (key === "software");
+            const used = Math.max(0, total - available);
+            const usedPct = total ? Math.round((used / total) * 100) : 0;
+
+            const isLow = isSoftware
+                ? (threshold > 0 && usedPct >= threshold) // software uses % used
+                : (threshold > 0 && available < threshold); // hardware uses count available
+
             return {
                 assetType: t,
-                threshold: byTypeThreshold.get(key) ?? 0,
-                total: Number(s?.total ?? 0),
-                available: Number(s?.available ?? 0),
-                isLow: Boolean(s?.isLow),
+                threshold,
+                total,
+                available,
+                isLow,
                 visible: visibleSet.has(key),
             };
         }).sort((a, b) => a.assetType.localeCompare(b.assetType));
@@ -125,20 +138,27 @@
                 }
             });
 
-            // threshold input
+            // threshold input (percent for software; count otherwise)
+            const isSoftware = r.assetType.trim().toLowerCase() === "software";
             const thresholdInput = el("input", {
                 type: "number",
                 min: "0",
+                max: isSoftware ? "100" : undefined,
                 step: "1",
                 value: r.threshold,
-                "aria-label": `Threshold for ${r.assetType}`
+                "aria-label": `Threshold for ${r.assetType}${isSoftware ? " (% used)" : ""}`
             });
             thresholdInput.dataset.original = String(r.threshold);
+
+            // add a little suffix for clarity
+            const thresholdCell = el("td", {});
+            thresholdCell.append(thresholdInput);
+            if (isSoftware) thresholdCell.append(" %");
 
             // status capsule
             const statusClass = (r.total === 0) ? "empty" : (r.isLow ? "low" : "ok");
             const statusCapsule = el("span", { class: `aimsds-capsule ${statusClass}` },
-                (r.total === 0) ? "Empty" : (r.isLow ? "Low" : "OK")
+                (r.total === 0) ? "Empty" : (r.isLow ? "LOW" : "OK")
             );
 
             tr.append(
@@ -193,21 +213,31 @@
             const input = tr._thresholdInput;
             if (!assetType || !input) continue;
 
-            const newVal = parseInt(input.value ?? "0", 10);
+            // normalize per-type (Software = % used 0–100; others = non-negative count)
+            const isSoftware = (assetType || "").trim().toLowerCase() === "software";
+            const newValRaw = parseInt(input.value ?? "0", 10);
+            if (Number.isNaN(newValRaw)) continue;
+
+            const normalized = isSoftware
+                ? Math.max(0, Math.min(100, newValRaw))
+                : Math.max(0, newValRaw);
+
+            // reflect any clamping back into the UI so dataset.original comparison makes sense
+            if (normalized !== newValRaw) input.value = String(normalized);
+
             const oldVal = parseInt(input.dataset.original ?? "0", 10);
-            if (Number.isNaN(newVal) || newVal < 0) continue;
-            if (newVal === oldVal) continue;
+            if (normalized === oldVal) continue;
 
             putOps.push(
                 fetch(`/api/thresholds/${encodeURIComponent(assetType)}`, {
                     method: "PUT",
                     credentials: "same-origin",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ assetType, thresholdValue: newVal })
+                    body: JSON.stringify({ assetType, thresholdValue: normalized })
                 })
             );
         }
-
+        
         // 2) Persist visibility from current checkboxes
         const visibleNow = new Set();
         for (const tr of rowEls) {
@@ -259,7 +289,12 @@
                 const threshold = thMap.get(key) ?? 0;
                 const available = Number(s?.available ?? 0);
                 const total = Number(s?.total ?? 0);
-                const isLow = threshold > 0 && available < threshold;
+                const isSoftware = key === "software";
+                const used = Math.max(0, total - available);
+                const usedPct = total ? Math.round((used / total) * 100) : 0;
+                const isLow = isSoftware
+                    ? (threshold > 0 && usedPct >= threshold)
+                    : (threshold > 0 && available < threshold);
                 return { assetType: t, threshold, total, available, isLow, visible: visibleNow.has(key) };
             }).sort((a, b) => a.assetType.localeCompare(b.assetType));
 
@@ -290,6 +325,13 @@
                     if (d.total === 0) dot.classList.add("yellow");
                     else if (d.isLow) dot.classList.add("red");
                     else dot.classList.add("green");
+                }
+
+                const txt = card.querySelector(".availability, .runningLow");
+                if (txt) {
+                    // hard reset to the correct single class
+                    txt.classList.remove("runningLow", "availability");
+                    txt.classList.add(d.isLow ? "runningLow" : "availability");
                 }
 
                 card.title = d.threshold > 0

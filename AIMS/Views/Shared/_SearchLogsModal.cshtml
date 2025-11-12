@@ -1,14 +1,15 @@
 @* ======================================================================
    Partial: _SearchLogsModal
-   Purpose: Shared modal for searching and filtering logs
-   Triggered by Filter Icon (Task 4A / Audit Log Integration)
+   Purpose: Shared modal for filtering Audit Logs
+   Triggered by Filter Icon (Audit Log page)
+   Accepts: from, to, actor, kind, includeArchived
    ====================================================================== *@
 
 <div class="modal fade" id="searchLogsModal" tabindex="-1" aria-labelledby="searchLogsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow-lg border-0">
             <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="searchLogsModalLabel">Search Logs</h5>
+                <h5 class="modal-title" id="searchLogsModalLabel">Filter Logs</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Close"></button>
             </div>
@@ -16,40 +17,67 @@
             <div class="modal-body">
                 <form id="searchLogsForm">
                     <div class="row g-3">
+
+                        <!-- Date Range -->
                         <div class="col-md-6">
-                            <label for="searchUserId" class="form-label fw-bold">User ID</label>
-                            <input type="text" class="form-control" id="searchUserId" placeholder="e.g., U001">
+                            <label for="fromDate" class="form-label fw-bold">From</label>
+                            <input type="date" class="form-control warranty-input" id="fromDate" name="from" />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="toDate" class="form-label fw-bold">To</label>
+                            <input type="date" class="form-control warranty-input" id="toDate" name="to" />
                         </div>
 
+                        <!-- Actor (Autocomplete) -->
                         <div class="col-md-6">
-                            <label for="searchAction" class="form-label fw-bold">Action Type</label>
-                            <select id="searchAction" class="form-select">
+                            <label for="actorInput" class="form-label fw-bold">Actor</label>
+                            <input type="text" class="form-control" id="actorInput" name="actor"
+                                   placeholder="Search by user ID" autocomplete="off" />
+                            <div id="actorSuggestions" class="list-group position-absolute w-100 d-none"></div>
+                        </div>
+
+                        <!-- Action Type -->
+                        <div class="col-md-6">
+                            <label for="actionType" class="form-label fw-bold">Asset Type</label>
+                            <select id="actionType" name="kind" class="form-select">
                                 <option value="">All</option>
-                                <option value="Create">Create</option>
                                 <option value="Assign">Assign</option>
                                 <option value="Unassign">Unassign</option>
                                 <option value="Update">Update</option>
-                                <option value="Delete">Delete</option>
+                                <option value="Install">Install</option>
+                                <option value="Create">Create</option>
+                                <option value="Remove">Remove</option>
+                                <option value="License Renewed">License Renewed</option>
+                                <option value="License Expired">License Expired</option>
                             </select>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="searchAssetId" class="form-label fw-bold">Asset ID</label>
-                            <input type="text" class="form-control" id="searchAssetId" placeholder="e.g., A101">
-                        </div>
+                        <!-- Asset Type -->
+                        <!-- <div class="col-md-6">
+                            <label for="assetKind" class="form-label fw-bold">Asset Type</label>
+                            <select id="assetKind" name="kind" class="form-select">
+                                <option value="">All</option>
+                                <option value="Hardware">Hardware</option>
+                                <option value="Software">Software</option>
+                            </select>
+                        </div> -->
 
-                        <div class="col-md-6">
-                            <label for="searchDateRange" class="form-label fw-bold">Date Range</label>
-                            <input type="text" class="form-control" id="searchDateRange"
-                                placeholder="YYYY-MM-DD to YYYY-MM-DD">
-                        </div>
+                        <!-- Archived -->
+                        <!-- <div class="col-12">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" value="true" id="includeArchived" name="includeArchived" />
+                                <label class="form-check-label fw-semibold" for="includeArchived">
+                                    Include Archived Logs
+                                </label>
+                            </div>
+                        </div> -->
                     </div>
                 </form>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" form="searchLogsForm" class="btn btn-primary">Search</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="searchLogsForm" class="btn btn-primary">Apply Filters</button>
             </div>
         </div>
     </div>

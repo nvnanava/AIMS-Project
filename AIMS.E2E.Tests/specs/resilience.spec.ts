@@ -26,7 +26,9 @@ async function findInPagedTable(page: Page, table: Locator, text: string): Promi
 
 test('Resilience: offline → back online → missed events appear', async ({ page, request, context }) => {
     await page.goto('/AuditLog');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('#auditTable', { timeout: 10_000 });
+
 
     await context.setOffline(true);
 
@@ -43,7 +45,8 @@ test('Resilience: offline → back online → missed events appear', async ({ pa
 
     await context.setOffline(false);
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('#auditTable', { timeout: 10_000 });
 
     const table = page.locator('#auditTable');
 

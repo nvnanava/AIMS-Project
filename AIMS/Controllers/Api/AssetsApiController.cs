@@ -262,6 +262,13 @@ public class AssetsApiController : ControllerBase
             withEff = withEff.Where(t => sset.Contains(t.StatusEff.ToLower()));
         }
 
+        // ---------- Archived filter ----------
+        if (!showArchived)
+        {
+            // Exclude any asset whose derived status is "archived"
+            withEff = withEff.Where(t => t.StatusEff == null || t.StatusEff.ToLower() != "archived");
+        }
+
         // ---------- Sorting ----------
         bool asc = string.Equals(dir, "asc", StringComparison.OrdinalIgnoreCase);
         IOrderedQueryable<dynamic> ordered;

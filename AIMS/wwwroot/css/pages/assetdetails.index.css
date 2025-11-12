@@ -2,8 +2,8 @@
   width: 70%;
   margin: 20px auto;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: visible;
 }
@@ -17,7 +17,21 @@
 
 .asset-table thead {
   background: #2c3e50;
-  color: #fff
+  color: #fff;
+  overflow: hidden;
+}
+
+.asset-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.asset-table thead tr:first-child th:first-child {
+  border-top-left-radius: 10px;
+}
+
+.asset-table thead tr:first-child th:last-child {
+  border-top-right-radius: 10px;
 }
 
 .asset-table th,
@@ -46,7 +60,7 @@
 
 .status-badge {
   padding: 5px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   display: inline-block
@@ -80,10 +94,10 @@
 .actions-header,
 .asset-table th:last-child,
 .asset-table td:last-child {
-  width: 120px;
+  width: auto;
   position: relative;
   text-align: center;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .actions-title {
@@ -116,22 +130,35 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 48px;
+  height: 100%;
 }
 
 .action-btn {
-  border: 0 !important;
-  box-shadow: none !important;
-  background: transparent;
-  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border: none !important;
+  background: transparent;
+  padding: 0;
+  border-radius: 10px;
   cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+  transition: transform 0.1s ease, background-color 0.2s ease;
 }
 
 .action-btn:hover {
-  background: rgba(0, 0, 0, .06)
+  background: rgba(0, 0, 0, 0.06);
+  transform: scale(1.15);
+}
+
+.action-btn svg {
+  display: block;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
 }
 
 .action-btn:focus {
@@ -180,7 +207,7 @@
   color: #34495e;
   border: 3px solid #34495e;
   box-shadow: 0 4px 4px #0000003e;
-  border-radius: 20px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
   transition: border-color .15s ease-out, box-shadow .15s ease-out, transform .15s ease-out;

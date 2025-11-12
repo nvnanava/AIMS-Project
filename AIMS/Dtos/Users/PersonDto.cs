@@ -7,4 +7,8 @@ public sealed class PersonDto
     public string Name { get; set; } = "";
 
     public int? OfficeID { get; set; }
+
+    public bool IsArchived { get; set; } // this defaults to false
+
+    public DateTime? ArchivedAtUtc { get; set; } //null when not archived
 }

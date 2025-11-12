@@ -7,9 +7,18 @@
             "launchBrowser": true,
             "applicationUrl": "http://localhost:5119",
             "environmentVariables": {
-                "ASPNETCORE_ENVIRONMENT": "Development",
-                "UseTestAuth": "true"
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
+        "AIMS (E2E)": {
+            "commandName": "Project",
+            "dotnetRunMessages": true,
+            "launchBrowser": false,
+            "applicationUrl": "http://localhost:5119",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "E2E",
+                "ConnectionStrings__DockerConnection": "Server=localhost,1433;Database=AIMS_Test_E2E;User Id=sa;Password=StrongP@ssword!;TrustServerCertificate=True;Encrypt=False"
             }
         }
     }
-}
+} 

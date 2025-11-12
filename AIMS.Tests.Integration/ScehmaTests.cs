@@ -19,6 +19,51 @@ namespace AIMS.Tests.Integration
                 .ToUpperInvariant()
                 .Substring(0, 16);
 
+        private static int InsertTestUser(
+            SqlConnection con,
+            SqlTransaction tx,
+            int roleId,
+            string fullName = "Test User",
+            string email = "test@x.y",
+            string employeeNumber = "E000")
+        {
+            // detect optional columns
+            var hasIsActive = con.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Users') AND name = 'IsActive'",
+                transaction: tx) > 0;
+
+            var hasIsArchived = con.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Users') AND name = 'IsArchived'",
+                transaction: tx) > 0;
+
+            var hasGraphObjectId = con.ExecuteScalar<int>(
+                "SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Users') AND name = 'GraphObjectID'",
+                transaction: tx) > 0;
+
+            // Build column list + values to match schema
+            var cols = new List<string> { "ExternalId", "FullName", "Email", "EmployeeNumber", "RoleID" };
+            var vals = new List<string> { "@eid", "@fn", "@em", "@emp", "@rid" };
+
+            if (hasGraphObjectId) { cols.Add("GraphObjectID"); vals.Add("@goid"); }
+            if (hasIsActive) { cols.Add("IsActive"); vals.Add("1"); }
+            if (hasIsArchived) { cols.Add("IsArchived"); vals.Add("0"); }
+
+            var sql = $@"
+        INSERT INTO Users({string.Join(",", cols)})
+        VALUES ({string.Join(",", vals)});
+        SELECT CAST(SCOPE_IDENTITY() AS int);";
+
+            return con.QuerySingle<int>(sql, new
+            {
+                eid = Guid.NewGuid(),
+                fn = fullName,
+                em = email,
+                emp = employeeNumber,
+                rid = roleId,
+                goid = Guid.NewGuid().ToString("D")
+            }, tx);
+        }
+
         [Fact]
         public void Connection_Opens()
         {
@@ -235,11 +280,7 @@ namespace AIMS.Tests.Integration
                 INSERT INTO Roles(RoleName, Description) VALUES ('Tester','Temp');
                 SELECT CAST(SCOPE_IDENTITY() AS int);", transaction: tx);
 
-            var userId = con.QuerySingle<int>(@"
-                INSERT INTO Users(ExternalId, FullName, Email, EmployeeNumber, IsActive, RoleID)
-                VALUES (@eid,'Test User','test@x.y','E000',1,@rid);
-                SELECT CAST(SCOPE_IDENTITY() AS int);",
-                new { eid = Guid.NewGuid(), rid = roleId }, tx);
+            var userId = InsertTestUser(con, tx, roleId);
 
             // Neither HardwareID nor SoftwareID set
             Action act = () => con.Execute(@"
@@ -274,11 +315,7 @@ namespace AIMS.Tests.Integration
                 INSERT INTO Roles(RoleName, Description) VALUES ('Tester','Temp');
                 SELECT CAST(SCOPE_IDENTITY() AS int);", transaction: tx);
 
-            var userId = con.QuerySingle<int>(@"
-                INSERT INTO Users(ExternalId, FullName, Email, EmployeeNumber, IsActive, RoleID)
-                VALUES (@eid,'Test User','test@x.y','E000',1,@rid);
-                SELECT CAST(SCOPE_IDENTITY() AS int);",
-                new { eid = Guid.NewGuid(), rid = roleId }, tx);
+            var userId = InsertTestUser(con, tx, roleId);
 
             // One hardware + one software to reference
             var hwId = con.QuerySingle<int>(@"
@@ -384,11 +421,7 @@ namespace AIMS.Tests.Integration
                 SELECT CAST(SCOPE_IDENTITY() AS int);",
                 new { n = "Tester", d = "Temp role for test" }, tx);
 
-            var userId = con.QuerySingle<int>(@"
-                INSERT INTO Users(ExternalId, FullName, Email, EmployeeNumber, IsActive, RoleID)
-                VALUES (@eid, @fn, @em, @emp, 1, @rid);
-                SELECT CAST(SCOPE_IDENTITY() AS int);",
-                new { eid = Guid.NewGuid(), fn = "Test User", em = "test@x.y", emp = "E000", rid = roleId }, tx);
+            var userId = InsertTestUser(con, tx, roleId);
 
             // Hardware with a valid 16-char AssetTag
             var hwId = con.QuerySingle<int>(@"
