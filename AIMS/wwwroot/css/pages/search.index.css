@@ -415,13 +415,6 @@ nav {
   box-shadow: 0 0 12px rgba(46, 204, 113, .25);
 }
 
-/* Emphasize the hovered cell in the expanded row */
-.asset-table-body tr.expand-row td.expanded-source {
-  outline: 2px solid rgba(26, 188, 156, .35);
-  outline-offset: -2px;
-  background-clip: padding-box;
-}
-
 .asset-table-body tr:nth-child(even) {
   background: #ECF0F1;
 }
@@ -524,6 +517,13 @@ nav {
   border-color: #95a5a6;
 }
 
+/* Software: no seats left */
+.asset-table-body .status.seatsfull {
+  background: #fadbd8;
+  /* light red */
+  border-color: #e74c3c;
+}
+
 #table-body>tr.zebra-even td {
   background: #ECF0F1 !important;
 }
@@ -570,6 +570,21 @@ nav {
   align-items: center;
   gap: 8px;
   justify-content: center;
+}
+
+.seats-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2ch;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  background: #ecf0f1;
+  color: #34495e;
+  border: 2px solid #34495e;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, .12);
 }
 
 /* Skeletons */

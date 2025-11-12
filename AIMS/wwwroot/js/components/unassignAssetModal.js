@@ -16,11 +16,25 @@
         const hiddenId = document.getElementById("unassignAssignmentId");
         const commentBox = document.getElementById("unassignCommentBox");
 
+        // Helpers to avoid null derefs
+        const safeText = (el, txt) => { if (el) el.textContent = txt; };
+        const safeVal  = (el, val) => { if (el) el.value = val; };
+        const showToast = (msg) => {
+            const t = document.getElementById("errorToast");
+            if (t) {
+                const body = t.querySelector(".toast-body");
+                if (body) body.innerHTML = msg;
+                new bootstrap.Toast(t, { delay: 3000 }).show();
+            }
+        };
+
         const assetsVer = (window.__ASSETS_VER__ ? String(window.__ASSETS_VER__) : String(Date.now()));
         const cacheHeaders = { "Cache-Control": "no-cache, no-store" };
 
         async function fetchActiveAssignments() {
-            return await aimsFetch(`/api/assign/list?status=active&_v=${assetsVer}`, { headers: cacheHeaders });
+            const list = await aimsFetch(`/api/assign/list?status=active&_v=${assetsVer}`, { headers: cacheHeaders });
+            // Normalize to array
+            return Array.isArray(list) ? list : (list?.items ?? []);
         }
 
         async function fetchAssetSummary(kind, id) {
@@ -35,43 +49,74 @@
         // Populate modal from Search event
         window.addEventListener("unassign:open", async (ev) => {
             const d = ev.detail || {};
-            const assetKind = Number(d.assetKind) === 2 ? 2 : 1;
-            const assetId = Number(d.assetNumericId);
-            const userId = Number(d.currentUserId);
-            let assignmentId = d.assignmentID ? Number(d.assignmentID) : NaN;
+            try {
+                console.debug("[unassign] open detail:", d);
+                const assetKind = Number(d.assetKind) === 2 ? 2 : 1;
+                const assetId   = Number(d.assetNumericId);
+                const userId    = Number(d.currentUserId ?? d.userId);
+                // accept assignmentId in either casing
+                let assignmentIdRaw = d.assignmentID ?? d.assignmentId;
+                let assignmentId = Number.isFinite(Number(assignmentIdRaw)) ? Number(assignmentIdRaw) : NaN;
 
-            // Resolve assignmentId if not provided
-            if (!Number.isFinite(assignmentId)) {
-                try {
-                    const list = await fetchActiveAssignments();
-                    const match = list.find(a =>
-                        Number(a.userID) === userId &&
-                        (assetKind === 1 ? Number(a.hardwareID ?? -1) === assetId
+                // Resolve assignmentId if not provided
+                if (!Number.isFinite(assignmentId)) {
+                    try {
+                        const list = await fetchActiveAssignments();
+                        // Prefer exact (asset + user) match when userId is available.
+                        let match = null;
+                        if (Number.isFinite(userId) && userId > 0) {
+                        match = list.find(a =>
+                            Number(a.userID) === userId &&
+                            (assetKind === 1
+                            ? Number(a.hardwareID ?? -1) === assetId
                             : Number(a.softwareID ?? -1) === assetId)
-                    );
-                    if (match) assignmentId = Number(match.assignmentID);
-                } catch { /* ignore */ }
-            }
-
-            // Fill name/tag if missing
-            let name = (d.assetName || "").trim();
-            let tag = (d.assetTag || "").trim();
-            if (!name || !tag) {
-                const one = Number.isFinite(assetId) ? await fetchAssetSummary(assetKind, assetId) : null;
-                if (one) {
-                    if (!name) name = one.assetName || "";
-                    if (!tag) tag = one.tag || String(assetId || "—");
+                        );
+                        }
+                        // Fallback: if no userId, try first active assignment for this asset.
+                        if (!match) {
+                        match = list.find(a =>
+                            (assetKind === 1
+                            ? Number(a.hardwareID ?? -1)
+                            : Number(a.softwareID ?? -1)) === assetId
+                        );
+                        }
+                        if (match) assignmentId = Number(match.assignmentID);
+                    } catch (e) {
+                        console.warn("[unassign] failed to fetch/resolve assignment list:", e);
+                    }
                 }
+
+                // Fill name/tag if missing
+                let name = (d.assetName || "").trim();
+                let tag  = (d.assetTag || "").trim();
+                if (!name || !tag) {
+                    const one = Number.isFinite(assetId) ? await fetchAssetSummary(assetKind, assetId) : null;
+                    if (one) {
+                        if (!name) name = one.assetName || "";
+                        if (!tag)  tag  = one.tag || String(assetId || "—");
+                    }
+                }
+
+                // Safely populate fields
+                safeText(selName, name || "—");
+                safeText(selTag, tag || (Number.isFinite(assetId) ? `(${assetId})` : "—"));
+                safeText(selKind, assetKind === 2 ? "Software" : "Hardware");
+                safeText(selAssnId, Number.isFinite(assignmentId) ? String(assignmentId) : "—");
+                safeVal(hiddenId, Number.isFinite(assignmentId) ? String(assignmentId) : "");
+
+                // If we still couldn't resolve, nudge the user rather than failing silently.
+                if (!hiddenId?.value) {
+                    console.warn("Unassign modal: could not resolve AssignmentID for", { assetKind, assetId, userId });
+                    showToast("Couldn’t find the active assignment for this asset.");
+                }
+                if (commentBox) commentBox.value = "";
+                modal.show();
+            } catch (err) {
+                console.error("[unassign] handler error:", err);
+                showToast("Something went wrong opening the unassign modal.");
+                // Fallback: try to at least show the modal shell so it’s visible during debugging
+                try { modal.show(); } catch {}
             }
-
-            selName.textContent = name || "—";
-            selTag.textContent = tag || (Number.isFinite(assetId) ? `(${assetId})` : "—");
-            selKind.textContent = assetKind === 2 ? "Software" : "Hardware";
-            selAssnId.textContent = Number.isFinite(assignmentId) ? String(assignmentId) : "—";
-            hiddenId.value = Number.isFinite(assignmentId) ? String(assignmentId) : "";
-
-            commentBox.value = "";
-            modal.show();
         });
 
         // Submit unassign

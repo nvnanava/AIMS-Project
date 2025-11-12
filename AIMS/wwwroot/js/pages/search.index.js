@@ -47,14 +47,20 @@
 
     const archivedToggle = document.querySelector('[data-role="show-archived-toggle"]');
 
+    // Normalize many "truthy" representations used by APIs/DBs
+    const asTrue = (v) => {
+        const t = (typeof v === "string") ? v.trim().toLowerCase() : v;
+        return t === true || t === 1 || t === "1" || t === "true" || t === "y" || t === "yes";
+    };
+
     // Role flags
     const asBool = v => String(v).toLowerCase() === "true" || String(v) === "1";
     const CAN_ADMIN = asBool(window.__CAN_ADMIN__);
     const IS_SUPERVISOR = asBool(window.__IS_SUPERVISOR__);
 
     // ---- Normalizers ------------------------------------------------------------
-    const getTag = (row) => String(row.assetTag ?? row.AssetTag ?? row.tag ?? row.Tag ?? "")
-    
+    const getTag = (row) => String(row.assetTag ?? row.AssetTag ?? row.tag ?? row.Tag ?? "");
+
     // ----- Paging / cache state ---------------------------------------------
     let currentPage = 1;
     let pageSize = 5;           // keep in sync with default on server
@@ -76,10 +82,17 @@
     let cacheLoadedPages = new Set();
     let filteredItems = [];    // result after client filters
     let activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+    let _justDidFreshSearch = false;  // force-reset filters/URL on a new search term
+    let restoredFiltersApplied = false; // set true in init() when we rehydrate
+    // Facet caches (for dropdown option lists derived from current results)
+    let facetTypeValues = [];
+    let facetStatusValues = [];
+
 
     // ----- Persistence (reloads only) -------------------------------------------
     const STORAGE_TOGGLE_KEY = "aims.search.showArchived";
     const STORAGE_CACHE_KEY = "aims.search.cache";
+    const STORAGE_FILTERS_KEY = "aims.search.filters.v1";
 
     // nav type: 'reload' vs 'navigate' (modern)
     const _navType = (performance.getEntriesByType?.("navigation")?.[0]?.type) || "navigate";
@@ -140,6 +153,42 @@
         } catch (e) { /* ignore */ }
     }
 
+    // --- Filters snapshot persistence -----------------------------------------
+    function persistFiltersSnapshot() {
+        try {
+            const snapshot = {
+                q: (lastQuery ?? activeQuery() ?? "").trim(),
+                filters: { ...activeFilters },     // name, type, tag, assignment, status (lowercased labels for selects)
+                page: currentPage,
+                archived: !!showArchived
+            };
+            sessionStorage.setItem(STORAGE_FILTERS_KEY, JSON.stringify(snapshot));
+        } catch { /* ignore */ }
+    }
+
+    function readFiltersSnapshotForQuery(q) {
+        try {
+            const raw = sessionStorage.getItem(STORAGE_FILTERS_KEY);
+            if (!raw) return null;
+            const obj = JSON.parse(raw);
+            if ((obj?.q ?? "") !== (q ?? "")) return null;
+            return obj;
+        } catch { return null; }
+    }
+
+    // Match a native <select> option by its TEXT (case-insensitive), then fire 'change'
+    function setSelectByLowerText(selectEl, lowerTxt) {
+        if (!selectEl) return;
+        const want = (lowerTxt || "").trim().toLowerCase();
+        if (!want) return;
+        const opts = Array.from(selectEl.options || []);
+        const hit = opts.find(o => (o.textContent || "").trim().toLowerCase() === want);
+        if (hit) {
+            selectEl.value = hit.value;
+            selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+
     // --- TTL so cached views don't live forever ---
     const CACHE_TTL_MS = 15 * 60_000; // Cache expires every 15 minutes so view isn't stale
     const getEntry = (key) => {
@@ -157,17 +206,52 @@
         persistCacheToSession();
     };
 
+    // ---- Hard reset of all client-side filters/state for a "fresh" search ----
+    function resetAllFiltersAndState() {
+        // Clear in-memory filters
+        activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+        currentPage = 1;
+
+        // Clear inputs
+        if (inputName) inputName.value = "";
+        if (inputTag) inputTag.value = "";
+        if (inputAssn) inputAssn.value = "";
+
+        // Reset selects to their "All" labels (native + custom chrome)
+        if (selectType) {
+            selectType.selectedIndex = 0;
+            // If custom select exists, reflect label
+            if (customType?.button) {
+                customType.button.querySelector(".aims-custom-select__label").textContent = "All Devices";
+                customType.button.dataset.value = "All Devices";
+            }
+        }
+        if (selectStat) {
+            selectStat.selectedIndex = 0;
+            if (customStatus?.button) {
+                customStatus.button.querySelector(".aims-custom-select__label").textContent = "All Status";
+                customStatus.button.dataset.value = "All Status";
+            }
+        }
+
+        // Reset archived toggle to OFF and clear persisted snapshots
+        setArchivedToggleState({ checked: false, disabled: false });
+        try { localStorage.removeItem(STORAGE_TOGGLE_KEY); sessionStorage.removeItem(STORAGE_FILTERS_KEY); } catch {}
+    }
+
+
     const debounce = (fn, ms = 250) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
     const debouncedApply = debounce(() => applyFiltersAndRender({ page: 1 }), 250);
 
     const makeCacheKey = (q, archivedFlag) =>
-         `${(q || "").trim().toLowerCase()}|${archivedFlag ? "1" : "0"}`;
+        `${(q || "").trim().toLowerCase()}|${archivedFlag ? "1" : "0"}`;
 
     // ----- Helpers: detect archived on any DTO shape -----
     const isArchivedRow = (r) => {
-        const flag = (r?.isArchived ?? r?.IsArchived ?? r?.archived ?? r?.Archived) === true;
+        const raw = (r?.isArchived ?? r?.IsArchived ?? r?.archived ?? r?.Archived);
+        const flagged = asTrue(raw);
         const statusText = String(r?.status ?? r?.Status ?? "").trim().toLowerCase();
-        return flag || statusText === "archived";
+        return flagged || statusText === "archived";
     };
 
     // ---------- Overlay positioning helpers (no accumulated transforms) ----------
@@ -255,8 +339,11 @@
                     cacheAllItems = hit.items.slice(0, MAX_CLIENT_CACHE);
                     cacheLoadedPages = new Set(hit.loadedPages || []);
                     pageSize = hit.pageSize || pageSize;
-                    activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
-                    applyFiltersAndRender({ page: 1 });
+                    if (!restoredFiltersApplied) {
+                        activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+                    }
+                    applyFiltersAndRender({ page: restoredFiltersApplied ? (currentPage || 1) : 1 });
+                    persistFiltersSnapshot();
                 } else {
                     // If turning OFF archived and we don't have an active-only cache yet,
                     // derive it from the current items immediately to keep UI snappy.
@@ -269,10 +356,12 @@
                         cacheLoadedPages = new Set();
                         activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
                         applyFiltersAndRender({ page: 1 });
+                        persistFiltersSnapshot();
                     } else {
                         fetchInitial(q, 1, pageSize);
-                    }     
+                    }
                 }
+                persistFiltersSnapshot();
             }
         });
     } catch (e) {
@@ -393,8 +482,42 @@
         empty.hidden = !isEmpty;
     }
 
-    // Normalize status text across DTO shapes
-    const getStatus = (row) => String(row.status ?? row.Status ?? "").trim().toLowerCase();
+    function findRowBySoftwareId(id) {
+        const n = Number(id);
+        return cacheAllItems.find(r => Number(r.softwareID ?? r.SoftwareID ?? r.softwareId) === n);
+    }
+
+    // Normalize status text; if archived, force "archived"
+    const getStatus = (row) => {
+        if (isArchivedRow(row)) return "archived";
+        return String(row.status ?? row.Status ?? "").trim().toLowerCase();
+    };
+
+    // Compute a unified status string for hardware or software
+    const computeStatus = (row) => {
+        // archived check (for any DTO shape)
+        const archived = isArchivedRow(row);
+
+        const swId = row.softwareID ?? row.SoftwareID ?? row.softwareId ?? null;
+        const isSoftware = swId != null;
+        const totalSeats = Number(
+            (row.licenseTotalSeats ?? row.LicenseTotalSeats ?? (isSoftware ? 0 : NaN))
+        );
+        const usedSeats = Number(
+            (row.licenseSeatsUsed ?? row.LicenseSeatsUsed ?? (isSoftware ? 0 : NaN))
+        );
+
+        if (isSoftware) {
+            if (archived) return "Archived";
+            const full = usedSeats >= totalSeats && totalSeats > 0;
+            return full ? "Seats Full" : "Available";
+        }
+
+        // Hardware fallback: respect archived + raw status if present
+        if (archived) return "Archived";
+        const raw = String(row.status ?? row.Status ?? "").trim();
+        return raw || "Available";
+    };
 
     // Lightweight notifier (uses AIMS toast if present; falls back to alert)
     const notify = (msg) =>
@@ -435,17 +558,67 @@
         // Fallback: measure text realistically (handles nested spans/buttons nearby)
         const r = document.createRange();
         r.selectNodeContents(target);
-        const rects = r.getBoundingClientRect();
+        r.getBoundingClientRect();
         const textW = r.getBoundingClientRect().width; // width of inline content
         const cellW = target.getBoundingClientRect().width;
         return textW > (cellW + 0.8);
+    }
+
+    // Sensitivity config and forgiving/strict variants
+    const ELLIPSIS_SENSITIVITY = {
+        pxSlack: 16,
+        ratio: 0.93
+    };
+
+    // Strict: use for tooltips (only when truly clipped)
+    function isTrulyEllipsed(td) {
+        const target = td.querySelector('.ellip') || td;
+        const cs = getComputedStyle(target);
+
+        const singleLine = cs.whiteSpace === "nowrap";
+        const ellipsing = (cs.textOverflow === "ellipsis") || (cs.overflow === "hidden");
+        if (!singleLine || !ellipsing) return false;
+
+        if ((target.scrollWidth - target.clientWidth) > 0.5) return true;
+
+        const r = document.createRange();
+        r.selectNodeContents(target);
+        const textW = r.getBoundingClientRect().width;
+        const cellW = target.getBoundingClientRect().width;
+        return textW > (cellW + 0.8);
+    }
+
+    // Forgiving: use for hover expansion (expand sooner)
+    function isNearEllipsed(td) {
+        const target = td.querySelector('.ellip') || td;
+        const cs = getComputedStyle(target);
+
+        const singleLine = cs.whiteSpace === "nowrap";
+        const ellipsing = (cs.textOverflow === "ellipsis") || (cs.overflow === "hidden");
+        if (!singleLine || !ellipsing) return false;
+
+        // If actually ellipsed, expand.
+        if ((target.scrollWidth - target.clientWidth) > 0.5) return true;
+
+        // Pixel slack: allow near-overflow
+        const delta = target.scrollWidth - target.clientWidth;
+        if (delta > -ELLIPSIS_SENSITIVITY.pxSlack) return true;
+
+        // Ratio: content almost fills the cell
+        const r = document.createRange();
+        r.selectNodeContents(target);
+        const textW = r.getBoundingClientRect().width;
+        const cellW = target.getBoundingClientRect().width;
+        if (cellW > 0 && (textW / cellW) >= ELLIPSIS_SENSITIVITY.ratio) return true;
+
+        return false;
     }
 
     // Re-run tooltips after any layout change (keeps titles accurate)
     function refreshVisibleTooltips() {
         const visibleRows = Array.from(document.querySelectorAll("#table-body > tr:not([hidden])"));
         visibleRows.forEach(tr => Array.from(tr.cells).forEach(td => {
-            if (isEllipsed(td)) td.title = td.textContent.trim();
+            if (isTrulyEllipsed(td)) td.title = td.textContent.trim();
             else td.removeAttribute("title");
         }));
     }
@@ -454,9 +627,35 @@
     AIMS.Search.refresh = function refresh() {
         applyFiltersAndRender({ page: currentPage });
     };
-    AIMS.Search.refreshQuery = async function (newQuery) {
-        const clean = (newQuery ?? "").trim();
+    /**
+     * Start a (possibly fresh) search for a new query.
+     * When fresh=true (default), this:
+     *  - Resets all filters to defaults
+     *  - Turns OFF "Show archived"
+     *  - Updates the URL's ?searchQuery= param via history.pushState
+     *  - Clears any restored filter snapshot for the old query
+     */
+    AIMS.Search.refreshQuery = async function (newQuery, { fresh = true } = {}) {
+        const clean = String(newQuery ?? "").trim();
         if (!clean) return;
+
+        // Treat any change in search term as a fresh search unless explicitly disabled
+        const currentParamQ = activeQuery();
+        const isNewTerm = clean !== (currentParamQ || "") || clean !== (lastQuery || "");
+        const doFresh = fresh || isNewTerm;
+
+        if (doFresh) {
+            _justDidFreshSearch = true;
+            resetAllFiltersAndState();
+            restoredFiltersApplied = false; // ensure fetchInitial doesn’t re-apply old snapshot
+            // Update the browser URL so reloads / sharing keep the term
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("searchQuery", clean);
+                history.pushState({}, "", url.toString());
+            } catch { /* non-fatal */ }
+        }
+
         lastQuery = clean;
         await fetchInitial(clean, 1, pageSize);
     };
@@ -484,11 +683,11 @@
         if (!r) {
             r = document.createElement("tr");
             r.id = "no-results-row";
+            r.className = "no-results-row";
             applyScope(r);
             const td = document.createElement("td");
             applyScope(td);
             td.colSpan = 5;
-            td.className = "no-results-row";
             td.textContent = "No matching results found";
             r.appendChild(td);
             tbody.appendChild(r);
@@ -499,24 +698,37 @@
 
     // Assignment cell (includes 👤 button for Admin/Supervisor)
     function renderAssignmentCell(row) {
-        const displayName = (row.assignedEmployeeNumber && row.assignedTo)
-            ? `${row.assignedTo} (${row.assignedEmployeeNumber})`
-            : (row.assignedTo || "Unassigned");
-
-        const currentUserId = (row.assignedUserId ?? row.assignedEmployeeNumber ?? "") + "";
-
-        const span = document.createElement("span");
-        span.className = "assigned-name";
-        span.dataset.userId = currentUserId;
-        span.textContent = displayName;
-        applyScope(span);
-
         const canShowButton = CAN_ADMIN || IS_SUPERVISOR;
-        if (!canShowButton) {
-            const frag = document.createDocumentFragment();
-            frag.appendChild(span);
-            return frag;
+
+        const isSoftware = (row.softwareID ?? row.SoftwareID ?? row.softwareId) != null;
+        const totalSeats = Number(row.licenseTotalSeats ?? row.LicenseTotalSeats ?? 0);
+        const usedSeats = Number(row.licenseSeatsUsed ?? row.LicenseSeatsUsed ?? 0);
+        const currentUserId = String(row.assignedUserId ?? row.assignedEmployeeNumber ?? "");
+
+        const wrap = document.createElement("span");
+        wrap.className = "assn-cell";
+        applyScope(wrap);
+
+        if (isSoftware) {
+            const seatChip = document.createElement("span");
+            seatChip.className = "seats-count";
+            // show "used / total"
+            const safeUsed = Math.max(0, Math.min(usedSeats, totalSeats));
+            seatChip.textContent = `${safeUsed}/${totalSeats}`;
+            seatChip.title = `${safeUsed} of ${totalSeats} seats in use`;
+            wrap.appendChild(seatChip);
+        } else {
+            const displayName = (row.assignedEmployeeNumber && row.assignedTo)
+                ? `${row.assignedTo} (${row.assignedEmployeeNumber})`
+                : (row.assignedTo || "Unassigned");
+            const name = document.createElement("span");
+            name.className = "assigned-name";
+            name.dataset.userId = currentUserId;
+            name.textContent = displayName;
+            wrap.appendChild(name);
         }
+
+        if (!canShowButton) return wrap;
 
         const btn = document.createElement("button");
         btn.type = "button";
@@ -535,8 +747,12 @@
         btn.dataset.currentUserId = currentUserId;
 
         // Decide enabled vs disabled based on STATUS
-        const statusL = getStatus(row); // "assigned", "available", "in repair", "archived", etc.
-        const isActionable = (statusL === "assigned" || statusL === "available");
+        const statusL = getStatus(row); // "assigned", "available", "archived", ...
+        const statusText = computeStatus(row).toLowerCase();
+        const isActionable = isSoftware
+            ? (statusText !== "archived") // software: anything but Archived can open seat mgmt
+            : (statusL === "assigned" || statusL === "available");
+
 
         if (isActionable) {
             // mint (enabled) style
@@ -559,11 +775,11 @@
         </svg>`;
         applyScope(btn);
 
-        const wrapper = document.createDocumentFragment();
-        wrapper.appendChild(span);
-        wrapper.appendChild(document.createTextNode(" "));
-        wrapper.appendChild(btn);
-        return wrapper;
+        const frag = document.createDocumentFragment();
+        frag.appendChild(wrap);
+        frag.appendChild(document.createTextNode(" "));
+        frag.appendChild(btn);
+        return frag;
     }
 
     function renderRows(items) {
@@ -593,6 +809,11 @@
             const swId = row.softwareID ?? row.SoftwareID ?? row.softwareId ?? null;
             const hwId = row.hardwareID ?? row.HardwareID ?? row.hardwareId ?? null;
             tr.dataset.assetId = String(swId ?? hwId ?? "");
+            if (swId != null) {
+                tr.setAttribute("data-id", `sw-${swId}`);
+            }
+
+            // set raw now; we'll overwrite with computed below for consistency
             tr.dataset.status = (row.status || "-");
             applyScope(tr);
 
@@ -618,12 +839,15 @@
 
             const tdStat = document.createElement("td");
             tdStat.className = "col-status";
-            const statusText = String(row.status ?? row.Status ?? "-").trim();
+            const statusText = computeStatus(row);
             const pill = document.createElement("span");
             pill.className = "status " + (statusText ? statusText.toLowerCase().replace(/\s+/g, "") : "");
             pill.textContent = statusText;
             tdStat.appendChild(pill);
             applyScope(tdStat);
+
+            // keep dataset.status aligned with the pill (computed, not raw)
+            tr.dataset.status = statusText;
 
             tr.append(tdName, tdType, tdTag, tdAssn, tdStat);
             tbody.appendChild(tr);
@@ -641,7 +865,7 @@
         if (!tbody.contains(td)) return;
 
         // Only expand when the hovered cell is actually truncated
-        if (isEllipsed(td)) {
+        if (isNearEllipsed(td)) {
             const tr = td.parentElement;
             tr.classList.add("expand-row");
             td.classList.add("expanded-source");
@@ -669,7 +893,7 @@
 
             // If disabled, show friendly message and exit
             if (iconBtn.dataset.disabled === "1" || iconBtn.classList.contains("icon-btn--disabled")) {
-                notify("Asset must be Available in order to assign.");
+                notify("This asset isn’t actionable right now (archived or locked).");
                 return;
             }
 
@@ -678,9 +902,49 @@
             const numericId = iconBtn.dataset.assetNumericId || rowEl?.dataset.assetId || "";
             const assetKind = Number(iconBtn.dataset.assetKind || "1");
             const currentUserId = iconBtn.dataset.currentUserId || "";
+
+            const rowData = cacheAllItems.find(it =>
+                (getTag(it) === tag) ||
+                String(it.hardwareID ?? it.HardwareID ?? it.softwareID ?? it.SoftwareID ?? "") === numericId);
+
+            const totalSeats = Number(rowData?.licenseTotalSeats ?? rowData?.LicenseTotalSeats ?? NaN);
+            const usedSeats = Number(rowData?.licenseSeatsUsed ?? rowData?.LicenseSeatsUsed ?? NaN);
+            const isSoftware = !Number.isNaN(totalSeats) && !Number.isNaN(usedSeats);
+
+            if (isSoftware) {
+                const avail = Math.max(0, totalSeats - usedSeats);
+                if (avail > 0 && usedSeats > 0) {
+                    window.dispatchEvent(new CustomEvent("seat:choose:open", {
+                        detail: { assetTag: tag, assetNumericId: numericId, assetKind: 2, seats: { totalSeats, usedSeats, avail } }
+                    }));
+                    return;
+                }
+                if (avail > 0) {
+                    window.dispatchEvent(new CustomEvent("assign:open", {
+                        detail: { assetTag: tag, assetNumericId: numericId, assetKind: 2 }
+                    }));
+                    return;
+                }
+                // Seats are full → open unassign for *one* assignee.
+                // Our row projection includes the FIRST open assignee as AssignedUserId.
+                // Pass it through so the modal can resolve the correct assignment row.
+                const currentUserIdSoft = String(
+                    rowData?.assignedUserId ?? rowData?.AssignedUserId ?? ""
+                ).trim();
+                window.dispatchEvent(new CustomEvent("unassign:open", {
+                    detail: {
+                        assetTag: tag,
+                        assetNumericId: numericId,
+                        assetKind: 2,
+                        currentUserId: currentUserIdSoft || null
+                    }
+                }));
+                return;
+            }
+
+            // --- Hardware fallback ---
             const nameEl = rowEl ? rowEl.querySelector(".assigned-name") : null;
             const currentDisplayName = (nameEl?.textContent || "Unassigned").trim();
-
             const isAssigned =
                 (rowEl?.dataset.status || "").toLowerCase() === "assigned" ||
                 (!!currentUserId);
@@ -710,8 +974,8 @@
         const tag = (tr.dataset.tag || "").trim();
         if (!tag) { console.warn("Row click: missing Tag/AssetTag; not navigating.", tr); return; }
 
-        // ALWAYS go to http://localhost:5119/AssetDetails/Index?category={type}&tag={tag}
-        const url = new URL("http://localhost:5119/AssetDetails/Index");
+        // ALWAYS go to /AssetDetails/Index?category={type}&tag={tag}
+        const url = new URL("/AssetDetails/Index", window.location.origin);
         url.searchParams.set("category", type);
         url.searchParams.set("tag", tag);
         window.location.assign(url.toString());
@@ -736,13 +1000,21 @@
                     : (row.assignedTo || "Unassigned");
                 if (!disp.toLowerCase().includes(v(activeFilters.assignment))) return false;
             }
-            if (activeFilters.status && String(row.status ?? row.Status ?? "").toLowerCase() !== v(activeFilters.status)) return false;
+            if (activeFilters.status && computeStatus(row).toLowerCase() !== v(activeFilters.status)) return false;
             return true;
         });
+
+        // Rebuild facet option lists (Type / Status) from the current result set,
+        // but exclude each facet’s own filter when computing its unique values.
+        recomputeFacets();
+        refreshFacetDropdowns(); // ensures the custom dropdown menus persist selection and only show valid options
 
         const total = filteredItems.length;
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
         currentPage = Math.min(Math.max(1, page), totalPages);
+
+        const noRow = ensureNoResultsRow();
+        noRow.style.display = (total === 0 && (lastQuery ?? "").trim() !== "") ? "" : "none";
 
         const start = (currentPage - 1) * pageSize;
         const pageSlice = filteredItems.slice(start, start + pageSize);
@@ -757,12 +1029,13 @@
 
         updateToolbarCorners();
         refreshVisibleTooltips();
+        persistFiltersSnapshot();
     }
 
-    // Inputs/selects → live (debounced) local filtering
-    inputName?.addEventListener("input", e => { activeFilters.name = e.target.value; debouncedApply(); });
-    inputTag?.addEventListener("input", e => { activeFilters.tag = e.target.value; debouncedApply(); });
-    inputAssn?.addEventListener("input", e => { activeFilters.assignment = e.target.value; debouncedApply(); });
+    // Inputs/selects → live (debounced) local filtering + persist
+    inputName?.addEventListener("input", e => { activeFilters.name = e.target.value; debouncedApply(); persistFiltersSnapshot(); });
+    inputTag?.addEventListener("input", e => { activeFilters.tag = e.target.value; debouncedApply(); persistFiltersSnapshot(); });
+    inputAssn?.addEventListener("input", e => { activeFilters.assignment = e.target.value; debouncedApply(); persistFiltersSnapshot(); });
 
     // ----- Pager helpers (local slice only) -----------------------------------
     function updatePager() {
@@ -784,10 +1057,10 @@
     }
 
     btnPrev?.addEventListener("click", () => {
-        if (currentPage > 1) applyFiltersAndRender({ page: currentPage - 1 });
+        if (currentPage > 1) { applyFiltersAndRender({ page: currentPage - 1 }); persistFiltersSnapshot(); }
     });
     btnNext?.addEventListener("click", () => {
-        applyFiltersAndRender({ page: currentPage + 1 });
+        applyFiltersAndRender({ page: currentPage + 1 }); persistFiltersSnapshot();
     });
 
     function activeQuery() {
@@ -817,7 +1090,8 @@
         setToolbarVisible(true);
         setArchivedToggleState({ checked: showArchived, disabled: false })
 
-        lastQuery = q ?? "";// First-load rule: never query archived unless the user explicitly toggled it on.
+        lastQuery = q ?? "";
+        // First-load rule: never query archived unless the user explicitly toggled it on.
         const key = makeCacheKey(lastQuery, showArchived);
         const cached = getEntry(key);
         // If we already have a cache entry, use it immediately.
@@ -826,8 +1100,10 @@
             cacheAllItems = cached.items.slice(0, MAX_CLIENT_CACHE);
             cacheLoadedPages = new Set(cached.loadedPages || []);
             pageSize = cached.pageSize || pageSizeArg;
-            activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
-            applyFiltersAndRender({ page: 1 });
+            if (!restoredFiltersApplied) {
+                activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+            }
+            applyFiltersAndRender({ page: restoredFiltersApplied ? (currentPage || 1) : 1 });
             return;
         }
 
@@ -879,11 +1155,14 @@
                     const sample = cacheAllItems[0] || {};
                     const hasFlag = ("isArchived" in sample) || ("IsArchived" in sample) || ("archived" in sample) || ("Archived" in sample);
                     if (hasFlag) {
-                        const isArch = (r) => !!(r.isArchived ?? r.IsArchived ?? r.archived ?? r.Archived);
+                        const isArch = (row) => {
+                            const raw = (row.isArchived ?? row.IsArchived ?? row.archived ?? row.Archived);
+                            return asTrue(raw);
+                        };
                         const activeOnly = cacheAllItems.filter(r => !isArch(r)).slice(0, MAX_CLIENT_CACHE);
                         setEntry(keyActive, {
                             items: activeOnly,
-                            loadedPages: [],   // derived
+                            loadedPages: [],
                             pageSize,
                             ts: Date.now()
                         });
@@ -891,10 +1170,17 @@
                 }
             }
 
-            // reset filter state on new query
-            activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+            // On a fresh search we already reset; otherwise keep restored snapshot
+            if (_justDidFreshSearch) {
+                // ensure selects’ option lists reflect the fresh state
+                recomputeFacets();
+                refreshFacetDropdowns();
+                _justDidFreshSearch = false;
+            } else if (!restoredFiltersApplied) {
+                activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+            }
 
-            applyFiltersAndRender({ page: 1 });
+            applyFiltersAndRender({ page: restoredFiltersApplied ? (currentPage || 1) : 1 });
 
             // Progressive prefetch (one-shot), cap at MAX_CLIENT_CACHE
             const totalPages = Math.max(1, Math.ceil((data.total ?? 0) / pageSize));
@@ -950,16 +1236,13 @@
 
     /* ---- Toolbar ↔ Header width sync ---------------------------------------- */
     function syncToolbarToHeader() {
-        try {
-            const ths = headerTable?.querySelectorAll("thead th");
-            if (!ths || ths.length === 0 || !toolbarGrid || !toolbar) return;
-
-            for (let i = 0; i < 5; i++) {
-                const rect = ths[i].getBoundingClientRect();
-                toolbarGrid.style.setProperty(`--col${i + 1}`, `${Math.round(rect.width)}px`);
-            }
-            toolbar.classList.add("synced");
-        } catch { }
+        const ths = headerTable?.querySelectorAll("thead th");
+        if (!ths?.length || !toolbarGrid || !toolbar) return;
+        ths.forEach((th, i) => {
+            const rect = th.getBoundingClientRect();
+            toolbarGrid.style.setProperty(`--col${i + 1}`, `${Math.round(rect.width)}px`);
+        });
+        toolbar.classList.add("synced");
     }
 
     window.addEventListener("DOMContentLoaded", syncToolbarToHeader);
@@ -1095,7 +1378,7 @@
                 selectEl.value = val;
                 updateButtonLabel();
                 // mark “chosen” so hover behavior matches Admin
-                wrapper.parentElement?.classList?.add("has-aims-select"); // harmless if not used
+                wrapper.parentElement?.classList?.add("has-aims-select");
                 wrapper.setAttribute("data-chosen", "true");
                 if (typeof onChange === "function") onChange(val, next.textContent);
             }
@@ -1152,16 +1435,132 @@
 
         // Force custom dropdowns even without data-make-custom (parity with Admin)
         if (selectType) {
-            customType = makeCustomSelect(selectType, { onChange: (_v, label) => setType(label) });
+            customType = makeCustomSelect(selectType, { onChange: (_v, label) => { setType(label); persistFiltersSnapshot(); } });
         }
         if (selectStat) {
-            customStatus = makeCustomSelect(selectStat, { onChange: (_v, label) => setStatus(label) });
+            customStatus = makeCustomSelect(selectStat, { onChange: (_v, label) => { setStatus(label); persistFiltersSnapshot(); } });
         }
 
         // still listen for native change (devtools/manual changes)
-        selectType?.addEventListener("change", (e) => setType(e.target.value));
-        selectStat?.addEventListener("change", (e) => setStatus(e.target.value));
+        selectType?.addEventListener("change", (e) => { setType(e.target.value); persistFiltersSnapshot(); });
+        selectStat?.addEventListener("change", (e) => { setStatus(e.target.value); persistFiltersSnapshot(); });
     }
+
+    // --- Facets: compute and wire dropdown contents to current results ----------
+    function recomputeFacets() {
+        // Base set excludes archived when toggle is off and excludes the facet itself.
+        const v = (s) => (s || "").trim().toLowerCase();
+        const baseForBoth = cacheAllItems.filter(row => {
+            if (!showArchived && isArchivedRow(row)) return false;
+            if (activeFilters.name && !(row.assetName || "").toLowerCase().includes(v(activeFilters.name))) return false;
+            if (activeFilters.tag && !getTag(row).toLowerCase().includes(v(activeFilters.tag))) return false;
+            if (activeFilters.assignment) {
+                const disp = (row.assignedEmployeeNumber && row.assignedTo)
+                    ? `${row.assignedTo} (${row.assignedEmployeeNumber})`
+                    : (row.assignedTo || "Unassigned");
+                if (!disp.toLowerCase().includes(v(activeFilters.assignment))) return false;
+            }
+            return true;
+        });
+
+        // Type facet (do not apply existing Type filter while enumerating)
+        const typeSet = new Set();
+        for (const r of baseForBoth) {
+            const t = String(r.type || "").trim();
+            if (t) typeSet.add(t);
+        }
+        facetTypeValues = Array.from(typeSet).sort((a,b)=>a.localeCompare(b));
+
+        // Status facet (do not apply existing Status filter while enumerating)
+        const statusSet = new Set();
+        for (const r of baseForBoth) {
+            const s = String(computeStatus(r) || "").trim();
+            if (s) statusSet.add(s);
+        }
+        facetStatusValues = Array.from(statusSet).sort((a,b)=>a.localeCompare(b));
+    }
+
+    function refreshFacetDropdowns() {
+        if (customType && selectType) {
+            repopulateSelect(customType, selectType, facetTypeValues, "All Devices", activeFilters.type);
+        }
+        if (customStatus && selectStat) {
+            repopulateSelect(customStatus, selectStat, facetStatusValues, "All Status", activeFilters.status);
+        }
+    }
+
+    // Update both the hidden native <select> and the custom listbox to only include provided values.
+    // `currentFilterLc` is the lowercase of the selected label to persist selection if still present.
+    function repopulateSelect(custom, nativeSelect, values, allLabel, currentFilterLc) {
+        // 1) Native select options
+        while (nativeSelect.options.length) nativeSelect.remove(0);
+        const addOpt = (text, val = text) => {
+            const o = document.createElement("option");
+            o.textContent = text;
+            o.value = text; // we use label text as value consistently
+            nativeSelect.appendChild(o);
+        };
+        addOpt(allLabel, "");
+        values.forEach(v => addOpt(v));
+
+        // Choose selection
+        const desiredLabel = (currentFilterLc || "").trim();
+        let effectiveLabel = "";
+        if (desiredLabel && values.some(v => v.toLowerCase() === desiredLabel)) {
+            effectiveLabel = values.find(v => v.toLowerCase() === desiredLabel);
+        } else {
+            // If only one concrete option exists, keep it selected (UX: auto-persist)
+            effectiveLabel = (values.length === 1) ? values[0] : allLabel;
+            if (custom === customType) {
+                // keep activeFilters.type in sync
+                activeFilters.type = (effectiveLabel === allLabel ? "" : effectiveLabel.toLowerCase());
+            } else if (custom === customStatus) {
+                activeFilters.status = (effectiveLabel === allLabel ? "" : effectiveLabel.toLowerCase());
+            }
+        }
+        // Set native selected index
+        const toSelect = Array.from(nativeSelect.options).findIndex(o =>
+            (o.textContent || "").trim().toLowerCase() === (effectiveLabel || allLabel).toLowerCase()
+        );
+        nativeSelect.selectedIndex = Math.max(0, toSelect);
+
+        // 2) Custom listbox options
+        const list = custom.listbox;
+        list.innerHTML = "";
+        const mk = (label) => {
+            const div = document.createElement("div");
+            div.className = "aims-custom-select__option";
+            div.setAttribute("role", "option");
+            div.setAttribute("data-value", label);
+            div.textContent = label;
+            return div;
+        };
+        const allDiv = mk(allLabel);
+        list.appendChild(allDiv);
+        values.forEach(v => list.appendChild(mk(v)));
+
+        // Mark selected
+        const want = (effectiveLabel || allLabel).toLowerCase();
+        const options = Array.from(list.children);
+        options.forEach(o => {
+            const lab = (o.textContent || "").trim().toLowerCase();
+            if (lab === want) {
+                o.setAttribute("aria-selected", "true");
+                o.setAttribute("aria-current", "true");
+                o.setAttribute("data-active", "true");
+            } else {
+                o.removeAttribute("aria-selected");
+                o.removeAttribute("aria-current");
+                o.removeAttribute("data-active");
+            }
+        });
+        // Update button label & data
+        custom.button.querySelector(".aims-custom-select__label").textContent = (effectiveLabel || allLabel);
+        custom.button.dataset.value = (effectiveLabel || allLabel);
+        // After repopulating, ensure wrapper reflects that a choice exists (prevents hover flash)
+        custom.wrapper.setAttribute("data-chosen", "true");
+    }
+
 
     // ----- Init ----------------------------------------------------------------
     (async function init() {
@@ -1172,14 +1571,49 @@
         scheduleSync(); // sync toolbar widths on boot
         ensureNavbarClickable();
 
+        const qForThisPage = IS_SUPERVISOR ? "" : initialQ;
+        const restored = readFiltersSnapshotForQuery(qForThisPage);
+
+        if (restored) {
+            // 1) Archive toggle: prefer explicit snapshot value only on reload of same query
+            showArchived = !!restored.archived;
+            if (archivedToggle) archivedToggle.checked = showArchived;
+
+            // 2) Filters object
+            activeFilters = { ...(restored.filters || {}) };
+
+            // 3) Reflect into inputs
+            if (inputName) inputName.value = activeFilters.name || "";
+            if (inputTag) inputTag.value = activeFilters.tag || "";
+            if (inputAssn) inputAssn.value = activeFilters.assignment || "";
+
+            // 4) Reflect into selects using the *label text* stored in activeFilters
+            if (activeFilters.type) setSelectByLowerText(selectType, activeFilters.type);
+            if (activeFilters.status) setSelectByLowerText(selectStat, activeFilters.status);
+            // Also sync the custom dropdown chrome immediately after native selection
+            queueMicrotask(() => {
+                refreshFacetDropdowns();
+            });
+
+            // 5) Page
+            if (typeof restored.page === "number" && restored.page > 0) {
+                currentPage = restored.page;
+            }
+            restoredFiltersApplied = true;
+        }
+
+        // From here, avoid blowing away filters we just restored:
         if (IS_SUPERVISOR) {
             await fetchInitial("", 1, pageSize);
+            applyFiltersAndRender({ page: restoredFiltersApplied ? (currentPage || 1) : 1 });
             applyZebra();
             scheduleSync();
+            // Now we allow the archive toggle to start notifying.
+            _bootArchiveGuard = false;
             return;
         }
+
         if (initialQ.length > 0) {
-            // Prefer cache for (q, archived=false)
             const key = makeCacheKey(initialQ, showArchived);
             const hit = getEntry(key);
             if (hit) {
@@ -1187,10 +1621,18 @@
                 cacheAllItems = hit.items.slice(0, MAX_CLIENT_CACHE);
                 cacheLoadedPages = new Set(hit.loadedPages || []);
                 pageSize = hit.pageSize || pageSize;
-                activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
-                applyFiltersAndRender({ page: 1 });
+
+                // IMPORTANT: don't clobber restored filters if we have them
+                if (!restoredFiltersApplied) {
+                    activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+                }
+
+                applyFiltersAndRender({ page: currentPage || 1 });
             } else {
                 await fetchInitial(initialQ, 1, pageSize);
+                if (restoredFiltersApplied) {
+                    applyFiltersAndRender({ page: currentPage || 1 });
+                }
             }
         } else {
             cacheAllItems = []; filteredItems = [];
@@ -1204,6 +1646,7 @@
             setToolbarVisible(false);
             setArchivedToggleState({ checked: false, disabled: true });
         }
+
         // Now we allow the archive toggle to start notifying.
         _bootArchiveGuard = false;
         scheduleSync();
@@ -1215,57 +1658,130 @@
         hdrObs.observe(headerTable);
     }
 
-    // ----- Inline UI refresh after successful assignment ----------------------
-    window.addEventListener("assign:saved", (ev) => {
-        const { assetId, userId, userDisplay } = ev.detail || {};
-        if (!assetId) return;
+    // Invalidate caches and re-fetch when assets change (assign/unassign/etc.)
+    window.addEventListener('assets:changed', async () => {
+        try {
+            // Drop in-memory registry
+            CACHE.clear?.();
 
-        // Prefer Tag #; fallback to numeric
-        let row = document.querySelector(`tr[data-tag="${CSS.escape(String(assetId))}"]`);
-        if (!row) {
-            row = Array.from(document.querySelectorAll("tr.result"))
-                .find(r => (r.dataset.assetId || "") === String(assetId));
+            // Drop persisted session cache so reloads don't resurrect stale data
+            try { sessionStorage.removeItem(STORAGE_CACHE_KEY); } catch { }
+
+            // Re-query the current term with the current archived toggle
+            const q = (lastQuery ?? activeQuery() ?? "").trim();
+            await fetchInitial(q, currentPage || 1, pageSize);
+            applyFiltersAndRender({ page: currentPage || 1 });
+        } catch (e) {
+            console.warn("assets:changed refresh failed", e);
+            // fallback: at least redraw current page from whatever we have
+            applyFiltersAndRender({ page: currentPage || 1 });
         }
-        if (!row) return;
+    });
 
-        // Update DOM
-        const nameSpan = row.querySelector(".assigned-name");
+    // Inline UI refresh after successful *unassign*
+    window.addEventListener("unassign:saved", (ev) => {
+        const { assetKind, assetNumericId, assetTag } = ev.detail || {};
+
+        // Find the row by Tag first, else by numeric ID
+        let rowEl = null;
+        if (assetTag) rowEl = document.querySelector(`tr.result[data-tag="${CSS.escape(String(assetTag))}"]`);
+        if (!rowEl && assetNumericId != null) {
+            rowEl = Array.from(document.querySelectorAll("tr.result"))
+                .find(tr => (tr.dataset.assetId || "") === String(assetNumericId));
+        }
+        if (!rowEl) return;
+
+        // Update DOM: show Unassigned + clear user id
+        const nameSpan = rowEl.querySelector(".assigned-name");
         if (nameSpan) {
-            nameSpan.textContent = userDisplay || "Unassigned";
-            nameSpan.dataset.userId = userId || "";
+            nameSpan.textContent = "Unassigned";
+            nameSpan.dataset.userId = "";
         }
-        const iconBtn = row.querySelector(".icon-btn, .assign-btn");
-        if (iconBtn) iconBtn.dataset.currentUserId = userId || "";
 
-        // Update status pill + dataset
-        const statusCell = row.querySelector(".col-status");
-        const pill = statusCell?.querySelector(".status");
-        if (pill) {
-            pill.textContent = "Assigned";
-            pill.className = "status assigned";
-        } else if (statusCell) {
-            statusCell.textContent = "Assigned";
-        }
-        row.dataset.status = "Assigned";
-
-        // Update cache too
-        const tag = row.dataset.tag;
-        const cid = row.dataset.assetId;
+        // Update the cache entry so computeStatus() reflects reality
+        const tag = rowEl.dataset.tag;
+        const cid = rowEl.dataset.assetId;
         const hit = cacheAllItems.find(it => {
             const t = getTag(it);
             const numId = String(it.hardwareID ?? it.HardwareID ?? it.softwareID ?? it.SoftwareID ?? "");
             return (t && t === tag) || numId === String(cid);
         });
         if (hit) {
-            hit.assignedTo = userDisplay || "Unassigned";
-            hit.assignedUserId = userId || "";
-            hit.status = "Assigned";
+            hit.assignedTo = "Unassigned";
+            hit.assignedUserId = "";
+            // Hardware: flip status to Available right away (software status comes from seats)
+            const isSoftware = (hit.softwareID ?? hit.SoftwareID ?? null) != null;
+            if (!isSoftware) {
+                hit.status = "Available";
+                hit.Status = "Available";
+            }
         }
 
-        if ((activeFilters.status || "") === "available") {
+        // Recompute the status pill + dataset
+        const s = computeStatus(hit || {});
+        const pill = rowEl.querySelector(".status");
+        if (pill) {
+            pill.textContent = s;
+            pill.className = "status " + s.toLowerCase().replace(/\s+/g, "");
+        }
+        rowEl.dataset.status = s;
+
+        applyZebra();
+        refreshVisibleTooltips();
+
+        // If a status filter is active (e.g., viewing only "Assigned"), re-render the page slice
+        if ((activeFilters.status || "") !== "") {
+            applyFiltersAndRender({ page: currentPage });
+        }
+    });
+
+    window.addEventListener("seat:updated", (ev) => {
+        const { softwareId, licenseSeatsUsed, licenseTotalSeats } = ev.detail || {};
+        if (softwareId == null) return;
+
+        const row = findRowBySoftwareId(softwareId);
+        if (!row) return;
+
+        // merge fresh counts (camel/Pascal defensive)
+        row.LicenseSeatsUsed = licenseSeatsUsed;
+        row.licenseSeatsUsed = licenseSeatsUsed;
+        row.LicenseTotalSeats = licenseTotalSeats;
+        row.licenseTotalSeats = licenseTotalSeats;
+
+        const s = computeStatus(row);
+
+        const tr = document.querySelector(`[data-id='sw-${softwareId}']`);
+        if (!tr) return;
+
+        const pill = tr.querySelector(".status");
+        if (pill) {
+            pill.textContent = s;
+            pill.className = "status " + s.toLowerCase().replace(/\s+/g, "");
+        }
+
+        const chip = tr.querySelector(".seats-count");
+        let _chip = chip;
+        if (!_chip) {
+            // Insert a chip at the start of the assignment cell if this is the first time
+            const assnCell = tr.querySelector(".col-assignment .assn-cell");
+            if (assnCell) {
+                _chip = document.createElement("span");
+                _chip.className = "seats-count";
+                assnCell.prepend(_chip);
+            }
+        }
+        if (_chip) {
+            const u = Math.max(0, Math.min(licenseSeatsUsed, licenseTotalSeats));
+            _chip.textContent = `${u}/${licenseTotalSeats}`;
+            _chip.title = `${u} of ${licenseTotalSeats} seats in use`;
+        }
+
+        // If a status filter is active, re-render to respect it
+        if ((activeFilters.status || "") !== "") {
             applyFiltersAndRender({ page: currentPage });
         } else {
             applyZebra();
+            refreshVisibleTooltips();
         }
     });
 

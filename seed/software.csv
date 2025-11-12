@@ -31,4 +31,5 @@
 30,Adobe Premiere Pro,Software,2024,PRM-030,8/1/26,50,420,30,19,Assigned Premiere Pro to Niyant Supervisor,FALSE
 31,Norton 360 Endpoint Security,Software,2024,NORT-031,7/15/27,600,75,400,255,Assigned Norton 360 licenses to all workstations,FALSE
 32,Cisco AnyConnect VPN,Software,2023,CISCO-VPN-032,5/5/26,480,90,250,190,Assigned Cisco VPN to remote employees,FALSE
-33,Microsoft Office 2016 Legacy,Software,2016,OFF16-033,12/31/22,100,120,50,50,Replaced legacy Office 2016 license,TRUE
+33,Microsoft Office 2016 Legacy,Software,2016,OFF16-033,12/31/22,100,120,50,50,Replaced legacy Office 2016 license,FALSE
+34,Microsoft Internet Explorer Premium Edition,Software,1994,Y2K-2000,1/1/00,100,0.01,1,0,Internet Explorer: Still downloading; finally gave up.,TRUE

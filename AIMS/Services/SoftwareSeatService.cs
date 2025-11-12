@@ -37,7 +37,7 @@ public class SoftwareSeatService
 #if DEBUG
         var maxRetries = RetryOverride ?? 3;
 #else
-        const inst maxRetries = 3;
+        const int maxRetries = 3;
 #endif
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {

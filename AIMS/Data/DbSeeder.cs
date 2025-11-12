@@ -217,6 +217,8 @@ public static class DbSeeder
                     SoftwareCost = ParseDecimal(Get(r, "softwarecost"), 0m),
                     LicenseTotalSeats = ParseInt(Get(r, "licensetotalseats"), 0),
                     LicenseSeatsUsed = ParseInt(Get(r, "licenseseatsused"), 0),
+                    Comment = Get(r, "comment"),
+                    IsArchived = ParseBool(Get(r, "isarchived"), defaultValue: false)
                 };
                 await UpsertSoftwareAsync(db, s, ct);
             }
@@ -1311,6 +1313,8 @@ public static class DbSeeder
             existing.SoftwareLicenseExpiration = incoming.SoftwareLicenseExpiration;
             existing.SoftwareUsageData = incoming.SoftwareUsageData;
             existing.SoftwareCost = incoming.SoftwareCost;
+            existing.Comment = incoming.Comment;              // NEW
+            existing.IsArchived = incoming.IsArchived;        // NEW
 
             // Update total first…
             existing.LicenseTotalSeats = incoming.LicenseTotalSeats;

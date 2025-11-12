@@ -69,6 +69,8 @@ public sealed class AssetSearchQuery
                 Type = h.AssetType ?? "",
                 Tag = h.AssetTag ?? "",
                 IsArchived = h.IsArchived,
+                LicenseTotalSeats = 0,
+                LicenseSeatsUsed = 0,
 
                 Status = h.IsArchived
                     ? "Archived"
@@ -126,13 +128,15 @@ public sealed class AssetSearchQuery
                 Tag = s.SoftwareLicenseKey ?? "",
                 IsArchived = s.IsArchived,
 
+                // Status for software reflects seat capacity
                 Status = s.IsArchived
                     ? "Archived"
-                    : _db.Assignments
-                        .Where(a => a.AssetKind == Models.AssetKind.Software
-                                 && a.SoftwareID == s.SoftwareID
-                                 && a.UnassignedAtUtc == null)
-                        .Any() ? "Assigned" : "Available",
+                    : (s.LicenseTotalSeats > 0 && s.LicenseSeatsUsed >= s.LicenseTotalSeats
+                        ? "Seats Full"
+                        : "Available"),
+                // Expose seats so UI can render "used/total" chip
+                LicenseTotalSeats = s.LicenseTotalSeats,
+                LicenseSeatsUsed = s.LicenseSeatsUsed,
 
                 AssignedTo = _db.Assignments
                     .Where(a => a.AssetKind == Models.AssetKind.Software
