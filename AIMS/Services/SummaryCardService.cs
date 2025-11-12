@@ -7,7 +7,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace AIMS.Services;
 
-public class SummaryCardService
+public class SummaryCardService : ISummaryCardService
 {
     private readonly AimsDbContext _db;
     private readonly IMemoryCache _cache;
