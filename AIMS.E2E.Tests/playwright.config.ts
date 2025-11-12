@@ -10,9 +10,11 @@ export default defineConfig({
     timeout: 60_000,
     expect: { timeout: 10_000 },
     reporter: [['list'], ['html', { open: 'never' }]],
+    globalSetup: './global-setup.ts',            // ← add this line
     use: {
         baseURL: BASE_URL,
         headless: true,
+        launchOptions: { slowMo: 0 },
         storageState: STORAGE_STATE,
         trace: 'on-first-retry',
         actionTimeout: 15_000,

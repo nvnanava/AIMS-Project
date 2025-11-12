@@ -26,7 +26,7 @@
 
 <h2 class="text-center my-4">@ViewData["Title"]</h2>
 
-<div class="table-wrapper" style="position:relative;width:fit-content;margin:0 auto;padding:30px;">
+<div class="table-wrapper" style="position:relative;width:fit-content;margin:0 auto;padding:10px;">
     <table class="asset-table">
         <thead>
             <tr>
@@ -90,12 +90,4 @@
     <script src="~/js/pages/assetdetails.index.js" asp-append-version="true" defer></script>
     <script src="~/js/components/add-hardware.js" asp-append-version="true" defer></script>
     <script src="~/js/components/add-software.js" asp-append-version="true" defer></script>
-
-    <script>
-        // Initialize the filter component for this page
-        AIMSFilterIcon.init("detailsFilters", {
-            onChange: ({ showArchived }) => {
-            }
-        });
-    </script>
 }

@@ -14,8 +14,6 @@ public class CreateReportDto
     // Who/Where generated
     public int? GeneratedByUserID { get; set; }
 
-    public int? GeneratedByOfficeID { get; set; }
-
-    // Output location
-    public string BlobUri { get; set; } = string.Empty;
+    public int? GeneratedForOfficeID { get; set; }
+    public byte[] Content { get; set; } = new byte[0];
 }

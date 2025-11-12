@@ -144,7 +144,7 @@
                                 <input type="hidden" name="_RequestVerificationToken"
                                     value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
                                 <button type="submit" class="nav-link text-dark">
-                                    <span class="emoji">&#128100;</span><span class="label">Sign out</span>
+                                    <span class="emoji">&#128100;</span><span class="label">Sign Out</span>
                                 </button>
                             </form>
                         </li>
@@ -180,9 +180,14 @@
     <!-- Global/Base JS only -->
     <script src="~/js/base/site.js" asp-append-version="true" defer></script>
     <script src="~/js/components/global-spinner.js" asp-append-version="true" defer></script>
+    <script src="~/js/Utilities/search-intercept.js" asp-append-version="true" defer></script>
 
     <!-- AIMS global UI: custom select enhancer (portal + a11y, works inside any modal) -->
     <script src="~/js/base/aims.ui.js" asp-append-version="true" defer></script>
+
+    <!-- js Utilities -->
+    <script src="~/js/Utilities/aimsFetch.js" asp-append-version="true"></script>
+    <script src="~/js/components/archive-filter.js" asp-append-version="true" defer></script>
 
     <link rel="stylesheet" href="~/css/components/_FilterIcon.css" asp-append-version="true" />
 

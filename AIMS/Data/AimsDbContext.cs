@@ -19,8 +19,9 @@ namespace AIMS.Data
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<AuditLogChange> AuditLogChanges { get; set; } = null!;   // child rows
 
-        // Blob-backed payloads: only URIs live in DB; files live in blob storage
         public DbSet<Report> Reports { get; set; } = null!;
+
+        // Blob-backed payloads: only URIs live in DB; files live in blob storage
         public DbSet<Agreement> Agreements { get; set; } = null!;
 
         // Optional/aux tables
@@ -47,7 +48,7 @@ namespace AIMS.Data
             modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
             modelBuilder.Entity<AuditLogChange>().ToTable("AuditLogChanges");
 
-            modelBuilder.Entity<Report>().ToTable("Reports");         // Blob-backed (Report.BlobUri)
+            modelBuilder.Entity<Report>().ToTable("Reports");
             modelBuilder.Entity<Agreement>().ToTable("Agreements");   // Blob-backed (Agreement.FileUri)
 
             modelBuilder.Entity<Office>().ToTable("Offices");
@@ -69,8 +70,30 @@ namespace AIMS.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<User>()
+                .HasOne(u => u.Office)
+                .WithMany(o => o.Users)
+                .HasForeignKey(u => u.OfficeID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<User>()
                 .HasIndex(u => u.ExternalId)
                 .IsUnique();
+
+            // Azure AD Object ID (GraphObjectID) length
+            modelBuilder.Entity<User>()
+                .Property(u => u.GraphObjectID)
+                .HasMaxLength(64) // forces nvarchar(64) in SQL so it can be indexed
+                .IsRequired(); // Every user must have a GraphObjectID
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.GraphObjectID)
+                .IsUnique(); //prevents duplicate (two rows pointing to same AAD user)
+                             //No filter added - every user must have a GraphObjectID and come from AAD
+                             //This allows us to only add users that exist in AAD, if not in AAD you cannot add them to our system
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.IsArchived)
+                .HasDefaultValue(false); // Default to false for IsArchived
 
             // -------------------------
             // HARDWARE
@@ -118,6 +141,10 @@ namespace AIMS.Data
             modelBuilder.Entity<Software>().Property(s => s.SoftwareVersion).HasMaxLength(64);
             modelBuilder.Entity<Software>().Property(s => s.SoftwareLicenseKey).HasMaxLength(128);
 
+            modelBuilder.Entity<Software>()
+                .Property(s => s.RowVersion)
+                .IsRowVersion();
+
             // -------------------------
             // ASSIGNMENTS
             // -------------------------
@@ -147,10 +174,10 @@ namespace AIMS.Data
                 .HasFilter("[HardwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
                 .IsUnique();
 
-            // At most ONE active assignment per software asset
+            // At most ONE active assignment per (SoftwareID, UserID) (allows multi-seat)
             modelBuilder.Entity<Assignment>()
-                .HasIndex(a => new { a.SoftwareID, a.UnassignedAtUtc })
-                .HasFilter("[SoftwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
+                .HasIndex(a => new { a.SoftwareID, a.UserID, a.UnassignedAtUtc })
+                .HasFilter("[SoftwareID] IS NOT NULL AND [UserID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
                 .IsUnique();
 
             // Exactly one of (HardwareID, SoftwareID) must be set and match AssetKind
@@ -207,6 +234,24 @@ namespace AIMS.Data
                 .Property(a => a.ExternalId)
                 .HasDefaultValueSql("NEWID()");
 
+            // Helpful indexes for paging/filtering
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => a.TimestampUtc);
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.AssetKind, a.HardwareID });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.AssetKind, a.SoftwareID });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.UserID, a.Action });
+
+            // Inline large payloads for AuditLog (varbinary(max)); strings default to nvarchar(max)
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.AttachmentBytes)
+                .HasColumnType("varbinary(max)");
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.SnapshotBytes)
+                .HasColumnType("varbinary(max)");
+
             // Child rows (per-field diffs)
             modelBuilder.Entity<AuditLogChange>()
                 .HasOne(c => c.AuditLog)
@@ -214,15 +259,17 @@ namespace AIMS.Data
                 .HasForeignKey(c => c.AuditLogID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<AuditLogChange>()
-                .Property(c => c.Field)
-                .HasMaxLength(128);
+            // No max length limits on field names for flexibility
+            // (strings default to nvarchar(max))
+            // modelBuilder.Entity<AuditLogChange>()
+            //     .Property(c => c.Field)
+            //     .HasMaxLength(128);   // ← removed (no max length)
 
             modelBuilder.Entity<AuditLogChange>()
                 .HasIndex(c => new { c.AuditLogID, c.Field });
 
             // -------------------------
-            // REPORTS  (blob-backed)
+            // REPORTS  Stored as VARCHAR(MAX)
             // -------------------------
             modelBuilder.Entity<Report>()
                 .HasIndex(r => r.ExternalId)
@@ -238,10 +285,11 @@ namespace AIMS.Data
                 .HasForeignKey(r => r.GeneratedByUserID)
                 .OnDelete(DeleteBehavior.SetNull);
 
+
             modelBuilder.Entity<Report>()
-                .HasOne(r => r.GeneratedByOffice)
+                .HasOne(r => r.GeneratedForOffice)
                 .WithMany()
-                .HasForeignKey(r => r.GeneratedByOfficeID)
+                .HasForeignKey(r => r.GeneratedForOfficeID)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // -------------------------

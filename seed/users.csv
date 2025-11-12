@@ -1,0 +1,27 @@
+﻿UserID,FullName,Email,GraphObjectID,EmployeeNumber,IsActive,RoleID,SupervisorID,OfficeID,IsArchived
+1,Niyant Nanavati,nvnanavati@csus.edu,33f19a7d-deb6-4b82-bab8-5ba24356335f,E1001,TRUE,1,NULL,1,FALSE
+2,Akal-Ustat Singh,akalustatsingh@csus.edu,c2cc9b82-1a54-4f2d-8ab6-120c86103f29,E1002,TRUE,1,NULL,1,FALSE
+3,Tyler Burguillos,tburguillos@csus.edu,ebb6dfd8-5e7e-42cf-bcf5-72fc4b795147,E1003,TRUE,1,NULL,1,FALSE
+4,Keerat Khandpur,keeratkhandpur@csus.edu,bf450257-c666-44b6-a870-23664f63663f,E1004,TRUE,1,NULL,1,FALSE
+5,Suhail Najimudeen,suhailnajimudeen@csus.edu,43bc9a40-7265-44ef-9a87-f807949ef5d0,E1005,TRUE,1,NULL,1,FALSE
+6,Harpreet Kaur,hkaur20@csus.edu,0ff4b1b9-40d7-44f2-ac6b-7ed7c7c33cd7,E1006,TRUE,1,NULL,1,FALSE
+7,Cameron Lanzaro,cameronlanzaro@csus.edu,fb9ac749-4aef-445c-ace0-1bd46de7898b,E1007,TRUE,1,NULL,1,FALSE
+8,Norin Phlong,norinphlong@csus.edu,9852a718-b70b-4b8a-b6d0-350d275694b5,E1008,TRUE,1,NULL,1,FALSE
+9,Niyant Supervisor,niyant397@gmail.com,b9343998-d9e8-43b1-a1ea-bd2a4366c70d,S2001,TRUE,3,NULL,2,FALSE
+10,Tyler Supervisor,tnburg@pacbell.net,1c77e634-b3a6-4e62-bbf2-10c23d4b5d3c,S2002,TRUE,3,NULL,3,FALSE
+11,Cameron Supervisor,lanzaro13@gmail.com,565ad780-014a-4a5d-a0fc-b9279de33d2e,S2003,TRUE,3,NULL,4,FALSE
+12,Adam Lopez,adam.lopez@agency.ca.gov,G0000000-0000-0000-0000-000000000001,E3001,TRUE,4,9,2,FALSE
+13,Megan Tran,megan.tran@agency.ca.gov,G0000000-0000-0000-0000-000000000002,E3002,TRUE,4,9,2,FALSE
+14,Ryan Kim,ryan.kim@agency.ca.gov,G0000000-0000-0000-0000-000000000003,E3003,TRUE,4,9,2,FALSE
+15,Taylor Johnson,taylor.johnson@agency.ca.gov,G0000000-0000-0000-0000-000000000004,E3004,TRUE,4,9,2,FALSE
+16,Sophia Patel,sophia.patel@agency.ca.gov,G0000000-0000-0000-0000-000000000005,E3005,TRUE,4,9,5,FALSE
+17,Jordan Reed,jordan.reed@agency.ca.gov,G0000000-0000-0000-0000-000000000006,E3006,TRUE,2,10,3,FALSE
+18,Ava Martinez,ava.martinez@agency.ca.gov,G0000000-0000-0000-0000-000000000007,E3007,TRUE,4,10,3,FALSE
+19,Ethan Clark,ethan.clark@agency.ca.gov,G0000000-0000-0000-0000-000000000008,E3008,TRUE,4,10,3,FALSE
+20,Chloe Nguyen,chloe.nguyen@agency.ca.gov,G0000000-0000-0000-0000-000000000009,E3009,TRUE,4,10,3,FALSE
+21,Liam Rivera,liam.rivera@agency.ca.gov,G0000000-0000-0000-0000-000000000010,E3010,TRUE,4,10,5,FALSE
+22,Olivia Chen,olivia.chen@agency.ca.gov,G0000000-0000-0000-0000-000000000011,E3011,TRUE,4,11,4,FALSE
+23,Noah Singh,noah.singh@agency.ca.gov,G0000000-0000-0000-0000-000000000012,E3012,TRUE,4,11,4,FALSE
+24,Emma Garcia,emma.garcia@agency.ca.gov,G0000000-0000-0000-0000-000000000013,E3013,TRUE,4,11,4,FALSE
+25,William Park,william.park@agency.ca.gov,G0000000-0000-0000-0000-000000000014,E3014,TRUE,4,11,4,FALSE
+26,Isabella Rossi,isabella.rossi@agency.ca.gov,G0000000-0000-0000-0000-000000000015,E3015,TRUE,4,11,5,FALSE

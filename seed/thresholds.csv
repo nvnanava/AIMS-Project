@@ -1,0 +1,9 @@
+﻿ThresholdID,AssetType,ThresholdValue
+1,Laptop,10
+2,Desktop,5
+3,Monitor,12
+4,Printer,3
+5,Tablet,5
+6,Headset,15
+7,Charging Cable,25
+8,Software,100

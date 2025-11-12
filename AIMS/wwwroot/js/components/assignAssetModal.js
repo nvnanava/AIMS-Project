@@ -54,6 +54,8 @@
     }
 
     // --- data fetchers ---
+    // Did not include aimsFetch here because function is not working before including.
+    // I'm unable to find this endpoint in the API controllers to confirm if it works.
     async function fetchUsers(searchTerm) {
       const resp = await fetch(`/api/user?searchString=${encodeURIComponent(searchTerm || "")}&_v=${assetsVer}`, { cache: "no-store" });
       if (!resp.ok) throw new Error(`Failed to load users (${resp.status})`);
@@ -95,9 +97,8 @@
         assetSelect.appendChild(opt);
         return;
       }
-      const text = await resp.text();
-      if (!resp.ok) throw new Error(`Failed to load assets: ${text}`);
-      const results = JSON.parse(text);
+      //if not 204 then run regular aimsFetch
+      const results = await aimsFetch(url);
 
       clearChildren(assetSelect);
       const ph = document.createElement("option");
@@ -120,9 +121,7 @@
         const url = kind === 2
           ? `/api/assets/one?softwareId=${id}&_v=${assetsVer}`
           : `/api/assets/one?hardwareId=${id}&_v=${assetsVer}`;
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) return null;
-        return await res.json();
+        return await aimsFetch(url);
       } catch { return null; }
     }
 
@@ -236,12 +235,8 @@
         : { userID, assetKind, HardwareID: numericId, ...(comment ? { comment } : {}) };
 
       try {
-        const resp = await fetch('/api/assign/create', {
+        const resp = await fetch('/api/assign/create', { //aimsFetch not used here. Unlikely to benefit from caching.
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store'
-          },
           body: JSON.stringify(payload)
         });
         if (!resp.ok) {

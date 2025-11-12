@@ -1,0 +1,85 @@
+<!-- FOR DEV ONLY - DELETE AFTER TESTING BEFORE MERGING PR -->
+<!-- AIMS/Views/Shared/fetchTest.cshtml -->
+<!-- type http://localhost:5119/fetchTest into browser and see console output for testing -->
+<!-- should confirm aimsFetch.js dedupe, caching, aborting, and error handling working -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>aimsFetch Test</title>
+</head>
+
+<body>
+    <h2>🧪 aimsFetch Test Page</h2>
+    <p>Open DevTools → Console to see the output.</p>
+    <!--  FOR DEV ONLY - DELETE AFTER TESTING BEFORE MERGING PR -->
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            console.log("aimsFetch test starting...");
+
+            try {
+                // Example 1 — basic GET
+                const res1 = await aimsFetch('https://jsonplaceholder.typicode.com/todos/1');
+                console.log('Example 1 Response:', res1);
+
+                // Example 2 — custom header
+                const res2 = await aimsFetch('https://jsonplaceholder.typicode.com/todos/2', {
+                    headers: { 'X-Test': 'abc' }
+                });
+                console.log('Example 2 Response (with custom header):', res2);
+
+                // Example 3 — caching test - shows the lookup times in the console
+                console.time('First fetch');
+                await aimsFetch('https://jsonplaceholder.typicode.com/todos/3');
+                console.timeEnd('First fetch');
+
+                console.time('Second fetch (cached)');
+                await aimsFetch('https://jsonplaceholder.typicode.com/todos/3');
+                console.timeEnd('Second fetch (cached)');
+
+                // Example 4 - deduplication test
+                // --- Deduplication test: multiple concurrent requests ---
+                console.time("deduplication");
+                const [r1, r2, r3] = await Promise.all([
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4'),
+                    aimsFetch('https://jsonplaceholder.typicode.com/todos/4')
+                ]);
+                console.timeEnd("deduplication");
+
+                console.log("All responses equal:", r1.id === r2.id && r2.id === r3.id);
+                console.log("Deduplication confirmed if network tab shows only ONE request for 4.");
+
+            } catch (err) {
+                console.error('aimsFetch error:', err);
+            }
+
+            console.log("Example 5 — Abort test starting...");
+
+            const slowUrl = "/api/test/slow";
+
+            // Fire and abort
+            aimsFetch(slowUrl);
+            setTimeout(() => aimsFetch.abort(slowUrl), 100); // abort almost immediately
+
+            // Fire again after abort triggered
+            const result = await aimsFetch(slowUrl);
+            console.log("✅ Still works after abort:", result);
+        });
+    </script>
+</body>
+
+</html>

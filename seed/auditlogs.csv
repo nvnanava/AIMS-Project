@@ -1,0 +1,41 @@
+﻿AuditLogID,ExternalId,TimestampUtc,UserID,Action,Description,AssetKind,HardwareID,SoftwareID
+1,104fb2de-fe76-42eb-a342-b36e97b06b96,2025-10-02T09:10:00Z,3,Assign,Assigned new laptop to Adam Lopez,Hardware,1,
+2,76cf95eb-2ef0-4f17-8e04-c8884783fc80,2025-10-02T09:12:00Z,3,Assign,Assigned Microsoft 365 to Adam Lopez,Software,,1
+3,18c4c862-9465-408e-a88f-680554500314,2025-10-02T09:13:30Z,3,Assign,Assigned QuickBooks to Adam Lopez,Software,,9
+4,38eddd49-76dc-4617-8c4a-7a5e1f4c0e02,2025-10-03T11:00:00Z,2,Assign,Assigned Adobe to Megan Tran,Software,,2
+5,ae373ead-df09-47a3-b391-18090b5363e0,2025-10-04T13:30:00Z,1,Assign,Assigned AutoCAD LT to Ryan Kim,Software,,3
+6,7ee1f723-1f5e-4c08-8e04-954cfb78b422,2025-10-05T08:20:00Z,3,Assign,Assigned printer to Taylor Johnson,Hardware,3,
+7,7a89b527-9146-4e48-bf91-0a2ec4bc2e4d,2025-10-05T08:25:00Z,3,Assign,Assigned Zoom Pro to Taylor Johnson,Software,,4
+8,f909acf1-cef2-4ef4-9ef4-08f7ef4f85ef,2025-10-06T10:00:00Z,3,Assign,Assigned Surface Pro 9 to Sophia Patel,Hardware,4,
+9,501c7818-bf2d-439e-bcde-52b4f872d810,2025-10-06T10:05:00Z,3,Assign,Assigned Tableau to Sophia Patel,Software,,5
+10,3a56a531-908b-4723-96b4-0416eb449c46,2025-10-07T09:00:00Z,9,Assign,Assigned monitor to Megan Tran,Hardware,6,
+11,cbe3b3fe-d9ce-44d7-a5de-fc4e81fbb640,2025-10-07T09:05:00Z,9,Assign,Assigned headset to Ryan Kim,Hardware,7,
+12,0a529acb-62dc-4679-ac76-68a57dd32abb,2025-10-07T09:10:00Z,9,Assign,Assigned charger to Taylor Johnson,Hardware,8,
+13,f8a91b80-1c1e-4e4c-a536-b921595d5100,2025-10-08T09:00:00Z,9,Assign,Reassigned desktop to Olivia Chen,Hardware,9,
+14,0085d792-530b-45e9-b4ac-6849e12429c6,2025-10-08T09:05:00Z,9,Assign,Assigned Slack to Olivia Chen,Software,,6
+15,02ccddbc-9365-4bf0-88a9-5996dde52cd9,2025-10-09T14:00:00Z,10,Assign,Assigned new laptop to Sophia Patel (replacement),Hardware,10,
+16,79436930-cd94-49fe-80e9-8b9a4543a18c,2025-10-10T10:00:00Z,10,Assign,Assigned printer to Ava Martinez,Hardware,11,
+17,7d8f0c2b-5e38-49d8-9a4e-b2f4a1d2c3e4,2025-10-10T10:05:00Z,10,Assign,Assigned Slack to Ava Martinez,Software,,6
+18,3f0a6e7b-2d44-41a0-8f77-0d3a2c5b9e12,2025-10-11T16:00:00Z,3,Assign,Assigned tablet to Liam Rivera,Hardware,12,
+19,c3b1a0d2-4f3e-4f2a-9b7c-5d6e7f8a9b0c,2025-10-11T16:05:00Z,3,Assign,Assigned Microsoft 365 to Liam Rivera,Software,,1
+20,0c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f,2025-10-12T09:00:00Z,2,Assign,Assigned monitor to Ryan Kim,Hardware,13,
+21,a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,2025-10-12T09:10:00Z,2,Update,Adjusted monitor profile for Ryan Kim,Hardware,13,
+22,d5e6f7a8-b9c0-4d1e-8f2a-3b4c5d6e7f80,2025-10-13T09:00:00Z,10,Assign,Assigned ThinkPad E16 to Taylor Johnson,Hardware,14,
+23,e1f2a3b4-c5d6-4e7f-8019-a2b3c4d5e6f7,2025-10-13T09:10:00Z,10,Assign,Assigned headset to Sophia Patel,Hardware,15,
+24,9a8b7c6d-5e4f-4a3b-9c8d-7e6f5d4c3b2a,2025-10-14T13:00:00Z,9,Assign,Assigned charger to William Park,Hardware,16,
+25,123e4567-e89b-12d3-a456-426614174000,2025-10-15T09:00:00Z,9,Assign,Assigned desktop to Ethan Clark,Hardware,17,
+26,9b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5e,2025-10-15T09:05:00Z,9,Assign,Assigned VS Pro to Ethan Clark,Software,,7
+27,f198e2c0-8f88-42c5-b451-97a5639a4dbc,2025-10-15T09:06:00Z,9,Assign,Assigned QuickBooks to Ethan Clark,Software,,9
+28,7ec7089c-8783-4cc8-8b0b-35c70893c082,2025-10-16T09:00:00Z,10,Assign,Assigned Surface Laptop 5 to Emma Garcia,Hardware,18,
+29,5bcda5b3-e3c0-4747-970c-0b56b67db7ba,2025-10-16T09:05:00Z,10,Assign,Assigned IntelliJ to Emma Garcia,Software,,8
+30,d17ce496-7932-4aea-8f01-f317e47ca7f9,2025-10-16T09:06:00Z,10,Assign,Assigned OneDrive 1TB to Emma Garcia,Software,,10
+31,837e9249-5079-418e-ada9-8f0ff3191a14,2025-10-17T08:00:00Z,3,Assign,Assigned Zoom Rooms to HQ controller,Software,,12
+32,363c9cb1-520c-45f9-b55a-fbb7699e80b0,2025-10-17T08:05:00Z,1,Assign,Assigned Zoom Rooms to Finance controller,Software,,12
+33,c964d496-8771-497b-83f8-55bc2034482e,2025-10-17T08:10:00Z,2,Assign,Assigned Zoom Rooms to Chico controller,Software,,12
+34,ae85418b-e5cd-4efc-aa12-845aaf8dec2c,2025-10-17T08:15:00Z,4,Assign,Assigned Zoom Rooms to Fresno controller,Software,,12
+35,b02201eb-c9ae-49a9-97ed-47604dcdeb9e,2025-10-18T09:00:00Z,2,Update,Device sent for repair,Hardware,2,
+36,b29806bf-655f-4308-9d96-248cf1455f26,2025-10-19T12:00:00Z,10,Unassign,Reclaimed Zoom Pro from Noah Singh,Software,,4
+37,ad13f822-bcbb-4d04-ad05-8d4f917b8823,2025-10-19T12:05:00Z,10,Assign,Assigned Slack to Noah Singh,Software,,6
+38,c1a80f5d-bd31-4486-9b0c-85632b0f8ac5,2025-10-20T09:00:00Z,5,Retire,Decommissioned old laptop,Hardware,5,
+39,5b901c45-1b98-4c74-b804-b00b2170bbc4,2025-10-21T09:02:00Z,9,Security,Enabled BitLocker on OptiPlex 7010,Hardware,9,
+40,11822169-8f62-442c-9e84-2e4885d66d7b,2025-10-22T09:08:00Z,10,Security,Enabled FileVault on Surface Laptop 5,Hardware,18,

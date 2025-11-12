@@ -62,25 +62,25 @@
     }
 
 
-function setStatusHeaderFor() {
-  const th = document.getElementById("status-col-header");
-  if (!th) return;
+    function setStatusHeaderFor() {
+        const th = document.getElementById("status-col-header");
+        if (!th) return;
 
-  const wrapper = th.firstElementChild || th; // <div class="d-flex ..."> or <th>
-  const icon = wrapper.querySelector('[data-component="filter-icon"]'); // keep existing icon
+        const wrapper = th.firstElementChild || th; // <div class="d-flex ..."> or <th>
+        const icon = wrapper.querySelector('[data-component="filter-icon"]'); // keep existing icon
 
 
-  while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
+        while (wrapper.firstChild) wrapper.removeChild(wrapper.firstChild);
 
-  const label = document.createElement("span");
-  label.className = "status-label";
-  label.textContent = "Status";
+        const label = document.createElement("span");
+        label.className = "status-label";
+        label.textContent = "Status";
 
-  wrapper.appendChild(label);
-  if (icon) wrapper.appendChild(icon);
+        wrapper.appendChild(label);
+        if (icon) wrapper.appendChild(icon);
 
-  th.title = "";
-}
+        th.title = "";
+    }
 
 
     function getCurrentCategory() {
@@ -135,27 +135,27 @@ function setStatusHeaderFor() {
 
     // --------------------------- Rendering ----------------------------
     function renderRows(rows) {
-    clearTable();
+        clearTable();
 
-    (rows || []).forEach((asset) => {
-        const typeLower = (asset.type || "").toLowerCase();
+        (rows || []).forEach((asset) => {
+            const typeLower = (asset.type || "").toLowerCase();
 
-        if (typeLower.includes("software")) {
-            // Software: show assigned seats vs total seats, or "—" if no data
-            const assigned = asset.assignedSeats ?? asset.SeatsUsed ?? 0;
-            const total = asset.totalSeats ?? asset.SeatsTotal ?? "?";
+            if (typeLower.includes("software")) {
+                // Software: show assigned seats vs total seats, or "—" if no data
+                const assigned = asset.assignedSeats ?? asset.SeatsUsed ?? 0;
+                const total = asset.totalSeats ?? asset.SeatsTotal ?? "?";
 
-            asset.displaySeatOrTag = (assigned || total !== "?")
-                ? `Seat ${assigned} of ${total}`
-                : "—";
-        } else {
-            // Hardware: display tag or ID
-            asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
-        }
+                asset.displaySeatOrTag = (assigned || total !== "?")
+                    ? `Seat ${assigned} of ${total}`
+                    : "—";
+            } else {
+                // Hardware: display tag or ID
+                asset.displaySeatOrTag = asset.assetTag || asset.tag || asset.hardwareID || "N/A";
+            }
 
-        renderRow(asset);
-    });
-}
+            renderRow(asset);
+        });
+    }
 
 
     function makeEditButton(asset) {
@@ -183,7 +183,7 @@ function setStatusHeaderFor() {
     function makeArchiveButton(asset) {
         const id = asset.hardwareID ?? asset.softwareID;
         const name = escapeHtml(asset.assetName || "");
-        const type = escapeHtml(asset.type || "");
+        const type = escapeHtml(asset.type || "software");
         return `
         <button type="button"
                 class="action-btn red-archive"
@@ -200,7 +200,7 @@ function setStatusHeaderFor() {
     function makeUnarchiveButton(asset) {
         const id = asset.hardwareID ?? asset.softwareID;
         const name = escapeHtml(asset.assetName || "");
-        const type = escapeHtml(asset.type || "");
+        const type = escapeHtml(asset.type || "software");
         return `
         <button type="button"
                 class="action-btn green-unarchive"
@@ -323,10 +323,12 @@ function setStatusHeaderFor() {
         url.searchParams.set("category", safe);
         url.searchParams.set("scope", "all");
         url.searchParams.set("totalsMode", "lookahead");
+        const showArchived = localStorage.getItem('filter:assetdetails:showArchived') === "true";
+        url.searchParams.set("showArchived", String(showArchived));
 
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+
+        const data = await aimsFetch(url.toString());
+
 
         const items = Array.isArray(data.items) ? data.items : [];
         pageCache.set(page, items);
@@ -358,10 +360,8 @@ function setStatusHeaderFor() {
 
     async function loadOneByTag(tag) {
         try {
-            const res = await fetch(`/api/assets/one?tag=${encodeURIComponent(tag)}&devBypass=true`, { cache: "no-store" });
-            if (!res.ok) throw new Error(`Failed to load asset (${res.status})`);
-            const asset = await res.json();
-
+            const asset = await aimsFetch(`/api/assets/one?tag=${encodeURIComponent(tag)}&devBypass=true`);
+            // Header is always "Status"
             setStatusHeaderFor();
 
             const currentCategory = getCurrentCategory();
@@ -420,17 +420,19 @@ function setStatusHeaderFor() {
         if (!window.confirm(`Are you sure you want to archive "${name}"? `)) return;
 
         const isSoftware = (String(type || "").toLowerCase() === "software");
-        theEndpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
+        const endpoint = isSoftware ? `/api/software/archive/${id}` : `/api/hardware/archive/${id}`;
 
         try {
-            const res = await fetch(theEndpoint, { method: "PUT", headers: { "Content-Type": "application/json" } });
-            if (!res.ok) throw new Error(`Failed to archive: ${res.status} - ${await res.text()}`);
-            const updated = await res.json();
+            const updated = await aimsFetch(endpoint, { method: "PUT" });
             alert(`"${name}" was successfully archived.`);
             await updateRowInUIAndCache(updated);
         } catch (err) {
             console.error("Error archiving asset:", err);
-            alert(`Failed to archive "${name}".`);
+            if (err.isValidation && err.data) {
+                showServerErrorsInline(err.data);
+            } else {
+                alert(`Failed to unarchive "${name}".`);
+            }
         }
     }
 
@@ -439,19 +441,53 @@ function setStatusHeaderFor() {
         if (!window.confirm(`Are you sure you want to unarchive "${name}"? `)) return;
 
         const isSoftware = (String(type || "").toLowerCase() === "software");
+
         const endpoint = isSoftware ? `/api/software/unarchive/${id}` : `/api/hardware/unarchive/${id}`;
 
         try {
-            const res = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" } });
-            if (!res.ok) throw new Error(`Failed to unarchive: ${res.status} - ${await res.text()}`);
-            const updated = await res.json();
+            const updated = await aimsFetch(endpoint, { method: "PUT" });
             alert(`"${name}" was successfully unarchived.`);
             await updateRowInUIAndCache(updated);
         } catch (err) {
             console.error("Error unarchiving asset:", err);
-            alert(`Failed to unarchive "${name}".`);
+            if (err.isValidation && err.data) {
+                showServerErrorsInline(err.data);
+            } else {
+                alert(`Failed to unarchive "${name}".`);
+            }
         }
     }
+
+    // Initialize the Show Archived filter toggle for Asset Details page
+    document.addEventListener("DOMContentLoaded", () => {
+        AIMSFilterIcon.init("detailsFilters", {
+            onChange: ({ showArchived }) => {
+                // Dispatch the global event your listener already handles
+                document.dispatchEvent(new CustomEvent("aims:filter:changed", {
+                    detail: { id: "detailsFilters", showArchived }
+                }));
+            }
+        });
+    });
+
+    // Listen for archived filter toggle
+    document.addEventListener('aims:filter:changed', async (ev) => {
+        const { id, showArchived } = ev.detail || {};
+        if (id !== 'detailsFilters') return; // ignore if not this page’s filter
+
+        // Save preference globally if needed
+        localStorage.setItem('filter:assetdetails:showArchived', String(showArchived));
+
+        // Reload data with new filter
+        const category = getCurrentCategory ? getCurrentCategory() : null;
+        pageCache?.clear?.();
+
+        if (typeof loadCategoryPaged === "function" && category) {
+            await loadCategoryPaged(category, 1);
+        } else if (typeof loadSearchResults === "function") {
+            await loadSearchResults(1);
+        }
+    });
 
     // --------------- Cache/DOM updates after actions -----------------
     async function updateRowInUIAndCache(update) {

@@ -593,37 +593,33 @@
           scope: state.scope
         });
 
-        let res = await fetch(`/api/assets?${params.toString()}`, {
-          headers: { "Accept": "application/json, text/json" },
-          cache: "no-store"
-        });
+        const data = await aimsFetch(`/api/assets?${params.toString()}`);
 
-        if (res.ok) {
-          const data = await res.json();
-          state.total = data.total ?? data.Total ?? 0;
-
-          const items = data.items ?? data.Items ?? [];
-          state.items = Array.isArray(items) ? items : [];
-          renderTable(state.items);
-
-          // <- server-provided reports (camelCase or PascalCase)
-          const reports = data.reports ?? data.Reports ?? [];
-          renderReportsDropdown(Array.isArray(reports) ? reports : []);
-          return;
-        }
-
-        // Fallback
-        res = await fetch("/api/diag/asset-table", { headers: { "Accept": "application/json, text/json" }, cache: "no-store" });
-        if (!res.ok) throw new Error(`Fallback HTTP ${res.status}`);
-        const diag = await res.json();
-        const rows = Array.isArray(diag) ? diag : (diag.rows ?? diag.Rows ?? []);
-        state.items = rows;
+        state.total = data.total ?? data.Total ?? 0;
+        const items = data.items ?? data.Items ?? [];
+        state.items = Array.isArray(items) ? items : [];
         renderTable(state.items);
+
+        // <- server-provided reports (camelCase or PascalCase)
+        const reports = data.reports ?? data.Reports ?? [];
+        renderReportsDropdown(Array.isArray(reports) ? reports : []);
       } catch (err) {
         console.error("fetchAssets failed:", err);
-        renderTable([]);
-      } finally {
-        state.loading = false;
+
+        try {
+          const diagData = await aimsFetch("/api/diag/asset-table");
+
+          // Fallback
+          const rows = Array.isArray(diagData) ? diagData : (diagData.rows ?? diagData.Rows ?? []);
+          state.items = rows;
+          renderTable(state.items);
+
+        } catch (fallbackErr) {
+          console.error("Fallback failed:", fallbackErr);
+          renderTable([]);
+        } finally {
+          state.loading = false;
+        }
       }
     }
 

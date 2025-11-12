@@ -1,21 +1,11 @@
-using System;
-using System;
-using System.Collections.Generic;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq;
 using System.Net;
-using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace AIMS.Tests.Integration
 {
@@ -116,7 +106,8 @@ namespace AIMS.Tests.Integration
                 FullName = "Integration Test User",
                 EmployeeNumber = "ITEST-001",
                 ExternalId = Guid.NewGuid(),
-                GraphObjectID = null,
+                // Non-nullable in model: supply a dummy GraphObjectID
+                GraphObjectID = Guid.NewGuid().ToString("D"),
                 IsActive = true,
                 IsArchived = false,
                 RoleID = role.RoleID,

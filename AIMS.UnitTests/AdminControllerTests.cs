@@ -1,6 +1,7 @@
 using AIMS.Controllers.Mvc;
 using AIMS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph.Models;
 using Moq;
 
@@ -13,7 +14,11 @@ public class AdminControllerTests // Unit tests for AdminController
         mockService.Setup(s => s.GetUsersAsync(It.IsAny<string>())) // Mock the GetUsersAsync method
                    .ReturnsAsync(new List<User> { new User { DisplayName = "Jane Doe" } }); // Return a sample user
 
-        var controller = new AdminController(mockService.Object); // Create controller with mocked service
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AIMS.Data.AimsDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDb1")
+            .Options;
+        var dbContext = new AIMS.Data.AimsDbContext(options);
+        var controller = new AdminController(mockService.Object, dbContext); // Create controller with mocked service
 
         var result = await controller.GetAzureAdUsers(null) as OkObjectResult; // Call the method
 
@@ -29,7 +34,11 @@ public class AdminControllerTests // Unit tests for AdminController
         mockService.Setup(s => s.GetUsersAsync("query")) // Expect the search parameter "query"
                    .ReturnsAsync(new List<User> { new User { DisplayName = "Jane Doe" } }); // Return a sample user
 
-        var controller = new AdminController(mockService.Object);
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AIMS.Data.AimsDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDb2")
+            .Options;
+        var dbContext = new AIMS.Data.AimsDbContext(options);
+        var controller = new AdminController(mockService.Object, dbContext);
 
         var result = await controller.GetAzureAdUsers("query") as OkObjectResult;
 
@@ -46,7 +55,11 @@ public class AdminControllerTests // Unit tests for AdminController
         mockService.Setup(s => s.GetUsersAsync(It.IsAny<string>())) // Mock the GetUsersAsync method
                    .ReturnsAsync(new List<User>()); // Return an empty list
 
-        var controller = new AdminController(mockService.Object); // Create controller with mocked service
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AIMS.Data.AimsDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDb3")
+            .Options;
+        var dbContext = new AIMS.Data.AimsDbContext(options);
+        var controller = new AdminController(mockService.Object, dbContext); // Create controller with mocked service
 
         var result = await controller.GetAzureAdUsers(null) as OkObjectResult; // Call the method
 
@@ -62,7 +75,11 @@ public class AdminControllerTests // Unit tests for AdminController
         mockService.Setup(s => s.GetUsersAsync(It.IsAny<string>())) //  Mock the GetUsersAsync method
                    .ThrowsAsync(new InvalidOperationException("Graph failure")); // Simulate an exception
 
-        var controller = new AdminController(mockService.Object); // Create controller with mocked service
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AIMS.Data.AimsDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDb4")
+            .Options;
+        var dbContext = new AIMS.Data.AimsDbContext(options);
+        var controller = new AdminController(mockService.Object, dbContext); // Create controller with mocked service
 
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await controller.GetAzureAdUsers(null)); // Assert the exception is propagated
     }
@@ -74,7 +91,11 @@ public class AdminControllerTests // Unit tests for AdminController
         mockService.Setup(s => s.GetUserRolesAsync("uid")) // Mock the GetUserRolesAsync method
                    .ReturnsAsync(new List<DirectoryObject> { new DirectoryRole { DisplayName = "Admin" } }); // Return a sample role
 
-        var controller = new AdminController(mockService.Object); // Create controller with mocked service
+        var options = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AIMS.Data.AimsDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDb5")
+            .Options;
+        var dbContext = new AIMS.Data.AimsDbContext(options);
+        var controller = new AdminController(mockService.Object, dbContext); // Create controller with mocked service
 
         var result = await controller.GetUserRoles("uid") as OkObjectResult; // Call the method
 
@@ -85,10 +106,14 @@ public class AdminControllerTests // Unit tests for AdminController
     }
 
     [Fact]
-    public void Index_ReturnsView() // Test for Index method
+    public async Task Index_ReturnsView() // Test for Index method
     {
-        var controller = new AdminController(Mock.Of<IGraphUserService>()); // Use a mock service
-        var result = controller.Index(); // Call the method
+        var options = new DbContextOptionsBuilder<AIMS.Data.AimsDbContext>()
+            .UseInMemoryDatabase(databaseName: "TestDb6")
+            .Options;
+        var dbContext = new AIMS.Data.AimsDbContext(options);
+        var controller = new AdminController(Mock.Of<IGraphUserService>(), dbContext); // Use a mock service
+        var result = await controller.Index(); // Call the method
         Assert.IsType<ViewResult>(result); // Assert the result is a ViewResult
     }
 }

@@ -1,91 +1,259 @@
 /* ======================================================================
-   AIMS Page CSS: AuditLog/Index
-   Purpose:
-   - Align with Admin table styling
-   - Light #ECF0F1 background, consistent column widths, row hover
+   AIMS Page CSS: AuditLog/Index (Admin Chrome + JS tbody)
+   ----------------------------------------------------------------------
+   - Copies Admin table chrome (wrapper/header/body) via markup
+   - Leaves visuals to ~/css/pages/admin.index.css
+   - Keeps dropdown, pager, row-flash, column widths unique to Audit
+   - Only ellipsed text gets tooltips; no "help" cursor icon
+   - Modal supports read-only row details with scrollable description
    ====================================================================== */
 
+/* ---------- Container & Title ---------------------------------------- */
 .audit-log-container {
-    background: #ECF0F1;
-    padding: 12px 14px;
-    border-radius: 8px;
+  background: var(--aims-bg-contrast, #f7f9fa);
+  padding: 0;
+  margin: 0 auto;
+  border-radius: 8px;
+  width: 100%;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.audit-log-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--aims-ink, #34495e);
 }
 
-/* Match Admin chrome column sizing */
+/* ---------- Admin chrome column sizing (Audit columns) ---------------- */
 .al-col-1 {
-    width: 8%;
+  width: 8%;
 }
 
 .al-col-2 {
-    width: 16%;
+  width: 16%;
 }
 
 .al-col-3 {
-    width: 10%;
+  width: 10%;
 }
 
 .al-col-4 {
-    width: 10%;
+  width: 10%;
 }
 
 .al-col-5 {
-    width: 10%;
+  width: 10%;
 }
 
 .al-col-6 {
-    width: 14%;
+  width: 14%;
 }
 
 .al-col-7 {
-    width: 12%;
+  width: 12%;
 }
 
 .al-col-8 {
-    width: 20%;
+  width: 20%;
 }
 
-.admin-table-body td.al-col-1 {
-    width: 8%;
+/* Hover behavior to match Admin */
+.admin-table-body tr:hover td {
+  background: #f7fbfd;
 }
 
-.admin-table-body td.al-col-2 {
-    width: 16%;
+/* ---------- Dropdown (Filter trigger retained for Task 4A) ----------- */
+#filter-button-container {
+  position: relative;
+  text-align: right;
+  margin-bottom: 15px;
 }
 
-.admin-table-body td.al-col-3 {
-    width: 10%;
+#filter-button-toggle {
+  background-color: #1abc9c;
+  color: #fff;
+  border: 1px solid #1abc9c;
+  padding: 8px 16px;
+  font-size: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.admin-table-body td.al-col-4 {
-    width: 10%;
+#filter-button-toggle:hover {
+  background-color: #17a589;
 }
 
-.admin-table-body td.al-col-5 {
-    width: 10%;
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  min-width: 150px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
+  display: none;
+  z-index: 1000;
 }
 
-.admin-table-body td.al-col-6 {
-    width: 14%;
+.dropdown-menu.show {
+  display: block;
 }
 
-.admin-table-body td.al-col-7 {
-    width: 12%;
+.dropdown-item {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+  transition: background-color .2s ease;
 }
 
-.row-flash {
+.dropdown-item:hover {
+  background-color: #f1f1f1;
+  color: #007bff;
+}
+
+.dropdown-search {
+  width: 90%;
+  padding: 6px 10px;
+  margin: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: .9rem;
+}
+
+/* ---------- Row flash (realtime insert/update) ----------------------- */
+@keyframes rowFlash {
+  from {
+    background-color: #1abc9c49;
+  }
+
+  to {
+    background-color: transparent;
+  }
+}
+
+tr.row-flash>td {
   animation: rowFlash 1.2s ease-out;
 }
 
-.admin-table-body td.al-col-8 {
-    width: 20%;
+/* ---------- Pager (shared with Search) -------------------------------- */
+.search-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0 14px;
+  background: transparent;
 }
 
-/* Hover behavior like Admin */
-.admin-table-body tr:hover td {
-    background: #f7fbfd;
+.search-pager .pager-btn {
+  height: 41px;
+  padding: 0 16px;
+  background: #ecf0f1;
+  color: #34495e;
+  border: 3px solid #34495e;
+  box-shadow: 0 4px 4px #0000003e;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: border-color .15s ease-out, box-shadow .15s ease-out, transform .15s ease-out;
 }
 
-/* Remove legacy audit log styling if any remains */
-.audit-log-table {
-    all: unset;
+.search-pager .pager-btn:hover:not([disabled]) {
+  border-color: #1abc9c;
 }
+
+.search-pager .pager-btn:focus-visible {
+  outline: 3px solid #1abc9c;
+  outline-offset: 3px;
+}
+
+.search-pager .pager-btn:active:not([disabled]) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 3px #0000003e;
+}
+
+.search-pager .pager-btn[disabled] {
+  opacity: .5;
+  cursor: default;
+  box-shadow: none;
+}
+
+.pager-status {
+  color: #34495e;
+  font-size: .9rem;
+}
+
+/* ---------- Header/body alignment + ellipsis ------------------------- */
+.admin-table-header,
+.admin-table-body {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Keep consistent padding + ellipsis for both th/td */
+.admin-table-header th,
+.admin-table-body td {
+  padding: 10px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* cursor removed → keep default pointer (no help icon) */
+}
+
+/* Only when ellipsed will JS set title attr → native tooltip shows; no CSS needed */
+
+/* ---------- Modal tweaks --------------------------------------------- */
+.audit-desc-box {
+  resize: vertical;
+  min-height: 120px;
+  max-height: 60vh;
+  /* scrollable within modal */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.audit-row-fields dd {
+  word-break: break-word;
+}
+
+/* ---------- Responsive (container only; table handled by Admin CSS) --- */
+@media (max-width: 992px) {
+  .audit-log-container {
+    width: 100%;
+    padding: 1rem;
+  }
+}
+.page-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--aims-ink, #34495e);
+  margin: 0;
+}
+
+.audit-table td[title] {
+  cursor: default;   
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  transition: all 0.2s ease;
+}
+
+.audit-table td[title]:hover {
+  overflow: visible;
+  white-space: normal;
+  background-color: #f8f9fa;
+  position: relative;
+  z-index: 5;
+}
+

@@ -390,88 +390,85 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // ---- Preflight duplicate check vs DB (soft-fail) ----
         try {
-            const pre = await fetch("/api/hardware/check-duplicates", {
+            const pre = await aimsFetch("/api/hardware/check-duplicates", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                ttl: 0, //don't cache
                 body: JSON.stringify({ dtos: cleaned })
             });
 
-            if (pre.ok) {
-                const { existingSerials = [], existingTags = [] } = await pre.json();
+            const preData = pre;
+            const { existingSerials = [], existingTags = [] } = preData;
 
-                const errs = {};
-                items.forEach((it, i) => {
-                    const rowErrors = [];
-                    const s = (it.SerialNumber || "").trim();
-                    const t = (it.AssetTag || "").trim();
+            const errs = {};
+            items.forEach((it, i) => {
+                const rowErrors = [];
+                const s = (it.SerialNumber || "").trim();
+                const t = (it.AssetTag || "").trim();
 
-                    if (existingSerials.some(es => (es || "").toLowerCase() === s.toLowerCase())) {
-                        rowErrors.push(`Duplicate serial number: ${s}`);
-                    }
-                    if (existingTags.includes(t)) {
-                        rowErrors.push(`Duplicate asset tag: ${t}`);
-                    }
-
-                    if (rowErrors.length) errs[`Dtos[${i}]`] = rowErrors;
-                });
-
-                if (Object.keys(errs).length) {
-                    showServerErrorsInline({ errors: errs });
-                    return;
+                if (existingSerials.some(es => (es || "").toLowerCase() === s.toLowerCase())) {
+                    rowErrors.push(`Duplicate serial number: ${s}`);
                 }
+                if (existingTags.includes(t)) {
+                    rowErrors.push(`Duplicate asset tag: ${t}`);
+                }
+
+                if (rowErrors.length) errs[`Dtos[${i}]`] = rowErrors;
+            });
+
+            if (Object.keys(errs).length) {
+                showServerErrorsInline({ errors: errs });
+                return;
             }
+
         } catch { /* ignore preflight failure */ }
 
         try {
-            const res = await fetch("/api/hardware/add-bulk", {
+            const data = await aimsFetch("/api/hardware/add-bulk", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                ttl: 0, //don't cache
                 body: JSON.stringify({ dtos: cleaned })
             });
 
-            if (res.ok) {
-                clearSaveProgress();
 
-                const modal = bootstrap.Modal.getInstance(itemDetailsModal);
-                if (modal) modal.hide();
+            clearSaveProgress();
 
-                await new Promise(r => setTimeout(r, 150));
+            const modal = bootstrap.Modal.getInstance(itemDetailsModal);
+            if (modal) modal.hide();
 
-                let refreshed = false;
-                try {
-                    if (window.AIMS?.refreshList) {
-                        await window.AIMS.refreshList(baseData.AssetType, 1, 50, { invalidate: true, scrollTop: true });
-                        refreshed = true;
-                    }
-                } catch { /* ignore */ }
+            await new Promise(r => setTimeout(r, 150));
 
-                if (!refreshed && typeof window.loadAssetsPaged === 'function') {
-                    try {
-                        await window.loadAssetsPaged(baseData.AssetType, 1, 50, true);
-                        refreshed = true;
-                    } catch { /* ignore */ }
+            let refreshed = false;
+            try {
+                if (window.AIMS?.refreshList) {
+                    await window.AIMS.refreshList(baseData.AssetType, 1, 50, { invalidate: true, scrollTop: true });
+                    refreshed = true;
                 }
+            } catch { /* ignore */ }
 
-                if (!refreshed) window.location.reload();
-                return;
+            if (!refreshed && typeof window.loadAssetsPaged === 'function') {
+                try {
+                    await window.loadAssetsPaged(baseData.AssetType, 1, 50, true);
+                    refreshed = true;
+                } catch { /* ignore */ }
             }
 
-            if (res.status >= 500) {
-                showErrorMessages(
-                    { title: "Server error", detail: "Could not save right now. Please try again." },
-                    errorBox
-                );
-                return;
-            }
-
-            let data;
-            try { data = await res.json(); }
-            catch { data = { title: `HTTP ${res.status}`, detail: await res.text() }; }
-            showServerErrorsInline(data);
-
+            if (!refreshed) window.location.reload();
+            return;
         } catch (err) {
+            if (err.name !== "AbortError") {
+                // Server-side validation is usually a JSON object
+                try {
+                    const errorObj = JSON.parse(err.message.replace(/^HTTP \d+:/, "").trim());
+                    if (errorObj && typeof errorObj === 'object') {
+                        showServerErrorsInline(errorObj);
+                        return;
+                    }
+                } catch { /* non-JSON fallthrough */ }
+            }
+
+            // Fallback: unknown or server error → toast/banner
             showErrorMessages(
-                { title: err.name || "Client error", detail: err.message || "Unexpected error" },
+                { title: "Server error", detail: "Could not save right now. Please try again." },
                 errorBox
             );
         }
