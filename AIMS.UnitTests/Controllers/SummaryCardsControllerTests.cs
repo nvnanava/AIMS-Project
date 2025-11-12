@@ -113,7 +113,7 @@ namespace AIMS.Tests.Api
         {
             // Arrange
             _mockService
-                .Setup(s => s.GetSummaryAsync(It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                .Setup(s => s.GetSummaryAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Simulated failure"));
 
             // Act
