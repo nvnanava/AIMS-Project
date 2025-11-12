@@ -171,8 +171,17 @@ public static class DbSeeder
                 var purchase = ParseDateOnlyOrDefault(Get(r, "purchasedate"), DateOnly.FromDateTime(DateTime.UtcNow));
                 var warranty = ParseDateOnlyOrDefault(Get(r, "warrantyexpiration"), purchase.AddYears(1));
 
+                // Coalesce AssetTag from multiple header spellings
+                var rawTag = Get(r, "assettag");
+                if (string.IsNullOrWhiteSpace(rawTag)) rawTag = Get(r, "asset tag");
+                if (string.IsNullOrWhiteSpace(rawTag)) rawTag = Get(r, "asset_tag");
+                var assetTag = string.IsNullOrWhiteSpace(rawTag)
+                    ? $"AT-{Get(r, "serialnumber")}".Trim()
+                    : rawTag.Trim();
+
                 var h = new Hardware
                 {
+                    AssetTag = assetTag,
                     SerialNumber = Get(r, "serialnumber"),
                     AssetName = Get(r, "assetname"),
                     AssetType = Get(r, "assettype"),
@@ -743,7 +752,7 @@ public static class DbSeeder
             new Hardware { AssetName="Dell Inspiron 15", AssetType="Laptop", Status="Assigned", Manufacturer="Dell", Model="Inspiron 15", SerialNumber="LT-0115",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-10)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(2)) },
 
-            new Hardware { AssetName="Dell S2421NX", AssetType ="Monitor", Status="Archived", Manufacturer="Dell", Model ="S2421NX", SerialNumber="MN-0001",
+            new Hardware { AssetName="Dell S2421NX", AssetType ="Monitor", Status="Assigned", Manufacturer="Dell", Model ="S2421NX", SerialNumber="MN-0001",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-6)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(1)) },
             new Hardware { AssetName="HP 527SH", AssetType="Monitor", Status="Assigned", Manufacturer="HP", Model="527SH", SerialNumber="MN-0023",
                            PurchaseDate=DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-4)), WarrantyExpiration=DateOnly.FromDateTime(DateTime.UtcNow.AddYears(2)) },
@@ -1258,9 +1267,20 @@ public static class DbSeeder
     private static async Task UpsertHardwareAsync(AimsDbContext db, Hardware incoming, CancellationToken ct)
     {
         var existing = await db.HardwareAssets.FirstOrDefaultAsync(h => h.SerialNumber == incoming.SerialNumber, ct);
-        if (existing is null) await db.HardwareAssets.AddAsync(incoming, ct);
+        if (existing is null)
+        {
+            // Ensure a non-empty AssetTag on insert
+            if (string.IsNullOrWhiteSpace(incoming.AssetTag))
+                incoming.AssetTag = $"AT-{incoming.SerialNumber}".Trim();
+
+            await db.HardwareAssets.AddAsync(incoming, ct);
+        }
         else
         {
+            // Allow AssetTag to be updated when provided
+            if (!string.IsNullOrWhiteSpace(incoming.AssetTag))
+                existing.AssetTag = incoming.AssetTag.Trim();
+
             existing.AssetName = incoming.AssetName;
             existing.AssetType = incoming.AssetType;
             existing.Status = incoming.Status;

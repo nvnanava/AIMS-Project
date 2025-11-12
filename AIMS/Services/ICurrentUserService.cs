@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using AIMS.Data;
 using AIMS.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 public interface ICurrentUser
 {
@@ -30,7 +30,7 @@ public sealed class CurrentUser : ICurrentUser
     public string? GraphObjectId =>
         _http.HttpContext?.User?.FindFirst("oid")?.Value
         ?? _http.HttpContext?.User?.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
-        // NOTE: no fallback to ClaimTypes.NameIdentifier (that’s the JWT 'sub')
+    // NOTE: no fallback to ClaimTypes.NameIdentifier (that’s the JWT 'sub')
 
     public async Task<int?> GetUserIdAsync(CancellationToken ct = default)
     {

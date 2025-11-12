@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 test('Search dedupes in-flight duplicate network requests (Desktop spam)', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => { });
 
     const searchInput = page.getByRole('textbox', { name: /search/i });
     await expect(searchInput).toBeVisible();

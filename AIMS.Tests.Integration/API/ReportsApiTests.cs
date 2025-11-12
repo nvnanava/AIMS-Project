@@ -171,7 +171,6 @@ public class ReportsApiTests
             EmployeeNumber = "ITEST-001",
             ExternalId = Guid.NewGuid(),
             GraphObjectID = Guid.NewGuid().ToString("D"),
-            IsActive = true,
             IsArchived = false,
             RoleID = role.RoleID,
         };
@@ -217,7 +216,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest1",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Assignment"
         };
 
@@ -255,7 +254,7 @@ public class ReportsApiTests
             ["start"] = startDate.ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(1).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest2",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Assignment"
         };
 
@@ -314,7 +313,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Office",
             ["OfficeID"] = office.OfficeID.ToString()
         };
@@ -354,7 +353,7 @@ public class ReportsApiTests
             ["start"] = startDate.ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(1).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest4",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Office",
             ["OfficeID"] = office.OfficeID.ToString()
         };
@@ -411,7 +410,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -454,7 +453,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -518,7 +517,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -581,7 +580,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -644,7 +643,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -704,7 +703,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -762,7 +761,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -821,7 +820,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 
@@ -880,7 +879,7 @@ public class ReportsApiTests
             ["start"] = startDate.AddDays(16).ToString("MM-dd-yyyy"),
             ["end"] = startDate.AddDays(18).ToString("MM-dd-yyyy"),
             ["reportName"] = "IntTest3",
-            ["CreatorUserID"] = user.UserID.ToString(),
+            ["CreatorUserID"] = user.GraphObjectID,
             ["type"] = "Custom",
         };
 

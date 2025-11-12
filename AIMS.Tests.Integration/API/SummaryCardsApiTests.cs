@@ -23,39 +23,82 @@ namespace AIMS.Tests.Integration.API
 
         private static async Task CleanupAsync(AimsDbContext db, params string[] assetTypes)
         {
-            // Remove thresholds first
-            var th = await db.Thresholds
-                .Where(t => assetTypes.Contains(t.AssetType))
-                .ToListAsync();
-            db.Thresholds.RemoveRange(th);
-
-            // Remove assignments that reference hardware we will delete
+            // Resolve IDs first for both HW and SW of the types we plan to wipe
             var hwIds = await db.HardwareAssets
                 .Where(h => assetTypes.Contains(h.AssetType))
                 .Select(h => h.HardwareID)
                 .ToListAsync();
 
+            var swIds = await db.SoftwareAssets
+                .Where(s => assetTypes.Contains(s.SoftwareType))
+                .Select(s => s.SoftwareID)
+                .ToListAsync();
+
+            // Find any audit log rows that reference those HW/SW IDs
+            var affectedAuditLogs = await db.AuditLogs
+                .Where(a =>
+                    (a.HardwareID != null && hwIds.Contains(a.HardwareID.Value)) ||
+                    (a.SoftwareID != null && swIds.Contains(a.SoftwareID.Value)))
+                .Select(a => a.AuditLogID)
+                .ToListAsync();
+
+            if (affectedAuditLogs.Count > 0)
+            {
+                // Delete child changes first, then the audit logs
+                var changes = await db.AuditLogChanges
+                    .Where(c => affectedAuditLogs.Contains(c.AuditLogID))
+                    .ToListAsync();
+                db.AuditLogChanges.RemoveRange(changes);
+
+                var audits = await db.AuditLogs
+                    .Where(a => affectedAuditLogs.Contains(a.AuditLogID))
+                    .ToListAsync();
+                db.AuditLogs.RemoveRange(audits);
+            }
+
+            // Remove thresholds next (they don't hold FKs to assets, but we want a truly clean slate)
+            var th = await db.Thresholds
+                .Where(t => assetTypes.Contains(t.AssetType))
+                .ToListAsync();
+            db.Thresholds.RemoveRange(th);
+
+            // Remove assignments that reference hardware/software we will delete
             if (hwIds.Count > 0)
             {
-                var asg = await db.Assignments
+                var asgHw = await db.Assignments
                     .Where(a => a.AssetKind == AssetKind.Hardware
                                 && a.HardwareID != null
                                 && hwIds.Contains(a.HardwareID.Value))
                     .ToListAsync();
-                db.Assignments.RemoveRange(asg);
+                db.Assignments.RemoveRange(asgHw);
             }
 
-            // Remove hardware rows of those types
-            var hw = await db.HardwareAssets
-                .Where(h => assetTypes.Contains(h.AssetType))
-                .ToListAsync();
-            db.HardwareAssets.RemoveRange(hw);
+            if (swIds.Count > 0)
+            {
+                var asgSw = await db.Assignments
+                    .Where(a => a.AssetKind == AssetKind.Software
+                                && a.SoftwareID != null
+                                && swIds.Contains(a.SoftwareID.Value))
+                    .ToListAsync();
+                db.Assignments.RemoveRange(asgSw);
+            }
 
-            // Remove software rows of those types
-            var sw = await db.SoftwareAssets
-                .Where(s => assetTypes.Contains(s.SoftwareType))
-                .ToListAsync();
-            db.SoftwareAssets.RemoveRange(sw);
+            // Now it is safe to delete the assets themselves
+            if (hwIds.Count > 0)
+            {
+                var hw = await db.HardwareAssets
+                    .Where(h => hwIds.Contains(h.HardwareID))
+                    .ToListAsync();
+                db.HardwareAssets.RemoveRange(hw);
+            }
+
+            if (swIds.Count > 0)
+            {
+                var sw = await db.SoftwareAssets
+                    .Where(s => swIds.Contains(s.SoftwareID))
+                    .ToListAsync();
+                db.SoftwareAssets.RemoveRange(sw);
+            }
 
             await db.SaveChangesAsync();
         }
@@ -428,7 +471,7 @@ namespace AIMS.Tests.Integration.API
             Assert.Equal(total - assigned, row.Available);
             Assert.Equal(threshold, row.Threshold);
             Assert.True(row.IsLow); // 3766 < 4000
-                                    // sanity for percent
+            // sanity for percent
             Assert.Equal(
                 (int)Math.Round(((double)(total - assigned) / total) * 100, MidpointRounding.AwayFromZero),
                 row.AvailablePercent
