@@ -19,18 +19,16 @@
 
                     <div class="mb-3">
                         <label for="manufacturer" class="form-label">Manufacturer</label>
-                        <select id="manufacturer" name="manufacturer" class="form-select" required>
-                            <option value="">Select Manufacturer</option>
-                            <option value="Other">Other...</option>
-                        </select>
+                        <input type="text" id="manufacturer" name="manufacturer" class="form-control"
+                            placeholder="Enter Manufacturer" maxlength="64" required>
+                        <div id="manufacturerError" class="invalid-feedback"></div>
                     </div>
 
                     <div class="mb-3">
                         <label for="model" class="form-label">Model</label>
-                        <select id="model" name="model" class="form-select" required>
-                            <option value="">Select Model</option>
-                            <option value="Other">Other...</option>
-                        </select>
+                        <input type="text" id="model" name="model" class="form-control" placeholder="Enter Model"
+                            maxlength="64" required>
+                        <div id="modelError" class="invalid-feedback"></div>
                     </div>
                     <div id="assetFormError" class="text-danger small" style="display:none;"></div>
 
@@ -73,6 +71,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div id="phase2Summary" class="mb-3 border rounded p-2 bg-light small">
+                    <strong>Asset Type:</strong> <span id="summaryAssetType"></span><br>
+                    <strong>Asset Name:</strong> <span id="summaryAssetName"></span>
+                </div>
                 <div id="itemStep"></div>
                 <form id="ItemDetailsForm">
                     <div id="itemInputs">
@@ -80,16 +82,23 @@
                             <label for="serialNumber" class="form-label">Serial Number:</label>
                             <input type="text" id="serialNumber" name="serialNumber" class="form-control"
                                 placeholder="Enter Serial Number" maxlength="128" required>
-                            <button type="button" id="generateSerialBtn"
-                                class="btn btn-outline-secondary">Random</button>
                             <div id="serialNumberError" class="invalid-feedback">Serial Number is required.</div>
                         </div>
-                        <div class="mb-3">
-                            <label for="tagNumber" class="form-label">Tag Number:</label>
-                            <input type="text" id="tagNumber" name="tagNumber" class="form-control"
-                                placeholder="Enter Tag Number" maxlength="16" required>
-                            <button type="button" id="generateTagBtn" class="btn btn-outline-secondary">Random</button>
-                            <div id="tagNumberError" class="invalid-feedback">Tag Number is required.</div>
+                        <div class="mb-3 d-flex align-items-center justify-content-between">
+                            <div class="flex-grow-1 me-2">
+                                <label for="tagNumber" class="form-label">Tag Number:</label>
+                                <input type="text" id="tagNumber" name="tagNumber" class="form-control"
+                                    placeholder="e.g. MBC000001" maxlength="16" required />
+                                <div id="tagNumberError" class="invalid-feedback">Tag Number is required.</div>
+                            </div>
+                            <div>
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="autoIncrementTagChk" />
+                                    <label class="form-check-label" for="autoIncrementTagChk">
+                                        Generate All Tags
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>

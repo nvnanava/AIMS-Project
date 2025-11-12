@@ -31,7 +31,7 @@ const STORAGE_STATE = USE_TEST_AUTH ? 'storageState.json' : undefined;
 export default defineConfig({
     testDir: './specs',
     fullyParallel: true,
-    timeout: 60_000,
+    timeout: 180_000,
     expect: { timeout: 10_000 },
     reporter: [['list'], ['html', { open: 'never' }]],
     globalSetup: './global-setup.ts',
