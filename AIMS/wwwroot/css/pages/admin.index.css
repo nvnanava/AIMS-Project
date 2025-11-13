@@ -255,3 +255,62 @@ button.add-btn:hover {
   background-color: #17a589 !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2) !important;
 }
+
+/* Small action icon buttons */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(26, 188, 156, .10);
+  border: 2px solid var(--aims-accent, #1abc9c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .14);
+  transition: transform .05s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+.icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
+  background: rgba(26, 188, 156, .18);
+}
+
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18), 0 0 0 3px var(--aims-focus, rgba(26, 188, 156, .35));
+}
+
+.icon-btn svg {
+  pointer-events: none;
+  fill: var(--aims-ink, #34495e);
+}
+
+.admin-table-body .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 96px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: default;
+}
+
+.admin-table-body .badge.active {
+  background: #d5f5e3;
+  color: #1e7e34;
+  border: 2px solid #2ecc71;
+}
+
+.admin-table-body .badge.inactive {
+  background: #fadbd8;
+  color: #a33a2a;
+  border: 2px solid #e74c3c;
+}

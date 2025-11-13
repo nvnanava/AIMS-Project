@@ -137,7 +137,7 @@ public class ThresholdsControllerIntegrationTests
     {
         const string assetType = "Laptop";
 
-        var invalidJson = """{ "thresholdValue": "not-a-number" }""";
+        var invalidJson = """{ "thresholdValue": "not - a - number" }""";
         var content = new StringContent(invalidJson, Encoding.UTF8, "application/json");
 
         var response = await _client.PutAsync($"/api/thresholds/{assetType}", content);
