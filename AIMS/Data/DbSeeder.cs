@@ -98,23 +98,39 @@ public static class DbSeeder
             await db.SaveChangesAsync(ct);
         }, logger);
 
+        // 2) Offices (key: OfficeName). Columns: OfficeName, Location
+        await ApplyCsvAsync(db, Path.Combine(dir, "offices.csv"), async rows =>
+        {
+            foreach (var r in rows)
+            {
+                var o = new Office { OfficeName = Get(r, "officename"), Location = Get(r, "location") };
+                await UpsertOfficeAsync(db, o, ct);
+            }
+            await db.SaveChangesAsync(ct);
+        }, logger);
+
         // Preload Roles map for later
         var roleByName = await db.Roles.AsNoTracking().ToDictionaryAsync(r => r.RoleName, ct);
 
-        // 2) Users (key: Email). Columns (case-insensitive):
+        // 3) Users (key: Email). Columns (case-insensitive):
         // FullName, Email, EmployeeNumber, IsActive, RoleName
         await ApplyCsvAsync(db, Path.Combine(dir, "users.csv"), async rows =>
         {
             foreach (var r in rows)
             {
                 var email = Get(r, "email");
+
+                var officeIdRaw = ParseInt(Get(r, "officeid"), 0);
+                int? officeId = officeIdRaw == 0 ? null : officeIdRaw;
+
                 var incoming = new User
                 {
                     FullName = Get(r, "fullname"),
                     Email = email,
                     EmployeeNumber = Get(r, "employeenumber"),
                     IsArchived = ParseBool(Get(r, "isArchived"), defaultValue: true),
-                    RoleID = roleByName.TryGetValue(Get(r, "rolename"), out var rr) ? rr.RoleID : roleByName.GetValueOrDefault("Employee")?.RoleID ?? 0
+                    RoleID = roleByName.TryGetValue(Get(r, "rolename"), out var rr) ? rr.RoleID : roleByName.GetValueOrDefault("Employee")?.RoleID ?? 0,
+                    OfficeID = officeId
                 };
                 await UpsertUserAsync(db, incoming, ct);
             }
@@ -135,16 +151,6 @@ public static class DbSeeder
             await db.SaveChangesAsync(ct);
         }, logger);
 
-        // 3) Offices (key: OfficeName). Columns: OfficeName, Location
-        await ApplyCsvAsync(db, Path.Combine(dir, "offices.csv"), async rows =>
-        {
-            foreach (var r in rows)
-            {
-                var o = new Office { OfficeName = Get(r, "officename"), Location = Get(r, "location") };
-                await UpsertOfficeAsync(db, o, ct);
-            }
-            await db.SaveChangesAsync(ct);
-        }, logger);
 
         // 4) Thresholds (key: AssetType). Columns: AssetType, ThresholdValue
         await ApplyCsvAsync(db, Path.Combine(dir, "thresholds.csv"), async rows =>
@@ -1237,6 +1243,7 @@ public static class DbSeeder
             existing.EmployeeNumber = incoming.EmployeeNumber;
             existing.IsArchived = incoming.IsArchived;
             existing.RoleID = incoming.RoleID;
+            existing.OfficeID = incoming.OfficeID;
 
             if (string.IsNullOrWhiteSpace(existing.GraphObjectID))
                 existing.GraphObjectID = GraphIdFor(existing);
