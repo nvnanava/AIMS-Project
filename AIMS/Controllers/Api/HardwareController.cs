@@ -5,9 +5,11 @@ using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;
 using AIMS.ViewModels;
+using AIMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace AIMS.Controllers.Api;
 
@@ -18,11 +20,15 @@ public class HardwareController : ControllerBase
 {
     private readonly AimsDbContext _db;
     private readonly HardwareQuery _hardwareQuery;
+    private readonly HardwareAssetService _hardwareService;
 
-    public HardwareController(AimsDbContext db, HardwareQuery hardwareQuery)
+
+
+    public HardwareController(AimsDbContext db, HardwareQuery hardwareQuery, HardwareAssetService hardwareService)
     {
         _db = db;
         _hardwareQuery = hardwareQuery;
+        _hardwareService = hardwareService;
     }
 
     [HttpGet("get-all")]
@@ -99,136 +105,20 @@ public class HardwareController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var dtos = (req.Dtos ?? new())
-            .Select(d => new CreateHardwareDto
-            {
-                AssetTag = (d.AssetTag ?? "").Trim(),
-                AssetName = (d.AssetName ?? "").Trim(),
-                AssetType = (d.AssetType ?? "").Trim(),
-                Status = (d.Status ?? "").Trim(),
-                Manufacturer = (d.Manufacturer ?? "").Trim(),
-                Model = (d.Model ?? "").Trim(),
-                SerialNumber = (d.SerialNumber ?? "").Trim(),
-                WarrantyExpiration = d.WarrantyExpiration,
-                PurchaseDate = d.PurchaseDate,
-                Comment = (d.Comment ?? "").Trim()
-            })
-            .Where(d =>
-                !(string.IsNullOrWhiteSpace(d.AssetTag) &&
-                  string.IsNullOrWhiteSpace(d.Manufacturer) &&
-                  string.IsNullOrWhiteSpace(d.Model) &&
-                  string.IsNullOrWhiteSpace(d.SerialNumber) &&
-                  string.IsNullOrWhiteSpace(d.AssetType) &&
-                  string.IsNullOrWhiteSpace(d.Status) &&
-                  d.PurchaseDate == default &&
-                  d.WarrantyExpiration == default))
-            .ToList();
-
-        if (dtos.Count == 0)
+        try
         {
-            ModelState.AddModelError(nameof(BulkHardwareRequest.Dtos), "Input list cannot be empty.");
+            var created = await _hardwareService.AddHardwareBulkAsync(req, ct);
+            return CreatedAtAction(nameof(GetAllHardware), null, created);
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
             return BadRequest(ModelState);
         }
-
-        // per-row validation
-        var itemErrors = new Dictionary<string, string[]>();
-        for (int i = 0; i < dtos.Count; i++)
+        catch (Exception ex)
         {
-            var d = dtos[i];
-            var errs = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(d.AssetTag) ||
-                string.IsNullOrWhiteSpace(d.Manufacturer) ||
-                string.IsNullOrWhiteSpace(d.Model) ||
-                string.IsNullOrWhiteSpace(d.SerialNumber) ||
-                string.IsNullOrWhiteSpace(d.AssetType) ||
-                string.IsNullOrWhiteSpace(d.Status))
-                errs.Add("All fields are required for each hardware asset.");
-
-            if (d.AssetTag.Length > 16) errs.Add("Asset tag must be 16 characters or fewer.");
-
-            if (d.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
-                errs.Add("Purchase date cannot be in the future.");
-            if (d.WarrantyExpiration < d.PurchaseDate)
-                errs.Add("Warranty expiration cannot be before purchase date.");
-
-            if (errs.Count > 0) itemErrors[$"Dtos[{i}]"] = errs.ToArray();
+            return ValidationProblem(ex.Message);
         }
-        if (itemErrors.Count > 0)
-            return ValidationProblem(new ValidationProblemDetails(itemErrors));
-
-        // batch-internal duplicate checks
-        var seenSerials = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // case-insensitive for serials
-        var seenTags = new HashSet<string>(StringComparer.Ordinal);              // keep tags case-sensitive (change to OrdinalIgnoreCase if desired)
-
-        for (int i = 0; i < dtos.Count; i++)
-        {
-            var d = dtos[i];
-            var errs = new List<string>();
-
-            if (!seenSerials.Add(d.SerialNumber))
-                errs.Add($"Duplicate serial number within batch: {d.SerialNumber}");
-            if (!seenTags.Add(d.AssetTag))
-                errs.Add($"Duplicate asset tag within batch: {d.AssetTag}");
-
-            if (errs.Count > 0) itemErrors[$"Dtos[{i}]"] = errs.ToArray();
-        }
-        if (itemErrors.Count > 0)
-            return ValidationProblem(new ValidationProblemDetails(itemErrors));
-
-        // duplicate checks vs DB (case-insensitive for serials)
-        var existingSerialsList = await _db.HardwareAssets
-            .Where(h => h.SerialNumber != null)
-            .Select(h => h.SerialNumber!)
-            .ToListAsync(ct);
-
-        var existingTagsList = await _db.HardwareAssets
-            .Where(h => h.AssetTag != null)
-            .Select(h => h.AssetTag!)
-            .ToListAsync(ct);
-
-        var existingSerials = new HashSet<string>(existingSerialsList, StringComparer.OrdinalIgnoreCase);
-        var existingTags = new HashSet<string>(existingTagsList, StringComparer.Ordinal);
-
-        for (int i = 0; i < dtos.Count; i++)
-        {
-            var d = dtos[i];
-            var errs = new List<string>();
-
-            if (existingSerials.Contains(d.SerialNumber))
-                errs.Add($"Duplicate serial number: {d.SerialNumber}");
-
-            if (existingTags.Contains(d.AssetTag))
-                errs.Add($"Duplicate asset tag: {d.AssetTag}");
-
-            if (errs.Count > 0) itemErrors[$"Dtos[{i}]"] = errs.ToArray();
-        }
-        if (itemErrors.Count > 0)
-            return ValidationProblem(new ValidationProblemDetails(itemErrors));
-
-        // map → entities
-        var entities = dtos.Select(d => new Hardware
-        {
-            AssetTag = d.AssetTag,
-            AssetName = string.IsNullOrWhiteSpace(d.AssetName)
-                ? $"{d.Manufacturer} {d.Model}".Trim()
-                : d.AssetName,
-            AssetType = d.AssetType,
-            Status = d.Status,
-            Manufacturer = d.Manufacturer,
-            Model = d.Model,
-            SerialNumber = d.SerialNumber,
-            WarrantyExpiration = d.WarrantyExpiration,
-            PurchaseDate = d.PurchaseDate,
-            Comment = d.Comment
-        }).ToList();
-
-        _db.HardwareAssets.AddRange(entities);
-        await _db.SaveChangesAsync(ct);
-
-        CacheStamp.BumpAssets();
-
-        return CreatedAtAction(nameof(GetAllHardware), null, entities);
     }
 
     [HttpPut("edit/{id}")]
@@ -248,33 +138,12 @@ public class HardwareController : ControllerBase
         if (hardware == null)
             return NotFound();
 
-        if (dto.AssetTag is not null)
-        {
-            var existsTag = await _db.HardwareAssets
-                .Where(h => h.HardwareID != id && h.AssetTag == dto.AssetTag)
-                .AnyAsync(ct);
+        var validationResult = await _hardwareService.ValidateEditAsync(hardware, dto, id, ModelState, ct);
+        if (validationResult != null)
+            return validationResult;
 
-            if (existsTag)
-            {
-                ModelState.AddModelError(nameof(dto.AssetTag), "A hardware asset with this asset tag already exists.");
-                return BadRequest(ModelState);
-            }
+        HardwareAssetService.ApplyEdit(dto, hardware);
 
-            hardware.AssetTag = dto.AssetTag;
-        }
-
-        if (dto.AssetName is not null) hardware.AssetName = dto.AssetName;
-        if (dto.AssetType is not null) hardware.AssetType = dto.AssetType;
-        if (dto.Status is not null) hardware.Status = dto.Status;
-        if (dto.Manufacturer is not null) hardware.Manufacturer = dto.Manufacturer;
-        if (dto.Model is not null) hardware.Model = dto.Model;
-        if (dto.Comment is not null) hardware.Comment = dto.Comment;
-
-        if (string.IsNullOrWhiteSpace(hardware.AssetName))
-        {
-            ModelState.AddModelError(nameof(dto.AssetName), "AssetName cannot be empty");
-            return BadRequest(ModelState);
-        }
 
         await _db.SaveChangesAsync(ct);
         CacheStamp.BumpAssets();

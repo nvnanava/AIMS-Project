@@ -6,13 +6,14 @@ using AIMS.Queries;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AIMS.Services;
 
 namespace AIMS.UnitTests
 {
     public class HardwareBulkEndpointTests
     {
         // Helper method for creating controller with in-memory db
-        private HardwareController CreateControllerWithDb(string dbName, List<Hardware>? seedHardware = null)
+        private HardwareController CreateControllerWithDb(string dbName, List<Hardware>? seedHardware = null, HardwareAssetService? hardwareAssetService = null)
         {
             var options = new DbContextOptionsBuilder<AimsDbContext>()
                 .UseInMemoryDatabase(databaseName: dbName) // unique per test
@@ -28,8 +29,9 @@ namespace AIMS.UnitTests
             }
 
             var hardwareQuery = new HardwareQuery(db);
+            var updateService = hardwareAssetService ?? new HardwareAssetService(db);
 
-            return new HardwareController(db, hardwareQuery);
+            return new HardwareController(db, hardwareQuery, updateService);
         }
 
         private static BulkHardwareRequest Wrap(List<CreateHardwareDto>? dtos)

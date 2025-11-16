@@ -18,11 +18,14 @@ public class SoftwareController : ControllerBase
 {
     private readonly AimsDbContext _db;
     private readonly SoftwareQuery _softwareQuery;
+    private readonly SoftwareUpdateService _softwareUpdateService;
 
-    public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery)
+    [ActivatorUtilitiesConstructor]
+    public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery, SoftwareUpdateService softwareUpdateService)
     {
         _db = db;
         _softwareQuery = softwareQuery;
+        _softwareUpdateService = softwareUpdateService;
     }
 
     [HttpGet("get-all")]
@@ -104,75 +107,11 @@ public class SoftwareController : ControllerBase
         if (software == null)
             return NotFound();
 
-        // if license key provided, ensure unique
-        if (dto.SoftwareLicenseKey is not null)
-        {
-            var existsKey = await _db.SoftwareAssets
-                .AnyAsync(s => s.SoftwareID != id && s.SoftwareLicenseKey == dto.SoftwareLicenseKey, ct);
-            if (existsKey)
-            {
-                ModelState.AddModelError(nameof(dto.SoftwareLicenseKey), "A software asset with this license key already exists.");
-                return BadRequest(ModelState);
-            }
-            software.SoftwareLicenseKey = dto.SoftwareLicenseKey;
-        }
+        var validation = await _softwareUpdateService.ValidateEditAsync(software, dto, id, ModelState, ct);
+        if (validation != null)
+            return validation;
 
-        // assign only if provided (partial updates)
-        if (dto.SoftwareName is not null) software.SoftwareName = dto.SoftwareName;
-        if (dto.SoftwareType is not null) software.SoftwareType = dto.SoftwareType;
-        if (dto.SoftwareVersion is not null) software.SoftwareVersion = dto.SoftwareVersion;
-        if (dto.SoftwareLicenseExpiration is not null)
-        {
-            // Removed "past" check; UI prevents past selection
-            software.SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration;
-        }
-        if (dto.SoftwareUsageData is not null)
-        {
-            if (dto.SoftwareUsageData.Value < 0)
-            {
-                ModelState.AddModelError(nameof(dto.SoftwareUsageData), "Usage cannot be negative.");
-                return BadRequest(ModelState);
-            }
-            software.SoftwareUsageData = dto.SoftwareUsageData.Value;
-        }
-        if (dto.SoftwareCost is not null)
-        {
-            if (dto.SoftwareCost.Value < 0)
-            {
-                ModelState.AddModelError(nameof(dto.SoftwareCost), "Software cost cannot be negative.");
-                return BadRequest(ModelState);
-            }
-            software.SoftwareCost = dto.SoftwareCost.Value;
-        }
-        if (dto.LicenseTotalSeats is not null)
-        {
-            if (dto.LicenseTotalSeats.Value < 0)
-            {
-                ModelState.AddModelError(nameof(dto.LicenseTotalSeats), "Total seats cannot be negative.");
-                return BadRequest(ModelState);
-            }
-            software.LicenseTotalSeats = dto.LicenseTotalSeats.Value;
-        }
-        if (dto.LicenseSeatsUsed is not null)
-        {
-            if (dto.LicenseSeatsUsed.Value < 0)
-            {
-                ModelState.AddModelError(nameof(dto.LicenseSeatsUsed), "Seats used cannot be negative.");
-                return BadRequest(ModelState);
-            }
-            software.LicenseSeatsUsed = dto.LicenseSeatsUsed.Value;
-        }
-        // cross-field seat check if either changed
-        if (dto.LicenseSeatsUsed is not null || dto.LicenseTotalSeats is not null)
-        {
-            if (software.LicenseSeatsUsed > software.LicenseTotalSeats)
-            {
-                ModelState.AddModelError(nameof(dto.LicenseSeatsUsed), "Seats used cannot exceed total seats.");
-                return BadRequest(ModelState);
-            }
-        }
-
-        if (dto.Comment is not null) software.Comment = dto.Comment;
+        SoftwareUpdateService.ApplyEdit(dto, software);
 
         await _db.SaveChangesAsync(ct);
         CacheStamp.BumpAssets();

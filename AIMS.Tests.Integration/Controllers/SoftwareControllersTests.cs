@@ -88,7 +88,7 @@ namespace AIMS.Tests.Integration.Controllers
         }
 
         private static SoftwareController NewController(AimsDbContext ctx)
-            => new SoftwareController(ctx, new SoftwareQuery(ctx));
+            => new SoftwareController(ctx, new SoftwareQuery(ctx), new SoftwareUpdateService(ctx));
 
         private static SoftwareSeatService NewService(AimsDbContext ctx, out StubBroadcaster bc)
         {
