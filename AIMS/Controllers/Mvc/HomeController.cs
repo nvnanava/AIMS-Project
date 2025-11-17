@@ -12,32 +12,28 @@ public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly AssetTypeCatalogService _catalog;
-    private readonly SummaryCardService _summarySvc;
+    private readonly ISummaryCardService _summarySvc;
 
     public HomeController(
         ILogger<HomeController> logger,
         AssetTypeCatalogService catalog,
-        SummaryCardService summarySvc)
+        ISummaryCardService summarySvc)
     {
         _logger = logger;
         _catalog = catalog;
         _summarySvc = summarySvc;
     }
 
-    // Dashboard cards (home)
     public async Task<IActionResult> Index()
     {
-        // Supervisors land on Search, not cards
         if (User.IsSupervisor())
             return RedirectToAction(nameof(SearchController.Index), "Search", new { searchQuery = (string?)null });
 
-        // Dynamic asset type list for cards (used by _HomePageCardComponent)
         try
         {
             var types = (await _catalog.GetAllTypesAsync(HttpContext.RequestAborted)).ToList();
             ViewData["AssetTypes"] = types;
 
-            // Server snapshot for first paint (prevents number/dot flash)
             var wantedTypes = types.Select(t => t.AssetType)
                                    .Where(s => !string.IsNullOrWhiteSpace(s))
                                    .ToList();
@@ -54,7 +50,6 @@ public class HomeController : Controller
 
         return View();
     }
-
     public IActionResult Privacy() => View();
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

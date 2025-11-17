@@ -14,8 +14,9 @@ namespace AIMS.Controllers.Api;
 public sealed class ThresholdsController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    private readonly SummaryCardService _summaryCardService;
-    public ThresholdsController(AimsDbContext db, SummaryCardService summaryCardService)
+    private readonly ISummaryCardService _summaryCardService;
+
+    public ThresholdsController(AimsDbContext db, ISummaryCardService summaryCardService)
     {
         _db = db;
         _summaryCardService = summaryCardService;
@@ -52,7 +53,10 @@ public sealed class ThresholdsController : ControllerBase
             row.ThresholdValue = dto.ThresholdValue;
 
         await _db.SaveChangesAsync(ct);
+
+        // notify cards to recompute
         _summaryCardService.InvalidateSummaryCache();
+
         return NoContent();
     }
 }

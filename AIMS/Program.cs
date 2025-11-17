@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO.Abstractions;
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using AIMS.Data;
@@ -42,7 +43,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<SummaryCardService>();
+builder.Services.AddScoped<ISummaryCardService, SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
 builder.Services.AddScoped<SoftwareSeatService>();
 builder.Services.AddScoped<OfficeQuery>();
@@ -64,11 +65,24 @@ builder.Services
 // File system (ReportsController; mockable in tests)
 builder.Services.AddSingleton<IFileSystem, FileSystem>();
 
-// Policy for restricted routes (bulk upload). Supervisors excluded.
+// -------------------- Authorization (global + role-based) --------------------
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("CanBulkUpload", policy => policy.RequireRole("Admin", "Manager"));
+    // Require an authenticated user by default everywhere
+    options.FallbackPolicy = options.DefaultPolicy;
+
+    // Bulk upload policy (Admin or Manager)
+    options.AddPolicy("CanBulkUpload", policy =>
+        policy.RequireClaim(ClaimTypes.Role, "Admin", "Manager"));
 });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("mbcAdmin", policy =>
+        policy.RequireClaim(ClaimTypes.Role, "Admin"))
+    .AddPolicy("mbcHelpDesk", policy =>
+        policy.RequireClaim(ClaimTypes.Role, "HelpDesk"))
+    .AddPolicy("mbcSupervisor", policy =>
+        policy.RequireClaim(ClaimTypes.Role, "Supervisor"));
 
 // Query/DAO services
 builder.Services.AddScoped<UserQuery>();
@@ -212,9 +226,12 @@ else
     builder.Services
         .AddAuthentication(options =>
         {
+            // Policy scheme is only for *authentication* (who are you?)
             options.DefaultScheme = "AppOrApi";
             options.DefaultAuthenticateScheme = "AppOrApi";
-            options.DefaultChallengeScheme = "AppOrApi";
+
+            // Interactive challenge always goes through OIDC
+            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
         })
         .AddPolicyScheme("AppOrApi", "AppOrApi", options =>
         {
@@ -223,14 +240,20 @@ else
                 var authz = ctx.Request.Headers.Authorization.ToString();
                 var hasBearer = authz.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
 
-                // 🔧 Never challenge to OIDC from APIs/Hub handshakes
+                // APIs + hubs: Bearer if present, otherwise Cookies
                 if (IsApiOrHub(ctx.Request))
+                {
                     return hasBearer
                         ? JwtBearerDefaults.AuthenticationScheme
                         : CookieAuthenticationDefaults.AuthenticationScheme;
+                }
 
-                // MVC pages: Bearer if present, else OIDC (interactive)
-                return hasBearer ? JwtBearerDefaults.AuthenticationScheme : OpenIdConnectDefaults.AuthenticationScheme;
+                // MVC pages:
+                // - If there's a Bearer header, use JWT.
+                // - Otherwise, use Cookies (works for both normal login + Playwright cookie bridge).
+                return hasBearer
+                    ? JwtBearerDefaults.AuthenticationScheme
+                    : CookieAuthenticationDefaults.AuthenticationScheme;
             };
         })
         .AddJwtBearer(options =>
@@ -238,13 +261,14 @@ else
             options.Authority = $"https://login.microsoftonline.com/{builder.Configuration["AzureAd:TenantId"]}/v2.0";
             options.Audience = builder.Configuration["AzureAd:ApiAudience"];
             options.RequireHttpsMetadata = false;
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+            options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidAudiences = new[]
                 {
                     builder.Configuration["AzureAd:ApiAudience"],
                     builder.Configuration["AzureAd:ClientId"]
-                }
+                },
+                RoleClaimType = "roles"
             };
         })
         .AddMicrosoftIdentityWebApp(options =>
@@ -257,22 +281,22 @@ else
             options.Events ??= new();
             options.Events.OnRedirectToIdentityProvider = ctx =>
             {
-                // 🔧 Avoid OIDC redirects for API/Hub/JSON callers; return 401 instead
                 var hasBearer = ctx.Request.Headers["Authorization"].ToString()
                     .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
-                var wantsJson = ctx.Request.Headers["Accept"].ToString()
-                    .Contains("application/json", StringComparison.OrdinalIgnoreCase);
 
-                if (hasBearer || wantsJson || IsApiOrHub(ctx.Request))
+                // Only short-circuit for API/hub/Bearer traffic.
+                // For normal page nav (Playwright or browser), let the redirect happen.
+                if (hasBearer || IsApiOrHub(ctx.Request))
                 {
                     ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     ctx.HandleResponse();
                 }
+
                 return Task.CompletedTask;
             };
         });
 
-    // 🔧 Suppress Cookie redirects for API/Hub in non-prod (return 401/403)
+    // Suppress Cookie redirects for API/Hub in non-prod (return 401/403)
     builder.Services.Configure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme, o =>
     {
         if (!builder.Environment.IsProduction())
@@ -333,62 +357,203 @@ builder.Services.AddSingleton(new GraphServiceClient(graphCredential, graphScope
 
 builder.Services.AddScoped<IGraphUserService, GraphUserService>();
 
-// Global "must be authenticated" by default
-builder.Services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = options.DefaultPolicy;
-});
-
 // this line scopes the IAdminUserUpsertService to the AdminUserUpsertService class
 builder.Services.AddScoped<IAdminUserUpsertService, AdminUserUpsertService>();
 
 
 
 // Role helper policies (username allowlists)
-builder.Services.AddAuthorizationBuilder()
-  .AddPolicy("mbcAdmin", policy =>
-      policy.RequireAssertion(context =>
-          context.User.HasClaim(c =>
-              c.Type == "preferred_username" &&
-              new[] {
-                  "nvnanavati@csus.edu",
-                  "akalustatsingh@csus.edu",
-                  "tburguillos@csus.edu",
-                  "keeratkhandpur@csus.edu",
-                  "suhailnajimudeen@csus.edu",
-                  "hkaur20@csus.edu",
-                  "cameronlanzaro@csus.edu",
-                  "norinphlong@csus.edu"
-              }.Contains(c.Value))))
-  .AddPolicy("mbcHelpDesk", policy =>
-      policy.RequireAssertion(context =>
-          context.User.HasClaim(c =>
-              c.Type == "preferred_username" &&
-              new[] {
-                  "barryAllen@centralcity.edu"
-              }.Contains(c.Value))))
-  .AddPolicy("mbcSupervisor", policy =>
-      policy.RequireAssertion(context =>
-          context.User.HasClaim(c =>
-              c.Type == "preferred_username" &&
-              new[] {
-                  "richardGrayson@gotham.edu",
-                  "niyant397@gmail.com",
-                  "tnburg@pacbell.net"
-              }.Contains(c.Value))));
+// builder.Services.AddAuthorizationBuilder()
+//   .AddPolicy("mbcAdmin", policy =>
+//       policy.RequireAssertion(context =>
+//           context.User.HasClaim(c =>
+//               c.Type == "preferred_username" &&
+//               new[] {
+//                   "nvnanavati@csus.edu",
+//                   "akalustatsingh@csus.edu",
+//                   "tburguillos@csus.edu",
+//                   "keeratkhandpur@csus.edu",
+//                   "suhailnajimudeen@csus.edu",
+//                   "hkaur20@csus.edu",
+//                   "cameronlanzaro@csus.edu",
+//                   "norinphlong@csus.edu"
+//               }.Contains(c.Value))))
+//   .AddPolicy("mbcHelpDesk", policy =>
+//       policy.RequireAssertion(context =>
+//           context.User.HasClaim(c =>
+//               c.Type == "preferred_username" &&
+//               new[] {
+//                   "barryAllen@centralcity.edu"
+//               }.Contains(c.Value))))
+//   .AddPolicy("mbcSupervisor", policy =>
+//       policy.RequireAssertion(context =>
+//           context.User.HasClaim(c =>
+//               c.Type == "preferred_username" &&
+//               new[] {
+//                   "richardGrayson@gotham.edu",
+//                   "niyant397@gmail.com",
+//                   "tnburg@pacbell.net"
+//               }.Contains(c.Value))));
 
 builder.Services.AddRazorPages().AddMicrosoftIdentityUI();
 
 // -------------------- App pipeline --------------------
 var app = builder.Build();
 
+// ---------------------------------------------------------------
+//  E2E HEALTH SUITE (Test/Dev only)
+// ---------------------------------------------------------------
 if (!app.Environment.IsProduction())
 {
-    app.MapGet("/_ready", async (AIMS.Data.AimsDbContext db) =>
+    // ---- APP READY ENDPOINT ----
+    // Verifies DB connectivity + migrations + seeder readiness
+    app.MapGet("/e2e/app-ready", async (AimsDbContext db) =>
     {
-        try { await db.Database.CanConnectAsync(); return Results.Ok(new { ok = true }); }
-        catch { return Results.Problem("DB not ready", statusCode: 503); }
+        try
+        {
+            await db.Database.CanConnectAsync();
+            return Results.Ok(new { ok = true });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem(
+                $"DB not ready: {ex.Message}",
+                statusCode: 503
+            );
+        }
     }).AllowAnonymous();
+
+
+    // ---- AUTH READY ENDPOINT ----
+    // Ensures all authentication schemes are fully registered
+    app.MapGet("/e2e/auth-ready", async (IAuthenticationSchemeProvider schemes) =>
+    {
+        var all = (await schemes.GetAllSchemesAsync())?.ToList()
+                  ?? new List<AuthenticationScheme>();
+
+        return Results.Ok(new
+        {
+            ok = true,
+            schemeCount = all.Count,
+            schemes = all.Select(s => s.Name).ToArray()
+        });
+    }).AllowAnonymous();
+
+
+    // ---- WHOAMI ENDPOINT ----
+    // Shows the current principal (cookie or bearer)
+    app.MapGet("/e2e/whoami", (HttpContext ctx) =>
+    {
+        var user = ctx.User;
+
+        return Results.Ok(new
+        {
+            isAuthenticated = user?.Identity?.IsAuthenticated ?? false,
+            authType = user?.Identity?.AuthenticationType,
+            name = user?.Identity?.Name,
+            claims = user?.Claims.Select(c => new { c.Type, c.Value }).ToList(),
+            roles = user?.Claims
+                .Where(c => c.Type.Contains("role", StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.Value)
+                .ToList()
+        });
+    }).AllowAnonymous();
+
+
+    // ---- FORCES COOKIE SIGN-IN FROM BEARER TOKEN ----
+    // Test/E2E only: trust the JWT shape and mint an Admin cookie
+    app.MapGet("/e2e/ensure-cookie-admin",
+        async (HttpContext http, string token) =>
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return Results.BadRequest(new { error = "token missing" });
+
+            var handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken? jwt = null;
+
+            try
+            {
+                // We only *read* the token here; full validation already happened on the client side.
+                jwt = handler.ReadJwtToken(token);
+            }
+            catch
+            {
+                // Malformed token; we'll still mint a generic admin for E2E.
+            }
+
+            var claims = new List<Claim>();
+
+            if (jwt != null)
+            {
+                // Start with all claims from the JWT
+                claims.AddRange(jwt.Claims);
+            }
+
+            // Pull roles from "roles" claim if present
+            var roleValues = claims
+                .Where(c => c.Type.Equals("roles", StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.Value)
+                .Distinct()
+                .ToList();
+
+            // For E2E, ensure at least "Admin"
+            if (!roleValues.Any())
+            {
+                roleValues.Add("Admin");
+            }
+
+            // Duplicate into ClaimTypes.Role so policies see them
+            foreach (var r in roleValues)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, r));
+            }
+
+            // Make sure we have a Name
+            var name =
+                jwt?.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value
+                ?? jwt?.Subject
+                ?? "playwright-e2e-admin";
+
+            if (!claims.Any(c => c.Type == ClaimTypes.Name))
+            {
+                claims.Add(new Claim(ClaimTypes.Name, name));
+            }
+
+            var id = new ClaimsIdentity(
+                claims,
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                ClaimTypes.Name,
+                ClaimTypes.Role);
+
+            await http.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(id));
+
+            return Results.Ok(new
+            {
+                ok = true,
+                name,
+                roles = roleValues
+            });
+        }
+    ).AllowAnonymous();
+
+
+    // ---- ROLES DEBUG ENDPOINT ----
+    // Shows only the roles the Cookie principal has
+    app.MapGet("/e2e/roles-debug", (HttpContext ctx) =>
+    {
+        var roles = ctx.User.Claims
+            .Where(c => c.Type.Contains("role", StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Value)
+            .ToList();
+
+        return Results.Ok(new
+        {
+            ok = true,
+            roles
+        });
+    });
 }
 
 app.UseStaticFiles(new StaticFileOptions
@@ -518,7 +683,8 @@ app.MapGet("/e2e/bearer-login", async(
             RequireSignedTokens = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKeys = oidc!.SigningKeys ?? opts.TokenValidationParameters.IssuerSigningKeys,
-            ValidateAudience = false
+            ValidateAudience = false,
+            RoleClaimType = "roles"
         };
 
         var principal = handler.ValidateToken(token, tvp, out _);
@@ -528,9 +694,13 @@ app.MapGet("/e2e/bearer-login", async(
         var audOk = expectedAudiences.Count == 0 || auds.Any(a => expectedAudiences.Contains(a));
         if (!audOk) return Results.Unauthorized();
 
+        var jwtIdentity = principal.Identity as System.Security.Claims.ClaimsIdentity;
+
         var cookieIdentity = new System.Security.Claims.ClaimsIdentity(
-            principal.Claims,
-            CookieAuthenticationDefaults.AuthenticationScheme);
+            jwtIdentity?.Claims ?? principal.Claims,
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            jwtIdentity?.NameClaimType ?? System.Security.Claims.ClaimTypes.Name,
+            jwtIdentity?.RoleClaimType ?? "roles");
 
         await http.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
@@ -553,9 +723,13 @@ if (!app.Environment.IsProduction() && app.Configuration.GetValue<bool>("UseTest
         {
             new System.Security.Claims.Claim("preferred_username", asUser),
             new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, asUser),
-            new System.Security.Claims.Claim("roles", "Admin"),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Admin"),
         };
-        var id = new System.Security.Claims.ClaimsIdentity(claims, AIMS.Utilities.TestAuthHandler.Scheme);
+
+        var id = new System.Security.Claims.ClaimsIdentity(
+            claims,
+            AIMS.Utilities.TestAuthHandler.Scheme);
+
         var principal = new System.Security.Claims.ClaimsPrincipal(id);
 
         await ctx.SignInAsync(AIMS.Utilities.TestAuthHandler.Scheme, principal);

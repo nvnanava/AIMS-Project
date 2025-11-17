@@ -67,20 +67,33 @@ async function aimsFetch(url, options = {}) {
             }
             // ----- Handle HTTP Errors -----
             if (!response.ok) {
-                let errorObj = { status: response.status, isValidation: false };
+                const errorObj = { status: response.status, isValidation: false };
 
-                try {
-                    const json = await response.json();
-                    errorObj.data = json;
-                    if (response.status >= 400 && response.status < 500) {
-                        errorObj.isValidation = true;
+                // Read body ONCE
+                const rawText = await response.text();
+                const contentType = (response.headers.get("content-type") || "").toLowerCase();
+
+                if (contentType.includes("application/json")) {
+                    try {
+                        const json = JSON.parse(rawText);
+                        errorObj.data = json;
+
+                        if (response.status >= 400 && response.status < 500) {
+                            errorObj.isValidation = true;
+                        }
+                    } catch {
+                        // JSON advertised but invalid
+                        errorObj.data = { message: rawText || "Invalid JSON error payload." };
                     }
-                } catch {
-                    errorObj.data = { message: await response.text() };
+                } else {
+                    // Non-JSON (e.g. HTML dev exception page)
+                    errorObj.data = { message: rawText };
                 }
 
                 throw errorObj;
             }
+
+            // ----- Success path (JSON) -----
             const data = await response.json();
 
             // ----- Cache the response if GET and TTL > 0 -----
