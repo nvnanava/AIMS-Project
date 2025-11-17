@@ -1,56 +1,108 @@
 @* ======================================================================
-   Partial: _SearchLogsModal
-   Purpose: Shared modal for searching and filtering logs
-   Triggered by Filter Icon (Task 4A / Audit Log Integration)
+   Updated Filter Modal — Styled to match Dashboard Settings Modal
    ====================================================================== *@
 
 <div class="modal fade" id="searchLogsModal" tabindex="-1" aria-labelledby="searchLogsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content shadow-lg border-0">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="searchLogsModalLabel">Search Logs</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
+        <div class="modal-content aims-modal">
+
+            <!-- HEADER -->
+            <div class="modal-header aims-modal-header">
+                <h5 class="modal-title" id="searchLogsModalLabel">Filter Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <div class="modal-body">
+            <!-- BODY -->
+            <div class="modal-body aims-modal-body">
                 <form id="searchLogsForm">
-                    <div class="row g-3">
+                    <div class="row g-4">
+
+                        <!-- DATE RANGE -->
                         <div class="col-md-6">
-                            <label for="searchUserId" class="form-label fw-bold">User ID</label>
-                            <input type="text" class="form-control" id="searchUserId" placeholder="e.g., U001">
+                            <label for="fromDate" class="form-label fw-bold">From</label>
+                            <input type="date" id="fromDate" name="from" class="form-control aims-input" />
                         </div>
 
                         <div class="col-md-6">
-                            <label for="searchAction" class="form-label fw-bold">Action Type</label>
-                            <select id="searchAction" class="form-select">
+                            <label for="toDate" class="form-label fw-bold">To</label>
+                            <input type="date" id="toDate" name="to" class="form-control aims-input" />
+                        </div>
+
+                        <!-- ACTOR -->
+                        <div class="col-md-6 position-relative">
+                            <label for="actorInput" class="form-label fw-bold">Actor</label>
+                            <input type="text"
+                                   id="actorInput"
+                                   name="actor"
+                                   class="form-control aims-input"
+                                   placeholder="Search by user ID"
+                                   autocomplete="off" />
+                            <div id="actorSuggestions"
+                                 class="list-group position-absolute w-100 d-none"
+                                 style="z-index: 2000;"></div>
+                        </div>
+
+                        <!-- ACTION TYPE -->
+                        <div class="col-md-6">
+                            <label for="actionType" class="form-label fw-bold">Action Type</label>
+                            <select id="actionType" name="kind" class="form-select aims-input">
                                 <option value="">All</option>
-                                <option value="Create">Create</option>
                                 <option value="Assign">Assign</option>
                                 <option value="Unassign">Unassign</option>
                                 <option value="Update">Update</option>
-                                <option value="Delete">Delete</option>
+                                <option value="Install">Install</option>
+                                <option value="Create">Create</option>
+                                <option value="Remove">Remove</option>
+                                <option value="License Renewed">License Renewed</option>
+                                <option value="License Expired">License Expired</option>
                             </select>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="searchAssetId" class="form-label fw-bold">Asset ID</label>
-                            <input type="text" class="form-control" id="searchAssetId" placeholder="e.g., A101">
+                        <!-- ASSET ID -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Asset ID</label>
+                            <input type="text"
+                                   id="assetId"
+                                   name="assetId"
+                                   class="form-control aims-input"
+                                   placeholder="Enter Asset ID" />
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="searchDateRange" class="form-label fw-bold">Date Range</label>
-                            <input type="text" class="form-control" id="searchDateRange"
-                                placeholder="YYYY-MM-DD to YYYY-MM-DD">
-                        </div>
                     </div>
                 </form>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" form="searchLogsForm" class="btn btn-primary">Search</button>
-            </div>
-        </div>
+            <!-- FOOTER -->
+
+
+<div class="modal-footer aims-modal-footer d-flex justify-content-between">
+
+    <!-- LEFT SIDE -->
+    <div>
+        <button type="button"
+                class="btn aims-btn-secondary"
+                data-bs-dismiss="modal">
+            Cancel
+        </button>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="d-flex gap-2">
+        <button type="button"
+                id="resetFilterBtn"
+                class="btn aims-btn-secondary">
+            Reset
+        </button>
+
+        <button type="submit"
+                form="searchLogsForm"
+                class="btn aims-btn-success">
+            Apply Filters
+        </button>
+    </div>
+
+</div>
+
     </div>
 </div>
+
