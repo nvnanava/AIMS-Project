@@ -543,27 +543,6 @@
         }
     }
 
-    // --- Ellipsis helpers  ---
-    function isEllipsed(td) {
-        const target = td.querySelector('.ellip') || td;
-        const cs = getComputedStyle(target);
-
-        const singleLine = cs.whiteSpace === "nowrap";
-        const ellipsing = (cs.textOverflow === "ellipsis") || (cs.overflow === "hidden");
-        if (!singleLine || !ellipsing) return false;
-
-        // Try fast path on the actual target
-        if ((target.scrollWidth - target.clientWidth) > 0.5) return true;
-
-        // Fallback: measure text realistically (handles nested spans/buttons nearby)
-        const r = document.createRange();
-        r.selectNodeContents(target);
-        r.getBoundingClientRect();
-        const textW = r.getBoundingClientRect().width; // width of inline content
-        const cellW = target.getBoundingClientRect().width;
-        return textW > (cellW + 0.8);
-    }
-
     // Sensitivity config and forgiving/strict variants
     const ELLIPSIS_SENSITIVITY = {
         pxSlack: 16,
@@ -886,7 +865,7 @@
     // Click handling (delegated)
     tbody.addEventListener("click", (e) => {
         // 1) Assign / Unassign button click (let the modal flows handle it)
-        const iconBtn = e.target.closest(".assign-btn, .icon-btn");
+        const iconBtn = e.target.closest(".icon-btn");
         if (iconBtn) {
             e.preventDefault();
             e.stopPropagation();
@@ -903,40 +882,75 @@
             const assetKind = Number(iconBtn.dataset.assetKind || "1");
             const currentUserId = iconBtn.dataset.currentUserId || "";
 
-            const rowData = cacheAllItems.find(it =>
-                (getTag(it) === tag) ||
-                String(it.hardwareID ?? it.HardwareID ?? it.softwareID ?? it.SoftwareID ?? "") === numericId);
+            // Prefer matching by ID for the correct kind; only fall back to tag if needed.
+            const rowData = cacheAllItems.find(it => {
+                const itTag = getTag(it);
 
+                const itSwId = it.softwareID ?? it.SoftwareID ?? it.softwareId ?? null;
+                const itHwId = it.hardwareID ?? it.HardwareID ?? it.hardwareId ?? null;
+
+                const idMatch = assetKind === 2
+                    ? (itSwId != null && String(itSwId) === String(numericId))
+                    : (itHwId != null && String(itHwId) === String(numericId));
+
+                // If ID matches for the right kind, we’re done.
+                if (idMatch) return true;
+
+                // Fallback: tag match (only if tag is non-empty)
+                if (itTag && itTag === tag) return true;
+
+                return false;
+            });
+
+            // Seat counts only matter for software; for hardware they’ll be ignored.
             const totalSeats = Number(rowData?.licenseTotalSeats ?? rowData?.LicenseTotalSeats ?? NaN);
             const usedSeats = Number(rowData?.licenseSeatsUsed ?? rowData?.LicenseSeatsUsed ?? NaN);
-            const isSoftware = !Number.isNaN(totalSeats) && !Number.isNaN(usedSeats);
+
+            // Source of truth: assetKind (1 = hardware, 2 = software)
+            const isSoftware = (assetKind === 2);
 
             if (isSoftware) {
                 const avail = Math.max(0, totalSeats - usedSeats);
-                if (avail > 0 && usedSeats > 0) {
-                    window.dispatchEvent(new CustomEvent("seat:choose:open", {
-                        detail: { assetTag: tag, assetNumericId: numericId, assetKind: 2, seats: { totalSeats, usedSeats, avail } }
-                    }));
-                    return;
-                }
-                if (avail > 0) {
-                    window.dispatchEvent(new CustomEvent("assign:open", {
-                        detail: { assetTag: tag, assetNumericId: numericId, assetKind: 2 }
-                    }));
-                    return;
-                }
-                // Seats are full → open unassign for *one* assignee.
-                // Our row projection includes the FIRST open assignee as AssignedUserId.
-                // Pass it through so the modal can resolve the correct assignment row.
                 const currentUserIdSoft = String(
                     rowData?.assignedUserId ?? rowData?.AssignedUserId ?? ""
                 ).trim();
+
+                // Mixed case: some seats used, some available → open seat mode chooser
+                if (avail > 0 && usedSeats > 0) {
+                    window.dispatchEvent(new CustomEvent("seat:choose:open", {
+                        detail: {
+                            assetTag: tag,
+                            assetNumericId: numericId,
+                            assetKind: 2,
+                            seats: { totalSeats, usedSeats, avail },
+                            currentUserId: currentUserIdSoft || null
+                        }
+                    }));
+                    return;
+                }
+
+                // Simple available-only case → go straight to Assign
+                if (avail > 0) {
+                    window.dispatchEvent(new CustomEvent("assign:open", {
+                        detail: {
+                            assetTag: tag,
+                            assetNumericId: numericId,
+                            assetKind: 2,
+                            currentUserId: currentUserIdSoft || null
+                        }
+                    }));
+                    return;
+                }
+
+                // Seats are full → open Unassign
                 window.dispatchEvent(new CustomEvent("unassign:open", {
                     detail: {
                         assetTag: tag,
                         assetNumericId: numericId,
                         assetKind: 2,
-                        currentUserId: currentUserIdSoft || null
+                        currentUserId: currentUserIdSoft || null,
+                        totalSeats,
+                        usedSeats
                     }
                 }));
                 return;
@@ -945,17 +959,29 @@
             // --- Hardware fallback ---
             const nameEl = rowEl ? rowEl.querySelector(".assigned-name") : null;
             const currentDisplayName = (nameEl?.textContent || "Unassigned").trim();
-            const isAssigned =
-                (rowEl?.dataset.status || "").toLowerCase() === "assigned" ||
-                (!!currentUserId);
+
+            // If the label literally says "Unassigned", treat as unassigned.
+            // Everything else is “assigned”.
+            const isAssigned = currentDisplayName.toLowerCase() !== "unassigned";
 
             if (isAssigned) {
                 window.dispatchEvent(new CustomEvent("unassign:open", {
-                    detail: { currentUserId: currentUserId || null, assetTag: tag || null, assetNumericId: numericId || null, assetKind }
+                    detail: {
+                        currentUserId: currentUserId || null,
+                        assetTag: tag || null,
+                        assetNumericId: numericId || null,
+                        assetKind
+                    }
                 }));
             } else {
                 window.dispatchEvent(new CustomEvent("assign:open", {
-                    detail: { assetTag: tag, assetNumericId: numericId, assetKind, currentUserId, currentDisplayName }
+                    detail: {
+                        assetTag: tag,
+                        assetNumericId: numericId,
+                        assetKind,
+                        currentUserId: "",                 // None, we know it’s unassigned
+                        currentDisplayName                 // "Unassigned"
+                    }
                 }));
             }
             return;
@@ -1279,6 +1305,11 @@
         list.setAttribute("role", "listbox");
         list.setAttribute("tabindex", "-1");
 
+        // give the list an ID and wire aria-controls
+        const listId = `${selectEl.id || selectEl.name || "aims-select"}-listbox`;
+        list.id = listId;
+        btn.setAttribute("aria-controls", listId);
+
         // size hints so clamping is sane
         list.style.minWidth = "0px"; // will be set on open
         list.style.maxWidth = "none";
@@ -1314,10 +1345,14 @@
         selectEl.style.opacity = "0";
         selectEl.style.pointerEvents = "none";
         selectEl.tabIndex = -1;
+
+        // Insert wrapper where the <select> was
         selectEl.parentElement.insertBefore(wrapper, selectEl);
         wrapper.appendChild(btn);
-        wrapper.appendChild(list);
-        wrapper.appendChild(selectEl);
+        wrapper.appendChild(selectEl);     // keep the real <select> with the button
+
+        // Portal the dropdown list to <body> so it escapes table clipping
+        document.body.appendChild(list);
 
         function updateButtonLabel() {
             const current = list.querySelector('.aims-custom-select__option[aria-selected="true"]');
@@ -1345,8 +1380,18 @@
             positionListbox();
             if (!list._cleanupTracker) list._cleanupTracker = trackOverlay(btn, list, 4);
 
-            const cur = list.querySelector('.aims-custom-select__option[aria-current="true"]');
-            cur?.scrollIntoView({ block: "nearest" });
+            // ensure something is active
+            const cur = list.querySelector('.aims-custom-select__option[aria-current="true"]')
+                || list.querySelector('.aims-custom-select__option[aria-selected="true"]')
+                || list.querySelector('.aims-custom-select__option');
+
+            if (cur) {
+                cur.setAttribute("data-active", "true");
+                cur.scrollIntoView({ block: "nearest" });
+            }
+
+            // move focus into the listbox so Arrow keys work
+            list.focus({ preventScroll: true });
         }
         function close({ reason } = {}) {
             wrapper.classList.remove("aims-custom-select--open");
@@ -1388,6 +1433,24 @@
         btn.addEventListener("click", () => {
             const isOpen = wrapper.classList.contains("aims-custom-select--open");
             if (isOpen) close({ reason: "button" }); else open();
+        });
+
+        btn.addEventListener("keydown", (e) => {
+            const isOpen = wrapper.classList.contains("aims-custom-select--open");
+
+            // Open on Enter / Space / ArrowDown / ArrowUp
+            if (!isOpen && (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp")) {
+                e.preventDefault();
+                open();
+                return;
+            }
+
+            // Close on Escape when open
+            if (isOpen && e.key === "Escape") {
+                e.preventDefault();
+                close({ reason: "keyboard" });
+                return;
+            }
         });
 
         // keep the overlay stuck to button on resize/scroll (via tracker)
@@ -1569,7 +1632,6 @@
         wireFilterFab();
         initCustomDropdowns();
         scheduleSync(); // sync toolbar widths on boot
-        ensureNavbarClickable();
 
         const qForThisPage = IS_SUPERVISOR ? "" : initialQ;
         const restored = readFiltersSnapshotForQuery(qForThisPage);
@@ -1652,12 +1714,6 @@
         scheduleSync();
     })();
 
-    // Re-sync columns after header resizes (rare)
-    if (headerTable && window.ResizeObserver) {
-        const hdrObs = new ResizeObserver(() => scheduleSync());
-        hdrObs.observe(headerTable);
-    }
-
     // Invalidate caches and re-fetch when assets change (assign/unassign/etc.)
     window.addEventListener('assets:changed', async () => {
         try {
@@ -1678,71 +1734,204 @@
         }
     });
 
-    // Inline UI refresh after successful *unassign*
-    window.addEventListener("unassign:saved", (ev) => {
-        const { assetKind, assetNumericId, assetTag } = ev.detail || {};
+    // Keep hardware row + cache in sync after an assign
+    window.addEventListener("assign:saved", (ev) => {
+        const detail = ev.detail || {};
+        const assetKind = Number(detail.assetKind ?? detail.AssetKind);
+        // We only care about hardware here (kind = 1)
+        if (assetKind !== 1) return;
 
-        // Find the row by Tag first, else by numeric ID
-        let rowEl = null;
-        if (assetTag) rowEl = document.querySelector(`tr.result[data-tag="${CSS.escape(String(assetTag))}"]`);
-        if (!rowEl && assetNumericId != null) {
-            rowEl = Array.from(document.querySelectorAll("tr.result"))
-                .find(tr => (tr.dataset.assetId || "") === String(assetNumericId));
+        const idStr = String(
+            detail.assetNumericId ??
+            detail.assetId ??
+            detail.AssetID ??
+            ""
+        );
+
+        if (!idStr) {
+            console.warn("assign:saved: missing asset id in detail", detail);
+            return;
         }
-        if (!rowEl) return;
 
-        // Update DOM: show Unassigned + clear user id
-        const nameSpan = rowEl.querySelector(".assigned-name");
-        if (nameSpan) {
-            nameSpan.textContent = "Unassigned";
-            nameSpan.dataset.userId = "";
+        // ---- 1) Patch in-memory cache so future refreshes are correct ----
+        const row = cacheAllItems.find(r =>
+            String(r.hardwareID ?? r.HardwareID ?? r.hardwareId ?? "") === idStr
+        );
+
+        // Values we expect the event to send back
+        const assignedToName = detail.assignedToName ?? detail.assignedName ?? null;
+        const assignedEmployeeNumber = detail.assignedEmployeeNumber ?? detail.employeeNumber ?? null;
+        const assignedUserId = detail.assignedUserId ?? detail.userId ?? null;
+
+        if (row) {
+            if (assignedToName != null) {
+                row.assignedTo = assignedToName;
+                row.AssignedTo = assignedToName;
+            }
+            if (assignedEmployeeNumber != null) {
+                row.assignedEmployeeNumber = assignedEmployeeNumber;
+                row.AssignedEmployeeNumber = assignedEmployeeNumber;
+            }
+
+            // Normalize status to Assigned so computeStatus() is consistent
+            row.status = "Assigned";
+            row.Status = "Assigned";
         }
 
-        // Update the cache entry so computeStatus() reflects reality
-        const tag = rowEl.dataset.tag;
-        const cid = rowEl.dataset.assetId;
-        const hit = cacheAllItems.find(it => {
-            const t = getTag(it);
-            const numId = String(it.hardwareID ?? it.HardwareID ?? it.softwareID ?? it.SoftwareID ?? "");
-            return (t && t === tag) || numId === String(cid);
-        });
-        if (hit) {
-            hit.assignedTo = "Unassigned";
-            hit.assignedUserId = "";
-            // Hardware: flip status to Available right away (software status comes from seats)
-            const isSoftware = (hit.softwareID ?? hit.SoftwareID ?? null) != null;
-            if (!isSoftware) {
-                hit.status = "Available";
-                hit.Status = "Available";
+        // ---- 2) Patch the visible table row ----
+        const tr = tbody.querySelector(`tr.result[data-asset-id="${idStr}"]`);
+        if (!tr) return;
+
+        // Assignment cell text
+        const nameEl = tr.querySelector(".col-assignment .assigned-name");
+        if (nameEl) {
+            let displayName = nameEl.textContent.trim();
+
+            if (assignedToName && assignedEmployeeNumber) {
+                displayName = `${assignedToName} (${assignedEmployeeNumber})`;
+            } else if (assignedToName) {
+                displayName = assignedToName;
+            } else {
+                // fallback if we only know it's now assigned
+                displayName = "Assigned";
+            }
+
+            nameEl.textContent = displayName;
+
+            if (assignedUserId != null) {
+                nameEl.dataset.userId = String(assignedUserId);
             }
         }
 
-        // Recompute the status pill + dataset
-        const s = computeStatus(hit || {});
-        const pill = rowEl.querySelector(".status");
-        if (pill) {
-            pill.textContent = s;
-            pill.className = "status " + s.toLowerCase().replace(/\s+/g, "");
+        // Person icon button state
+        const iconBtn = tr.querySelector(".col-assignment .icon-btn");
+        if (iconBtn) {
+            if (assignedUserId != null) {
+                iconBtn.dataset.currentUserId = String(assignedUserId);
+            }
+
+            iconBtn.title = "Unassign user";
+            iconBtn.setAttribute("aria-label", "Unassign user");
+            iconBtn.classList.remove("icon-btn--disabled");
+            iconBtn.classList.add("icon-btn--mint");
+            iconBtn.dataset.disabled = "0";
         }
-        rowEl.dataset.status = s;
+
+        // Status pill
+        const pill = tr.querySelector(".col-status .status");
+        if (pill) {
+            pill.textContent = "Assigned";
+            pill.className = "status assigned";
+        }
+
+        // row.dataset.status must match what computeStatus() would produce
+        tr.dataset.status = "Assigned";
 
         applyZebra();
         refreshVisibleTooltips();
+    });
 
-        // If a status filter is active (e.g., viewing only "Assigned"), re-render the page slice
-        if ((activeFilters.status || "") !== "") {
-            applyFiltersAndRender({ page: currentPage });
+    // Keep hardware row + cache in sync after an unassign
+    window.addEventListener("unassign:saved", (ev) => {
+        const detail = ev.detail || {};
+        const assetKind = Number(detail.assetKind);
+        const assetNumericId = detail.assetNumericId;
+
+        // We only care about hardware here (kind = 1)
+        if (assetKind !== 1) return;
+
+        const idStr = String(assetNumericId || "");
+
+        // ---- 1) Patch in-memory cache so future refreshes are correct ----
+        const row = cacheAllItems.find(r =>
+            String(r.hardwareID ?? r.HardwareID ?? r.hardwareId ?? "") === idStr
+        );
+
+        if (row) {
+            // Clear assignment fields so the displayName logic collapses to "Unassigned"
+            row.assignedTo = null;
+            row.AssignedTo = null;
+            row.assignedEmployeeNumber = null;
+            row.AssignedEmployeeNumber = null;
+
+            // normalize status field
+            row.status = "Available";
+            row.Status = "Available";
         }
+
+        // ---- 2) Patch the visible table row ----
+        const tr = tbody.querySelector(`tr.result[data-asset-id="${idStr}"]`);
+        if (!tr) return;
+
+        // Assignment cell name
+        const nameEl = tr.querySelector(".col-assignment .assigned-name");
+        if (nameEl) {
+            nameEl.textContent = "Unassigned";
+            // Clear any user id we were tracking on the DOM
+            nameEl.removeAttribute("data-user-id");
+        }
+
+        // Person icon button: make sure it looks like "Assign", not "Unassign"
+        const iconBtn = tr.querySelector(".col-assignment .icon-btn");
+        if (iconBtn) {
+            // Clear stale currentUserId so future clicks treat this as unassigned
+            iconBtn.dataset.currentUserId = "";
+
+            // Flip title / aria-label to assign mode
+            iconBtn.title = "Assign user";
+            iconBtn.setAttribute("aria-label", "Assign user");
+
+            // Make sure it's in the enabled mint style
+            iconBtn.classList.remove("icon-btn--disabled");
+            iconBtn.classList.add("icon-btn--mint");
+            iconBtn.dataset.disabled = "0";
+        }
+
+        // Status pill
+        const pill = tr.querySelector(".col-status .status");
+        if (pill) {
+            pill.textContent = "Available";
+            pill.className = "status available";
+        }
+
+        // Keep row dataset consistent with what computeStatus() would say
+        tr.dataset.status = "Available";
+
+        // Reapply zebra striping after any changes
+        applyZebra();
     });
 
     window.addEventListener("seat:updated", (ev) => {
-        const { softwareId, licenseSeatsUsed, licenseTotalSeats } = ev.detail || {};
-        if (softwareId == null) return;
+        const detail = ev.detail || {};
+
+        const softwareId = Number(
+            detail.softwareId ??
+            detail.softwareID ??
+            detail.SoftwareID
+        );
+
+        const licenseSeatsUsed = Number(
+            detail.licenseSeatsUsed ??
+            detail.LicenseSeatsUsed
+        );
+
+        const licenseTotalSeats = Number(
+            detail.licenseTotalSeats ??
+            detail.LicenseTotalSeats
+        );
+
+        if (!Number.isFinite(softwareId)) {
+            console.warn("seat:updated: missing softwareId in detail", detail);
+            return;
+        }
 
         const row = findRowBySoftwareId(softwareId);
-        if (!row) return;
+        if (!row) {
+            console.warn("seat:updated: no cached row for softwareId", softwareId);
+            return;
+        }
 
-        // merge fresh counts (camel/Pascal defensive)
+        // merge fresh counts
         row.LicenseSeatsUsed = licenseSeatsUsed;
         row.licenseSeatsUsed = licenseSeatsUsed;
         row.LicenseTotalSeats = licenseTotalSeats;
@@ -1762,7 +1951,6 @@
         const chip = tr.querySelector(".seats-count");
         let _chip = chip;
         if (!_chip) {
-            // Insert a chip at the start of the assignment cell if this is the first time
             const assnCell = tr.querySelector(".col-assignment .assn-cell");
             if (assnCell) {
                 _chip = document.createElement("span");
@@ -1770,13 +1958,12 @@
                 assnCell.prepend(_chip);
             }
         }
-        if (_chip) {
+        if (_chip && Number.isFinite(licenseSeatsUsed) && Number.isFinite(licenseTotalSeats)) {
             const u = Math.max(0, Math.min(licenseSeatsUsed, licenseTotalSeats));
             _chip.textContent = `${u}/${licenseTotalSeats}`;
             _chip.title = `${u} of ${licenseTotalSeats} seats in use`;
         }
 
-        // If a status filter is active, re-render to respect it
         if ((activeFilters.status || "") !== "") {
             applyFiltersAndRender({ page: currentPage });
         } else {

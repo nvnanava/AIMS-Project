@@ -77,35 +77,39 @@ nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: 50%;
-  background: #bdc3c7;           /* default fallback */
-  color: #fff;
-  box-shadow: 0 4px 4px #0000003e;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, filter .15s ease;
+  background: rgba(26, 188, 156, .10);
+  border: 2px solid var(--aims-accent, #1abc9c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .14);
+  color: #fff;
+  transition: transform .05s ease,
+    box-shadow .15s ease,
+    background-color .15s ease,
+    filter .15s ease;
 }
-.icon-btn svg { display: block; fill: currentColor; }
 
-/* Mint variant for assign */
-.icon-btn--mint {
-  background: var(--aims-accent, #1abc9c);
-}
-.icon-btn--mint:hover {
-  filter: brightness(1.05);
+.icon-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 8px rgba(0,0,0,.18);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
+  background: rgba(26, 188, 156, .18);
 }
-.icon-btn--mint:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0,0,0,.18);
+
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18), 0 0 0 3px var(--aims-focus, rgba(26, 188, 156, .35));
 }
-.icon-btn--mint:focus-visible {
-  outline: 3px solid var(--aims-focus, rgba(26,188,156,.35));
-  outline-offset: 2px;
+
+.icon-btn svg {
+  display: block;
+  pointer-events: none;
+  fill: var(--aims-ink, #34495e);
 }
+
+
 
 /* Disabled state for the assignment icon */
 .icon-btn--disabled {
@@ -126,44 +130,6 @@ nav {
   outline: none !important;
 }
 
-/* Keep legacy assign-btn focus ring consistent just in case */
-.assign-btn:focus {
-  outline: 3px solid var(--aims-focus, rgba(26,188,156,.35));
-  border-radius: 50%;
-}
-
-/* Small action icon buttons */
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  cursor: pointer;
-  background: rgba(26, 188, 156, .10);
-  border: 2px solid var(--aims-accent, #1abc9c);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .14);
-  transition: transform .05s ease, box-shadow .15s ease, background-color .15s ease;
-}
-
-.icon-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
-  background: rgba(26, 188, 156, .18);
-}
-
-.icon-btn:focus,
-.icon-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, .18), 0 0 0 3px var(--aims-focus, rgba(26, 188, 156, .35));
-}
-
-.icon-btn svg {
-  pointer-events: none;
-  fill: var(--aims-ink, #34495e);
-}
-
 /* Shell */
 .table-wrapper {
   background: #fff;
@@ -180,9 +146,10 @@ nav {
 }
 
 .admin-table-wrapper {
+  border: 1px solid #34495e;
   border-radius: 8px;
-  background: #fff;
   overflow: hidden;
+  background: #fff;
 }
 
 .admin-table-scroll {
@@ -190,7 +157,6 @@ nav {
   width: 100%;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
 
@@ -327,7 +293,7 @@ nav {
 .aims-custom-select__listbox {
   position: fixed;
   display: none;
-  z-index: 2000;
+  z-index: 9999;
   max-height: 260px;
   overflow: auto;
   background: var(--aims-bg-contrast);
@@ -389,6 +355,12 @@ nav {
 .asset-table-body {
   border-collapse: collapse;
   table-layout: fixed;
+  display: block;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 74.4vh;
+  margin: 0;
+  border-top: 0;
 }
 
 .asset-table-body td {
@@ -403,16 +375,16 @@ nav {
 
 /* When a row is expanded, unwrap cells so content can flow */
 .asset-table-body tr.expand-row td {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none;
 }
 
-/* Keep the expanded row visually above neighbors and slightly highlighted */
+/* Keep the expanded row above neighbors inside the scroll container */
 .asset-table-body tr.expand-row {
   position: relative;
   z-index: 3;
-  box-shadow: 0 0 12px rgba(46, 204, 113, .25);
 }
 
 .asset-table-body tr:nth-child(even) {
@@ -469,60 +441,68 @@ nav {
   border: 0 !important;
 }
 
-/* ===== Status capsule (match dashboard settings) ===== */
+/* Status pills – match Admin badge look */
 .asset-table-body .status {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 88px;
   height: 28px;
+  min-width: 96px;
   padding: 0 12px;
   border-radius: 999px;
-  font-weight: 600;
-  color: #34495e;
-  box-shadow: 0 4px 4px #0000003e;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: default;
   border: 2px solid transparent;
+  color: #34495e;
   background: #e5e8e8;
   /* safe default */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .12);
 }
 
-/* Map Search statuses to dashboard-style colorways */
+/* Available – same spirit as Admin "active" */
 .asset-table-body .status.available {
-  /* like "ok" */
   background: #d5f5e3;
+  color: #1e7e34;
   border-color: #2ecc71;
 }
 
+/* Assigned – blue so it’s distinct from Available */
 .asset-table-body .status.assigned {
-  /* blue accent so it's distinct from "Available" */
   background: #d6eaf8;
+  color: #1b4f72;
   border-color: #3498db;
 }
 
+/* In repair – yellow/warning */
 .asset-table-body .status.inrepair {
-  /* warning/yellow */
   background: #fcf3cf;
+  color: #7d6608;
   border-color: #f1c40f;
 }
 
+/* Damaged – red/alert like "inactive" */
 .asset-table-body .status.damaged {
-  /* red (like "low") */
   background: #fadbd8;
+  color: #a33a2a;
   border-color: #e74c3c;
 }
 
+/* Archived – neutral gray */
 .asset-table-body .status.archived {
-  /* gray (like "empty") */
   background: #e5e8e8;
+  color: #7f8c8d;
   border-color: #95a5a6;
 }
 
-/* Software: no seats left */
+/* Software: no seats left (treat like danger) */
 .asset-table-body .status.seatsfull {
   background: #fadbd8;
-  /* light red */
+  color: #a33a2a;
   border-color: #e74c3c;
-}
+} 
 
 #table-body>tr.zebra-even td {
   background: #ECF0F1 !important;
@@ -549,27 +529,12 @@ nav {
 }
 
 /* Assignment cell */
-.assign-btn {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  margin-left: .5rem;
-  font-size: 1.05rem;
-  line-height: 1;
-  padding: 0;
-  vertical-align: middle;
-}
-
-.assign-btn:focus {
-  outline: 2px solid #005fcc;
-  border-radius: 4px;
-}
-
 .assn-cell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   justify-content: center;
+  vertical-align: text-bottom;
 }
 
 .seats-count {
@@ -686,13 +651,7 @@ nav {
   pointer-events: none;
 }
 
-/* Outer border */
-.admin-table-wrapper {
-  border: 1px solid #34495e;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
+/* Outer border state with rows */
 .admin-table-wrapper.table-has-rows .table-toolbar {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
@@ -736,6 +695,7 @@ nav {
   outline: 3px solid var(--aims-focus);
   outline-offset: 2px;
 }
+
 .search-empty {
   display: flex;
   align-items: center;
@@ -754,6 +714,7 @@ nav {
 .is-blank #filter-fab {
   display: none !important;
 }
+
 /* For old browsers that lack accent-color */
 @supports not (accent-color: red) {
   .aims-check input[type="checkbox"] {
@@ -783,22 +744,6 @@ nav {
   }
 }
 
-/* Keep horizontal scroll on the whole table area */
-.admin-table-scroll {
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* Make ONLY the body scroll vertically */
-.asset-table-body {
-  display: block;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 74.4vh;
-  margin: 0;
-  border-top: 0;
-}
-
 /* Preserve table layout for the rows inside the scrolling tbody */
 .asset-table-body>tbody {
   display: table;
@@ -820,20 +765,6 @@ nav {
   border-bottom-right-radius: 0;
 }
 
-/* Expanded row should unwrap and be allowed to show full content */
-.asset-table-body tr.expand-row td {
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-  max-width: none;
-}
-
-/* Make sure the expanding row can render over neighbors inside the scroll container */
-.asset-table-body tr.expand-row {
-  position: relative;
-  z-index: 3;
-}
-
 /* one source of truth for truncation */
 .ellip {
   display: block;
@@ -847,10 +778,4 @@ nav {
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
-}
-
-/* keep the row above neighbors inside the scroll container */
-.asset-table-body tr.expand-row {
-  position: relative;
-  z-index: 3;
 }

@@ -1,40 +1,77 @@
-@* Unassign Asset Modal (summary + comment only) *@
-<div class="modal fade" id="unassignAssetModal" tabindex="-1" aria-labelledby="unassignAssetLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+@* Unassign Asset Modal (hardware: simple, software: pick user) *@
+<div class="modal fade" id="unassignAssetModal" tabindex="-1" aria-labelledby="unassignAssetLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+        <div class="modal-content aimsds-shell">
+
             <!-- Header -->
-            <div class="modal-header">
+            <div class="modal-header aimsds-header">
                 <h5 class="modal-title" id="unassignAssetLabel">Unassign Asset</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close aimsds-close" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
             </div>
 
             <!-- Body -->
-            <div class="modal-body">
+            <div class="modal-body aimsds-body">
+                <!-- Selected asset summary -->
                 <div id="unSelectedAssetBox" class="mb-3">
-                    <label class="form-label mb-1">Asset to Unassign</label>
+                    <label class="form-label mb-1 fw-bold">Asset to Unassign</label>
                     <div class="p-2 border rounded bg-white">
                         <div><strong>Name:</strong> <span id="unSelAssetName">—</span></div>
                         <div><strong>Tag #:</strong> <span id="unSelAssetTag">—</span></div>
                         <div><strong>Kind:</strong> <span id="unSelAssetKind">—</span></div>
+                        <div id="unSelAssigneeRow">
+                            <strong>Assigned To:</strong> <span id="unSelAssigneeName">—</span>
+                        </div>
                         <div><strong>Assignment ID:</strong> <span id="unSelAssignmentId">—</span></div>
                     </div>
                     <input type="hidden" id="unassignAssignmentId" value="" />
                 </div>
 
-                <form id="unassignAssetForm">
+                <form id="unassignAssetForm" novalidate>
+                    <!-- SOFTWARE ONLY: Select User to Unassign -->
+                    <div class="mb-3" id="unassignUserRow" style="display:none;">
+                        <label for="unassignUserSearchInput" class="form-label fw-bold">
+                            Select User to Unassign
+                        </label>
+
+                        <div class="aims-userpicker" id="unassignUserPicker">
+                            <!-- Navbar-style pill search (software only) -->
+                            <div class="search-container aims-userpicker__search">
+                                <input type="search" id="unassignUserSearchInput" class="form-control search-input"
+                                    placeholder="Search assigned users…" autocomplete="off" spellcheck="false"
+                                    autocapitalize="off" autocorrect="nope" aria-label="Search assigned users" />
+                            </div>
+
+                            <!-- User list (assigned users for this software) -->
+                            <div id="unassignUserList" class="aims-userpicker__list" role="listbox"
+                                aria-label="Currently assigned users" tabindex="0">
+                                <!-- options injected by JS -->
+                            </div>
+
+                            <!-- Hidden field: selected user (optional, we unassign by AssignmentID) -->
+                            <input type="hidden" id="unassignUserIdHidden" />
+                        </div>
+                    </div>
+
+                    <!-- Comment -->
                     <div class="mb-3">
-                        <label for="unassignCommentBox" class="form-label">Unassignment Comment</label>
-                        <textarea id="unassignCommentBox" class="form-control" rows="3"
+                        <label for="unassignCommentBox" class="form-label fw-bold">
+                            Unassignment Comment
+                        </label>
+                        <textarea id="unassignCommentBox" class="form-control aimsds-input" rows="3"
                             placeholder="Reason for unassignment (optional)..."></textarea>
                     </div>
                 </form>
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer justify-content-center gap-3">
-                <button type="submit" form="unassignAssetForm" class="btn custom-modal-btn custom-submit-btn">
-                    Unassign Asset
-                </button>
+            <div class="modal-footer aimsds-footer">
+                <div class="aimsds-footer-right w-100 d-flex justify-content-center gap-3">
+                    <button type="submit" form="unassignAssetForm" class="add-btn aimsds-primary assign-btn">
+                        Unassign Asset
+                    </button>
+                </div>
             </div>
         </div>
     </div>

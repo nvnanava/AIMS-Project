@@ -20,6 +20,10 @@
 @section Styles {
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/search.index.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/aims.modals.css" />
+    <link rel="stylesheet" href="~/css/components/_AssignAssetModal.css"/>
+    <link rel="stylesheet" href="~/css/components/_UnassignAssetModal.css" />
+    <link rel="stylesheet" href="~/css/components/_SeatModeModal.css" />
 }
 
 <!-- Expose tiny bootstrap vars to JS -->
@@ -110,10 +114,12 @@
 
 @await Html.PartialAsync("_AssignAssetModal")
 @await Html.PartialAsync("_UnassignAssetModal")
+@await Html.PartialAsync("_SeatModeModal")
 
 @section Scripts {
     <script src="~/js/components/archive-filter.js" asp-append-version="true" defer></script>
     <script src="~/js/pages/search.index.js" asp-append-version="true" defer></script>
     <script src="~/js/components/assignAssetModal.js" asp-append-version="true" defer></script>
     <script src="~/js/components/unassignAssetModal.js" asp-append-version="true" defer></script>
+    <script src="~/js/components/seatModeModal.js" asp-append-version="true" defer></script>
 }

@@ -23,6 +23,9 @@ public class GetAssignmentDto
     public int? UserID { get; set; }
     public string User { get; set; } = string.Empty;
 
+    // Expose EmployeeNumber so JS can show "Name (12345)"
+    public string? EmployeeNumber { get; set; }
+
     // What (exactly one set)
     public AssetKind AssetKind { get; set; }
     public int? HardwareID { get; set; }

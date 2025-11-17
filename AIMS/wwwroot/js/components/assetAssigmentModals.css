@@ -1,72 +1,56 @@
 /* ======================================================================
-   AIMS Component Styles: Assign Asset Modal
+   AIMS Component Styles: Assign / Unassign Asset Modals
    ----------------------------------------------------------------------
-   - Navbar-style search bar INSIDE modal (user search)
-   - Asset search pill (no icon)
-   - Custom user picker listbox (keyboard + mouse)
-   - Centered footer buttons with clear primary/secondary hierarchy
+   - Shared shell, labels, summary box
+   - Shared user picker (search pill + listbox)
+   - Shared primary pill button
+   - Assign-only: asset search + Upload button + 2-button layout tweaks
    ====================================================================== */
 
-/* -------- CSS Variables (AIMS palette) -------- */
-:root {
-    --aims-bg: #ecf0f1;
-    /* page bg */
-    --aims-bg-contrast: #f7f9fa;
-    /* cards/inputs */
-    --aims-ink: #34495e;
-    /* text/borders */
-    --aims-navy: #2c3e50;
-    /* headers/nav */
-    --aims-accent: #1abc9c;
-    /* accent teal */
-    --aims-shadow: rgba(0, 0, 0, .15);
-    --aims-focus: rgba(26, 188, 156, .35);
-    /* teal focus ring */
-}
+/* ------------- Shared shell / spacing -------------------------------- */
 
-/* ------------- Shell / basic spacing (light touch) ------------------- */
-
-#assignAssetModal .aimsds-body {
+#assignAssetModal .aimsds-body,
+#unassignAssetModal .aimsds-body {
     padding: 16px 18px;
 }
 
-#assignAssetModal .modal-body form {
+#assignAssetModal .modal-body form,
+#unassignAssetModal .modal-body form {
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-#assignAssetModal .modal-body label {
+#assignAssetModal .modal-body label,
+#unassignAssetModal .modal-body label {
     font-weight: 700;
     color: var(--aims-ink);
 }
 
-/* Selected asset summary box */
+/* Selected asset summary boxes */
 #assignAssetModal #selectedAssetBox .border,
-#assignAssetModal #selectedAssetBox .rounded {
+#assignAssetModal #selectedAssetBox .rounded,
+#unassignAssetModal #unSelectedAssetBox .border,
+#unassignAssetModal #unSelectedAssetBox .rounded {
     border-color: rgba(52, 73, 94, .35) !important;
     background: #ffffff;
 }
 
 /* ======================================================================
-   1) USER SEARCH — clone navbar pill inside modal
-   ----------------------------------------------------------------------
-   Markup:
-     <div class="search-container aims-userpicker__search">
-       <button class="search-icon">🔍</button>
-       <input class="search-input" id="assignUserSearchInput" ... />
-     </div>
+   Shared USER SEARCH + USER LISTBOX (Assign + Unassign)
    ====================================================================== */
 
-#assignAssetModal .aims-userpicker {
+#assignAssetModal .aims-userpicker,
+#unassignAssetModal .aims-userpicker {
     display: flex;
     flex-direction: column;
     gap: 6px;
     width: 100%;
 }
 
-/* Clone navbar .search-container, but full width inside modal */
-#assignAssetModal .aims-userpicker__search {
+/* Pill search */
+#assignAssetModal .aims-userpicker__search,
+#unassignAssetModal .aims-userpicker__search {
     display: flex;
     align-items: center;
     width: 100%;
@@ -79,31 +63,31 @@
 }
 
 /* Input inside pill */
-#assignAssetModal .aims-userpicker__search .search-input {
+#assignAssetModal .aims-userpicker__search .search-input,
+#unassignAssetModal .aims-userpicker__search .search-input {
     flex: 1;
     background-color: transparent;
     text-align: start;
-    /* left-align text in modal */
     border: none;
     outline: none;
     padding: 0;
 }
 
-/* Remove any Bootstrap box-shadow on focus */
-#assignAssetModal .aims-userpicker__search .search-input:focus {
+/* Kill Bootstrap focus glow; container/list handle visuals */
+#assignAssetModal .aims-userpicker__search .search-input:focus,
+#unassignAssetModal .aims-userpicker__search .search-input:focus {
     box-shadow: none;
 }
 
-/* IMPORTANT: remove the old pseudo-icon that caused "exploded" look */
-#assignAssetModal .aims-userpicker::before {
+/* Remove any legacy pseudo-icon */
+#assignAssetModal .aims-userpicker::before,
+#unassignAssetModal .aims-userpicker::before {
     content: none !important;
 }
 
-/* ======================================================================
-   2) USER LISTBOX — custom list (unchanged logic)
-   ====================================================================== */
-
-#assignAssetModal .aims-userpicker__list {
+/* Listbox shell */
+#assignAssetModal .aims-userpicker__list,
+#unassignAssetModal .aims-userpicker__list {
     margin-top: 4px;
     border: 2px solid rgba(52, 73, 94, .35);
     border-radius: 8px;
@@ -114,8 +98,9 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, .12);
 }
 
-/* Individual user row */
-#assignAssetModal .aims-userpicker__option {
+/* Individual rows */
+#assignAssetModal .aims-userpicker__option,
+#unassignAssetModal .aims-userpicker__option {
     display: flex;
     align-items: center;
     width: 100%;
@@ -130,55 +115,54 @@
     transition: background-color .12s ease, box-shadow .12s ease, transform .06s ease;
 }
 
-/* Hover + keyboard "active" row highlight */
+/* Hover + active row */
 #assignAssetModal .aims-userpicker__option:hover,
-#assignAssetModal .aims-userpicker__option[data-active="true"] {
+#assignAssetModal .aims-userpicker__option[data-active="true"],
+#unassignAssetModal .aims-userpicker__option:hover,
+#unassignAssetModal .aims-userpicker__option[data-active="true"] {
     background: rgba(26, 188, 156, .12);
 }
 
-/* Focus ring for keyboard focus */
-#assignAssetModal .aims-userpicker__option:focus-visible {
+/* Keyboard focus ring */
+#assignAssetModal .aims-userpicker__option:focus-visible,
+#unassignAssetModal .aims-userpicker__option:focus-visible {
     outline: none;
     box-shadow: inset 0 0 0 3px var(--aims-focus);
     background: rgba(26, 188, 156, .12);
 }
 
-/* Checkmark for selected user (aria-selected="true") */
-#assignAssetModal .aims-userpicker__option[aria-selected="true"]::after {
+/* Checkmark on selected user */
+#assignAssetModal .aims-userpicker__option[aria-selected="true"]::after,
+#unassignAssetModal .aims-userpicker__option[aria-selected="true"]::after {
     content: "✓";
     margin-inline-start: auto;
     font-weight: 700;
 }
 
-/* Empty state message */
-#assignAssetModal .aims-userpicker__empty {
+/* Empty state */
+#assignAssetModal .aims-userpicker__empty,
+#unassignAssetModal .aims-userpicker__empty {
     padding: 8px 10px;
     font-style: italic;
     color: #7f8c8d;
 }
 
-/* Guard: don't let global .form-select rules mess up the custom list */
+/* Guard: prevent global .form-select from interfering */
 #assignAssetModal .aims-userpicker__list select,
-#assignAssetModal .aims-userpicker__list .form-select {
+#assignAssetModal .aims-userpicker__list .form-select,
+#unassignAssetModal .aims-userpicker__list select,
+#unassignAssetModal .aims-userpicker__list .form-select {
     all: unset;
 }
 
-#assignAssetModal .aims-userpicker__option[data-active="true"],
-#unassignAssetModal .aims-userpicker__option[data-active="true"] {
-    background: rgba(26, 188, 156, .12);
-}
-
 /* ======================================================================
-   3) ASSET SELECT LISTBOX + ASSET SEARCH PILL
-   ----------------------------------------------------------------------
-   - Asset search (assignAssetSearchInput) uses a pill input (no icon)
+   Assign-only: ASSET SELECT LISTBOX + ASSET SEARCH PILL
    ====================================================================== */
 
 #assignAssetModal #assetRow .aimsds-controls {
     width: 100%;
 }
 
-/* Asset search pill created by JS (aimsds-input--search) */
 #assignAssetModal #assignAssetSearchInput.aimsds-input--search {
     width: 100%;
     margin-bottom: 6px;
@@ -197,30 +181,25 @@
     outline: none;
 }
 
-/* Focus ring, same as user search */
 #assignAssetModal #assignAssetSearchInput.aimsds-input--search:focus {
     border-color: #1abc9c;
     box-shadow: 0 0 8px rgba(26, 188, 156, 0.7);
 }
 
-/* Autofill fix */
 #assignAssetModal #assignAssetSearchInput.aimsds-input--search:-webkit-autofill {
     box-shadow: 0 0 0 1000px #ecf0f1 inset !important;
     -webkit-text-fill-color: var(--aims-ink) !important;
 }
 
-/* Asset listbox */
 #assignAssetModal select#assetSelect {
     max-height: 260px;
     overflow-y: auto;
 }
 
-/* Option padding */
 #assignAssetModal select#assetSelect option {
     padding: 6px 10px;
 }
 
-/* AIMS mint highlight for selected/active items */
 #assignAssetModal select#assetSelect option:checked,
 #assignAssetModal select#assetSelect option:focus {
     background-color: rgba(26, 188, 156, .24) !important;
@@ -228,45 +207,46 @@
     font-weight: 600;
 }
 
-/* Focus ring around the whole listbox */
 #assignAssetModal select#assetSelect:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--aims-focus) !important;
 }
 
 /* ======================================================================
-   4) COMMENT AREA — consistent with global modal input styling
+   COMMENT AREAS
    ====================================================================== */
 
-#assignAssetModal #commentBox {
+#assignAssetModal #commentBox,
+#unassignAssetModal #unassignCommentBox {
     resize: vertical;
 }
 
-#assignAssetModal .invalid-feedback {
+#assignAssetModal .invalid-feedback,
+#unassignAssetModal .invalid-feedback {
     font-size: .85rem;
 }
 
 /* ======================================================================
-   5) FOOTER + BUTTONS — centered, primary vs secondary
-   ----------------------------------------------------------------------
-   - Upload Agreement = secondary (outlined)
-   - Assign Asset     = primary (filled mint)
+   FOOTER + BUTTONS (shared base)
    ====================================================================== */
 
-#assignAssetModal .aimsds-footer {
+#assignAssetModal .aimsds-footer,
+#unassignAssetModal .aimsds-footer {
     border-top: 3px solid #34495e;
     background: var(--aims-bg);
 }
 
-/* Center buttons with a small gap */
-#assignAssetModal .aimsds-footer-right {
+#assignAssetModal .aimsds-footer-right,
+#unassignAssetModal .aimsds-footer-right {
     display: flex;
     gap: 14px;
     width: 100%;
+    justify-content: center;
 }
 
-/* Base pill layout for both buttons */
-#assignAssetModal .add-btn {
+/* Base pill layout for all footer buttons */
+#assignAssetModal .add-btn,
+#unassignAssetModal .add-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -290,15 +270,9 @@
     border-style: solid;
 }
 
-/* Size constraints (desktop) */
-#assignAssetModal .add-btn.upload-btn,
-#assignAssetModal .add-btn.assign-btn {
-    min-width: 180px;
-}
-
-/* ----------------- Primary: Assign Asset ----------------- */
-
-#assignAssetModal .add-btn.assign-btn {
+/* Primary pill (Assign + Unassign share same look) */
+#assignAssetModal .add-btn.assign-btn,
+#unassignAssetModal .add-btn.assign-btn {
     background-color: var(--aims-accent);
     border-color: var(--aims-accent);
     color: #ffffff;
@@ -306,14 +280,17 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
 }
 
-#assignAssetModal .add-btn.assign-btn:hover {
+#assignAssetModal .add-btn.assign-btn:hover,
+#unassignAssetModal .add-btn.assign-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, .22);
     filter: brightness(1.02);
 }
 
 #assignAssetModal .add-btn.assign-btn:focus,
-#assignAssetModal .add-btn.assign-btn:focus-visible {
+#assignAssetModal .add-btn.assign-btn:focus-visible,
+#unassignAssetModal .add-btn.assign-btn:focus,
+#unassignAssetModal .add-btn.assign-btn:focus-visible {
     outline: none;
     box-shadow:
         0 4px 10px rgba(0, 0, 0, .22),
@@ -321,13 +298,13 @@
     transform: translateY(-1px);
 }
 
-#assignAssetModal .add-btn.assign-btn:active {
+#assignAssetModal .add-btn.assign-btn:active,
+#unassignAssetModal .add-btn.assign-btn:active {
     filter: brightness(0.98);
     transform: translateY(0);
 }
 
-/* ----------------- Secondary: Upload Agreement ------------ */
-
+/* Assign-only secondary: Upload Agreement */
 #assignAssetModal .add-btn.upload-btn {
     background-color: transparent;
     border-color: var(--aims-accent);
@@ -359,14 +336,24 @@
 /* ----------------- Mobile layout ------------------------- */
 
 @media (max-width: 576px) {
+
+    /* Both modals: buttons go full-width on small screens */
+    #assignAssetModal .add-btn.upload-btn,
+    #assignAssetModal .add-btn.assign-btn,
+    #unassignAssetModal .add-btn.assign-btn {
+        min-width: 0;
+        width: 100%;
+    }
+
+    /* Assign: two buttons → column-reverse (primary on bottom) */
     #assignAssetModal .aimsds-footer-right {
         flex-direction: column-reverse;
         align-items: stretch;
     }
 
-    #assignAssetModal .add-btn.upload-btn,
-    #assignAssetModal .add-btn.assign-btn {
-        min-width: 0;
-        width: 100%;
+    /* Unassign: single button → simple column */
+    #unassignAssetModal .aimsds-footer-right {
+        flex-direction: column;
+        align-items: stretch;
     }
 }

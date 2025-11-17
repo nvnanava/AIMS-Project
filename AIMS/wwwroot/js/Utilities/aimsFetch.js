@@ -67,16 +67,33 @@ async function aimsFetch(url, options = {}) {
             }
             // ----- Handle HTTP Errors -----
             if (!response.ok) {
-                let errorObj = { status: response.status, isValidation: false };
+                const errorObj = {
+                    status: response.status,
+                    isValidation: false,
+                    data: null
+                };
 
+                // Read the body ONCE as text
+                let text = "";
                 try {
-                    const json = await response.json();
-                    errorObj.data = json;
-                    if (response.status >= 400 && response.status < 500) {
-                        errorObj.isValidation = true;
-                    }
+                    text = await response.text();
                 } catch {
-                    errorObj.data = { message: await response.text() };
+                    text = "";
+                }
+
+                // Try to parse JSON from the text (if any)
+                if (text) {
+                    try {
+                        const json = JSON.parse(text);
+                        errorObj.data = json;
+
+                        if (response.status >= 400 && response.status < 500) {
+                            errorObj.isValidation = true;
+                        }
+                    } catch {
+                        // Not JSON, keep raw text
+                        errorObj.data = { message: text };
+                    }
                 }
 
                 throw errorObj;

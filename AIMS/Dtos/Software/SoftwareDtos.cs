@@ -87,6 +87,7 @@ public sealed class AssignSeatRequestDto
 
     [Range(1, int.MaxValue)]
     public int UserID { get; set; }
+    public string? Comment { get; set; }
 }
 
 public sealed class ReleaseSeatRequestDto
@@ -96,6 +97,8 @@ public sealed class ReleaseSeatRequestDto
 
     [Range(1, int.MaxValue)]
     public int UserID { get; set; }
+
+    public string? Comment { get; set; }
 }
 
 public sealed class SeatOperationResultDto

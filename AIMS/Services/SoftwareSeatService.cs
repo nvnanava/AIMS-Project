@@ -13,6 +13,7 @@ public class SoftwareSeatService
     // Test-only override for retry count. Null = use default (3).
     public static int? RetryOverride { get; set; }
 #endif
+
     private readonly AimsDbContext _db;
     private readonly AuditLogQuery _audit;
 
@@ -22,7 +23,15 @@ public class SoftwareSeatService
         _audit = audit;
     }
 
-    public async Task AssignSeatAsync(int softwareId, int userId, CancellationToken ct = default)
+    /// <summary>
+    /// Assigns a software seat to a user, enforcing capacity and one-open-assignment-per (software,user).
+    /// Writes an audit record including optional comment and a link hint to the Audit Log.
+    /// </summary>
+    public async Task AssignSeatAsync(
+        int softwareId,
+        int userId,
+        string? comment = null,
+        CancellationToken ct = default)
     {
         // ---- Resolve user (for nice audit text) ----
         var userInfo = await _db.Users.AsNoTracking()
@@ -98,12 +107,12 @@ public class SoftwareSeatService
                 await _db.SaveChangesAsync(ct);
                 CacheStamp.BumpAssets();
 
-                // ---- AUDIT via AuditLogQuery with Prev/New seats ("used/total") ----
+                // ---- AUDIT with Prev/New seats + optional comment + link ----
                 await _audit.CreateAuditRecordAsync(new CreateAuditRecordDto
                 {
                     UserID = userId,
                     Action = "Assign",
-                    Description = $"Assigned seat for {sw.SoftwareName} {sw.SoftwareVersion} to {whoLabel}",
+                    Description = BuildAssignDescription(sw, whoLabel, comment),
                     AssetKind = AssetKind.Software,
                     SoftwareID = sw.SoftwareID,
                     Changes = new List<CreateAuditLogChangeDto>
@@ -130,7 +139,15 @@ public class SoftwareSeatService
         throw new DbUpdateConcurrencyException("Failed to assign seat after retries.");
     }
 
-    public async Task ReleaseSeatAsync(int softwareId, int userId, CancellationToken ct = default)
+    /// <summary>
+    /// Releases a software seat for a user (if open). Idempotent.
+    /// Writes an audit record including optional comment and a link hint to the Audit Log.
+    /// </summary>
+    public async Task ReleaseSeatAsync(
+        int softwareId,
+        int userId,
+        string? comment = null,
+        CancellationToken ct = default)
     {
         // ---- Resolve user (for nice audit text) ----
         var userInfo = await _db.Users.AsNoTracking()
@@ -145,8 +162,9 @@ public class SoftwareSeatService
 #if DEBUG
         var maxRetries = RetryOverride ?? 3;
 #else
-        const inst maxRetries = 3;
+        const int maxRetries = 3;
 #endif
+
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
             ct.ThrowIfCancellationRequested();
@@ -182,12 +200,12 @@ public class SoftwareSeatService
                 await _db.SaveChangesAsync(ct);
                 CacheStamp.BumpAssets();
 
-                // ---- AUDIT via AuditLogQuery with Prev/New seats ("used/total") ----
+                // ---- AUDIT with Prev/New seats + optional comment + link ----
                 await _audit.CreateAuditRecordAsync(new CreateAuditRecordDto
                 {
                     UserID = userId,
                     Action = "Unassign",
-                    Description = $"Released seat for {sw.SoftwareName} {sw.SoftwareVersion} from {whoLabel}",
+                    Description = BuildReleaseDescription(sw, whoLabel, comment),
                     AssetKind = AssetKind.Software,
                     SoftwareID = sw.SoftwareID,
                     Changes = new List<CreateAuditLogChangeDto>
@@ -212,6 +230,30 @@ public class SoftwareSeatService
         }
 
         throw new DbUpdateConcurrencyException("Failed to release seat after retries.");
+    }
+
+    // ------------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------------
+
+    private static string BuildAssignDescription(Software sw, string whoLabel, string? comment)
+    {
+        var baseText = $"Assigned seat for {sw.SoftwareName} {sw.SoftwareVersion} to {whoLabel}";
+        var commentPart = string.IsNullOrWhiteSpace(comment)
+            ? string.Empty
+            : $" Comment: {comment.Trim()}";
+
+        return baseText + commentPart;
+    }
+
+    private static string BuildReleaseDescription(Software sw, string whoLabel, string? comment)
+    {
+        var baseText = $"Released seat for {sw.SoftwareName} {sw.SoftwareVersion} from {whoLabel}";
+        var commentPart = string.IsNullOrWhiteSpace(comment)
+            ? string.Empty
+            : $" Comment: {comment.Trim()}";
+
+        return baseText + commentPart;
     }
 }
 

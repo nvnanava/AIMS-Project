@@ -362,9 +362,9 @@ public class SoftwareController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> AssignSeat(
-        [FromBody] AssignSeatRequestDto dto,
-        [FromServices] SoftwareSeatService svc,
-        CancellationToken ct = default)
+    [FromBody] AssignSeatRequestDto dto,
+    [FromServices] SoftwareSeatService svc,
+    CancellationToken ct = default)
     {
         // Expect dto.SoftwareID + dto.UserID
         var exists = await _db.SoftwareAssets.AnyAsync(s => s.SoftwareID == dto.SoftwareID, ct);
@@ -372,7 +372,7 @@ public class SoftwareController : ControllerBase
 
         try
         {
-            await svc.AssignSeatAsync(dto.SoftwareID, dto.UserID, ct);
+            await svc.AssignSeatAsync(dto.SoftwareID, dto.UserID, dto.Comment, ct);
 
             // Return current counts
             var sw = await _db.SoftwareAssets
@@ -425,7 +425,7 @@ public class SoftwareController : ControllerBase
 
         try
         {
-            await svc.ReleaseSeatAsync(dto.SoftwareID, dto.UserID, ct);
+            await svc.ReleaseSeatAsync(dto.SoftwareID, dto.UserID, dto.Comment, ct);
 
             var sw = await _db.SoftwareAssets
                 .Where(s => s.SoftwareID == dto.SoftwareID)

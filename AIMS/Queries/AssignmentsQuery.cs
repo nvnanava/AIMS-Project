@@ -31,7 +31,8 @@ public class AssignmentsQuery
                 AssetKind = a.AssetKind,
                 UserID = a.UserID ?? 0,
                 User = a.User != null ? a.User.FullName : string.Empty,
-                HardwareID = a.HardwareID,     // ✅ was AssetTag
+                EmployeeNumber = a.User != null ? a.User.EmployeeNumber : null,
+                HardwareID = a.HardwareID,
                 SoftwareID = a.SoftwareID,
                 AssignedAtUtc = a.AssignedAtUtc,
                 UnassignedAtUtc = a.UnassignedAtUtc
@@ -50,7 +51,8 @@ public class AssignmentsQuery
                 AssetKind = a.AssetKind,
                 UserID = a.UserID ?? 0,
                 User = a.User != null ? a.User.FullName : string.Empty,
-                HardwareID = a.HardwareID,     // ✅ was AssetTag
+                EmployeeNumber = a.User != null ? a.User.EmployeeNumber : null,
+                HardwareID = a.HardwareID,
                 SoftwareID = a.SoftwareID,
                 AssignedAtUtc = a.AssignedAtUtc,
                 UnassignedAtUtc = a.UnassignedAtUtc
