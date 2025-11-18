@@ -16,6 +16,9 @@ import { adminAfterAll, adminBeforeAll } from './admin-utils';
 let sharedContext: BrowserContext;
 let sharedPage: Page;
 
+// ensure that seeding doesn't have a race condition
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Add User: Valid, Invalid, Existing', () => {
     test.beforeAll(async({browser}) => {
            sharedContext = await browser.newContext();

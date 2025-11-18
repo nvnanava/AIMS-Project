@@ -15,6 +15,8 @@ import { adminAfterAll, adminBeforeAll } from './admin-utils';
 // setup shared scope to ensure that user is added
 let sharedContext: BrowserContext;
 let sharedPage: Page;
+// ensure that seeding doesn't have a race condition
+test.describe.configure({ mode: 'serial' });
 
 test.describe('Admin Page - UI is displayed properly', () => {
 
@@ -89,7 +91,19 @@ test.describe('Admin Page - UI is displayed properly', () => {
         await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
     })
     test('Open Edit User Modal', async() => {
-
+        await sharedPage.getByRole('textbox', { name: 'Search Users...' }).click();
+        await sharedPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+        await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
+        await sharedPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
+        const nameBox = sharedPage.getByRole('textbox', { name: 'Name' });
+        const nameBoxValue = await nameBox.inputValue();
+        await expect(nameBoxValue).not.toBe('');
+        const emailBox = sharedPage.getByRole('textbox', { name: 'Email' });
+        const emailBoxValue = await emailBox.inputValue();
+        await expect(emailBoxValue).not.toBe('');
+        const officeBox = sharedPage.getByRole('textbox', { name: 'Office' });
+        const officeBoxValue = await officeBox.inputValue();
+        await expect(officeBoxValue).not.toBe('');
     })
 
 })

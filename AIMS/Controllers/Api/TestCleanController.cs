@@ -37,9 +37,39 @@ public class TestCleanController : ControllerBase
             return NoContent();
         }
 
+        // remove user from AuditLog (otherwise the key constraints will not allow us to delete a user)
+        var auditLogMsgs = await _db.AuditLogs.Where(a => a.UserID == user.UserID).ToListAsync();
+
+        foreach (var msg in auditLogMsgs)
+        {
+            _db.AuditLogs.Remove(msg);
+        }
+
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
 
         return Ok($"Deleted test user {user.FullName} ({user.GraphObjectID})");
+    }
+
+    [HttpDelete("office")]
+    public async Task<IActionResult> DeleteOffice([FromQuery] string OfficeName)
+    {
+        // if not in the development environment, forbid this api route
+        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright"))
+        {
+            return Forbid();
+        }
+
+        var office = await _db.Offices.FirstOrDefaultAsync(o => o.OfficeName == OfficeName);
+        if (office == null)
+        {
+            // User not found, which is a successful cleanup for us.
+            return NoContent();
+        }
+
+        _db.Offices.Remove(office);
+        await _db.SaveChangesAsync();
+
+        return Ok($"Deleted test office {office.OfficeID} ({office.OfficeName})");
     }
 }

@@ -186,8 +186,6 @@
     // create elements for office results in the DOM
     async function renderOfficeResults(items, query, isEdit = false) {
         const resultsList = isEdit ? document.getElementById("editOfficeResults") : document.getElementById("officeResults");
-        console.log("here");
-        console.log(items)
         if (!resultsList) return;
 
         resultsList.innerHTML = "";
@@ -224,7 +222,6 @@
 
     async function officeInputHandler(input, isEdit = false) {
             const q = input.value.trim();
-            console.log(q);
             clearTimeout(aadDebounceTimer);
             aadDebounceTimer = setTimeout(() => searchOffices(q, isEdit), 250);
     }
@@ -399,7 +396,6 @@
             const tr = document.createElement("tr");
             tr.className = `user-row ${u.isArchived ? "inactive" : "active"}`;
 
-            console.log(u)
             // Columns: Actions | Name | Email | Office | Status | Separation Date
             tr.innerHTML = `
       <td class="actions">
@@ -407,7 +403,6 @@
           class="icon-btn js-edit-user"
           title="Edit"
           data-id="${u.userID}"
-          data-graph-id="${u.graphID}"
           data-name="${u.name ?? ""}"
           data-email="${u.email ?? ""}"
           data-status="${u.isArchived ? "Inactive" : "Active"}"
@@ -660,6 +655,7 @@
         document.getElementById("editUserName").value = btn.dataset.name || "";
         document.getElementById("editUserOffice").value = btn.dataset.office || "";
         document.getElementById("oldOffice").value = btn.dataset.office || ""; 
+        document.getElementById("editUserOffice").value = btn.dataset.office || ""; 
         document.getElementById("editUserEmail").value = btn.dataset.email || "";
 
         const statusSelect = document.getElementById("editUserStatus");
@@ -712,10 +708,6 @@
                 refreshUserTable();
             } else {
                 // other edits were made
-
-               
-
-                console.log("No status change needed");
             }
 
             // close modal
