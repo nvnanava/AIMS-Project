@@ -1,34 +1,39 @@
-@* ======================================================================
-   Updated Filter Modal — Styled to match Dashboard Settings Modal
-   ====================================================================== *@
+<div class="modal fade" id="searchLogsModal" tabindex="-1"
+     aria-labelledby="searchLogsModalLabel"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
 
-<div class="modal fade" id="searchLogsModal" tabindex="-1" aria-labelledby="searchLogsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content aims-modal">
+        <div class="modal-content aimsds-shell">
 
-            <!-- HEADER -->
             <div class="modal-header aims-modal-header">
                 <h5 class="modal-title" id="searchLogsModalLabel">Filter Logs</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                <button type="button" class="aims-close-circle" data-bs-dismiss="modal" aria-label="Close">
+                    <span class="aims-close-x">&#10005;</span>
+                </button>
             </div>
 
-            <!-- BODY -->
             <div class="modal-body aims-modal-body">
                 <form id="searchLogsForm">
                     <div class="row g-4">
 
-                        <!-- DATE RANGE -->
                         <div class="col-md-6">
                             <label for="fromDate" class="form-label fw-bold">From</label>
-                            <input type="date" id="fromDate" name="from" class="form-control aims-input" />
+                            <input type="date"
+                                   id="fromDate"
+                                   name="from"
+                                   class="form-control aims-input" />
                         </div>
 
                         <div class="col-md-6">
                             <label for="toDate" class="form-label fw-bold">To</label>
-                            <input type="date" id="toDate" name="to" class="form-control aims-input" />
+                            <input type="date"
+                                   id="toDate"
+                                   name="to"
+                                   class="form-control aims-input" />
                         </div>
 
-                        <!-- ACTOR -->
                         <div class="col-md-6 position-relative">
                             <label for="actorInput" class="form-label fw-bold">Actor</label>
                             <input type="text"
@@ -39,13 +44,14 @@
                                    autocomplete="off" />
                             <div id="actorSuggestions"
                                  class="list-group position-absolute w-100 d-none"
-                                 style="z-index: 2000;"></div>
+                                 style="z-index:2000;"></div>
                         </div>
 
-                        <!-- ACTION TYPE -->
                         <div class="col-md-6">
                             <label for="actionType" class="form-label fw-bold">Action Type</label>
-                            <select id="actionType" name="kind" class="form-select aims-input">
+                            <select id="actionType"
+                                    name="kind"
+                                    class="form-select aims-input aims-custom-dropdown">
                                 <option value="">All</option>
                                 <option value="Assign">Assign</option>
                                 <option value="Unassign">Unassign</option>
@@ -58,9 +64,8 @@
                             </select>
                         </div>
 
-                        <!-- ASSET ID -->
                         <div class="col-12">
-                            <label class="form-label fw-bold">Asset ID</label>
+                            <label for="assetId" class="form-label fw-bold">Asset ID</label>
                             <input type="text"
                                    id="assetId"
                                    name="assetId"
@@ -72,37 +77,49 @@
                 </form>
             </div>
 
-            <!-- FOOTER -->
+            <div class="modal-footer aims-modal-footer d-flex justify-content-between">
 
+                <button type="button"
+                        class="btn aims-btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
 
-<div class="modal-footer aims-modal-footer d-flex justify-content-between">
+                <div class="d-flex gap-2">
+                    <button type="button"
+                            id="resetFilterBtn"
+                            class="btn aims-btn-secondary">
+                        Reset
+                    </button>
 
-    <!-- LEFT SIDE -->
-    <div>
-        <button type="button"
-                class="btn aims-btn-secondary"
-                data-bs-dismiss="modal">
-            Cancel
-        </button>
-    </div>
+                    <button type="submit"
+                            form="searchLogsForm"
+                            class="btn aims-btn-success">
+                        Apply Filters
+                    </button>
+                </div>
 
-    <!-- RIGHT SIDE -->
-    <div class="d-flex gap-2">
-        <button type="button"
-                id="resetFilterBtn"
-                class="btn aims-btn-secondary">
-            Reset
-        </button>
+            </div>
 
-        <button type="submit"
-                form="searchLogsForm"
-                class="btn aims-btn-success">
-            Apply Filters
-        </button>
-    </div>
-
-</div>
-
+        </div>
     </div>
 </div>
+
+<script>
+document.getElementById("resetFilterBtn").addEventListener("click", function () {
+    document.getElementById("fromDate").value = "";
+    document.getElementById("toDate").value = "";
+    document.getElementById("actorInput").value = "";
+    document.getElementById("assetId").value = "";
+    document.getElementById("actionType").selectedIndex = 0;
+});
+
+document.getElementById("searchLogsModal").addEventListener("click", function(e) {
+    if (e.target.classList.contains("modal")) {
+        const dialog = this.querySelector(".modal-dialog");
+        dialog.classList.add("shake");
+        setTimeout(() => dialog.classList.remove("shake"), 300);
+    }
+});
+</script>
 
