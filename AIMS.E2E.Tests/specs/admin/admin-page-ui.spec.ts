@@ -39,12 +39,12 @@ test.describe('Admin Page - UI is displayed properly', () => {
     })
 
 
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async () => {
         // Rely on global-setup’s cookie: we’re already logged in as Admin principal
-        await page.goto('/Admin', { waitUntil: 'networkidle' });
+        await sharedPage.goto('/Admin', { waitUntil: 'networkidle' });
 
         // Sanity check: confirm we actually landed on the page
-        await expect(page.getByRole('heading', { name: /admin/i })).toBeVisible({ timeout: 10000 }).catch(() => { /* if no heading, ignore */ });
+        await expect(sharedPage.getByRole('heading', { name: /admin/i })).toBeVisible({ timeout: 10000 }).catch(() => { /* if no heading, ignore */ });
     });
 
     test.describe('Valid UI Elements', () => {
@@ -84,9 +84,9 @@ test.describe('Admin Page - UI is displayed properly', () => {
         await expect(sharedPage.getByLabel('Add New User').getByRole('button', { name: 'Add User' })).toBeVisible();
     })
     test('Search for User', async () => {
-        // TODO: Needs to have some sort of test or general user
-        await sharedPage.getByRole('textbox', { name: 'Search Users...' }).fill('Singh');
-        await expect(sharedPage.getByRole('cell', { name: 'Akal-Ustat Singh' })).toBeVisible();
+        await sharedPage.getByRole('textbox', { name: 'Search Users...' }).click();
+        await sharedPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+        await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
     })
     test('Open Edit User Modal', async() => {
 
