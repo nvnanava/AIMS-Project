@@ -28,6 +28,7 @@
                 <form id="editUserForm" onsubmit="AIMS.Admin.saveUserEdit(event)">
                     <input type="hidden" id="editUserId" />
                     <input type="hidden" id="editUserIsArchived" />
+                    <input type="hidden" id="oldOffice" />
                     <input type="hidden" id="editUserIndex" />
 
                     <label for="editUserName" class="form-label fw-bold">Name</label>
@@ -41,6 +42,10 @@
                         <option value="Admin">Admin</option>
                         <option value="User">User</option>
                     </select>
+
+                    <label for="editUserOffice" class="form-label fw-bold mt-2">Office</label>
+                    <input type="text" id="editUserOffice" class="form-control" required />
+                    <div id="editOfficeResults" class="office-results"></div>
 
                     <label for="editUserStatus" class="form-label fw-bold mt-2">Archive Status</label>
                     <select id="editUserStatus" class="aims-select" required>

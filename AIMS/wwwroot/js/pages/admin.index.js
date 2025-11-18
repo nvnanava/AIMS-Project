@@ -155,7 +155,7 @@
 
     // if Admins wish to use existing offices from the local DB, they can
     // enter text into the office field to search for those offices.
-    async function searchOffices(query) {
+    async function searchOffices(query, isEdit = false) {
         const resultsList = document.getElementById("officeResults");
         // if DOM element not found, exit
         if (!resultsList) return;
@@ -174,7 +174,7 @@
             });
             const url = `/api/office/search?${params.toString()}`;
             const offices = await aimsFetch(url, { signal: aadAbortCtrl.signal });
-            renderOfficeResults(offices, query);
+            renderOfficeResults(offices, query, isEdit);
         } catch (e) {
             if (e.name === "AbortError") return;
             resultsList.innerHTML = `<div class="aad-error">Error searching</div>`;
@@ -182,9 +182,12 @@
         }
     }
 
+
     // create elements for office results in the DOM
-    async function renderOfficeResults(items, query) {
-        const resultsList = document.getElementById("officeResults");
+    async function renderOfficeResults(items, query, isEdit = false) {
+        const resultsList = isEdit ? document.getElementById("editOfficeResults") : document.getElementById("officeResults");
+        console.log("here");
+        console.log(items)
         if (!resultsList) return;
 
         resultsList.innerHTML = "";
@@ -193,7 +196,7 @@
             // in the local db.
             resultsList.innerHTML = `<div class="aad-hint">No results for "${escapeHtml(
                 query
-            )}. A new office will be added into the database."</div>`;
+            )}." A new office will be added into the database.</div>`;
             return;
         }
 
@@ -210,7 +213,7 @@
                 query
             )}</strong></div>`;
             btn.onclick = () => {
-                const officeInput = document.getElementById("userOffice");
+                const officeInput = isEdit ? document.getElementById("editUserOffice") : document.getElementById("userOffice");
                 if (officeInput) officeInput.value = officeName;
                 resultsList.innerHTML = "";
             };
@@ -218,6 +221,14 @@
         });
         resultsList.appendChild(frag);
     }
+
+    async function officeInputHandler(input, isEdit = false) {
+            const q = input.value.trim();
+            console.log(q);
+            clearTimeout(aadDebounceTimer);
+            aadDebounceTimer = setTimeout(() => searchOffices(q, isEdit), 250);
+    }
+
 
     // ----- Modals --------------------------------------------------------
     function openAddUserModal() {
@@ -231,25 +242,6 @@
         hideModalById("addUserModal");
     }
 
-    // function openEditUserModal(button) {
-    //     const row = button.closest("tr");
-    //     const index = Array.from(row.parentNode.children).indexOf(row);
-    //     document.getElementById("editUserIndex").value = index;
-
-    //     const cells = row.getElementsByTagName("td");
-    //     document.getElementById("editUserName").value =
-    //         cells[1].innerText.trim();
-    //     document.getElementById("editUserEmail").value =
-    //         cells[2].innerText.trim();
-    //     document.getElementById("editUserRole").value =
-    //         cells[3].innerText.trim();
-    //     document.getElementById("editUserStatus").value =
-    //         cells[4].innerText.trim();
-    //     document.getElementById("editUserSeparationDate").value =
-    //         cells[5].innerText.trim();
-
-    //     showModalById("editUserModal");
-    // }
     function closeEditUserModal() {
         hideModalById("editUserModal");
     }
@@ -300,23 +292,6 @@
             visibleIndex++;
         });
     }
-
-    // function applyAdminTableFilters() {
-    //     const showInactive = document.getElementById("showInactive")?.checked ?? true;
-    //     const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
-
-    //     document.querySelectorAll("#adminTable tbody tr.user-row").forEach(row => {
-    //         const isInactive = row.classList.contains("inactive");
-    //         const userRole = row.cells[3]?.innerText.trim() || "";
-    //         let visible = true;
-    //         if (!showInactive && isInactive) visible = false;
-    //         if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
-    //         row.style.display = visible ? "" : "none";
-    //     });
-
-    //     stripeAdminTable(); // <— add this
-    // }
-    // Add this somewhere after other helper functions, near your other AIMS.Admin methods
 
     function applyAdminTableFilters() {
         const showInactive =
@@ -424,6 +399,7 @@
             const tr = document.createElement("tr");
             tr.className = `user-row ${u.isArchived ? "inactive" : "active"}`;
 
+            console.log(u)
             // Columns: Actions | Name | Email | Office | Status | Separation Date
             tr.innerHTML = `
       <td class="actions">
@@ -431,9 +407,11 @@
           class="icon-btn js-edit-user"
           title="Edit"
           data-id="${u.userID}"
+          data-graph-id="${u.graphID}"
           data-name="${u.name ?? ""}"
           data-email="${u.email ?? ""}"
           data-status="${u.isArchived ? "Inactive" : "Active"}"
+          data-office="${u.officeName ?? ""}"
           data-archivedat="${u.archivedAtUtc ?? ""}"
           data-bs-toggle="modal"
           data-bs-target="#editUserModal"
@@ -562,28 +540,6 @@
         }
     }
 
-    // function saveUserEdit(event) {
-    //     event.preventDefault();
-    //     const idx = document.getElementById("editUserIndex").value;
-    //     const row = document.querySelectorAll(".user-row")[idx];
-    //     if (!row) return;
-
-    //     row.cells[1].innerText = document.getElementById("editUserName").value;
-    //     row.cells[2].innerText = document.getElementById("editUserEmail").value;
-    //     row.cells[3].innerText = document.getElementById("editUserRole").value;
-
-    //     const status = document.getElementById("editUserStatus").value;
-    //     row.cells[4].innerHTML = `<span class="badge ${status.toLowerCase()}">${status}</span>`;
-    //     row.classList.remove("active", "inactive");
-    //     row.classList.add(status.toLowerCase());
-
-    //     row.cells[5].innerText =
-    //         document.getElementById("editUserSeparationDate").value || " ";
-    //     hideModalById("editUserModal");
-    //     applyAdminTableFilters();
-    //     stripeAdminTable();
-    // }
-
     // ----- DOM Ready -----------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
         // ----- Typeahead search for AAD (debounced) -----
@@ -635,6 +591,8 @@
                 aadDebounceTimer = setTimeout(() => searchOffices(q), 250);
             });
         }
+
+       
 
         // ----- Click-away to close the AAD suggestion list -----
         document.addEventListener("click", (e) => {
@@ -695,38 +653,29 @@
     });
 
     AIMS.Admin.openEditUserModal = function (btn) {
-        console.log("Opening Edit Modal Debug:");
-        console.log("- Button data-id:", btn.dataset.id);
-        console.log("- Button data-status:", btn.dataset.status);
-        console.log("- Button data-name:", btn.dataset.name);
-        console.log("- Button data-email:", btn.dataset.email);
-
         document.getElementById("editUserId").value = btn.dataset.id;
         document.getElementById("editUserIsArchived").value =
             btn.dataset.status === "Inactive" ? "true" : "false";
 
         document.getElementById("editUserName").value = btn.dataset.name || "";
+        document.getElementById("editUserOffice").value = btn.dataset.office || "";
+        document.getElementById("oldOffice").value = btn.dataset.office || ""; 
         document.getElementById("editUserEmail").value = btn.dataset.email || "";
 
         const statusSelect = document.getElementById("editUserStatus");
         statusSelect.value =
             btn.dataset.status === "Inactive" ? "Inactive" : "Active";
 
-        console.log(
-            "- Set editUserId to:",
-            document.getElementById("editUserId").value
-        );
-        console.log(
-            "- Set editUserIsArchived to:",
-            document.getElementById("editUserIsArchived").value
-        );
-        console.log("- Set editUserStatus to:", statusSelect.value);
-
         const sep = document.getElementById("editUserSeparationDate");
         sep.value = btn.dataset.archivedat
             ? new Date(btn.dataset.archivedat + "Z").toLocaleDateString()
             : "";
         
+
+        const editOfficeInput = document.getElementById("editUserOffice");
+        if (editOfficeInput) {
+            editOfficeInput.addEventListener("input", () => officeInputHandler(editOfficeInput, true));
+        }
         showModalById("editUserModal");
     };
 
@@ -734,33 +683,44 @@
         e.preventDefault();
 
         const id = document.getElementById("editUserId").value;
+        const office = document.getElementById("editUserOffice").value;
+        const oldOffice = document.getElementById("oldOffice").value;
         const wasArchived =
             document.getElementById("editUserIsArchived").value === "true";
         const desired = document.getElementById("editUserStatus").value; // "Active" | "Inactive"
         const wantsArchived = desired === "Inactive";
-
-        console.log("Save User Edit Debug:");
-        console.log("- User ID:", id);
-        console.log("- Was Archived:", wasArchived);
-        console.log("- Desired Status:", desired);
-        console.log("- Wants Archived:", wantsArchived);
-        console.log("- Status Changed:", wantsArchived !== wasArchived);
 
         try {
             if (wantsArchived !== wasArchived) {
                 const url = wantsArchived
                     ? `/api/admin/users/archive/${id}`
                     : `/api/admin/users/unarchive/${id}`;
-                console.log("Making API call to:", url);
                 const res = await fetch(url, { method: "POST" });
-                console.log("API Response:", res.status, res.statusText);
                 if (!res.ok) throw new Error(`${url} failed: ${res.status}`);
-                console.log("API call successful");
+            } else if (office !== oldOffice) {
+                const resp = await fetch("/api/admin/users/edit-local-id", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userID: id, officeName: office }), 
+                });
+
+                if (!resp.ok) {
+                    const msg = await resp.text().catch(() => "");
+                    btn?.removeAttribute("disabled"); // Re-enable button on error
+                    throw new Error(msg || "Failed to save user.");
+                }
+                refreshUserTable();
             } else {
+                // other edits were made
+
+               
+
                 console.log("No status change needed");
             }
 
             // close modal
+
+
             const modalEl = document.getElementById("editUserModal");
             const bsModal =
                 bootstrap.Modal.getInstance(modalEl) ||
