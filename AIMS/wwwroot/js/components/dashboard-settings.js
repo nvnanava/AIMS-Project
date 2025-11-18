@@ -164,7 +164,7 @@
             tr.append(
                 el("td", {}, chk),
                 el("td", {}, r.assetType),
-                el("td", {}, thresholdInput),
+                thresholdCell,
                 el("td", {}, String(r.available)),
                 el("td", {}, String(r.total)),
                 el("td", {}, statusCapsule),

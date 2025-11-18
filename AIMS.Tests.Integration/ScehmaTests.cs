@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 
 namespace AIMS.Tests.Integration
 {
+    [Collection("API Test Collection")]
     public class SchemaTests : IClassFixture<DbTestHarness>
     {
         private readonly DbTestHarness _harness;

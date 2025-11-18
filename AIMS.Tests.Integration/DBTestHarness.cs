@@ -31,7 +31,9 @@ public sealed class DbTestHarness : IAsyncLifetime
         await using var ctx = MigrateDb.CreateContext(ConnectionString);
 
         // Drop the database if it exists, then create via migrations.
-        await ctx.Database.EnsureDeletedAsync();
+        //await ctx.Database.EnsureDeletedAsync();
+
+        // Just make sure schema is there
         await ctx.Database.MigrateAsync();
 
         // Prefer snapshot reads during tests to reduce writer/reader blocking
@@ -46,8 +48,19 @@ public sealed class DbTestHarness : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        if (AutoDelete)
+        if (!AutoDelete)
+            return;
+
+        try
+        {
             await ResetDatabaseAsync();
+        }
+        catch (SqlException ex) when (ex.Number == 4060 || ex.Number == 18456)
+        {
+            // 4060: Cannot open database requested by the login
+            // 18456: Login failed for user
+            // During cleanup this just means the DB/container went away; safe to ignore.
+        }
     }
 
     // Enable READ_COMMITTED_SNAPSHOT on the test DB once (best-effort)
