@@ -71,7 +71,7 @@
     align-items: center;
     width: 100%;
     height: 41px;
-    border: 1px solid #ccc;
+    border: 2px solid rgba(52, 73, 94, .35);
     background-color: #fff;
     border-radius: 20px;
     padding: 5px 12px;
@@ -92,6 +92,14 @@
 /* Remove any Bootstrap box-shadow on focus */
 #assignAssetModal .aims-userpicker__search .search-input:focus {
     box-shadow: none;
+}
+
+#assignAssetModal .search-container.aims-userpicker__search:focus-visible {
+    outline: none;
+    /* Remove default browser outline */
+    box-shadow: 0 0 0 3px var(--aims-focus);
+    /* Teal focus ring */
+    border-color: var(--aims-accent);
 }
 
 /* IMPORTANT: remove the old pseudo-icon that caused "exploded" look */
@@ -158,10 +166,10 @@
 }
 
 /* Guard: don't let global .form-select rules mess up the custom list */
-#assignAssetModal .aims-userpicker__list select,
+/* #assignAssetModal .aims-userpicker__list select,
 #assignAssetModal .aims-userpicker__list .form-select {
     all: unset;
-}
+} */
 
 #assignAssetModal .aims-userpicker__option[data-active="true"],
 #unassignAssetModal .aims-userpicker__option[data-active="true"] {
@@ -369,4 +377,17 @@
         min-width: 0;
         width: 100%;
     }
+}
+
+/* Narrower dialog for assign (~500px) */
+#assignAssetModal .modal-dialog {
+    max-width: 500px;
+}
+
+#assignAssetModal .aims-userpicker__list:focus-visible {
+    outline: none;
+    /* Remove default browser outline */
+    box-shadow: 0 0 0 3px var(--aims-focus);
+    /* Teal focus ring */
+    border-color: var(--aims-accent);
 }

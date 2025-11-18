@@ -1,7 +1,7 @@
 @* Unassign Asset Modal (hardware: simple, software: pick user) *@
 <div class="modal fade" id="unassignAssetModal" tabindex="-1" aria-labelledby="unassignAssetLabel" aria-hidden="true"
     data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
         <div class="modal-content aimsds-shell">
 
             <!-- Header -->
@@ -23,8 +23,9 @@
                         <div id="unSelAssigneeRow">
                             <strong>Assigned To:</strong> <span id="unSelAssigneeName">—</span>
                         </div>
-                        <div><strong>Assignment ID:</strong> <span id="unSelAssignmentId">—</span></div>
                     </div>
+
+                    <!-- AssignmentID is still tracked for API calls, just not shown in UI -->
                     <input type="hidden" id="unassignAssignmentId" value="" />
                 </div>
 

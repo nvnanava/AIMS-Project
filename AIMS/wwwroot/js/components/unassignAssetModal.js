@@ -11,7 +11,6 @@
         const selName = document.getElementById("unSelAssetName");
         const selTag = document.getElementById("unSelAssetTag");
         const selKind = document.getElementById("unSelAssetKind");
-        const selAssnId = document.getElementById("unSelAssignmentId");
         const hiddenId = document.getElementById("unassignAssignmentId");
         const commentBox = document.getElementById("unassignCommentBox");
 
@@ -144,9 +143,6 @@
                 String(assignmentId);
             const empNum = btn.getAttribute("data-employee-number") || "";
 
-            // show user display (name + emp#) instead of numeric assignment id
-            safeText(selAssnId, baseDisplay);
-
             // mirror into the search box (like assign modal)
             if (userSearchInput) {
                 userSearchInput.value = empNum ? `${baseDisplay} (${empNum})` : baseDisplay;
@@ -173,7 +169,6 @@
             clearChildren(userList);
             safeVal(hiddenId, "");
             safeVal(userHiddenInput, "");
-            safeText(selAssnId, "");
 
             hasSoftwareAssignees = false;
             activeUserIndex = -1;
@@ -456,7 +451,6 @@
                 safeText(selKind, assetKind === 2 ? "Software" : "Hardware");
 
                 // Reset fields
-                safeText(selAssnId, "");
                 safeVal(hiddenId, "");
                 safeVal(userHiddenInput, "");
                 if (commentBox) {
@@ -510,15 +504,17 @@
                                 const baseName =
                                     assigneeLabel ||
                                     match.userFullName ||
+                                    match.fullName ||
+                                    match.displayName ||
+                                    match.name ||
                                     match.userName ||
+                                    match.user ||
                                     match.assignedTo ||
                                     (match.userID != null ? `User #${match.userID}` : "");
 
-                                const empNum =
-                                    match.employeeNumber ??
-                                    match.EmployeeNumber ??
-                                    match.assignedEmployeeNumber ??
-                                    "";
+                                const empNum = resolvedEmpNum || "";
+                                const displayName = empNum ? `${baseName} (${empNum})` : baseName;
+                                safeText(selAssigneeName, displayName || "—");
 
                                 resolvedEmpNum = empNum || "";
                                 assigneeLabel = empNum ? `${baseName} (${empNum})` : baseName;
@@ -531,7 +527,6 @@
                     // keep assignment id only in hidden field for POST
                     safeVal(hiddenId, Number.isFinite(assignmentId) ? String(assignmentId) : "");
                     // don't show assignment id in the summary box anymore
-                    safeText(selAssnId, "");
 
                     if (selAssigneeRow) {
                         safeText(selAssigneeName, assigneeLabel || "—");

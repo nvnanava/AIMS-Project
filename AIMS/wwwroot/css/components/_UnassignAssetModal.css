@@ -170,7 +170,7 @@
     background-color: var(--aims-accent);
     border-color: var(--aims-accent);
     color: #ffffff;
-
+    width: 100%;
     box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
 }
 
@@ -205,4 +205,18 @@
         width: 100%;
         min-width: 0;
     }
+}
+
+/* Narrower dialog for Unassign (~500px) */
+#unassignAssetModal .modal-dialog {
+    max-width: 500px;
+}
+
+.form-control:focus {
+    outline: none;
+    /* Remove default browser outline */
+    box-shadow: 0 0 0 .25rem rgba(255, 193, 7, .25);
+    /* Example: Use a yellow shadow */
+    border-color: #ffc107;
+    /* Optional: Change border color */
 }
