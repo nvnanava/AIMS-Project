@@ -39,62 +39,65 @@ public class HardwareController : ControllerBase
         return Ok(rows);
     }
 
-    [HttpPost("add")]
-    [Authorize(Policy = "mbcAdmin")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AddHardware([FromBody] CreateHardwareDto dto, CancellationToken ct = default)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+    /*
+    Deprecated. All hardware assets (single or bulk) should be added via the bulk endpoint for consistency. Delete?
+    */
+    // [HttpPost("add")]
+    // [Authorize(Policy = "mbcAdmin")]
+    // [ProducesResponseType(StatusCodes.Status201Created)]
+    // [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    // public async Task<IActionResult> AddHardware([FromBody] CreateHardwareDto dto, CancellationToken ct = default)
+    // {
+    //     if (!ModelState.IsValid)
+    //         return BadRequest(ModelState);
 
-        // unique checks
-        if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber == dto.SerialNumber, ct))
-        {
-            ModelState.AddModelError(nameof(dto.SerialNumber), "A hardware asset with this serial number already exists.");
-            return BadRequest(ModelState);
-        }
-        if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag == dto.AssetTag, ct))
-        {
-            ModelState.AddModelError(nameof(dto.AssetTag), "A hardware asset with this asset tag already exists.");
-            return BadRequest(ModelState);
-        }
+    //     // unique checks
+    //     if (await _db.HardwareAssets.AnyAsync(h => h.SerialNumber == dto.SerialNumber, ct))
+    //     {
+    //         ModelState.AddModelError(nameof(dto.SerialNumber), "A hardware asset with this serial number already exists.");
+    //         return BadRequest(ModelState);
+    //     }
+    //     if (await _db.HardwareAssets.AnyAsync(h => h.AssetTag == dto.AssetTag, ct))
+    //     {
+    //         ModelState.AddModelError(nameof(dto.AssetTag), "A hardware asset with this asset tag already exists.");
+    //         return BadRequest(ModelState);
+    //     }
 
-        // dates
-        if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
-        {
-            ModelState.AddModelError(nameof(dto.PurchaseDate), "Purchase date cannot be in the future.");
-            return BadRequest(ModelState);
-        }
-        if (dto.WarrantyExpiration < dto.PurchaseDate)
-        {
-            ModelState.AddModelError(nameof(dto.WarrantyExpiration), "Warranty expiration cannot be before purchase date.");
-            return BadRequest(ModelState);
-        }
+    //     // dates
+    //     if (dto.PurchaseDate > DateOnly.FromDateTime(DateTime.UtcNow))
+    //     {
+    //         ModelState.AddModelError(nameof(dto.PurchaseDate), "Purchase date cannot be in the future.");
+    //         return BadRequest(ModelState);
+    //     }
+    //     if (dto.WarrantyExpiration < dto.PurchaseDate)
+    //     {
+    //         ModelState.AddModelError(nameof(dto.WarrantyExpiration), "Warranty expiration cannot be before purchase date.");
+    //         return BadRequest(ModelState);
+    //     }
 
-        var hardware = new Hardware
-        {
-            AssetTag = dto.AssetTag.Trim(),
-            AssetName = string.IsNullOrWhiteSpace(dto.AssetName)
-                ? $"{dto.Manufacturer} {dto.Model}".Trim()
-                : dto.AssetName.Trim(),
-            AssetType = dto.AssetType.Trim(),
-            Status = dto.Status.Trim(),
-            Manufacturer = dto.Manufacturer.Trim(),
-            Model = dto.Model.Trim(),
-            SerialNumber = dto.SerialNumber.Trim(),
-            WarrantyExpiration = dto.WarrantyExpiration,
-            PurchaseDate = dto.PurchaseDate,
-            Comment = (dto.Comment ?? string.Empty).Trim()
-        };
+    //     var hardware = new Hardware
+    //     {
+    //         AssetTag = dto.AssetTag.Trim(),
+    //         AssetName = string.IsNullOrWhiteSpace(dto.AssetName)
+    //             ? $"{dto.Manufacturer} {dto.Model}".Trim()
+    //             : dto.AssetName.Trim(),
+    //         AssetType = dto.AssetType.Trim(),
+    //         Status = dto.Status.Trim(),
+    //         Manufacturer = dto.Manufacturer.Trim(),
+    //         Model = dto.Model.Trim(),
+    //         SerialNumber = dto.SerialNumber.Trim(),
+    //         WarrantyExpiration = dto.WarrantyExpiration,
+    //         PurchaseDate = dto.PurchaseDate,
+    //         Comment = (dto.Comment ?? string.Empty).Trim()
+    //     };
 
-        _db.HardwareAssets.Add(hardware);
-        await _db.SaveChangesAsync(ct);
+    //     _db.HardwareAssets.Add(hardware);
+    //     await _db.SaveChangesAsync(ct);
 
-        CacheStamp.BumpAssets();
+    //     CacheStamp.BumpAssets();
 
-        return CreatedAtAction(nameof(GetAllHardware), new { id = hardware.HardwareID }, hardware);
-    }
+    //     return CreatedAtAction(nameof(GetAllHardware), new { id = hardware.HardwareID }, hardware);
+    // }
 
     [HttpPost("add-bulk")]
     [Authorize(Policy = "mbcAdmin")]
@@ -135,20 +138,15 @@ public class HardwareController : ControllerBase
             .Where(h => h.HardwareID == id)
             .SingleOrDefaultAsync(ct);
 
-        if (hardware == null)
-            return NotFound();
-
-        var validationResult = await _hardwareService.ValidateEditAsync(hardware, dto, id, ModelState, ct);
-        if (validationResult != null)
-            return validationResult;
-
-        HardwareAssetService.ApplyEdit(dto, hardware);
-
-
-        await _db.SaveChangesAsync(ct);
-        CacheStamp.BumpAssets();
-
-        return Ok(hardware);
+        try
+        {
+            var updated = await _hardwareService.UpdateHardwareAsync(id, dto, ct);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
     }
 
     [HttpPut("archive/{id}")]

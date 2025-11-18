@@ -5,12 +5,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 public interface IHardwareAssetService
 {
     Task<List<Hardware>> AddHardwareBulkAsync(BulkHardwareRequest req, CancellationToken ct = default);
-    Task<IActionResult> ValidateEditAsync(
-        Hardware hardware,
-        UpdateHardwareDto dto,
-        int id,
-        ModelStateDictionary modelState,
-        CancellationToken ct);
-
+    Task<List<string>> ValidateEditAsync(Hardware hardware, UpdateHardwareDto dto, int id, CancellationToken ct);
+    Task<Hardware> UpdateHardwareAsync(int id, UpdateHardwareDto dto, CancellationToken ct);
 
 }

@@ -518,7 +518,7 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
     fi
   else
     # Single suite
-    if (( ${#COV_FILTER_ARGS[@]:-0} > 0 )); then
+    if [ "${#COV_FILTER_ARGS[@]}" -gt 0 ]; then
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         "${COV_FILTER_ARGS[@]}" \
         --collect:"XPlat Code Coverage" \
