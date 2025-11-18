@@ -25,13 +25,17 @@ public class TestCleanController : ControllerBase
     public async Task<IActionResult> DeleteUser([FromQuery] string GraphObjectID)
     {
         // if not in the development environment, forbid this api route
-        if (!_env.IsDevelopment())
+        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright"))
         {
             return Forbid();
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.GraphObjectID == GraphObjectID);
-        if (user == null) return NotFound();
+        if (user == null)
+        {
+            // User not found, which is a successful cleanup for us.
+            return NoContent();
+        }
 
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
