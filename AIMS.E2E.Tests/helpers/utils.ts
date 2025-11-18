@@ -1,23 +1,37 @@
 import { APIRequestContext, expect } from '@playwright/test';
 import type { APIResponse } from '@playwright/test';
 import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
+
+//
+// ---------- ID cache (from global-setup) + env fallbacks ----------
+//
+
+const CACHE_PATH = path.resolve(__dirname, '..', '.e2e-cache.json');
+let cached: { REAL_USER_ID?: number; REAL_HARDWARE_ID?: number } = {};
+try {
+    if (fs.existsSync(CACHE_PATH)) {
+        cached = JSON.parse(fs.readFileSync(CACHE_PATH, 'utf8'));
+    }
+} catch {
+    // ignore cache errors
+}
+
+export const REAL_USER_ID = Number(process.env.REAL_USER_ID ?? cached.REAL_USER_ID ?? 0);
+export const REAL_HARDWARE_ID = Number(process.env.REAL_HARDWARE_ID ?? cached.REAL_HARDWARE_ID ?? 0);
 
 //
 // ---------- Basic Utilities ----------
 //
 
-// Generates a UUID v4 using Node’s built-in crypto API.
 export const uuid = (): string => randomUUID();
-
-//Returns the current UTC timestamp in ISO 8601 format.
 export const nowIso = (): string => new Date().toISOString();
-
-// Returns an ISO timestamp N minutes ago.
 export const isoMinutesAgo = (mins: number): string =>
     new Date(Date.now() - mins * 60_000).toISOString();
 
 //
-// ---------- Internal helpers (ID discovery) ----------
+// ---------- Internal helpers (ID discovery) with retries ----------
 //
 
 type Any = Record<string, any>;
@@ -45,49 +59,109 @@ async function safeJson<T = any>(call: () => Promise<APIResponse>): Promise<T | 
     }
 }
 
-// Fetch a single valid UserID from /api/diag/users.
-async function getAnyUserId(request: APIRequestContext): Promise<number> {
-    const data = await safeJson<any>(() =>
-        request.get('/api/diag/users', { headers: { Accept: 'application/json' } })
-    );
-
-    const rows: Any[] =
-        Array.isArray(data) ? data :
-            Array.isArray((data as Any)?.items) ? (data as Any).items :
-                Array.isArray((data as Any)?.data) ? (data as Any).data : [];
-
-    for (const r of rows) {
-        // Try common shapes
-        const id = pickNumber(r, 'UserID', 'userID', 'userId', 'id');
-        if (id) return id;
-    }
-
-    throw new Error(
-        'E2E setup error: could not find a valid UserID from /api/diag/users. ' +
-        'Ensure that endpoint returns at least one user with a numeric ID.'
-    );
+function rowsFrom(data: Any | null): Any[] {
+    return Array.isArray(data)
+        ? data
+        : Array.isArray(data?.items)
+            ? data!.items
+            : Array.isArray(data?.data)
+                ? data!.data
+                : [];
 }
 
-// Fetch a single valid HardwareID from /api/hardware/get-all (required for AssetKind=Hardware).
-async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
-    const data = await safeJson<any>(() =>
-        request.get('/api/hardware/get-all', { headers: { Accept: 'application/json' } })
-    );
-
-    const rows: Any[] =
-        Array.isArray(data) ? data :
-            Array.isArray((data as Any)?.items) ? (data as Any).items :
-                Array.isArray((data as Any)?.data) ? (data as Any).data : [];
-
+function pickFirstNumberRowId(rows: Any[], ...keys: string[]): number | null {
     for (const r of rows) {
-        const id = pickNumber(r, 'HardwareID', 'hardwareID', 'hardwareId', 'id');
+        const id = pickNumber(r, ...keys);
         if (id) return id;
     }
+    return null;
+}
 
-    throw new Error(
-        'E2E setup error: could not find a valid HardwareID from /api/hardware/get-all. ' +
-        'Ensure that endpoint returns at least one hardware asset with a numeric ID.'
+async function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+async function retryUntil<T>(
+    op: () => Promise<T | null>,
+    ok: (t: T | null) => boolean,
+    attempts = 40,          // ~10s @ 250ms
+    delayMs = 250,
+    label = 'retryUntil'
+): Promise<T> {
+    for (let i = 1; i <= attempts; i++) {
+        const val = await op();
+        if (ok(val)) return val as T;
+        if (i % 5 === 0) console.warn(`[${label}] attempt ${i}/${attempts}…`);
+        await sleep(delayMs);
+    }
+    throw new Error(`[${label}] timed out after ${attempts * delayMs}ms`);
+}
+
+// Fetch a single valid UserID with retries + endpoint fallbacks.
+async function getAnyUserId(request: APIRequestContext): Promise<number> {
+    const endpoints = ['/api/diag/users', '/api/users', '/api/users/get-all'];
+
+    const id = await retryUntil<number | null>(
+        async () => {
+            for (const ep of endpoints) {
+                const data = await safeJson<any>(() =>
+                    request.get(ep, { headers: { Accept: 'application/json' } })
+                );
+                const rows = rowsFrom(data);
+                const id = pickFirstNumberRowId(rows, 'UserID', 'userID', 'userId', 'id');
+                if (id) return id;
+            }
+            return null;
+        },
+        (v) => typeof v === 'number' && v > 0,
+        40,
+        250,
+        'getAnyUserId'
     );
+
+    return id!;
+}
+
+// Fetch a single valid HardwareID with retries + endpoint fallbacks.
+async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
+    const endpoints = ['/api/hardware/get-all', '/api/diag/hardware', '/api/hardware'];
+
+    const id = await retryUntil<number | null>(
+        async () => {
+            for (const ep of endpoints) {
+                const data = await safeJson<any>(() =>
+                    request.get(ep, { headers: { Accept: 'application/json' } })
+                );
+                const rows = rowsFrom(data);
+                const id = pickFirstNumberRowId(rows, 'HardwareID', 'hardwareID', 'hardwareId', 'id');
+                if (id) return id;
+            }
+            return null;
+        },
+        (v) => typeof v === 'number' && v > 0,
+        40,
+        250,
+        'getAnyHardwareId'
+    );
+
+    return id!;
+}
+
+// Optional validators to avoid 400s
+async function isValidUserId(request: APIRequestContext, id: number): Promise<boolean> {
+    if (!id) return false;
+    const res = await request.get('/api/diag/users', { headers: { Accept: 'application/json' } });
+    const data = (await res.json().catch(() => null)) as Any | null;
+    const rows: Any[] = rowsFrom(data);
+    return rows.some((r) => pickNumber(r, 'UserID', 'userID', 'userId', 'id') === id);
+}
+
+async function isValidHardwareId(request: APIRequestContext, id: number): Promise<boolean> {
+    if (!id) return false;
+    const res = await request.get('/api/hardware/get-all', { headers: { Accept: 'application/json' } });
+    const data = (await res.json().catch(() => null)) as Any | null;
+    const rows: Any[] = rowsFrom(data);
+    return rows.some((r) => pickNumber(r, 'HardwareID', 'hardwareID', 'hardwareId', 'id') === id);
 }
 
 //
@@ -95,10 +169,9 @@ async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
 //
 
 /**
- * Creates an audit entry through the API (/api/audit/create).
- * If userId/hardwareId are not provided, they are **resolved** strictly via:
- *   - /api/diag/users  (UserID)
- *   - /api/hardware/get-all (HardwareID)
+ * Creates an audit entry via /api/audit/create.
+ * Prefers explicit args → env/cache (REAL_* IDs if valid) → discovery.
+ * On HTTP 400 for invalid IDs, retries once with discovered IDs.
  */
 export async function createAudit(
     request: APIRequestContext,
@@ -106,7 +179,7 @@ export async function createAudit(
         userId,
         action = 'Create',
         description = `E2E seed @ ${nowIso()}`,
-        assetKind = 1,         // 1 = Hardware, 2 = Software (we only auto-resolve Hardware in this helper)
+        assetKind = 1, // 1 = Hardware, 2 = Software
         hardwareId,
         softwareId = null,
         externalId,
@@ -120,19 +193,26 @@ export async function createAudit(
         externalId?: string;
     }> = {}
 ): Promise<APIResponse> {
-    // Resolve only from our required endpoints
-    const resolvedUserId = userId ?? (await getAnyUserId(request));
+    // Prefer explicit param → env/cache (validated) → discovery (with retries)
+    let resolvedUserId =
+        userId ??
+        (await (async () =>
+            (await isValidUserId(request, REAL_USER_ID)) ? REAL_USER_ID : await getAnyUserId(request)
+        )());
 
     let resolvedHardwareId: number | null = hardwareId ?? null;
     if (assetKind === 1) {
-        resolvedHardwareId = resolvedHardwareId ?? (await getAnyHardwareId(request));
-        softwareId = null; // XOR rule
+        if (!resolvedHardwareId) {
+            resolvedHardwareId =
+                (await isValidHardwareId(request, REAL_HARDWARE_ID))
+                    ? REAL_HARDWARE_ID
+                    : await getAnyHardwareId(request);
+        }
+        softwareId = null; // XOR
     } else if (assetKind === 2) {
-        // If we later need software support, add a /api/software/... resolver here.
         if (softwareId == null) {
             throw new Error(
-                'E2E setup error: assetKind=Software requires a softwareId. ' +
-                'This helper only auto-resolves Hardware via /api/hardware/get-all.'
+                'assetKind=Software requires a softwareId. Auto-resolve only implemented for Hardware.'
             );
         }
         resolvedHardwareId = null;
@@ -140,25 +220,41 @@ export async function createAudit(
         throw new Error('assetKind must be 1 (Hardware) or 2 (Software).');
     }
 
-    const payload = {
-        userId: resolvedUserId,
-        action,
-        description,
-        snapshotJson: null as string | null,
-        assetKind,
-        hardwareId: resolvedHardwareId,
-        softwareId,
-        externalId,
-    };
+    const send = async (uid: number, hid: number | null) =>
+        request.post('/api/audit/create', {
+            headers: { 'Content-Type': 'application/json' },
+            data: {
+                userId: uid,
+                action,
+                description,
+                snapshotJson: null as string | null,
+                assetKind,
+                hardwareId: hid,
+                softwareId,
+                externalId,
+            },
+        });
 
-    const res = await request.post('/api/audit/create', {
-        headers: { 'Content-Type': 'application/json' },
-        data: payload,
-    });
+    // First attempt
+    let res = await send(resolvedUserId, resolvedHardwareId);
+    if (res.status() === 400) {
+        const body = (await res.text().catch(() => '')) || '';
+        const badUser = /User with ID .* does not exist/i.test(body);
+        const badHw = /Hardware with ID .* does not exist/i.test(body);
+
+        if (badUser || badHw) {
+            // Retry with discovered IDs
+            if (badUser) resolvedUserId = await getAnyUserId(request);
+            if (assetKind === 1 && (badHw || !resolvedHardwareId)) {
+                resolvedHardwareId = await getAnyHardwareId(request);
+            }
+            res = await send(resolvedUserId, resolvedHardwareId);
+        }
+    }
 
     const status = res.status();
-    const text = await res.text().catch(() => '');
     if (status !== 200 && status !== 201) {
+        const text = await res.text().catch(() => '');
         throw new Error(`createAudit failed: HTTP ${status} — ${text}`);
     }
     return res;

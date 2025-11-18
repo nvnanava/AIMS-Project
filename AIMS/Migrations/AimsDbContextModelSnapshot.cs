@@ -93,9 +93,9 @@ namespace AIMS.Migrations
                         .IsUnique()
                         .HasFilter("[HardwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
 
-                    b.HasIndex("SoftwareID", "UnassignedAtUtc")
+                    b.HasIndex("SoftwareID", "UserID", "UnassignedAtUtc")
                         .IsUnique()
-                        .HasFilter("[SoftwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
+                        .HasFilter("[SoftwareID] IS NOT NULL AND [UserID] IS NOT NULL AND [UnassignedAtUtc] IS NULL");
 
                     b.ToTable("Assignments", "dbo", t =>
                         {
@@ -387,6 +387,11 @@ namespace AIMS.Migrations
                     b.Property<int>("LicenseTotalSeats")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<decimal>("SoftwareCost")
                         .HasColumnType("decimal(10,2)");
 
@@ -456,6 +461,9 @@ namespace AIMS.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserID"));
 
+                    b.Property<DateTime?>("ArchivedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -479,11 +487,10 @@ namespace AIMS.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsArchived")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int?>("OfficeID")
                         .HasColumnType("int");

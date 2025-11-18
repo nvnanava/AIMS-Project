@@ -23,6 +23,13 @@ set -euo pipefail
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
+# ---------------- Portable helpers -----------------------------------------
+upper() { printf "%s" "$1" | tr '[:lower:]' '[:upper:]'; }
+
+inplace_sed() {
+  if sed --version >/dev/null 2>&1; then sed -i "$1" "$2"; else sed -i '' "$1" "$2"; fi
+}
+
 # ---------------- Defaults --------------------------------------------------
 # Primary (integration) defaults
 INT_PROJ="AIMS.Tests.Integration/AIMS.Tests.Integration.csproj"
@@ -80,7 +87,7 @@ Options:
 Examples:
   $0                                   # integration assembly
   $0 --suite unit                      # unit assembly
-  $0 --suite both                      # both assemblies (one HTML)
+  $0 --suite both                      # both assemblies (one HTML/JUnit)
   $0 AIMS.Tests.Integration.SchemaTests
   $0 AIMS.Tests.Integration.SchemaTests.Invalid... --method
   $0 --suite both --coverage           # merged coverage
@@ -132,15 +139,6 @@ resolve_from_dll_hint() {
     return 0
   fi
   echo ""
-}
-
-# GNU/BSD compatible in-place sed
-inplace_sed() {
-  if sed --version >/dev/null 2>&1; then
-    sed -i "$1" "$2"   # GNU sed
-  else
-    sed -i '' "$1" "$2"  # BSD/macOS sed
-  fi
 }
 
 asciiize_html() {
@@ -224,9 +222,7 @@ fi
 if [[ -n "${TARGET:-}" ]]; then
   case "$TARGET" in
     *.csproj)
-      TEST_PROJ="$TARGET"
-      # DLL will be resolved from project after build
-      TEST_DLL="" ;;
+      TEST_PROJ="$TARGET"; TEST_DLL="";;
     *.dll)
       TEST_DLL="$TARGET"
       # Try to infer a nearby csproj
@@ -260,11 +256,24 @@ if [[ -f "AIMS.Tests.Integration/.env" ]]; then
 fi
 
 # ---------------- Ensure xunit console runner ------------------------------
-if ! command -v xunit >/dev/null 2>&1 && [[ ! -x "$HOME/.dotnet/tools/xunit" ]]; then
-  echo "Installing xUnit console runner..."
-  dotnet tool install --global xunit-cli
-fi
-RUNNER="$(command -v xunit || echo "$HOME/.dotnet/tools/xunit")"
+ensure_xunit() {
+  local runner_path
+  if ! command -v xunit >/dev/null 2>&1 && [[ ! -x "$HOME/.dotnet/tools/xunit" ]]; then
+    echo "Installing xUnit console runner..."
+    dotnet tool install --global xunit-cli || true
+  fi
+  runner_path="$(command -v xunit || echo "$HOME/.dotnet/tools/xunit")"
+
+  # If the tool points to an ancient netcoreapp2.0 payload, upgrade it.
+  if strings "$runner_path" 2>/dev/null | grep -q "netcoreapp2.0"; then
+    echo "Upgrading xunit global tool (legacy netcoreapp2.0 detected)..."
+    dotnet tool update --global xunit-cli || dotnet tool install --global xunit-cli || true
+  fi
+
+  echo "$(command -v xunit || echo "$HOME/.dotnet/tools/xunit")"
+}
+
+RUNNER="$(ensure_xunit)"
 
 # ---------------- Build / Restore -----------------------------------------
 RESTORE_ARGS=()
@@ -350,7 +359,7 @@ ICON_SKIP="➖"
 # ---------------- Execution helpers ---------------------------------------
 run_once() {
   local label="${1:-run}"
-  echo ">>> Running tests ($label) ..."
+  echo ">>> Running tests ($(upper "$label")) ..."
   set +e
   "$RUNNER" "${RUN_ARGS[@]}" 2>&1 | tee "$OUT_CONSOLE_RAW"
   local rc=${PIPESTATUS[0]}
@@ -419,7 +428,7 @@ if [[ $rc -ne 0 && $RETRY -gt 0 ]]; then
     if [[ "$PARALLEL" != "auto" ]]; then
       RETRY_ARGS+=( -parallel "$PARALLEL" )
     fi
-    
+
     for f in "${FAILED[@]}"; do RETRY_ARGS+=( -method "$f" ); done
     set +e
     "$RUNNER" "${RETRY_ARGS[@]}" 2>&1 | tee "$OUT_ROOT/console.retry.raw.txt"
@@ -448,27 +457,19 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
     UNIT_OUT="$COVERAGE_DIR/unit"
     mkdir -p "$INT_OUT" "$UNIT_OUT"
 
-    # --- surgical change: allow coverage run to proceed even if tests fail ---
-    set +e
     dotnet test "$INT_PROJ" -c "$CONFIG" --no-build \
       --collect:"XPlat Code Coverage" \
       --logger "trx;LogFileName=$(basename "$INT_OUT/coverage.trx")" \
       --results-directory "$INT_OUT" \
       -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
-    rc_cov_int=$?
-    set -e
-    # -------------------------------------------------------------------------
 
-    set +e
     dotnet test "$UNIT_PROJ" -c "$CONFIG" --no-build \
       --collect:"XPlat Code Coverage" \
       --logger "trx;LogFileName=$(basename "$UNIT_OUT/coverage.trx")" \
       --results-directory "$UNIT_OUT" \
       -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
-    rc_cov_unit=$?
-    set -e
 
     COV_XML_INT="$(find "$INT_OUT" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
     COV_XML_UNIT="$(find "$UNIT_OUT" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"
@@ -518,8 +519,6 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
   else
     # Single suite
     if (( ${#COV_FILTER_ARGS[@]:-0} > 0 )); then
-      # --- surgical change: allow coverage run to proceed even if tests fail ---
-      set +e
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         "${COV_FILTER_ARGS[@]}" \
         --collect:"XPlat Code Coverage" \
@@ -527,19 +526,13 @@ if [[ "$WITH_COVERAGE" == "true" ]]; then
         --results-directory "$COVERAGE_DIR" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
-      rc_cov_single=$?
-      set -e
-      # -----------------------------------------------------------------------
     else
-      set +e
       dotnet test "$TEST_PROJ" -c "$CONFIG" --no-build \
         --collect:"XPlat Code Coverage" \
         --logger "trx;LogFileName=$(basename "$COVERAGE_DIR/coverage.trx")" \
         --results-directory "$COVERAGE_DIR" \
         -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
            DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile="**/Migrations/*"
-      rc_cov_single=$?
-      set -e
     fi
 
     COV_XML="$(find "$COVERAGE_DIR" -type f -name 'coverage.cobertura.xml' | head -n1 || true)"

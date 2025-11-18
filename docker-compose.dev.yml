@@ -8,6 +8,7 @@ services:
       - "${WEB_PORT}:5119"
     volumes:
       - .:/src/
+      - ./seed:/src/AIMS/seed:ro
       - aims_bin:/src/AIMS/bin
       - aims_obj:/src/AIMS/obj
     environment:
@@ -31,8 +32,10 @@ services:
       # --- Secrets-first path ---
       AzureAd__ClientSecretFile: ${AZUREAD_CLIENT_SECRET_FILE}
 
-      # Seed toggle
-      AllowProdSeed: "${ALLOW_PROD_SEED}"
+      # --- Seeder controls (match script exports) ---
+      AIMS_SEED_MODE: ${AIMS_SEED_MODE:-basic}     # basic|csv|merge
+      AIMS_SEED_DIR: ${AIMS_SEED_DIR:-/src/seed}
+      AIMS_ALLOW_PROD_SEED: ${AIMS_ALLOW_PROD_SEED:-false}
 
     secrets:
       - azuread_client_secret
@@ -44,7 +47,7 @@ services:
 
   sqlserver-dev:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    platform: linux/amd64                       # Rosetta-friendly on Apple Silicon hosts
+    platform: linux/amd64
     ports:
       - "${SQL_PORT_HOST}:${SQL_PORT}"          # e.g. 1433:1433
     environment:

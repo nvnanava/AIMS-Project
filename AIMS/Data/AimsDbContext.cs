@@ -91,6 +91,10 @@ namespace AIMS.Data
                              //No filter added - every user must have a GraphObjectID and come from AAD
                              //This allows us to only add users that exist in AAD, if not in AAD you cannot add them to our system
 
+            modelBuilder.Entity<User>()
+                .Property(u => u.IsArchived)
+                .HasDefaultValue(false); // Default to false for IsArchived
+
             // -------------------------
             // HARDWARE
             // -------------------------
@@ -137,6 +141,10 @@ namespace AIMS.Data
             modelBuilder.Entity<Software>().Property(s => s.SoftwareVersion).HasMaxLength(64);
             modelBuilder.Entity<Software>().Property(s => s.SoftwareLicenseKey).HasMaxLength(128);
 
+            modelBuilder.Entity<Software>()
+                .Property(s => s.RowVersion)
+                .IsRowVersion();
+
             // -------------------------
             // ASSIGNMENTS
             // -------------------------
@@ -166,10 +174,10 @@ namespace AIMS.Data
                 .HasFilter("[HardwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
                 .IsUnique();
 
-            // At most ONE active assignment per software asset
+            // At most ONE active assignment per (SoftwareID, UserID) (allows multi-seat)
             modelBuilder.Entity<Assignment>()
-                .HasIndex(a => new { a.SoftwareID, a.UnassignedAtUtc })
-                .HasFilter("[SoftwareID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
+                .HasIndex(a => new { a.SoftwareID, a.UserID, a.UnassignedAtUtc })
+                .HasFilter("[SoftwareID] IS NOT NULL AND [UserID] IS NOT NULL AND [UnassignedAtUtc] IS NULL")
                 .IsUnique();
 
             // Exactly one of (HardwareID, SoftwareID) must be set and match AssetKind

@@ -12,4 +12,7 @@ public sealed class AuditEventDto
     public string Target { get; set; } = "";
     public string Details { get; set; } = "";
     public string Hash { get; set; } = "";
+    public string? ChangeField { get; set; }
+    public string? PrevValue { get; set; }
+    public string? NewValue { get; set; }
 }

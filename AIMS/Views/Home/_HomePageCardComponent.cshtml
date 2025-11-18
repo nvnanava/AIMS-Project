@@ -92,11 +92,19 @@ Url.Content("~/images/asset-icons/charging-cable-icon.png"), DetailsHref =
     var available = row?.Available ?? 0;
     var threshold = row?.Threshold ?? 0;
     var pct = total > 0 ? (int)Math.Round((available * 100.0) / total) : 0;
-    var dotClass = (total == 0) ? "yellow" :
-    (threshold > 0 && available < threshold) ? "red" : "green";
+    var isSoftware = key == "software";
+    var used = Math.Max(0, total - available);
+    var usedPct = total > 0 ? (int)Math.Round((used * 100.0) / total) : 0;
+    var isLow = isSoftware
+    ? (threshold > 0 && usedPct >= threshold)
+    : (threshold > 0 && available < threshold);
+    var dotClass = (total == 0) ? "yellow" : (isLow ? "red" : "green");
+    var textClass = isLow ? "runningLow" : "availability";
 
     <a href="@c.DetailsHref" class="card-link" aria-label="@c.DisplayName">
-        <div class="card" data-asset-type="@c.AssetType">
+        <div class="card" data-asset-type="@c.AssetType" title="@(isSoftware
+            ? (threshold > 0 ? $"Threshold: {threshold}% used • Used: {used}/{total} ({usedPct}%)" : $"Used: {used}/{total} ({usedPct}%)")
+            : (threshold > 0 ? $"Threshold: {threshold} • Available: {available}/{total}" : $"Available: {available}/{total}"))">
             <span class="status-dot @dotClass" aria-hidden="true"></span>
             <h3 class="card-title">@c.DisplayName</h3>
 
@@ -104,7 +112,7 @@ Url.Content("~/images/asset-icons/charging-cable-icon.png"), DetailsHref =
                 width="72" height="72" decoding="async" loading="eager" />
 
             <p class="total"><span class="js-total">@(row is null ? "—" : total.ToString())</span> total</p>
-            <p class="availability">
+            <p class="@textClass">
                 <span class="js-available">@(row is null ? "—" : available.ToString())</span> available
                 (<span class="js-percent">@(row is null ? "—" : pct.ToString())</span>%)
             </p>

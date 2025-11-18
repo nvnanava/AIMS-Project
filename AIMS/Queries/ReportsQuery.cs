@@ -83,6 +83,7 @@ public sealed class ReportsQuery
            .FirstOrDefaultAsync(ct);
     }
 
+
     public async Task<int> CreateReport(CreateReportDto dto, CancellationToken ct)
     {
         if (dto is null) throw new ArgumentNullException(nameof(dto));

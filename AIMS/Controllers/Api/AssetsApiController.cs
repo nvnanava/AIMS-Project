@@ -3,7 +3,6 @@ using AIMS.Data;
 using AIMS.Dtos.Assets;
 using AIMS.Dtos.Users;
 using AIMS.Models;
-using AIMS.Queries;
 using AIMS.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +15,6 @@ namespace AIMS.Controllers.Api;
 public class AssetsApiController : ControllerBase
 {
     private readonly AimsDbContext _db;
-    private readonly AssetQuery _assetQuery;
     private readonly IMemoryCache _cache;
     private readonly IWebHostEnvironment _env;
 
@@ -46,11 +44,10 @@ public class AssetsApiController : ControllerBase
         public string EmployeeNumber { get; set; } = "";
     }
 
-    public AssetsApiController(AimsDbContext db, IMemoryCache cache, AssetQuery assetQuery, IWebHostEnvironment env)
+    public AssetsApiController(AimsDbContext db, IMemoryCache cache, IWebHostEnvironment env)
     {
         _db = db;
         _cache = cache;
-        _assetQuery = assetQuery;
         _env = env;
     }
 
@@ -97,6 +94,7 @@ public class AssetsApiController : ControllerBase
         [FromQuery] string scope = "all", // "all" | "my" | "reports"
         [FromQuery] string? impersonate = null,
         [FromQuery] string totalsMode = "lookahead",   // "lookahead" (default) or "exact"
+        [FromQuery] bool showArchived = false,
         CancellationToken ct = default)
     {
         page = Math.Max(1, page);
@@ -125,7 +123,7 @@ public class AssetsApiController : ControllerBase
 
         // ---- cache key includes version stamp so it auto-busts after assign/close ----
         var ver = CacheStamp.AssetsVersion;
-        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:tmode{totalsMode}:u{myEmpNumber}";
+        var key = $"assets:v{ver}:p{page}:s{pageSize}:sort{sort}:{dir}:q{q}:t{string.Join(',', types ?? new())}:st{string.Join(',', statuses ?? new())}:sc{scope}:tmode{totalsMode}:u{myEmpNumber}:archived={showArchived}";
         if (_cache.TryGetValue<AssetsPagePayloadDto>(key, out var cached))
         {
             var firstTag = cached!.Items.FirstOrDefault()?.Tag ?? string.Empty;
@@ -135,7 +133,7 @@ public class AssetsApiController : ControllerBase
             if (Request.Headers.TryGetValue("If-None-Match", out var inm) && inm.Contains(etagCached))
                 return StatusCode(304);
 
-            Response.Headers.ETag = etagCached;
+            Response.Headers["ETag"] = etagCached;
             return Ok(cached);
         }
 
@@ -144,8 +142,15 @@ public class AssetsApiController : ControllerBase
             .Where(a => a.UnassignedAtUtc == null)
             .Select(a => new { a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID, a.AssignedAtUtc });
 
+        IQueryable<Hardware> hwAssets = _db.HardwareAssets.AsNoTracking();
+
+        if (showArchived)
+            hwAssets = hwAssets.IgnoreQueryFilters();
+        else
+            hwAssets = hwAssets.Where(h => !h.IsArchived);
+
         var hardwareBase =
-            from h in _db.HardwareAssets.AsNoTracking()
+            from h in hwAssets
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Hardware)
                 on h.HardwareID equals aa.HardwareID into ha
             from aa in ha.DefaultIfEmpty()
@@ -165,8 +170,15 @@ public class AssetsApiController : ControllerBase
                 TotalSeats = null
             };
 
+        IQueryable<Software> swAssets = _db.SoftwareAssets.AsNoTracking();
+
+        if (showArchived)
+            swAssets = swAssets.IgnoreQueryFilters();
+        else
+            swAssets = swAssets.Where(s => !s.IsArchived);
+
         var softwareBase =
-            from s in _db.SoftwareAssets.AsNoTracking()
+            from s in swAssets
             join aa in activeAssignments.Where(a => a.AssetKind == AssetKind.Software)
                 on s.SoftwareID equals aa.SoftwareID into sa
             from aa in sa.DefaultIfEmpty()
@@ -248,6 +260,13 @@ public class AssetsApiController : ControllerBase
                 .ToList();
 
             withEff = withEff.Where(t => sset.Contains(t.StatusEff.ToLower()));
+        }
+
+        // ---------- Archived filter ----------
+        if (!showArchived)
+        {
+            // Exclude any asset whose derived status is "archived"
+            withEff = withEff.Where(t => t.StatusEff == null || t.StatusEff.ToLower() != "archived");
         }
 
         // ---------- Sorting ----------
@@ -411,7 +430,7 @@ public class AssetsApiController : ControllerBase
         });
 
         var pageEtag = $"W/\"{total}-{items.FirstOrDefault()?.Tag}-{items.LastOrDefault()?.Tag}\"";
-        Response.Headers.ETag = pageEtag;
+        Response.Headers["ETag"] = pageEtag;
 
         return Ok(payload);
     }
@@ -549,7 +568,7 @@ public class AssetsApiController : ControllerBase
                 var etagHw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
                 if (Request.Headers.TryGetValue("If-None-Match", out var inmHw) && inmHw.Contains(etagHw))
                     return StatusCode(304);
-                Response.Headers.ETag = etagHw;
+                Response.Headers["ETag"] = etagHw;
                 return Ok(dto);
             }
         }
@@ -627,7 +646,7 @@ public class AssetsApiController : ControllerBase
                 var etagSw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
                 if (Request.Headers.TryGetValue("If-None-Match", out var inmSw) && inmSw.Contains(etagSw))
                     return StatusCode(304);
-                Response.Headers.ETag = etagSw;
+                Response.Headers["ETag"] = etagSw;
                 return Ok(dto);
             }
         }
@@ -657,14 +676,31 @@ public class AssetsApiController : ControllerBase
             }
         }
 
-        // Normal resolution from claims
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
-        var emp = User.FindFirstValue("employeeNumber");
+        // Normal resolution from claims (OID → Email/Emp# fallback)
+        // 1) Try AAD Object ID (Graph Object ID)
+        var oid = User.FindFirst("oid")?.Value
+            ?? User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
 
-        var me = await _db.Users.AsNoTracking()
-            .FirstOrDefaultAsync(u =>
-                (!string.IsNullOrEmpty(email) && u.Email == email) ||
-                (!string.IsNullOrEmpty(emp) && u.EmployeeNumber == emp), ct);
+        AIMS.Models.User? me = null;
+        if (!string.IsNullOrWhiteSpace(oid))
+        {
+            me = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.GraphObjectID == oid, ct);
+        }
+
+        // 2) Fallback to Email or Employee Number
+        if (me is null)
+        {
+            var email = User.FindFirst("preferred_username")?.Value
+                        ?? User.FindFirstValue(ClaimTypes.Email)
+                        ?? User.Identity?.Name;
+            var emp = User.FindFirstValue("employeeNumber");
+
+            me = await _db.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u =>
+                    (!string.IsNullOrEmpty(email) && u.Email == email) ||
+                    (!string.IsNullOrEmpty(emp) && u.EmployeeNumber == emp), ct);
+        }
 
         if (me is null) return (null, null);
 

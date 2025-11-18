@@ -261,18 +261,23 @@ namespace AIMS.UnitTests.Controllers
         /// <summary>
         /// Ensures <c>GET /api/auditlog</c> returns a paged result with items.
         /// </summary>
-        /// <returns>
-        /// A task representing the asynchronous test execution. The task completes successfully
-        /// when an <see cref="OkObjectResult"/> with a <see cref="PagedResult{T}"/> is returned.
-        /// </returns>
+        /// <remarks>
+        /// Updated to include the new <see cref="bool"/> parameter before the <see cref="CancellationToken"/>.
+        /// </remarks>
         [Fact]
         public async Task Search_Ok()
         {
             using var db = MakeDb(nameof(Search_Ok));
             var ctrl = MakeController(MakeQuery(db));
 
-            var res = await ctrl.Search(1, 10, null, null, null, null, null, null, null, null, CancellationToken.None)
-                as OkObjectResult;
+            // Add 'false' for the new bool parameter
+            var res = await ctrl.Search(
+                1, 10,
+                null, null, null, null, null, null, null, null,
+                false,                // new parameter
+                CancellationToken.None
+            ) as OkObjectResult;
+
             Assert.NotNull(res);
             var page = Assert.IsType<PagedResult<AuditLogRowDto>>(res!.Value);
             Assert.True(page.Items.Count >= 1);
@@ -391,7 +396,7 @@ namespace AIMS.UnitTests.Controllers
             ctrl.ControllerContext.HttpContext.Request.QueryString = new QueryString("?take=-10");
             var res1 = await ctrl.GetEventsSince(DateTime.UtcNow.AddHours(-3).ToString("O"), CancellationToken.None) as OkObjectResult;
             var page1 = GetProp<IEnumerable<AuditEventDto>>(res1!.Value!, "items").ToList();
-            Assert.Equal(1, page1.Count);
+            Assert.Single(page1);
 
             // take=999 -> clamp to 200 (dataset smaller)
             ctrl.ControllerContext.HttpContext = new DefaultHttpContext();
@@ -475,7 +480,7 @@ namespace AIMS.UnitTests.Controllers
             var page = GetProp<IEnumerable<AuditEventDto>>(res!.Value!, "items").ToList();
 
             // Dedupe: only one "Update" (newest wins)
-            Assert.Single(page.Where(i => i.Type == "Update"));
+            Assert.Single(page, i => i.Type == "Update");
             Assert.Contains(page, i => i.Details == "newer-update");
             Assert.DoesNotContain(page, i => i.Details == "older-update");
 
@@ -552,7 +557,7 @@ namespace AIMS.UnitTests.Controllers
             var ok = await ctrl.GetEventsSince(DateTime.UtcNow.AddHours(-3).ToString("O"), CancellationToken.None) as OkObjectResult;
             var page = GetProp<IEnumerable<AuditEventDto>>(ok!.Value!, "items").ToList();
 
-            var ev = Assert.Single(page.Where(i => i.Type == "SoftIdNoExt"));
+            var ev = Assert.Single(page, i => i.Type == "SoftIdNoExt");
             Assert.Equal("Software#222", ev.Target);
             Assert.Equal("50", ev.Id);
         }
@@ -689,7 +694,7 @@ namespace AIMS.UnitTests.Controllers
             ctrl.ControllerContext.HttpContext.Request.QueryString = new QueryString("?take=-5");
             var ok1 = await ctrl.GetLatest(CancellationToken.None) as OkObjectResult;
             var items1 = GetProp<IEnumerable<AuditEventDto>>(ok1!.Value!, "items").ToList();
-            Assert.Equal(1, items1.Count);
+            Assert.Single(items1);
 
             // take=999 => clamp to 200 (but our dataset is smaller; just assert >= 2)
             ctrl.ControllerContext.HttpContext = new DefaultHttpContext();
@@ -740,7 +745,7 @@ namespace AIMS.UnitTests.Controllers
                 UserID = 42,
                 UserName = "Unit Tester",
                 Action = "NullDesc",
-                Description = null,                       // <-- forces the ?? "" branch
+                Description = null!,                       // <-- forces the ?? "" branch
                 AssetKind = AssetKind.Hardware,
                 HardwareID = null,
                 SoftwareID = null

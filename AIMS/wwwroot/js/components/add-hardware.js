@@ -88,11 +88,20 @@ document.addEventListener('DOMContentLoaded', function () {
       Save/load progress functions. Only saving data locally in browser for now. We can discuss saving in database with client.
     */
     function saveProgress() {
+
+        const summaryAssetType = document.getElementById('summaryAssetType')?.textContent ?? '';
+        const summaryAssetName = document.getElementById('summaryAssetName')?.textContent ?? '';
+
         const data = {
             baseData,
             itemCount,               // use variable, not DOM lookup
             currentIndex: items.length,
-            items
+            items,
+            summary: {
+                AssetType: summaryAssetType,
+                AssetName: summaryAssetName
+            },
+            autoIncrementChecked: document.getElementById('autoIncrementTagChk')?.checked ?? false
         };
         localStorage.setItem('assetProgress', JSON.stringify(data));
         alert('Progress saved locally in browser.');
@@ -111,14 +120,20 @@ document.addEventListener('DOMContentLoaded', function () {
             if (data.itemCount) itemCount = data.itemCount;
             if (Array.isArray(data.items)) items = data.items;
 
+            // populate summary info
+            document.getElementById('summaryAssetType').textContent =
+                data.summary?.AssetType ?? baseData.AssetType ?? '';
+            document.getElementById('summaryAssetName').textContent =
+                data.summary?.AssetName ?? baseData.AssetName ?? '';
+
+            const autoChk = document.getElementById('autoIncrementTagChk');
+            if (autoChk) {
+                autoChk.checked = data.autoIncrementChecked ?? false;
+                if (autoChk.checked) autoChk.dispatchEvent(new Event('change'));
+            }
+
             //rebuilding the preview list
-            previewList.innerHTML = "";
-            items.forEach(i => {
-                const li = document.createElement("li");
-                li.classList.add("list-group-item");
-                li.textContent = `${i.SerialNumber} | ${i.AssetTag}`;
-                previewList.appendChild(li);
-            });
+            renderPreviewList();
 
             //if we have already added some items, go to phase 2 directly
             if (items.length >= itemCount) {
@@ -137,6 +152,88 @@ document.addEventListener('DOMContentLoaded', function () {
     function clearSaveProgress() {
         localStorage.removeItem("assetProgress");
     }
+
+    // -- load preview list with incrementing items from original asset tag # --
+    function generateSequentialTags(baseTag, count) {
+        // Match prefixes like 'MBC0001' or 'MBC-0001'
+        // Group 1: letters (MBC)
+        // Group 2: optional separator (- or _)
+        // Group 3: digits (0001)
+        // FUTURE DEVS: CHANGE THIS FORMAT IF NEEDED TO SUPPORT DIFFERENT TAG STYLES
+        const match = baseTag.match(/^([a-zA-Z]+)([-_]?)(\d+)$/);
+        if (!match) {
+            alert("Invalid Format. Example: MBC0001 or MBC-0001");
+            return [];
+        }
+
+        const prefix = match[1];
+        const separator = match[2] || ''; // preserve dash or underscore if present
+        const nums = match[3];
+        const numLen = nums.length;
+        const startNum = parseInt(nums, 10);
+        const tags = [];
+
+        for (let i = 0; i < count; i++) {
+            const newNum = String(startNum + i).padStart(numLen, '0');
+            tags.push(prefix + separator + newNum);
+        }
+
+        return tags;
+    }
+
+    // -- listen for checked generate tags box and auto fill --
+    document.getElementById('autoIncrementTagChk').addEventListener('change', function () {
+        const isChecked = this.checked;
+        const tagInput = document.getElementById('tagNumber');
+        const previewList = document.getElementById('previewList');
+
+        if (!tagInput || !previewList) return;
+
+        // When unchecked: reset to manual mode
+        if (!isChecked) {
+            previewList.innerHTML = "";
+            items = [];
+            tagInput.readOnly = false;
+            itemStep.textContent = '';
+            window.generatedTags = [];
+            return;
+        }
+
+        // --- When checked ---
+        const baseTag = tagInput.value.trim();
+        const count = itemCount; // comes from Phase 1
+        console.log("Generating tags from", baseTag, "count", count);
+
+        if (!baseTag || isNaN(count) || count <= 0) {
+            alert("Please enter a valid base Tag Number and Item Count first.");
+            this.checked = false;
+            return;
+        }
+
+        // Generate sequential tags
+        const tags = generateSequentialTags(baseTag, count);
+        if (!tags.length) return;
+
+        tagInput.readOnly = true;
+
+        //Create placeholder items for each generated tag
+        items = tags.map(t => ({
+            ...baseData,
+            SerialNumber: "", // empty placeholder
+            AssetTag: t,
+            AssetName: `${baseData.Manufacturer} ${baseData.Model}`.trim(),
+        }));
+
+        //Show them in preview list
+        renderPreviewList();
+
+        //Update helper text
+        itemStep.textContent = `Generated ${items.length} tags. Ready for serial entry.`;
+
+        // Save tags for future reference
+        window.generatedTags = tags;
+    });
+
 
     //reset modal state of phase 1 form
     addAssetModal.addEventListener('hidden.bs.modal', function () {
@@ -162,6 +259,12 @@ document.addEventListener('DOMContentLoaded', function () {
         previewList.innerHTML = "";
         clearError('serialNumber');
         clearError('tagNumber');
+
+        const tagInput = document.getElementById('tagNumber');
+        const autoChk = document.getElementById('autoIncrementTagChk');
+        if (autoChk) autoChk.checked = false;
+        if (tagInput) tagInput.readOnly = false;
+        window.generatedTags = [];
     });
 
     addAssetModal.addEventListener('show.bs.modal', function () {
@@ -272,6 +375,10 @@ document.addEventListener('DOMContentLoaded', function () {
         bootstrap.Modal.getInstance(addAssetModal).hide();
         new bootstrap.Modal(itemDetailsModal).show();
         inTransition = false;
+
+        //populate phase 2 form with summary details
+        document.getElementById('summaryAssetType').textContent = baseData.AssetType;
+        document.getElementById('summaryAssetName').textContent = `${baseData.Manufacturer} ${baseData.Model}`.trim();
         loadNextItem();
     });
 
@@ -293,8 +400,14 @@ document.addEventListener('DOMContentLoaded', function () {
             setError('tagNumber', 'Tag Number is required.');
             valid = false;
         }
+        if (tag.length > 16) {
+            console.warn("Tag too long:", tag.length);
+            setError('tagNumber', 'Tag Number cannot exceed 16 characters.');
+            valid = false;
+        }
 
         if (!valid) return false;
+
 
         if (items.some(i => i.SerialNumber === serial)) {
             setError('serialNumber', 'Duplicate serial number in this batch.');
@@ -390,45 +503,62 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // ---- Preflight duplicate check vs DB (soft-fail) ----
         try {
-            const pre = await aimsFetch("/api/hardware/check-duplicates", {
+            const preRes = await fetch("/api/hardware/check-duplicates", {
                 method: "POST",
-                ttl: 0, //don't cache
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ dtos: cleaned })
             });
 
-            const preData = pre;
-            const { existingSerials = [], existingTags = [] } = preData;
+            if (preRes.ok) {
+                const preData = await preRes.json();
+                const { existingSerials = [], existingTags = [] } = preData;
 
-            const errs = {};
-            items.forEach((it, i) => {
-                const rowErrors = [];
-                const s = (it.SerialNumber || "").trim();
-                const t = (it.AssetTag || "").trim();
+                const errs = {};
+                items.forEach((it, i) => {
+                    const rowErrors = [];
+                    const s = (it.SerialNumber || "").trim();
+                    const t = (it.AssetTag || "").trim();
 
-                if (existingSerials.some(es => (es || "").toLowerCase() === s.toLowerCase())) {
-                    rowErrors.push(`Duplicate serial number: ${s}`);
+                    if (existingSerials.some(es => (es || "").toLowerCase() === s.toLowerCase())) {
+                        rowErrors.push(`Duplicate serial number: ${s}`);
+                    }
+                    if (existingTags.includes(t)) {
+                        rowErrors.push(`Duplicate asset tag: ${t}`);
+                    }
+
+                    if (rowErrors.length) errs[`Dtos[${i}]`] = rowErrors;
+                });
+
+                if (Object.keys(errs).length) {
+                    showServerErrorsInline({ errors: errs });
+                    return;
                 }
-                if (existingTags.includes(t)) {
-                    rowErrors.push(`Duplicate asset tag: ${t}`);
-                }
-
-                if (rowErrors.length) errs[`Dtos[${i}]`] = rowErrors;
-            });
-
-            if (Object.keys(errs).length) {
-                showServerErrorsInline({ errors: errs });
-                return;
             }
+        } catch (err) {
+            /* ignore preflight errors */
+        }
 
-        } catch { /* ignore preflight failure */ }
+        // ---- Submit all items to server ----
 
         try {
-            const data = await aimsFetch("/api/hardware/add-bulk", {
+            const res = await fetch("/api/hardware/add-bulk", {
                 method: "POST",
-                ttl: 0, //don't cache
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ dtos: cleaned })
             });
 
+            if (!res.ok) {
+                // Try to parse server validation object (to preserve your detailed messages)
+                const text = await res.text();
+                try {
+                    const json = JSON.parse(text);
+                    showServerErrorsInline(json);
+                } catch {
+                    showErrorMessages({ title: "Server Error", detail: text || "Unknown server error." }, errorBox);
+                }
+                return;
+            }
+            const data = await res.json();
 
             clearSaveProgress();
 

@@ -1,48 +1,39 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from '@playwright/test';
 
-test("Search dedupes in-flight duplicate network requests (Desktop spam)", async ({ page }) => {
-    const apiUrl = "/api/assets";
-    const desktopQuery = "q=Desktop";
+test('Search dedupes in-flight duplicate network requests (Desktop spam)', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => { });
 
-    let requestCount = 0;
-    const requestUrls: string[] = [];
-
-    page.on("request", req => {
-        if (req.url().includes(apiUrl)) {
-            requestUrls.push(req.url());
-            requestCount++;
-            console.log(`Network Request #${requestCount}: ${req.url()}`);
-        }
-    });
-
-    await page.goto("http://localhost:5119/");
-    await page.waitForLoadState("networkidle");
-
-    const searchInput = page.getByRole("textbox", { name: /search/i });
+    const searchInput = page.getByRole('textbox', { name: /search/i });
     await expect(searchInput).toBeVisible();
 
-    console.log("\nDeduplication Test: Spam Desktop search before first finishes");
+    const isDesktopSearch = (url: string) =>
+        url.includes('/api/assets/search') && url.includes('q=Desktop');
 
-    // Fill once
-    await searchInput.fill("Desktop");
+    let desktopCount = 0;
+    page.on('request', req => {
+        const url = req.url();
+        if (isDesktopSearch(url)) desktopCount++;
+    });
 
-    // Trigger the same request multiple times rapidly
-    for (let i = 0; i < 4; i++) {
-        await searchInput.press("Enter");
-    }
+    // Trigger duplicates quickly
+    await searchInput.fill('Desktop');
 
-    // Wait for results to appear
-    await page.waitForTimeout(1500);
+    // Kick off the first search and explicitly wait for it
+    const firstReq = page.waitForRequest(req => isDesktopSearch(req.url()), { timeout: 5000 });
+    await searchInput.press('Enter');
+    await firstReq;
 
-    console.log("\n===== NETWORK RESULTS =====");
-    console.log("All request URLs:", requestUrls);
-    console.log("==========================\n");
+    // Spam more enters while first is in flight
+    await Promise.all([
+        searchInput.press('Enter'),
+        searchInput.press('Enter'),
+        searchInput.press('Enter'),
+    ]);
 
-    // Only count Desktop search requests
-    const desktopRequests = requestUrls.filter(u => u.includes(desktopQuery));
+    // Give our FE deduper/debouncer a moment to coalesce
+    await page.waitForTimeout(1000);
 
-    console.log("Desktop Requests:", desktopRequests.length);
-
-    //Deduping assertion (only one Desktop request should be sent to backend)
-    expect(desktopRequests.length).toBe(1);
+    // Assert we only saw one Desktop search request
+    expect(desktopCount).toBe(1);
 });

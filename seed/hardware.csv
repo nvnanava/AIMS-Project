@@ -1,0 +1,31 @@
+﻿HardwareID,AssetTag,AssetName,AssetType,Status,Manufacturer,Model,SerialNumber,WarrantyExpiration,PurchaseDate,Comment,IsArchived
+1,H-1001,Dell Latitude 7440,Laptop,Assigned,Dell,Latitude 7440,SN-D7440-01,5/10/27,5/10/23,Assigned new laptop to Adam Lopez,FALSE
+2,H-1002,Lenovo ThinkCentre M80q,Desktop,In Repair,Lenovo,M80q,SN-M80-A02,9/18/26,9/18/22,Sent for repair after boot issue,FALSE
+3,H-1003,HP LaserJet Pro M404,Printer,Assigned,HP,M404dn,SN-PR-404-03,3/1/26,3/1/21,Assigned printer to Taylor Johnson,FALSE
+4,H-1004,Microsoft Surface Pro 9,Tablet,Assigned,Microsoft,Pro 9,SN-SP9-04,1/12/28,1/12/24,Assigned Surface Pro 9 to Sophia Patel,FALSE
+5,H-1005,MacBook Pro 14”,Laptop,Archived,Apple,M1 Pro,SN-MBP-05,8/21/25,8/21/21,Archived retired laptop from Suhail Najimudeen,TRUE
+6,H-1006,Dell UltraSharp U2722D,Monitor,Assigned,Dell,U2722D,SN-MN-2722-06,2/10/27,2/10/24,Assigned monitor to Megan Tran,FALSE
+7,H-1007,Logitech Zone 900,Headset,Assigned,Logitech,Zone 900,SN-HS-0900-07,7/1/26,7/1/24,Assigned headset to Ryan Kim,FALSE
+8,H-1008,Belkin USB-C 100W Cable,Charging Cable,Assigned,Belkin,BoostCharge 100W,SN-CC-0100-08,11/1/26,11/1/24,Assigned charger to Taylor Johnson,FALSE
+9,H-1009,Dell OptiPlex 7010,Desktop,Assigned,Dell,7010,SN-OPX-7010-09,3/20/27,3/20/24,Reassigned desktop to Olivia Chen,FALSE
+10,H-1010,HP EliteBook 840 G10,Laptop,Assigned,HP,840 G10,SN-EB-840-10,4/15/28,4/15/24,Assigned replacement laptop to Sophia Patel,FALSE
+11,H-1011,Brother HL-L2390DW,Printer,Assigned,Brother,HL-L2390DW,SN-BR-2390-11,10/10/26,10/10/23,Assigned printer to Ava Martinez,FALSE
+12,H-1012,iPad Air 5,Tablet,Assigned,Apple,Air 5,SN-IPAD-A5-12,12/1/27,12/1/24,Assigned tablet to Liam Rivera,FALSE
+13,H-1013,Samsung S27A800,Monitor,Assigned,Samsung,S27A800,SN-SM-27-13,1/5/27,1/5/24,Assigned monitor to Ryan Kim,FALSE
+14,H-1014,Lenovo ThinkPad E16,Laptop,Assigned,Lenovo,E16,SN-TP-E16-14,2/20/28,2/20/24,Assigned ThinkPad E16 to Taylor Johnson,FALSE
+15,H-1015,Poly Voyager Focus 2,Headset,Assigned,Poly,Voyager Focus 2,SN-PV-FOC2-15,6/6/27,6/6/24,Assigned headset to Sophia Patel,FALSE
+16,H-1016,Anker PowerLine+ USB-C,Charging Cable,Assigned,Anker,PowerLine+,SN-ANK-UC-16,9/9/26,9/9/24,Assigned charger to William Park,FALSE
+17,H-1017,Apple Mac mini M2,Desktop,Assigned,Apple,Mac mini M2,SN-MM2-1017,3/3/28,3/3/24,Assigned desktop to Ethan Clark,FALSE
+18,H-1018,Surface Laptop 5,Laptop,Assigned,Microsoft,Laptop 5,SN-SL5-1018,5/5/28,5/5/24,Assigned Surface Laptop 5 to Emma Garcia,FALSE
+19,H-1019,HP Envy x360,Laptop,Surveyed,HP,x360,SN-ENVY-19,8/15/26,8/15/23,Surveyed during quarterly audit,FALSE
+20,H-1020,Lenovo ThinkVision P27u-20,Monitor,Available,Lenovo,P27u-20,SN-LNV-MN-20,3/10/28,3/10/24,Available spare for new hire,FALSE
+21,H-1021,Canon PIXMA G3270,Printer,Marked for Survey,Canon,G3270,SN-CAN-21,12/20/25,12/20/22,Marked for physical inspection,FALSE
+22,H-1022,MacBook Air M2,Laptop,Available,Apple,M2 Air,SN-MBA-M2-22,2/1/28,2/1/24,Available in IT storage,FALSE
+23,H-1023,Dell Latitude 5540,Laptop,Available,Dell,Latitude 5540,SN-DL-5540-23,7/15/28,7/15/24,Available backup for replacement,FALSE
+24,H-1024,Lenovo Dock Gen 2,Docking Station,Assigned,Lenovo,Dock Gen 2,SN-LD-24,10/10/27,10/10/23,Assigned dock to Niyant Nanavati,FALSE
+25,H-1025,Logitech MX Keys Keyboard,Peripheral,Assigned,Logitech,MX Keys,SN-MXK-25,3/15/27,3/15/24,Assigned keyboard to Cameron Lanzaro,FALSE
+26,H-1026,HP Z27q Monitor,Monitor,Assigned,HP,Z27q,SN-Z27Q-26,9/12/27,9/12/23,Assigned monitor to Akal-Ustat Singh,FALSE
+27,H-1027,Mac Studio,Mini Workstation,Assigned,Apple,M1 Ultra,SN-MS-27,2/20/29,2/20/24,Assigned Mac Studio to Tyler Burguillos,FALSE
+28,H-1028,Dell Precision 5680,Laptop,In Repair,Dell,Precision 5680,SN-DP-28,6/5/27,6/5/23,Device sent to depot for display issue,FALSE
+29,H-1029,Samsung Galaxy Tab S9,Tablet,Assigned,Samsung,Tab S9,SN-TAB-S9-29,5/25/28,5/25/24,Assigned tablet to Isabella Rossi,FALSE
+30,H-1030,Apple Magic Mouse 2,Peripheral,Available,Apple,Magic Mouse 2,SN-AMM-30,4/10/28,4/10/24,Available as shared accessory,FALSE

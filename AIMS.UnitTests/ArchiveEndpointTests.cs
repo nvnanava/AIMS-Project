@@ -78,15 +78,14 @@ namespace AIMS.UnitTests
             Assert.True(dto.IsArchived);
             Assert.Equal("Archived", dto.Status);
 
-            var reloaded = await db.HardwareAssets.IgnoreQueryFilters().SingleOrDefaultAsync(); // 
-            Assert.NotNull(reloaded);
+            var reloaded = await db.HardwareAssets.IgnoreQueryFilters().SingleAsync();
             Assert.True(reloaded.IsArchived);
             Assert.Equal("Archived", reloaded.Status);
 
             var assignment = await db.Assignments.SingleOrDefaultAsync();
-            Assert.NotNull(assignment.UnassignedAtUtc);
+            Assert.NotNull(assignment);
+            Assert.NotNull(assignment!.UnassignedAtUtc);
         }
-
 
         // ------------------------------------------------------
         //  Unarchive should flip IsArchived = false
@@ -108,10 +107,8 @@ namespace AIMS.UnitTests
 
             var controller = CreateController(db);
 
-            var result = await controller.UnarchiveHardware(2) as OkObjectResult;
-
-            Assert.NotNull(result);
-            var dto = Assert.IsType<AssetRowDto>(result.Value);
+            var ok = Assert.IsType<OkObjectResult>(await controller.UnarchiveHardware(2));
+            var dto = Assert.IsType<AssetRowDto>(ok.Value);
             Assert.False(dto.IsArchived);
             Assert.Equal("Available", dto.Status);
 
@@ -170,8 +167,8 @@ namespace AIMS.UnitTests
 
             var result = await controller.ArchiveHardware(3) as OkObjectResult;
 
-            Assert.NotNull(result);
-            var dto = Assert.IsType<AssetRowDto>(result.Value);
+            var ok = Assert.IsType<OkObjectResult>(await controller.ArchiveHardware(3));
+            var dto = Assert.IsType<AssetRowDto>(ok.Value);
             Assert.True(dto.IsArchived);
         }
 
@@ -195,10 +192,8 @@ namespace AIMS.UnitTests
 
             var controller = CreateController(db);
 
-            var result = await controller.UnarchiveHardware(4) as OkObjectResult;
-
-            Assert.NotNull(result);
-            var dto = Assert.IsType<AssetRowDto>(result.Value);
+            var ok = Assert.IsType<OkObjectResult>(await controller.UnarchiveHardware(4));
+            var dto = Assert.IsType<AssetRowDto>(ok.Value);
             Assert.False(dto.IsArchived);
             Assert.Equal("Available", dto.Status);
         }
@@ -214,10 +209,9 @@ namespace AIMS.UnitTests
             await db.SaveChangesAsync();
 
             var controller = CreateController(db);
-            var result = await controller.ArchiveHardware(hw.HardwareID) as OkObjectResult;
 
-            Assert.NotNull(result);
-            var dto = Assert.IsType<AssetRowDto>(result.Value);
+            var ok = Assert.IsType<OkObjectResult>(await controller.ArchiveHardware(hw.HardwareID));
+            var dto = Assert.IsType<AssetRowDto>(ok.Value);
             Assert.True(dto.IsArchived);
         }
         // ------------------------------------------------------

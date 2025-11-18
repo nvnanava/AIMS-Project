@@ -92,6 +92,7 @@ public partial class AuditLogApiController : ControllerBase
         [FromQuery] AssetKind? kind = null,
         [FromQuery] int? hardwareId = null,
         [FromQuery] int? softwareId = null,
+        [FromQuery] bool includeArchived = false,
         CancellationToken ct = default)
     {
         var result = await _auditQuery.SearchAsync(
@@ -113,7 +114,7 @@ public partial class AuditLogApiController
         var sinceUtc = ParseSinceOrDefault(since);
         var max = ReadAndClampTake(HttpContext.Request.Query);
 
-        var all = await _auditQuery.GetAllAuditRecordsAsync(ct);
+        var all = await _auditQuery.GetEventsWindowAsync(sinceUtc, max, ct);
         var page = ProjectDedupAndPage(all, sinceUtc, max);
 
         var etag = BuildEtag(page);
@@ -142,7 +143,7 @@ public partial class AuditLogApiController
     public async Task<IActionResult> GetLatest(CancellationToken ct)
     {
         var max = ReadAndClampTake(HttpContext.Request.Query);
-        var all = await _auditQuery.GetAllAuditRecordsAsync(ct);
+        var all = await _auditQuery.GetEventsWindowAsync(DateTime.MinValue, max, ct);
 
         // Reuse projection/dedup; pass a 'since' far in the past so we only limit by Take(max)
         var page = ProjectDedupAndPage(all, DateTime.MinValue, max);
@@ -180,17 +181,24 @@ public partial class AuditLogApiController
     {
         var projected = events
             .Where(e => e.TimestampUtc > sinceUtc)
-            .Select(e => new AuditEventDto
+            .Select(e =>
             {
-                Id = (e.ExternalId != Guid.Empty ? e.ExternalId.ToString() : e.AuditLogID.ToString()),
-                OccurredAtUtc = e.TimestampUtc,
-                Type = e.Action,
-                User = $"{e.UserName} ({e.UserID})",
-                Target = e.AssetKind == AssetKind.Hardware
-                    ? (e.HardwareID.HasValue ? $"Hardware#{e.HardwareID}" : "Hardware")
-                    : (e.SoftwareID.HasValue ? $"Software#{e.SoftwareID}" : "Software"),
-                Details = e.Description ?? "",
-                Hash = ComputeHash(e)
+                var last = e.Changes?.Count > 0 ? e.Changes[^1] : null; // last change
+                return new AuditEventDto
+                {
+                    Id = (e.ExternalId != Guid.Empty ? e.ExternalId.ToString() : e.AuditLogID.ToString()),
+                    OccurredAtUtc = e.TimestampUtc,
+                    Type = e.Action,
+                    User = $"{e.UserName} ({e.UserID})",
+                    Target = e.AssetKind == AssetKind.Hardware
+                        ? (e.HardwareID.HasValue ? $"Hardware#{e.HardwareID}" : "Hardware")
+                        : (e.SoftwareID.HasValue ? $"Software#{e.SoftwareID}" : "Software"),
+                    Details = e.Description ?? "",
+                    ChangeField = last?.Field,
+                    PrevValue = last?.OldValue,
+                    NewValue = last?.NewValue,
+                    Hash = ComputeHash(e)
+                };
             });
 
         // Deduplicate by Id, newest first
@@ -206,8 +214,9 @@ public partial class AuditLogApiController
 
     private static string BuildEtag(List<AuditEventDto> page)
     {
+        const string SchemaV = "v2"; // bump when payload shape changes
         var latestId = page.FirstOrDefault()?.Id ?? "";
-        var raw = $"{latestId}|{page.Count}";
+        var raw = $"{latestId}|{page.Count}|{SchemaV}";
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
     }
 

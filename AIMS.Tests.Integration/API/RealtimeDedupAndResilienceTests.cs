@@ -1,21 +1,11 @@
-using System;
-using System;
-using System.Collections.Generic;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq;
 using System.Net;
-using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace AIMS.Tests.Integration
 {
@@ -116,8 +106,8 @@ namespace AIMS.Tests.Integration
                 FullName = "Integration Test User",
                 EmployeeNumber = "ITEST-001",
                 ExternalId = Guid.NewGuid(),
-                GraphObjectID = null,
-                IsActive = true,
+                // Non-nullable in model: supply a dummy GraphObjectID
+                GraphObjectID = Guid.NewGuid().ToString("D"),
                 IsArchived = false,
                 RoleID = role.RoleID,
                 SupervisorID = null
@@ -129,7 +119,8 @@ namespace AIMS.Tests.Integration
             return user.UserID;
         }
 
-        // Ensure a real HardwareID exists; used to satisfy CK_AuditLog_ExactlyOneAsset.
+        /// Ensure a real HardwareID exists; used to satisfy CK_AuditLog_ExactlyOneAsset.
+        /// If none exist (e.g., fresh DB / different suite order), create a minimal one on the fly.
         private async Task<int> EnsureAnyHardwareIdAsync()
         {
             using var scope = _factory.Services.CreateScope();
@@ -141,12 +132,27 @@ namespace AIMS.Tests.Integration
                 .Select(h => h.HardwareID)
                 .FirstOrDefaultAsync();
 
-            if (hid == 0)
-                throw new InvalidOperationException(
-                    "No HardwareAssets found in DB. Seed at least one hardware row " +
-                    "(or adapt tests to use Software assets with a real SoftwareID).");
+            if (hid != 0)
+                return hid;
 
-            return hid;
+            // --- Self-heal: seed a minimal, valid hardware row and return its ID ---
+            var hw = new Hardware
+            {
+                AssetTag = $"ITEST-{Guid.NewGuid():N}".Substring(0, 16),
+                AssetName = "Integration Seed HW",
+                AssetType = "Laptop",
+                Status = "Available",
+                Manufacturer = "Brand",
+                Model = "ModelX",
+                SerialNumber = $"SN-{Guid.NewGuid():N}".Substring(0, 18),
+                PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow.Date),
+                WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddYears(1))
+            };
+
+            db.HardwareAssets.Add(hw);
+            await db.SaveChangesAsync();
+
+            return hw.HardwareID;
         }
 
         /// Upsert an AuditLog by ExternalId.

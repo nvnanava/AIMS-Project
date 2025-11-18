@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +5,7 @@ namespace AIMS.Services
 {
     public interface IAdminUserUpsertService
     {
-        Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, CancellationToken ct);
+        Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, int? officeId, CancellationToken ct);
     }
 
     public sealed class AdminUserUpsertService : IAdminUserUpsertService
@@ -22,7 +19,7 @@ namespace AIMS.Services
             _graphUserService = graphUserService ?? throw new ArgumentNullException(nameof(graphUserService));
         }
 
-        public async Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, CancellationToken ct)
+        public async Task<AIMS.Models.User> UpsertAdminUserAsync(string graphObjectId, int? roleId, int? supervisorId, int? officeId, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(graphObjectId))
                 throw new ArgumentException("graphObjectId is required", nameof(graphObjectId));
@@ -43,12 +40,13 @@ namespace AIMS.Services
                     FullName = g.DisplayName ?? "Unknown",
                     Email = g.Mail ?? g.UserPrincipalName ?? "",
                     EmployeeNumber = Guid.NewGuid().ToString("N")[..8],
-                    IsActive = true,
+                    //IsActive = true,
                     IsArchived = false
                 };
 
                 if (roleId.HasValue) user.RoleID = roleId.Value;
                 if (supervisorId.HasValue) user.SupervisorID = supervisorId.Value;
+                if (officeId.HasValue) user.OfficeID = officeId.Value;
 
                 _db.Users.Add(user);
             }
@@ -60,8 +58,9 @@ namespace AIMS.Services
 
                 if (roleId.HasValue) user.RoleID = roleId.Value;
                 if (supervisorId.HasValue) user.SupervisorID = supervisorId.Value;
+                if (officeId.HasValue) user.OfficeID = officeId.Value;
 
-                user.IsActive = true;
+                //user.IsActive = true;
                 user.IsArchived = false;
             }
             try
@@ -71,10 +70,15 @@ namespace AIMS.Services
             }
             catch (DbUpdateException ex) when (IsUniqueViolation(ex))
             {
-                user = await _db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.GraphObjectID == graphObjectId, ct);
-
+                // Another writer beat us; fetch the row that now exists
+                user = await _db.Users
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(u => u.GraphObjectID == graphObjectId, ct);
             }
-
+            // Guarantee non-null on all exit paths to satisfy the non-nullable return type
+            if (user == null)
+                throw new InvalidOperationException(
+                    $"Upsert failed: user with Graph ID '{graphObjectId}' was not found after save.");
 
             return user;
         }

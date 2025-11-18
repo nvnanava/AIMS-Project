@@ -99,14 +99,16 @@
                 }
 
                 // Build table dynamically
-                const headers = Object.keys(data.previewRows[0]);
+                const headers = Object.keys(data.previewRows[0])
+
+                const titleCaseHeaders = headers.map(h => h.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()));
                 let html = `
                 <p><strong>Created:</strong> ${new Date(data.dateCreated).toLocaleString()}</p>
                 <p><strong>Total Rows:</strong> ${data.totalRows}</p>
                 <div class="table-responsive">
                     <table class="table table-striped table-sm align-middle">
                         <thead class="table-light">
-                            <tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>
+                            <tr>${titleCaseHeaders.map(h => `<th>${h}</th>`).join("")}</tr>
                         </thead>
                         <tbody>
                             ${data.previewRows.map(row => `
@@ -221,9 +223,7 @@
             const startDate = document.getElementById("dateRange1")?.value || "";
             const endDate = document.getElementById("dateRange2")?.value || "";
             const description = (document.getElementById("inputDescription")?.value || "").trim();
-            const CreatorUserID = 4; // replace with real user id
-
-            // alert(window.pageData.user);
+            const CreatorUserID = window.pageData.user; // replace with real user id
 
             if (!reportName) return alert("Please enter a report name.");
             if (!startDate) return alert("Please select a start date.");
@@ -253,7 +253,7 @@
             const startDate = document.getElementById("officeStartDate")?.value || "";
             const endDate = document.getElementById("officeEndDate")?.value || "";
             const description = (document.getElementById("officeDescription")?.value || "").trim();
-            const CreatorUserID = 1;
+            const CreatorUserID = window.pageData.user;
 
             if (!reportName) return alert("Please enter a report name.");
             if (!officeId) return alert("Please select an office number.");
@@ -266,7 +266,7 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST" });
+                const resp = await fetch(`/api/reports?${params.toString()}`, { method: "POST" });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateOfficeReport"))?.hide();
                 reportToast?.show();
@@ -283,7 +283,7 @@
             const startDate = document.getElementById("customStartDate")?.value || "";
             const endDate = document.getElementById("customEndDate")?.value || "";
             const description = (document.getElementById("customDescription")?.value || "").trim();
-            const CreatorUserID = 1;
+            const CreatorUserID = window.pageData.user;
 
             const customOptions = {
                 seeHardware: document.getElementById("seeHardware")?.checked ?? true,
@@ -304,7 +304,13 @@
             if (description) params.append("desc", description);
 
             try {
-                const resp = await fetch(`/?${params.toString()}`, { method: "POST", body: JSON.stringify(customOptions) });
+                const resp = await fetch(`/api/reports?${params.toString()}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(customOptions)
+                });
                 if (!resp.ok) throw new Error(await resp.text());
                 bootstrap.Modal.getInstance(document.getElementById("generateCustomReport"))?.hide();
                 reportToast?.show();

@@ -354,7 +354,7 @@ public sealed class AuditLogQueryTests
         Assert.Equal(AssetKind.Hardware, saved!.AssetKind);
         Assert.Null(saved.SoftwareID);
         Assert.Equal(hw1, saved.HardwareID);
-        Assert.Equal(1, saved.Changes.Count);
+        Assert.Single(saved.Changes);
         Assert.Single(broadcaster.Events);
         Assert.Equal("Assign", broadcaster.Events[0].Type);
         Assert.Contains("Hardware", broadcaster.Events[0].Target);
@@ -831,7 +831,7 @@ public sealed class AuditLogQueryTests
             TimestampUtc = DateTime.UtcNow,
             UserID = u1,
             Action = "X",
-            Description = null,
+            Description = null!,
             AssetKind = AssetKind.Software,
             SoftwareID = null,
             ExternalId = Guid.NewGuid()

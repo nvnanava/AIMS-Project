@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <!-- Test-only packages should be private so they don't flow transitively -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" PrivateAssets="all" />
     <PackageReference Include="xunit" Version="2.9.2" PrivateAssets="all" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -32,13 +33,16 @@
     <!-- Test helpers -->
     <PackageReference Include="FluentAssertions" Version="8.6.0" PrivateAssets="all" />
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.2" />
 
     <!-- Web/EF bits used by integration tests -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.10" />
+
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.10" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,7 +53,6 @@
     <ProjectReference Include="..\AIMS\AIMS.csproj" />
   </ItemGroup>
 
-  <!-- Keep test config alongside the dll -->
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
