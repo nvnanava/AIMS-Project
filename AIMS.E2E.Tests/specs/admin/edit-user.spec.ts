@@ -79,16 +79,56 @@ test.describe('Edit User: Valid, Invalid', () => {
             await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await sharedPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
 
-            const dropdown = sharedPage.getByRole('combobox', { name: 'Archive Status Active (Not' });
-            await expect(dropdown).toHaveValue('Archived'); 
+            await expect(sharedPage.getByRole('combobox', { name: 'Archive Status Archived ▾' })).toBeVisible();
+            await sharedPage.getByRole('combobox', { name: 'Archive Status Archived ▾' }).click();
+            await sharedPage.getByRole('option', { name: 'Active (Not Archived)', exact: true }).click();
+            await sharedPage.getByRole('button', { name: 'Save Changes' }).click();
+         });
+        test('Change Separation Date', async () => {
+            await sharedPage.getByRole('textbox', { name: 'Search Users...' }).click();
+            await sharedPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
+            await sharedPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
+            await sharedPage.getByRole('combobox', { name: 'Archive Status Active (Not' }).click();
+            await sharedPage.getByRole('option', { name: 'Archived', exact: true }).click();
+            await sharedPage.getByRole('button', { name: 'Save Changes' }).click();
+            
+            await sharedPage.locator('.slider').click();
+
+            await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
+            await sharedPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
+
+            const separationBox = sharedPage.getByRole('textbox', { name: 'Separation Date' });
+            const separationBoxContents = await separationBox.inputValue();
+
+            const today = new Date();
+            const formattedDate = new Intl.DateTimeFormat('en-US').format(today);
+
+            await expect(separationBoxContents).toBe(formattedDate);
+
+            await sharedPage.getByRole('combobox', { name: 'Archive Status Archived ▾' }).click();
+            await sharedPage.getByRole('option', { name: 'Active (Not Archived)', exact: true }).click();
+            await sharedPage.getByRole('button', { name: 'Save Changes' }).click();
+
 
          });
-        test('Change Separation Date', async () => { });
     })
 
     test.describe('Failed Edits', () => {
         test('Separation should not save without archival', async () => {
+            await sharedPage.getByRole('textbox', { name: 'Search Users...' }).click();
+            await sharedPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
+            await sharedPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
 
+            await sharedPage.getByRole('textbox', { name: 'Separation Date' }).fill('11/05/2025');
+            await sharedPage.getByRole('button', { name: 'Save Changes' }).click();
+            
+            await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
+            await sharedPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
+            const separationBox = sharedPage.getByRole('textbox', { name: 'Separation Date' });
+            const separationBoxContents = await separationBox.inputValue();
+            await expect(separationBoxContents).toBe('');
         })
         test('Name should not update', async () => {
             await sharedPage.getByRole('textbox', { name: 'Search Users...' }).click();
