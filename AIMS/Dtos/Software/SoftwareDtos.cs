@@ -106,5 +106,6 @@ public sealed class SeatOperationResultDto
     public int SoftwareID { get; set; }
     public int LicenseTotalSeats { get; set; }
     public int LicenseSeatsUsed { get; set; }
+    public int? AssignmentID { get; set; }
     public string Message { get; set; } = "";
 }

@@ -1,5 +1,6 @@
 using AIMS.Data;
 using AIMS.Dtos.Audit;
+using AIMS.Dtos.Software;
 using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;
@@ -26,8 +27,9 @@ public class SoftwareSeatService
     /// <summary>
     /// Assigns a software seat to a user, enforcing capacity and one-open-assignment-per (software,user).
     /// Writes an audit record including optional comment and a link hint to the Audit Log.
+    /// Returns a SeatOperationResultDto including the AssignmentID.
     /// </summary>
-    public async Task AssignSeatAsync(
+    public async Task<SeatOperationResultDto> AssignSeatAsync(
         int softwareId,
         int userId,
         string? comment = null,
@@ -82,7 +84,19 @@ public class SoftwareSeatService
                     a.UserID == userId &&
                     a.UnassignedAtUtc == null,
                 ct);
-            if (alreadyOpen) return; // idempotent
+
+            if (alreadyOpen)
+            {
+                // Idempotent: just return current counts, no new AssignmentID
+                return new SeatOperationResultDto
+                {
+                    SoftwareID = sw.SoftwareID,
+                    LicenseTotalSeats = sw.LicenseTotalSeats,
+                    LicenseSeatsUsed = sw.LicenseSeatsUsed,
+                    AssignmentID = null,
+                    Message = "User already has an active seat for this software."
+                };
+            }
 
             // Snapshot counts for audit (Prev/New)
             var usedBefore = sw.LicenseSeatsUsed;
@@ -90,14 +104,16 @@ public class SoftwareSeatService
             var usedAfter = Math.Min(usedBefore + 1, total);
 
             // Open the assignment row
-            _db.Assignments.Add(new Assignment
+            var assignment = new Assignment
             {
                 UserID = userId,
                 AssetKind = AssetKind.Software,
                 SoftwareID = softwareId,
                 AssignedAtUtc = DateTime.UtcNow,
                 UnassignedAtUtc = null
-            });
+            };
+
+            _db.Assignments.Add(assignment);
 
             // Increment (clamped; race protected by rowversion + retry)
             sw.LicenseSeatsUsed = usedAfter;
@@ -116,18 +132,26 @@ public class SoftwareSeatService
                     AssetKind = AssetKind.Software,
                     SoftwareID = sw.SoftwareID,
                     Changes = new List<CreateAuditLogChangeDto>
+                {
+                    new CreateAuditLogChangeDto
                     {
-                        new CreateAuditLogChangeDto
-                        {
-                            Field = "Seats",
-                            OldValue = $"{usedBefore}/{total}",
-                            NewValue = $"{usedAfter}/{total}"
-                        }
+                        Field = "Seats",
+                        OldValue = $"{usedBefore}/{total}",
+                        NewValue = $"{usedAfter}/{total}"
                     }
+                }
                 }, ct);
                 // --------------------------------------------------------------------
 
-                return; // success
+                // Return result with new AssignmentID so the controller/JS can upload agreement
+                return new SeatOperationResultDto
+                {
+                    SoftwareID = sw.SoftwareID,
+                    LicenseTotalSeats = sw.LicenseTotalSeats,
+                    LicenseSeatsUsed = sw.LicenseSeatsUsed,
+                    AssignmentID = assignment.AssignmentID,
+                    Message = "Seat assigned."
+                };
             }
             catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
             {

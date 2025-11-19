@@ -1,3 +1,5 @@
+using System;
+
 namespace AIMS.Models;
 
 public class Assignment
@@ -21,8 +23,16 @@ public class Assignment
 
     // When
     public DateTime AssignedAtUtc { get; set; } = DateTime.UtcNow;
-    public DateTime? UnassignedAtUtc { get; set; } // null == active
+    public DateTime? UnassignedAtUtc { get; set; }
+
+    // Agreement file stored inline
+    public byte[]? AgreementFile { get; set; }
+    public string? AgreementFileName { get; set; }
+    public string? AgreementContentType { get; set; }
 
     // convenience
     public bool IsActive => UnassignedAtUtc == null;
+
+    // convenience: for grids/icons
+    public bool HasAgreementFile => AgreementFile != null && AgreementFile.Length > 0;
 }

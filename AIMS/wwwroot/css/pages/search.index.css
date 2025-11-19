@@ -38,38 +38,81 @@ nav {
   z-index: 1;
 }
 
+/* Shell: overall search layout */
+.search-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 138px);
+}
+
 /* Header row + FAB */
 .search-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex: 0 0 auto;
 }
 
-.filter-btn {
-  width: clamp(36px, 4vw, 52px);
-  height: clamp(36px, 4vw, 52px);
-  border-radius: 50%;
-  border: 3px solid #1e2b3b;
-  background-color: #1e2b3b;
-  background-image: url('/images/filter-icon-blue.png');
-  background-size: 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+/* Header toggle – match Admin-style pill switch */
+.toggle-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease, border-color .2s ease;
+  font-weight: 600;
+  color: #34495e;
 }
 
-.filter-btn:hover {
-  border-color: #2ecc71;
-  box-shadow: 0 0 10px rgba(46, 204, 113, .45);
-  transform: translateY(-1px);
+/* Hide the native checkbox but keep it accessible */
+.toggle-container input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-.filter-btn:focus-visible {
-  outline: 3px solid #2ecc71;
-  outline-offset: 3px;
+/* Track */
+.toggle-container .slider {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 24px;
+  background: #bdc3c7;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 2px rgba(52, 73, 94, 0.25);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Thumb */
+.toggle-container .slider::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+/* Checked state */
+.toggle-container input[type="checkbox"]:checked+.slider {
+  background: var(--aims-accent, #1abc9c);
+}
+
+/* Move thumb to the right when checked */
+.toggle-container input[type="checkbox"]:checked+.slider::before {
+  transform: translateX(22px);
+}
+
+/* Focus ring */
+.toggle-container input[type="checkbox"]:focus-visible+.slider {
+  box-shadow:
+    0 0 0 3px var(--aims-focus, rgba(26, 188, 156, 0.45)),
+    inset 0 0 0 2px rgba(52, 73, 94, 0.25);
 }
 
 /* Icon button chrome (match Admin look & feel) */
@@ -109,8 +152,6 @@ nav {
   fill: var(--aims-ink, #34495e);
 }
 
-
-
 /* Disabled state for the assignment icon */
 .icon-btn--disabled {
   background: #bdc3c7 !important;
@@ -130,19 +171,17 @@ nav {
   outline: none !important;
 }
 
-/* Shell */
+/* Shell: table container now flexes between header & pager */
 .table-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* critical so inner scroll can shrink on small screens */
   background: #fff;
   border-radius: 8px;
   padding: 12px;
   border: 1px solid #34495e;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
-  min-height: 87vh;
-}
-
-/* if the next sibling pager is visible (not [hidden]) → tighten to 83vh */
-.table-wrapper:has(+ #search-pager:not([hidden])) {
-  min-height: 83vh;
+  margin-top: 12px;
 }
 
 .admin-table-wrapper {
@@ -150,14 +189,19 @@ nav {
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .admin-table-scroll {
   display: block !important;
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  scroll-behavior: smooth;
+  /* vertical scroll is handled by tbody */
 }
 
 /* Tables */
@@ -239,6 +283,12 @@ nav {
   border: 2px solid #34495e;
   font-weight: 600;
   min-width: 0;
+}
+
+.table-toolbar .filter-input:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--aims-focus);
+  border-color: var(--aims-accent);
 }
 
 /* --- AIMS Custom Select (match Admin) --- */
@@ -602,6 +652,7 @@ nav {
   padding: 10px 0 14px;
   background: transparent;
   margin-top: 12px;
+  flex: 0 0 auto;
 }
 
 .search-pager .pager-btn {
@@ -778,4 +829,116 @@ nav {
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+
+/* ============================================================================
+   Responsive tweaks for Search page
+   - Desktop (>= 1440px): use our current vh hacks as-is (no overrides)
+   - Below 1440px: progressively relax min-heights to avoid clipping
+   ========================================================================== */
+
+/* Large laptop / small desktop (<= 1440px) */
+@media (max-width: 1440px) {
+
+  .search-layout {
+    /* slightly less aggressive; more room for browser chrome */
+    min-height: calc(100vh - 120px);
+  }
+
+  .table-wrapper {
+    min-height: 82vh;
+  }
+
+  .table-wrapper:has(+ #search-pager:not([hidden])) {
+    min-height: 78vh;
+  }
+
+  .asset-table-body {
+    max-height: 68vh;
+  }
+}
+
+/* Tablet / narrow laptop (<= 1200px) */
+@media (max-width: 1200px) {
+
+  .search-layout {
+    min-height: calc(100vh - 110px);
+  }
+
+  .table-wrapper {
+    min-height: 78vh;
+    padding: 10px;
+  }
+
+  .table-wrapper:has(+ #search-pager:not([hidden])) {
+    min-height: 74vh;
+  }
+
+  .asset-table-body {
+    max-height: 60vh;
+  }
+
+  /* Tighten header/layout spacing a bit */
+  .search-page-header {
+    gap: 8px;
+  }
+}
+
+/* Portrait tablet-ish (<= 992px) */
+@media (max-width: 992px) {
+
+  .search-layout {
+    /* Let content grow naturally, no hard vh requirement */
+    min-height: auto;
+  }
+
+  .table-wrapper,
+  .table-wrapper:has(+ #search-pager:not([hidden])) {
+    min-height: auto;
+  }
+
+  .asset-table-body {
+    max-height: 55vh;
+  }
+
+  .search-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Keep table usable: allow horizontal scroll sooner */
+  .asset-table-header,
+  .asset-table-body {
+    min-width: 760px;
+  }
+}
+
+/* Small screens / phones (<= 768px) */
+@media (max-width: 768px) {
+
+  body {
+    padding-inline: 8px;
+  }
+
+  .table-wrapper {
+    padding: 8px;
+    border-radius: 6px;
+  }
+
+  .admin-table-wrapper {
+    border-radius: 6px;
+  }
+
+  .asset-table-body {
+    max-height: 50vh;
+  }
+
+  .search-pager {
+    padding-bottom: 8px;
+    gap: 8px;
+  }
+
+  .search-pager .pager-btn {
+    padding-inline: 12px;
+  }
 }

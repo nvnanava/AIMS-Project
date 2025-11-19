@@ -196,7 +196,8 @@ public partial class AuditLogApiController
                     ChangeField = last?.Field,
                     PrevValue = last?.OldValue,
                     NewValue = last?.NewValue,
-                    Hash = ComputeHash(e)
+                    Hash = ComputeHash(e),
+                    AssignmentID = e.AssignmentID
                 };
             });
 

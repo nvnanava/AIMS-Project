@@ -35,7 +35,7 @@ public class AssignmentController : ControllerBase
     }
 
     [HttpPost("create")]
-    [ProducesResponseType(typeof(CreateAssignmentDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(AssignmentCreatedDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateAssignmentDto req, CancellationToken ct = default)
@@ -83,7 +83,7 @@ public class AssignmentController : ControllerBase
             return BadRequest("Unknown AssetKind.");
         }
 
-        // prevent double-open assignment
+        // prevent double-open assignment (hardware only)
         var assignmentExists = await _db.Assignments
             .Where(a => a.UnassignedAtUtc == null)
             .AnyAsync(a =>
@@ -107,6 +107,7 @@ public class AssignmentController : ControllerBase
             SoftwareID = req.AssetKind == AssetKind.Software ? req.SoftwareID : null,
             AssignedAtUtc = DateTime.UtcNow,
             UnassignedAtUtc = null
+            // Agreement* fields are set via the separate UploadAgreement endpoint
         };
 
         _db.Assignments.Add(newAssignment);
@@ -133,7 +134,11 @@ public class AssignmentController : ControllerBase
             var idText = req.AssetKind == AssetKind.Hardware
                 ? $"HardwareID {req.HardwareID}"
                 : $"SoftwareID {req.SoftwareID}";
-            var description = $"Assigned {req.AssetKind} {assetName} ({idText}) to {user.FullName} ({user.UserID}).";
+
+            var baseDesc = $"Assigned {req.AssetKind} {assetName} ({idText}) to {user.FullName} ({user.UserID}).";
+            var description = string.IsNullOrWhiteSpace(req.Comment)
+                ? baseDesc
+                : $"{baseDesc} Comment: {req.Comment}";
 
             List<CreateAuditLogChangeDto>? changes = null;
 
@@ -144,14 +149,14 @@ public class AssignmentController : ControllerBase
                 !string.Equals(oldHardwareStatus, newHardwareStatus, StringComparison.OrdinalIgnoreCase))
             {
                 changes = new List<CreateAuditLogChangeDto>
-        {
-            new()
             {
-                Field = "Status",
-                OldValue = oldHardwareStatus,
-                NewValue = newHardwareStatus
-            }
-        };
+                new()
+                {
+                    Field = "Status",
+                    OldValue = oldHardwareStatus,
+                    NewValue = newHardwareStatus
+                }
+            };
             }
 
             await _auditQuery.CreateAuditRecordAsync(new CreateAuditRecordDto
@@ -162,12 +167,29 @@ public class AssignmentController : ControllerBase
                 AssetKind = req.AssetKind,
                 HardwareID = req.AssetKind == AssetKind.Hardware ? req.HardwareID : null,
                 SoftwareID = req.AssetKind == AssetKind.Software ? req.SoftwareID : null,
-                Changes = changes
+                Changes = changes,
+                AssignmentID = newAssignment.AssignmentID
             });
         }
-        catch { /* swallow; success not blocked by audit */ }
+        catch
+        {
+            // swallow; success not blocked by audit
+        }
 
-        return CreatedAtAction(nameof(GetAssignment), new { AssignmentID = newAssignment.AssignmentID }, req);
+        // Return a DTO that includes AssignmentID so the JS can upload the agreement
+        var dto = new AssignmentCreatedDto
+        {
+            AssignmentID = newAssignment.AssignmentID,
+            UserID = newAssignment.UserID ?? req.UserID,
+            AssetKind = newAssignment.AssetKind,
+            HardwareID = newAssignment.HardwareID,
+            SoftwareID = newAssignment.SoftwareID
+        };
+
+        return CreatedAtAction(
+            nameof(GetAssignment),
+            new { AssignmentID = newAssignment.AssignmentID },
+            dto);
     }
 
     [HttpGet("get")]
@@ -323,7 +345,8 @@ public class AssignmentController : ControllerBase
                 AssetKind = assignment.AssetKind,
                 HardwareID = assignment.HardwareID,
                 SoftwareID = assignment.SoftwareID,
-                Changes = changes
+                Changes = changes,
+                AssignmentID = assignment.AssignmentID
             });
         }
         catch { /* ignore; don't block unassign on audit failure */}
@@ -371,5 +394,62 @@ public class AssignmentController : ControllerBase
             .ToListAsync(ct);
 
         return Ok(history);
+    }
+
+    [HttpPost("{assignmentId:int}/agreement")]
+    [RequestFormLimits(MultipartBodyLengthLimit = 20 * 1024 * 1024)] // e.g. 20 MB
+    [RequestSizeLimit(20 * 1024 * 1024)]
+    public async Task<IActionResult> UploadAgreement(
+    int assignmentId,
+    IFormFile? file,
+    CancellationToken ct = default)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest("No file uploaded.");
+
+        var assignment = await _db.Assignments
+            .SingleOrDefaultAsync(a => a.AssignmentID == assignmentId, ct);
+
+        if (assignment is null)
+            return NotFound($"No assignment with ID {assignmentId}.");
+
+        await using var ms = new MemoryStream();
+        await file.CopyToAsync(ms, ct);
+
+        assignment.AgreementFile = ms.ToArray();
+        assignment.AgreementFileName = file.FileName;
+        assignment.AgreementContentType =
+            string.IsNullOrWhiteSpace(file.ContentType)
+                ? "application/octet-stream"
+                : file.ContentType;
+
+        await _db.SaveChangesAsync(ct);
+
+        return NoContent();
+    }
+
+    [HttpGet("{assignmentId:int}/agreement")]
+    public async Task<IActionResult> GetAgreement(int assignmentId, CancellationToken ct = default)
+    {
+        var assignment = await _db.Assignments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(a => a.AssignmentID == assignmentId, ct);
+
+        if (assignment is null)
+            return NotFound($"No assignment with ID {assignmentId}.");
+
+        if (assignment.AgreementFile == null || assignment.AgreementFile.Length == 0)
+            return NotFound("No agreement file is attached to this assignment.");
+
+        var contentType = string.IsNullOrWhiteSpace(assignment.AgreementContentType)
+            ? "application/octet-stream"
+            : assignment.AgreementContentType;
+
+        var fileName = string.IsNullOrWhiteSpace(assignment.AgreementFileName)
+            ? $"agreement-{assignmentId}.bin"
+            : assignment.AgreementFileName;
+
+        Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+        return File(assignment.AgreementFile, contentType);
     }
 }

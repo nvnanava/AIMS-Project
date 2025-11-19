@@ -94,7 +94,7 @@
     box-shadow: none;
 }
 
-#assignAssetModal .search-container.aims-userpicker__search:focus-visible {
+#assignAssetModal .search-container.aims-userpicker__search:focus-within {
     outline: none;
     /* Remove default browser outline */
     box-shadow: 0 0 0 3px var(--aims-focus);

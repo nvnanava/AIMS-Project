@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="~/AIMS.styles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/search.index.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/aims.modals.css" />
-    <link rel="stylesheet" href="~/css/components/_AssignAssetModal.css"/>
+    <link rel="stylesheet" href="~/css/components/_AssignAssetModal.css" />
     <link rel="stylesheet" href="~/css/components/_UnassignAssetModal.css" />
     <link rel="stylesheet" href="~/css/components/_SeatModeModal.css" />
 }
@@ -33,83 +33,92 @@
     window.__ASSETS_VER__ = @CacheStamp.AssetsVersion;
 </script>
 
-<div class="report-page-size search-page-header">
-    <h1>Search</h1>
-    <button id="filter-fab" class="filter-btn" type="button" aria-label="Open filters"></button>
-</div>
-
-<div class="table-wrapper">
-    <div class="admin-table-wrapper">
-        <div class="admin-table-scroll">
-            <table id="search-header" class="asset-table-header" aria-label="Assets">
-                <thead>
-                    <tr>
-                        @foreach (var header in tableHeaders) { <th>@header</th> }
-                    </tr>
-                </thead>
-            </table>
-
-            <div id="search-toolbar" class="table-toolbar" aria-label="Search filters">
-                <div id="toolbar-grid" class="toolbar-grid" role="group">
-                    <div class="toolbar-cell" data-col="1">
-                        <input class="search-input filter-input" type="text" name="Asset Name" placeholder="Filter by Asset Name" />
-                    </div>
-                    <div class="toolbar-cell" data-col="2">
-                        <!-- data-make-custom not required; JS forces custom -->
-                        <select name="Type" class="filter-input form-select">
-                            <option value="">All Devices</option>
-                            <option>Desktop</option>
-                            <option>Laptop</option>
-                            <option>Headset</option>
-                            <option>Charging Cable</option>
-                            <option>Monitor</option>
-                            <option>Software</option>
-                        </select>
-                    </div>
-                    <div class="toolbar-cell" data-col="3">
-                        <input class="filter-input search-input" type="text" name="Tag #" placeholder="Filter by Tag #" />
-                    </div>
-                    <div class="toolbar-cell" data-col="4">
-                        <input class="filter-input search-input" type="text" name="Assignment" placeholder="Filter by Assignment" />
-                    </div>
-                    <div class="toolbar-cell" data-col="5">
-                        <!-- data-make-custom not required; JS forces custom -->
-                        <select name="Status" class="filter-input form-select">
-                            <option value="">All Status</option>
-                            <option>Assigned</option>
-                            <option>Available</option>
-                            <option>In Repair</option>
-                            <option>Damaged</option>
-                            <option>Archived</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <table class="asset-table-body" id="search-body-table" data-sort-dir="asc">
-                <tbody id="table-body"><!-- rows populated by JS --></tbody>
-            </table>
-        </div>
+<div class="search-layout">
+    <div class="report-page-size search-page-header">
+        <h1>Search</h1>
+        <label class="toggle-container d-flex align-items-center gap-2 m-0">
+            <input type="checkbox" id="showArchivedToggle" />
+            <span class="slider"></span>
+            Show Archived Assets
+        </label>
     </div>
 
-    <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
-</div>
+    <div class="table-wrapper">
+        <div class="admin-table-wrapper">
+            <div class="admin-table-scroll">
+                <table id="search-header" class="asset-table-header" aria-label="Assets">
+                    <thead>
+                        <tr>
+                            @foreach (var header in tableHeaders)
+                            {
+                                <th>@header</th>
+                            }
+                        </tr>
+                    </thead>
+                </table>
 
-<div class="search-pager" id="search-pager" hidden>
-    <button type="button" id="pg-prev" class="pager-btn">Prev</button>
-    <span id="pg-status" class="pager-status"></span>
-    <button type="button" id="pg-next" class="pager-btn">Next</button>
+                <div id="search-toolbar" class="table-toolbar" aria-label="Search filters">
+                    <div id="toolbar-grid" class="toolbar-grid" role="group">
+                        <div class="toolbar-cell" data-col="1">
+                            <input class="search-input filter-input" type="text" name="Asset Name" placeholder="Filter by Asset Name" />
+                        </div>
+                        <div class="toolbar-cell" data-col="2">
+                            <!-- data-make-custom not required; JS forces custom -->
+                            <select name="Type" class="filter-input form-select">
+                                <option value="">All Devices</option>
+                                <option>Desktop</option>
+                                <option>Laptop</option>
+                                <option>Headset</option>
+                                <option>Charging Cable</option>
+                                <option>Monitor</option>
+                                <option>Software</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-cell" data-col="3">
+                            <input class="filter-input search-input" type="text" name="Tag #" placeholder="Filter by Tag #" />
+                        </div>
+                        <div class="toolbar-cell" data-col="4">
+                            <input class="filter-input search-input" type="text" name="Assignment" placeholder="Filter by Assignment" />
+                        </div>
+                        <div class="toolbar-cell" data-col="5">
+                            <!-- data-make-custom not required; JS forces custom -->
+                            <select name="Status" class="filter-input form-select">
+                                <option value="">All Status</option>
+                                <option>Assigned</option>
+                                <option>Available</option>
+                                <option>In Repair</option>
+                                <option>Damaged</option>
+                                <option>Archived</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="asset-table-body" id="search-body-table" data-sort-dir="asc">
+                    <tbody id="table-body"><!-- rows populated by JS --></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="search-empty" class="search-empty" hidden>Enter a search to begin.</div>
+    </div>
+
+    <div class="search-pager" id="search-pager" hidden>
+        <button type="button" id="pg-prev" class="pager-btn">Prev</button>
+        <span id="pg-status" class="pager-status"></span>
+        <button type="button" id="pg-next" class="pager-btn">Next</button>
+    </div>
 </div>
 
 <!-- Anchor for FAB popover -->
 <button id="searchFilters" type="button" class="filter-anchor" aria-hidden="true"></button>
 <div class="filter-popover" data-component="filter-icon" data-id="searchFilters" hidden>
-  <div class="filter-popover__inner">
-    <label class="chk-row aims-check">
-      <input type="checkbox" data-role="show-archived-toggle" />
-      <span>Show archived assets</span>
-    </label>
-  </div>
+    <div class="filter-popover__inner">
+        <label class="chk-row aims-check">
+            <input type="checkbox" data-role="show-archived-toggle" />
+            <span>Show archived assets</span>
+        </label>
+    </div>
 </div>
 
 @await Html.PartialAsync("_AssignAssetModal")

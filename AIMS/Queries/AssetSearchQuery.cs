@@ -189,39 +189,62 @@ public sealed class AssetSearchQuery
             baseQ = baseQ.Where(a => a.Status != null && a.Status.ToLower() == s);
         }
 
-        // ----- LIKE patterns (when q present) -----
+        // ----- LIKE patterns (when q present, with simple plural handling) -----
         IQueryable<AssetRowDto> finalQ;
         if (hasQ)
         {
-            var likeExact = EscapeLike(norm);
-            var likePrefix = EscapeLike(norm) + "%";
-            var likeContains = "%" + EscapeLike(norm) + "%";
+            // Build a small set of query variants: ["laptops", "laptop"]
+            var terms = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        norm
+    };
 
-            var exactQ = baseQ.Where(a =>
-                EF.Functions.Like(a.AssetName ?? "", likeExact) ||
-                EF.Functions.Like(a.Tag ?? "", likeExact) ||
-                EF.Functions.Like(a.Type ?? "", likeExact) ||
-                EF.Functions.Like(a.Status ?? "", likeExact) ||
-                EF.Functions.Like(a.AssignedEmployeeName ?? "", likeExact) ||
-                EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likeExact));
+            // Simple plural → singular (strip trailing 's' for words of length >= 4)
+            if (norm.EndsWith("s", StringComparison.OrdinalIgnoreCase) && norm.Length >= 4)
+            {
+                var singular = norm[..^1].Trim();
+                if (!string.IsNullOrWhiteSpace(singular))
+                    terms.Add(singular);
+            }
 
-            var prefixQ = baseQ.Where(a =>
-                EF.Functions.Like(a.AssetName ?? "", likePrefix) ||
-                EF.Functions.Like(a.Tag ?? "", likePrefix) ||
-                EF.Functions.Like(a.Type ?? "", likePrefix) ||
-                EF.Functions.Like(a.Status ?? "", likePrefix) ||
-                EF.Functions.Like(a.AssignedEmployeeName ?? "", likePrefix) ||
-                EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likePrefix));
+            IQueryable<AssetRowDto>? aggregateQ = null;
 
-            var containsQ = baseQ.Where(a =>
-                EF.Functions.Like(a.AssetName ?? "", likeContains) ||
-                EF.Functions.Like(a.Tag ?? "", likeContains) ||
-                EF.Functions.Like(a.Type ?? "", likeContains) ||
-                EF.Functions.Like(a.Status ?? "", likeContains) ||
-                EF.Functions.Like(a.AssignedEmployeeName ?? "", likeContains) ||
-                EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likeContains));
+            foreach (var term in terms)
+            {
+                var likeExact = EscapeLike(term);
+                var likePrefix = EscapeLike(term) + "%";
+                var likeContains = "%" + EscapeLike(term) + "%";
 
-            finalQ = exactQ.Union(prefixQ).Union(containsQ);
+                var exactQ = baseQ.Where(a =>
+                    EF.Functions.Like(a.AssetName ?? "", likeExact) ||
+                    EF.Functions.Like(a.Tag ?? "", likeExact) ||
+                    EF.Functions.Like(a.Type ?? "", likeExact) ||
+                    EF.Functions.Like(a.Status ?? "", likeExact) ||
+                    EF.Functions.Like(a.AssignedEmployeeName ?? "", likeExact) ||
+                    EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likeExact));
+
+                var prefixQ = baseQ.Where(a =>
+                    EF.Functions.Like(a.AssetName ?? "", likePrefix) ||
+                    EF.Functions.Like(a.Tag ?? "", likePrefix) ||
+                    EF.Functions.Like(a.Type ?? "", likePrefix) ||
+                    EF.Functions.Like(a.Status ?? "", likePrefix) ||
+                    EF.Functions.Like(a.AssignedEmployeeName ?? "", likePrefix) ||
+                    EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likePrefix));
+
+                var containsQ = baseQ.Where(a =>
+                    EF.Functions.Like(a.AssetName ?? "", likeContains) ||
+                    EF.Functions.Like(a.Tag ?? "", likeContains) ||
+                    EF.Functions.Like(a.Type ?? "", likeContains) ||
+                    EF.Functions.Like(a.Status ?? "", likeContains) ||
+                    EF.Functions.Like(a.AssignedEmployeeName ?? "", likeContains) ||
+                    EF.Functions.Like(a.AssignedEmployeeNumber ?? "", likeContains));
+
+                var termQ = exactQ.Union(prefixQ).Union(containsQ);
+
+                aggregateQ = aggregateQ is null ? termQ : aggregateQ.Union(termQ);
+            }
+
+            finalQ = aggregateQ ?? baseQ;
         }
         else
         {

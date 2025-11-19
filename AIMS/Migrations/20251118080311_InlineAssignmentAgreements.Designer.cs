@@ -4,16 +4,19 @@ using AIMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AIMS.Migrations
+namespace AIMS.Migrations._local_sync
 {
     [DbContext(typeof(AimsDbContext))]
-    partial class AimsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251118080311_InlineAssignmentAgreements")]
+    partial class InlineAssignmentAgreements
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -127,9 +130,6 @@ namespace AIMS.Migrations
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AssignmentID")
-                        .HasColumnType("int");
-
                     b.Property<byte[]>("AttachmentBytes")
                         .HasColumnType("varbinary(max)");
 
@@ -164,8 +164,6 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("AuditLogID");
-
-                    b.HasIndex("AssignmentID");
 
                     b.HasIndex("ExternalId")
                         .IsUnique();
@@ -573,10 +571,6 @@ namespace AIMS.Migrations
 
             modelBuilder.Entity("AIMS.Models.AuditLog", b =>
                 {
-                    b.HasOne("AIMS.Models.Assignment", "Assignment")
-                        .WithMany()
-                        .HasForeignKey("AssignmentID");
-
                     b.HasOne("AIMS.Models.Hardware", "HardwareAsset")
                         .WithMany()
                         .HasForeignKey("HardwareID")
@@ -592,8 +586,6 @@ namespace AIMS.Migrations
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Assignment");
 
                     b.Navigation("HardwareAsset");
 

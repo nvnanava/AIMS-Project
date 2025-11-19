@@ -155,37 +155,6 @@
     }
     window.addEventListener("resize", () => { refreshVisibleTooltips(); });
 
-    // ----- Row details modal (read-only) ---------------------------------
-    function openRowModalFromTR(tr) {
-        if (!tr) return;
-        const cells = Array.from(tr.cells).map(td => (td.textContent || "").trim());
-
-        document.getElementById("ar-id").textContent = cells[0] || "—";
-        document.getElementById("ar-ts").textContent = cells[1] || "—";
-        document.getElementById("ar-user").textContent = cells[2] || "—";
-        document.getElementById("ar-action").textContent = cells[3] || "—";
-        document.getElementById("ar-asset").textContent = cells[4] || "—";
-        document.getElementById("ar-prev").textContent = cells[5] || "—";
-        document.getElementById("ar-new").textContent = cells[6] || "—";
-        document.getElementById("ar-desc").value = cells[7] || "";
-
-        if (window.bootstrap?.Modal) {
-            const m = bootstrap.Modal.getOrCreateInstance(document.getElementById("auditRowModal"));
-            m.show();
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const tbody = document.getElementById("auditTableBody");
-        if (tbody) {
-            tbody.addEventListener("click", (e) => {
-                const tr = e.target?.closest("tr");
-                if (!tr) return;
-                openRowModalFromTR(tr);
-            });
-        }
-    });
-
     // ----- Wire filter UI -------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
         const btnToggle = document.getElementById("filter-button-toggle");
@@ -251,7 +220,7 @@
 
     const seen = new Map();
     let sinceCursor = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(); // 30 days
-    let seeded = false;                 // ← key: initial backfill done?
+    let seeded = false;
     let pollTimeout = null;
     let backoff = POLL_MS;
     const MAX_BACKOFF = 30000;
@@ -263,8 +232,8 @@
     let consecutiveFailures = 0;
 
     const aborter = new AbortController();
-    const now = () => Date.now();                               // ← keep single definition
-    const haveRows = () => tbody.querySelector("tr") !== null;  // ← keep single definition
+    const now = () => Date.now();
+    const haveRows = () => tbody.querySelector("tr") !== null;
 
     // ---------- Banner ----------
     function ensureBanner() {
@@ -328,6 +297,16 @@
 
     function keyOf(evt) { return evt?.id || evt?.hash || ""; }
 
+    // Helper to normalize occurredAtUtc to ISO for sorting
+    function getOccurredIso(evt) {
+        if (!evt || !evt.occurredAtUtc) return "";
+        try {
+            return new Date(evt.occurredAtUtc).toISOString();
+        } catch {
+            return String(evt.occurredAtUtc);
+        }
+    }
+
     // Create <td> helper (no title by default; tooltips set later if ellipsed)
     function makeTD(text) {
         const c = document.createElement("td");
@@ -345,6 +324,25 @@
         });
     }
 
+    // Sort tbody rows by data-occurred-at DESC (newest first)
+    function sortTbodyByOccurredDesc() {
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        if (!rows.length) return;
+
+        rows.sort((a, b) => {
+            const da = a.dataset.occurredAt || "";
+            const db = b.dataset.occurredAt || "";
+            if (!da && !db) return 0;
+            if (!da) return 1;  // rows without timestamp go to bottom
+            if (!db) return -1;
+            // ISO comparison – descending
+            if (da === db) return 0;
+            return da < db ? 1 : -1;
+        });
+
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
     // returns true if row content changed (to trigger re-page)
     // opts: { seed:boolean } — when seeding initial data, do NOT flash
     function renderAuditEvent(evt, opts = {}) {
@@ -352,23 +350,67 @@
         const seed = !!opts.seed;
         const k = keyOf(evt);
         const existing = k && seen.get(k);
+        const occurredIso = getOccurredIso(evt);
 
         const userM = /\((\d+)\)\s*$/.exec(evt.user || "");
         const userTxt = userM ? `U${userM[1]}` : (evt.user || "—");
-        const cells = () => ([
-            makeTD(evt.id || evt.hash?.slice(0, 8) || "—"),
-            makeTD(fmtLocal(evt.occurredAtUtc)),
-            makeTD(userTxt),
-            makeTD(evt.type || "—"),
-            makeTD(evt.target || "—"),
-            makeTD(evt.prevValue || ""),     // ← was ""
-            makeTD(evt.newValue || ""),     // ← was ""
-            makeTD(evt.details || "")
-        ]);
+        const cells = () => {
+            const fullId = evt.id || evt.hash || "—";
+            const displayId =
+                fullId && fullId.length > 8
+                    ? fullId.slice(0, 8)   // first 8 chars of GUID
+                    : fullId;
+
+            const idCell = makeTD(displayId);
+            idCell.dataset.fullId = fullId;
+
+            return [
+                idCell,
+                makeTD(fmtLocal(evt.occurredAtUtc)),
+                makeTD(userTxt),
+                makeTD(evt.type || "—"),
+                makeTD(evt.target || "—"),
+                makeTD(evt.prevValue || ""),
+                makeTD(evt.newValue || ""),
+                makeTD(evt.details || "")
+            ];
+        };
 
         if (existing) {
             while (existing.firstChild) existing.removeChild(existing.firstChild);
             cells().forEach(c => existing.appendChild(c));
+
+            // NEW: keep occurredAt on the row for sorting
+            if (occurredIso) {
+                existing.dataset.occurredAt = occurredIso;
+            } else {
+                delete existing.dataset.occurredAt;
+            }
+
+            // Keep dataset preview url in sync
+            const assignmentIdForPreview =
+                evt.assignmentId ??
+                evt.assignmentID ??
+                evt.AssignmentId ??
+                evt.AssignmentID ??
+                null;
+
+            let previewUrl = "";
+            if (assignmentIdForPreview != null && assignmentIdForPreview !== "") {
+                previewUrl = `/api/assign/${assignmentIdForPreview}/agreement`;
+            } else if (evt.agreementPreviewUrl || evt.agreementUrl || evt.agreementDownloadUrl) {
+                previewUrl =
+                    evt.agreementPreviewUrl ||
+                    evt.agreementUrl ||
+                    evt.agreementDownloadUrl;
+            }
+
+            if (previewUrl) {
+                existing.dataset.previewUrl = previewUrl;
+            } else {
+                delete existing.dataset.previewUrl;
+            }
+
             refreshTooltipsForRow(existing); // tooltips for overflow only
 
             if (!seed) {
@@ -384,9 +426,38 @@
 
         const tr = document.createElement("tr");
         cells().forEach(c => tr.appendChild(c));
+
+        // Store occurredAt on the new row
+        if (occurredIso) {
+            tr.dataset.occurredAt = occurredIso;
+        }
+
+        // Attach preview URL if we can build one
+        const assignmentIdForPreview =
+            evt.assignmentId ??
+            evt.assignmentID ??
+            evt.AssignmentId ??
+            evt.AssignmentID ??
+            null;
+
+        let previewUrl = "";
+        if (assignmentIdForPreview != null && assignmentIdForPreview !== "") {
+            previewUrl = `/api/assign/${assignmentIdForPreview}/agreement`;
+        } else if (evt.agreementPreviewUrl || evt.agreementUrl || evt.agreementDownloadUrl) {
+            previewUrl =
+                evt.agreementPreviewUrl ||
+                evt.agreementUrl ||
+                evt.agreementDownloadUrl;
+        }
+
+        if (previewUrl) {
+            tr.dataset.previewUrl = previewUrl;
+        }
+
+        // We still insert at top, but final order is controlled by sortTbodyByOccurredDesc()
         tbody.insertBefore(tr, tbody.firstChild);
 
-        refreshTooltipsForRow(tr);      // tooltips only for ellipsed cells
+        refreshTooltipsForRow(tr);
         if (!seed) tr.classList.add("pending-flash");
 
         if (k) seen.set(k, tr);
@@ -404,7 +475,7 @@
         if (!changed) return;
         if (window.AuditPager?.renderCurrentPage) {
             window.AuditPager.renderCurrentPage();
-            window.__Audit_RefreshVisibleTooltips?.(); // recompute visible tooltips
+            window.__Audit_RefreshVisibleTooltips?.();
         }
     }
 
@@ -420,7 +491,12 @@
 
             let anyChanged = false;
             data.items.forEach(evt => { anyChanged = renderAuditEvent(evt, { seed: seedMode }) || anyChanged; });
-            rePageIfChanged(anyChanged);
+
+            // Enforce newest-first order
+            if (anyChanged) {
+                sortTbodyByOccurredDesc();
+                rePageIfChanged(true);
+            }
 
             if (data.nextSince) sinceCursor = data.nextSince;
             if (tbody.querySelector("tr")) { onSuccess(); }
@@ -443,7 +519,12 @@
         let anyChanged = false;
         if (Array.isArray(data.items) && data.items.length > 0) {
             data.items.forEach(evt => { anyChanged = renderAuditEvent(evt, { seed: seedMode }) || anyChanged; });
-            rePageIfChanged(anyChanged);
+        }
+
+        // Sort after each batch
+        if (anyChanged) {
+            sortTbodyByOccurredDesc();
+            rePageIfChanged(true);
         }
         if (data.nextSince) sinceCursor = data.nextSince;
         onSuccess();
@@ -537,7 +618,10 @@
 
                 connection.on("auditEvent", evt => {
                     const changed = renderAuditEvent(evt, { seed: false });
-                    rePageIfChanged(changed);
+                    if (changed) {
+                        sortTbodyByOccurredDesc();
+                        rePageIfChanged(true);
+                    }
                     hideStatus();
                 });
 

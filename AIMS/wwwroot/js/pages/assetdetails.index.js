@@ -473,16 +473,22 @@
     // Listen for archived filter toggle
     document.addEventListener('aims:filter:changed', async (ev) => {
         const { id, showArchived } = ev.detail || {};
-        if (id !== 'detailsFilters') return; // ignore if not this page’s filter
+        if (id !== 'detailsFilters') return;
 
         // Save preference globally if needed
         localStorage.setItem('filter:assetdetails:showArchived', String(showArchived));
 
-        // Reload data with new filter
+        const urlParams = new URLSearchParams(window.location.search);
+        const tag = urlParams.get("tag");
         const category = getCurrentCategory ? getCurrentCategory() : null;
+
         pageCache?.clear?.();
 
-        if (typeof loadCategoryPaged === "function" && category) {
+        if (tag) {
+            // Stay in single-asset mode
+            await loadOneByTag(tag);
+        } else if (typeof loadCategoryPaged === "function" && category) {
+            // Only use paged mode when we’re not on a deep link
             await loadCategoryPaged(category, 1);
         } else if (typeof loadSearchResults === "function") {
             await loadSearchResults(1);

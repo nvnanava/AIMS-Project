@@ -26,6 +26,10 @@
 
     const commentBox = document.getElementById("commentBox");
 
+    // Upload agreement controls
+    const uploadButton = document.getElementById("uploadAgreementButton");
+    const fileInput = document.getElementById("userAgreementUpload");
+
     // ---- utilities ----
     const CAN_ADMIN = (window.__CAN_ADMIN__ === true || window.__CAN_ADMIN__ === "true");
     const IS_SUPERVISOR = (window.__IS_SUPERVISOR__ === true || window.__IS_SUPERVISOR__ === "true");
@@ -184,11 +188,7 @@
           btn.setAttribute("data-display-name", displayName);
           btn.setAttribute("data-employee-number", employeeNumber);
           btn.textContent = displayName;
-
-          // Click → set search box, hidden field, and jump to comment box
-          btn.addEventListener("click", () => {
-            selectUserOption(btn, { moveFocusToComment: true });
-          });
+          btn.tabIndex = -1; // Only arrow keys can navigate through the userList
 
           // Click → set search box, hidden field, and jump to comment box
           btn.addEventListener("click", () => {
@@ -606,6 +606,28 @@
           HardwareID: numericId,
           ...(comment ? { comment } : {})
         };
+      
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        const toastElement = document.getElementById("errorToast");
+        const msg = "Please upload the user agreement file before assigning.";
+        if (toastElement) {
+          const errorToast = new bootstrap.Toast(toastElement, { delay: 3000 });
+          toastElement.querySelector(".toast-body").innerHTML = msg;
+          errorToast.show();
+        } else {
+          alert(msg);
+        }
+
+        // Optional visual nudge on the upload button
+        if (uploadButton) {
+          uploadButton.classList.add("is-invalid");
+          setTimeout(() => uploadButton.classList.remove("is-invalid"), 1200);
+        }
+        return;
+      }
+
+      // We know a file is present now
+      const selectedFile = fileInput.files[0];
 
       try {
         const resp = await fetch(url, {
@@ -639,6 +661,7 @@
           // no-op (204 or non-JSON body)
         }
 
+        // SOFTWARE: seat counts event stays as-is
         if (isSoftware && data) {
           window.dispatchEvent(new CustomEvent("seat:updated", {
             detail: {
@@ -647,6 +670,55 @@
               licenseTotalSeats: data.licenseTotalSeats ?? data.LicenseTotalSeats
             }
           }));
+        }
+
+        // Try to pull AssignmentID from response (hardware create returns AssignmentCreatedDto)
+        let createdAssignmentId = null;
+        if (data) {
+          createdAssignmentId =
+            data.assignmentID ??
+            data.assignmentId ??
+            data.AssignmentID ??
+            null;
+        }
+
+        // ===========================================================
+        // AGREEMENT UPLOAD (success/failure toasts)
+        // ===========================================================
+        if (selectedFile && createdAssignmentId != null) {
+          try {
+            const fd = new FormData();
+            fd.append("file", selectedFile);
+
+            const uploadResp = await fetch(`/api/assign/${createdAssignmentId}/agreement`, {
+              method: "POST",
+              credentials: "same-origin",
+              body: fd
+            });
+
+            if (uploadResp.ok) {
+              const toastEl = document.getElementById("agreementUploadSuccessToast");
+              if (toastEl) {
+                new bootstrap.Toast(toastEl, { delay: 3000 }).show();
+              }
+            } else {
+              const toastEl = document.getElementById("agreementUploadFailureToast");
+              if (toastEl) {
+                toastEl.querySelector(".toast-body").innerHTML = "Failed to upload agreement file.";
+                new bootstrap.Toast(toastEl, { delay: 3500 }).show();
+              }
+            }
+          } catch (err) {
+            console.error("Agreement upload failed:", err);
+            const toastEl = document.getElementById("agreementUploadFailureToast");
+            if (toastEl) {
+              toastEl.querySelector(".toast-body").innerHTML = "Agreement upload error.";
+              new bootstrap.Toast(toastEl, { delay: 3500 }).show();
+            }
+          } finally {
+            // Clear file input so it doesn't stick around for the next assignment
+            if (fileInput) fileInput.value = "";
+          }
         }
 
         new bootstrap.Toast(document.getElementById("assignToast"), { delay: 3000 }).show();
@@ -661,8 +733,10 @@
           );
           if (selectedUserBtn) {
             // If API gave us name + emp#, this will usually be "Name (12345)" or similar
-            assignedDisplayName = selectedUserBtn.getAttribute("data-display-name") || assignedDisplayName;
-            assignedEmployeeNumber = selectedUserBtn.getAttribute("data-employee-number") || null;
+            assignedDisplayName =
+              selectedUserBtn.getAttribute("data-display-name") || assignedDisplayName;
+            assignedEmployeeNumber =
+              selectedUserBtn.getAttribute("data-employee-number") || null;
           }
         }
 
@@ -675,10 +749,6 @@
             assignedEmployeeNumber: assignedEmployeeNumber
           }
         }));
-
-        // fresh pull + cache invalidation.
-        // The UI will already look correct thanks to assign:saved.
-        //window.dispatchEvent(new Event("assets:changed"));
 
         modal.hide();
 
@@ -704,13 +774,24 @@
       }
     });
 
-    // Upload handler (placeholder)
-    const fileInput = document.getElementById("userAgreementUpload");
-    fileInput?.addEventListener("change", function () {
-      const selectedFile = fileInput.files?.[0];
-      if (selectedFile) {
-        // TODO: Upload using Graph; log in audit
+    // ---- UPLOAD AGREEMENT HANDLER ----
+    uploadButton?.addEventListener("click", () => {
+      if (!fileInput) return;
+      fileInput.click();
+    });
+
+    // Also support keyboard activation (Enter/Space) on the label
+    uploadButton?.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        if (!fileInput) return;
+        fileInput.click();
       }
+    });
+
+    fileInput?.addEventListener("change", () => {
+      const selectedFile = fileInput.files?.[0];
+      if (!selectedFile) return;
     });
   });
 })();

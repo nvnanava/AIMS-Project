@@ -46,6 +46,7 @@
     const selectStat = document.querySelector('[name="Status"]');
 
     const archivedToggle = document.querySelector('[data-role="show-archived-toggle"]');
+    const inlineArchivedToggle = document.getElementById("showArchivedToggle");
 
     // Normalize many "truthy" representations used by APIs/DBs
     const asTrue = (v) => {
@@ -63,7 +64,7 @@
 
     // ----- Paging / cache state ---------------------------------------------
     let currentPage = 1;
-    let pageSize = 5;           // keep in sync with default on server
+    let pageSize = 25;           // keep in sync with default on server
     let lastResultMeta = null;  // { total, page, pageSize }
     let lastQuery = null;
 
@@ -322,50 +323,83 @@
         return new Promise(resolve => setTimeout(resolve, wait));
     }
 
+    // Centralized handler so header toggle + FAB popover stay in sync
+    function handleShowArchivedChanged(newVal) {
+        // Ignore any initial notify while booting; we will do our own first fetch.
+        if (_bootArchiveGuard) return;
+
+        const next = !!newVal;
+
+        // This updates both the inline header checkbox and the popover checkbox
+        setArchivedToggleState({ checked: next, disabled: false });
+
+        // Persist the toggle state
+        try {
+            localStorage.setItem(STORAGE_TOGGLE_KEY, next ? "1" : "0");
+        } catch { /* non-fatal */ }
+
+        const q = (lastQuery ?? activeQuery() ?? "").trim();
+        const key = makeCacheKey(q, next);
+        const hit = getEntry(key);
+
+        // Try to reuse cached results for this q+flag; otherwise fetch.
+        if (hit) {
+            cacheKey = key;
+            cacheAllItems = hit.items.slice(0, MAX_CLIENT_CACHE);
+            cacheLoadedPages = new Set(hit.loadedPages || []);
+            pageSize = hit.pageSize || pageSize;
+
+            if (!restoredFiltersApplied) {
+                activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+            }
+
+            applyFiltersAndRender({ page: restoredFiltersApplied ? (currentPage || 1) : 1 });
+            persistFiltersSnapshot();
+            return;
+        }
+
+        // If turning OFF archived and we don't have an active-only cache yet,
+        // derive it from the current items immediately to keep UI snappy.
+        if (!next && cacheAllItems.length) {
+            const derived = cacheAllItems.filter(r => !isArchivedRow(r)).slice(0, MAX_CLIENT_CACHE);
+            const k = makeCacheKey(q, /*archived*/ false);
+            setEntry(k, {
+                items: derived,
+                loadedPages: [],
+                pageSize,
+                ts: Date.now()
+            });
+
+            cacheKey = k;
+            cacheAllItems = derived;
+            cacheLoadedPages = new Set();
+            activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
+            applyFiltersAndRender({ page: 1 });
+            persistFiltersSnapshot();
+            return;
+        }
+
+        // Otherwise fall back to server fetch.
+        fetchInitial(q, 1, pageSize);
+        persistFiltersSnapshot();
+    }
+
     // Initialize global filter icon logic (archive-filter.js from _Layout)
     try {
         AIMSFilterIcon.init("searchFilters", {
             onChange: ({ showArchived: newVal }) => {
-                // Ignore any initial notify while booting; we will do our own first fetch.
-                if (_bootArchiveGuard) return;
-                showArchived = newVal;
-                localStorage.setItem(STORAGE_TOGGLE_KEY, newVal ? "1" : "0");
-                const q = (lastQuery ?? activeQuery() ?? "").trim();
-                // Try to reuse cached results for this q+flag; otherwise fetch.
-                const key = makeCacheKey(q, showArchived);
-                const hit = getEntry(key);
-                if (hit) {
-                    cacheKey = key;
-                    cacheAllItems = hit.items.slice(0, MAX_CLIENT_CACHE);
-                    cacheLoadedPages = new Set(hit.loadedPages || []);
-                    pageSize = hit.pageSize || pageSize;
-                    if (!restoredFiltersApplied) {
-                        activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
-                    }
-                    applyFiltersAndRender({ page: restoredFiltersApplied ? (currentPage || 1) : 1 });
-                    persistFiltersSnapshot();
-                } else {
-                    // If turning OFF archived and we don't have an active-only cache yet,
-                    // derive it from the current items immediately to keep UI snappy.
-                    if (!newVal && cacheAllItems.length) {
-                        const derived = cacheAllItems.filter(r => !isArchivedRow(r)).slice(0, MAX_CLIENT_CACHE);
-                        const k = makeCacheKey(q, /*archived*/ false);
-                        setEntry(k, { items: derived, loadedPages: [], pageSize, ts: Date.now() });
-                        cacheKey = k;
-                        cacheAllItems = derived;
-                        cacheLoadedPages = new Set();
-                        activeFilters = { name: "", type: "", tag: "", assignment: "", status: "" };
-                        applyFiltersAndRender({ page: 1 });
-                        persistFiltersSnapshot();
-                    } else {
-                        fetchInitial(q, 1, pageSize);
-                    }
-                }
-                persistFiltersSnapshot();
+                handleShowArchivedChanged(newVal);
             }
         });
     } catch (e) {
         console.warn("AIMSFilterIcon not initialized:", e);
+    }
+
+    // Wire the inline header toggle ("Show Archived Assets") into the same flow
+    if (inlineArchivedToggle) {
+        inlineArchivedToggle.addEventListener("change", (e) => {
+            handleShowArchivedChanged(e.target.checked);
+        });
     }
 
     // ----- Page safety: ensure nothing overlays the navbar --------------------
@@ -519,9 +553,35 @@
         return raw || "Available";
     };
 
-    // Lightweight notifier (uses AIMS toast if present; falls back to alert)
+    // Lightweight notifier (routes to global error toast if available; falls back gracefully)
+    function showErrorToast(msg) {
+        try {
+            const el = document.getElementById("errorToast");
+            if (!el) {
+                // fall back to any global AIMS/toastr/alert if toast HTML not present
+                notify(msg);
+                return;
+            }
+
+            const body = el.querySelector(".toast-body");
+            if (body) {
+                body.textContent = msg;
+            }
+
+            // Use Bootstrap 5 Toast API
+            const toast = bootstrap.Toast.getOrCreateInstance(el);
+            toast.show();
+        } catch {
+            notify(msg);
+        }
+    }
+
+    // Generic notifier used as a fallback
     const notify = (msg) =>
-        (window.AIMS?.Toast?.show?.(msg) || window.AIMS?.notify?.(msg) || window.toastr?.info?.(msg) || alert(msg));
+    (window.AIMS?.Toast?.show?.(msg)
+        || window.AIMS?.notify?.(msg)
+        || window.toastr?.info?.(msg)
+        || alert(msg));
 
     function setToolbarVisible(visible) {
         if (toolbar) toolbar.hidden = !visible;
@@ -531,10 +591,19 @@
 
     function setArchivedToggleState({ checked = false, disabled = false } = {}) {
         showArchived = !!checked;
+
+        // Popover checkbox inside the filter icon panel
         if (archivedToggle) {
             archivedToggle.checked = !!checked;
             archivedToggle.disabled = !!disabled;
         }
+
+        // Inline header checkbox next to the page title
+        if (inlineArchivedToggle) {
+            inlineArchivedToggle.checked = !!checked;
+            inlineArchivedToggle.disabled = !!disabled;
+        }
+
         // Keep popover closed when disabled
         const pop = document.querySelector('[data-component="filter-icon"][data-id="searchFilters"]');
         if (disabled && pop) {
@@ -870,9 +939,9 @@
             e.preventDefault();
             e.stopPropagation();
 
-            // If disabled, show friendly message and exit
+            // If disabled, show friendly toast and exit
             if (iconBtn.dataset.disabled === "1" || iconBtn.classList.contains("icon-btn--disabled")) {
-                notify("This asset isn’t actionable right now (archived or locked).");
+                showErrorToast("This asset isn’t actionable right now (archived or locked).");
                 return;
             }
 
@@ -1079,7 +1148,7 @@
         btnNext.disabled = !hasNext;
         lblStatus.textContent = `Page ${page} of ${totalPages}`;
 
-        pager.hidden = (total === 0);
+        pager.hidden = (totalPages <= 1);
     }
 
     btnPrev?.addEventListener("click", () => {
@@ -1532,7 +1601,7 @@
             const t = String(r.type || "").trim();
             if (t) typeSet.add(t);
         }
-        facetTypeValues = Array.from(typeSet).sort((a,b)=>a.localeCompare(b));
+        facetTypeValues = Array.from(typeSet).sort((a, b) => a.localeCompare(b));
 
         // Status facet (do not apply existing Status filter while enumerating)
         const statusSet = new Set();
@@ -1540,7 +1609,7 @@
             const s = String(computeStatus(r) || "").trim();
             if (s) statusSet.add(s);
         }
-        facetStatusValues = Array.from(statusSet).sort((a,b)=>a.localeCompare(b));
+        facetStatusValues = Array.from(statusSet).sort((a, b) => a.localeCompare(b));
     }
 
     function refreshFacetDropdowns() {
@@ -1568,19 +1637,21 @@
 
         // Choose selection
         const desiredLabel = (currentFilterLc || "").trim();
-        let effectiveLabel = "";
+        // Default: if there is no explicit filter, stay on "All ..." even if only one value exists
+        let effectiveLabel = allLabel;
+
+        // If we *do* have an explicit filter and it still exists, keep it
         if (desiredLabel && values.some(v => v.toLowerCase() === desiredLabel)) {
             effectiveLabel = values.find(v => v.toLowerCase() === desiredLabel);
-        } else {
-            // If only one concrete option exists, keep it selected (UX: auto-persist)
-            effectiveLabel = (values.length === 1) ? values[0] : allLabel;
-            if (custom === customType) {
-                // keep activeFilters.type in sync
-                activeFilters.type = (effectiveLabel === allLabel ? "" : effectiveLabel.toLowerCase());
-            } else if (custom === customStatus) {
-                activeFilters.status = (effectiveLabel === allLabel ? "" : effectiveLabel.toLowerCase());
-            }
         }
+
+        // Keep activeFilters in sync with whatever label we picked
+        if (custom === customType) {
+            activeFilters.type = (effectiveLabel === allLabel ? "" : effectiveLabel.toLowerCase());
+        } else if (custom === customStatus) {
+            activeFilters.status = (effectiveLabel === allLabel ? "" : effectiveLabel.toLowerCase());
+        }
+        
         // Set native selected index
         const toSelect = Array.from(nativeSelect.options).findIndex(o =>
             (o.textContent || "").trim().toLowerCase() === (effectiveLabel || allLabel).toLowerCase()
