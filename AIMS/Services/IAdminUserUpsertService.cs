@@ -82,6 +82,7 @@ namespace AIMS.Services
 
             return user;
         }
+
         private static bool IsUniqueViolation(DbUpdateException ex)
         {
             if (ex.InnerException is SqlException sqlEx)

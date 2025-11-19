@@ -13,11 +13,13 @@ public class TestCleanController : ControllerBase
 {
     private readonly IWebHostEnvironment _env;
     private readonly AimsDbContext _db;
+    private readonly ILogger<TestCleanController> _logger;
 
-    public TestCleanController(IWebHostEnvironment env, AimsDbContext db)
+    public TestCleanController(IWebHostEnvironment env, AimsDbContext db, ILogger<TestCleanController> logger)
     {
         _env = env;
         _db = db;
+        _logger = logger;
     }
 
     // Clean out a user added during testing
@@ -29,17 +31,18 @@ public class TestCleanController : ControllerBase
         {
             return Forbid();
         }
-
+        _logger.LogInformation("Beginning user delete");
         var user = await _db.Users.FirstOrDefaultAsync(u => u.GraphObjectID == GraphObjectID);
+
         if (user == null)
         {
             // User not found, which is a successful cleanup for us.
             return NoContent();
         }
-
+        _logger.LogInformation($"{user.FullName}");
         // remove user from AuditLog (otherwise the key constraints will not allow us to delete a user)
         var auditLogMsgs = await _db.AuditLogs.Where(a => a.UserID == user.UserID).ToListAsync();
-
+        _logger.LogInformation($"{auditLogMsgs.Count}");
         foreach (var msg in auditLogMsgs)
         {
             _db.AuditLogs.Remove(msg);
@@ -60,7 +63,7 @@ public class TestCleanController : ControllerBase
             return Forbid();
         }
 
-        var office = await _db.Offices.FirstOrDefaultAsync(o => o.OfficeName == OfficeName);
+        var office = await _db.Offices.Where(o => o.OfficeName == OfficeName).FirstOrDefaultAsync();
         if (office == null)
         {
             // User not found, which is a successful cleanup for us.

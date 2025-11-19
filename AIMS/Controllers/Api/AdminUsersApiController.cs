@@ -81,6 +81,26 @@ public class AdminUsersApiController : ControllerBase
 
 
     }
+
+    [HttpGet("refresh")]
+    public async Task<IActionResult> RefreshUser([FromQuery] string GraphObjectId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(GraphObjectId))
+            return BadRequest("GraphObjectId is required.");
+
+        var saved = await _svc.UpsertAdminUserAsync(GraphObjectId, null, null, null, ct);
+        return Ok(new //returns the saved user details as JSON
+        {
+            saved.UserID,
+            saved.GraphObjectID,
+            OfficeName = saved.Office?.OfficeName ?? "",
+            saved.FullName,
+            saved.Email,
+            saved.RoleID,
+            saved.SupervisorID
+
+        });
+    }
     [HttpPost("edit-local-id")]
     public async Task<IActionResult> EditUserLocalID([FromBody] EditLocalUserRequest req, CancellationToken ct = default)
     {
@@ -138,6 +158,7 @@ public class AdminUsersApiController : ControllerBase
             .Select(u => new
             {
                 userID = u.UserID,
+                graphObjectID = u.GraphObjectID,
                 employeeNumber = u.EmployeeNumber,
                 name = u.FullName,
                 email = u.Email,

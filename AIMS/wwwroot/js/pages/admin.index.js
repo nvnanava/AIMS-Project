@@ -355,6 +355,7 @@
         if (editBtn) {
             editBtn.dataset.id = u.Id != null ? String(u.Id) : "";
             editBtn.dataset.name = u.Name ?? "";
+            editBtn.dataset.graphid = u.graphObjectID ?? "";
             editBtn.dataset.email = u.Email ?? "";
             editBtn.dataset.status = u.Status ?? "Active";
             editBtn.dataset.isArchived = u.IsArchived ? "true" : "false";
@@ -403,6 +404,7 @@
           class="icon-btn js-edit-user"
           title="Edit"
           data-id="${u.userID}"
+          data-graphId="${u.graphObjectID ?? ""}"
           data-name="${u.name ?? ""}"
           data-email="${u.email ?? ""}"
           data-status="${u.isArchived ? "Inactive" : "Active"}"
@@ -651,11 +653,10 @@
         document.getElementById("editUserId").value = btn.dataset.id;
         document.getElementById("editUserIsArchived").value =
             btn.dataset.status === "Inactive" ? "true" : "false";
-
+        document.getElementById("userGraphId").value = btn.dataset.graphid;
         document.getElementById("editUserName").value = btn.dataset.name || "";
         document.getElementById("editUserOffice").value = btn.dataset.office || "";
         document.getElementById("oldOffice").value = btn.dataset.office || ""; 
-        document.getElementById("editUserOffice").value = btn.dataset.office || ""; 
         document.getElementById("editUserEmail").value = btn.dataset.email || "";
 
         const statusSelect = document.getElementById("editUserStatus");
@@ -667,6 +668,33 @@
             ? new Date(btn.dataset.archivedat + "Z").toLocaleDateString()
             : "";
         
+        const userRefreshBtn = document.getElementById("refreshUserBtn");
+        if (userRefreshBtn) {
+            const graphId = document.getElementById("userGraphId").value;
+            userRefreshBtn.addEventListener("click", async () => { 
+                try {
+                    const resp = await fetch(`/api/admin/users/refresh?GraphObjectId=${encodeURIComponent(graphId)}`, {
+                        method: "GET",
+                        headers: { "Content-Type": "application/json" },
+                    });
+                    if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+                    else {
+                        const newValues = await resp.json();
+                        console.log(newValues);
+                        document.getElementById("editUserName").value = newValues.fullName ?? "";
+                        document.getElementById("editUserOffice").value = newValues.officeName ?? "";
+                        document.getElementById("oldOffice").value = newValues.officeName ?? ""; 
+                        document.getElementById("editUserEmail").value = newValues.email ?? "";
+                        const status = document.getElementById("refreshUserStatus");
+                        status.innerHTML = "";
+                    }
+                } catch (e) {
+                    const status = document.getElementById("refreshUserStatus");
+                    status.innerHTML = `<div class="aad-error">Error refreshing user</div>`;
+                    console.error(e);
+                }
+            })
+        }
 
         const editOfficeInput = document.getElementById("editUserOffice");
         if (editOfficeInput) {
