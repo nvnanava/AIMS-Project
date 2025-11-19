@@ -680,7 +680,6 @@
                     if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
                     else {
                         const newValues = await resp.json();
-                        console.log(newValues);
                         document.getElementById("editUserName").value = newValues.fullName ?? "";
                         document.getElementById("editUserOffice").value = newValues.officeName ?? "";
                         document.getElementById("oldOffice").value = newValues.officeName ?? ""; 
