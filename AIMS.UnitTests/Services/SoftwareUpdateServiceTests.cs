@@ -38,7 +38,7 @@ namespace AIMS.UnitTests.Services
         }
 
         [Fact]
-        public async Task ValidateEditAsync_Should_AddError_When_LicenseKeyNotUnique()
+        public async Task ValidateEditAsync_AddError_When_LicenseKeyNotUnique()
         {
             // existing seeded record: ABC-123
             var existing = await _db.SoftwareAssets.FirstAsync();
@@ -67,7 +67,7 @@ namespace AIMS.UnitTests.Services
         }
 
         [Fact]
-        public async Task ValidateEditAsync_Should_AddError_When_SeatsNegative()
+        public async Task ValidateEditAsync_AddError_When_SeatsNegative()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
@@ -87,7 +87,7 @@ namespace AIMS.UnitTests.Services
         }
 
         [Fact]
-        public async Task ValidateEditAsync_Should_AddError_When_UsedExceedsTotal()
+        public async Task ValidateEditAsync_AddError_When_UsedExceedsTotal()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
@@ -106,7 +106,7 @@ namespace AIMS.UnitTests.Services
         }
 
         [Fact]
-        public async Task ValidateEditAsync_Should_Pass_When_DataValid()
+        public async Task ValidateEditAsync_Pass_When_DataValid()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
@@ -124,7 +124,7 @@ namespace AIMS.UnitTests.Services
             Assert.True(modelState.IsValid);
         }
         [Fact]
-        public async Task ValidateEditAsync_Should_Skip_LicenseKeyValidation_When_NullOrEmpty()
+        public async Task ValidateEditAsync_Skip_LicenseKeyValidation_When_NullOrEmpty()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto { SoftwareLicenseKey = "   " };
@@ -133,11 +133,11 @@ namespace AIMS.UnitTests.Services
             var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
 
             Assert.Null(result);
-            Assert.True(modelState.IsValid); // no errors should be added
+            Assert.True(modelState.IsValid);
         }
 
         [Fact]
-        public async Task ValidateEditAsync_Should_Pass_When_UsedEqualsTotal()
+        public async Task ValidateEditAsync_Pass_When_UsedEqualsTotal()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
