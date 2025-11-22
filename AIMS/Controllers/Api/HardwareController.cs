@@ -138,6 +138,9 @@ public class HardwareController : ControllerBase
             .Where(h => h.HardwareID == id)
             .SingleOrDefaultAsync(ct);
 
+        if (hardware == null)
+            return NotFound();
+
         try
         {
             var updated = await _hardwareService.UpdateHardwareAsync(id, dto, ct);

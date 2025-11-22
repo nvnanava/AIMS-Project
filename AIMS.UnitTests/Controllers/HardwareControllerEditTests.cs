@@ -40,7 +40,9 @@ public class HardwareControllerEditTests
         // Force duplicate by adding same tag in dto
         var result = await controller.EditHardware(1, new UpdateHardwareDto { AssetTag = "A", PurchaseDate = DateOnly.FromDateTime(System.DateTime.UtcNow.AddDays(5)) }, CancellationToken.None);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        // Assert BadRequest with ValidationProblemDetails. Returns null because ModelState is not populated in unit test but proves that the validation path was taken.
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.IsType<ValidationProblemDetails>(obj.Value);
     }
 
     [Fact]
