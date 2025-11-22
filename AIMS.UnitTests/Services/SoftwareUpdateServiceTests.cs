@@ -4,7 +4,6 @@ using AIMS.Data;
 using AIMS.Dtos.Software;
 using AIMS.Models;
 using AIMS.Services;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -17,15 +16,14 @@ namespace AIMS.UnitTests.Services
 
         public SoftwareUpdateServiceTests()
         {
-            // Use EF Core's InMemory provider for fast, isolated tests
+            // In-memory database setup using EF Core
             var options = new DbContextOptionsBuilder<AimsDbContext>()
                 .UseInMemoryDatabase($"AimsTestDb_SoftwareUpdateService_{Guid.NewGuid()}")
                 .Options;
 
             _db = new AimsDbContext(options);
             _service = new SoftwareUpdateService(_db);
-
-            // Seed one software record for license key uniqueness testing
+            // Seed with initial data
             _db.SoftwareAssets.Add(new Software
             {
                 SoftwareID = 4499,
@@ -34,40 +32,52 @@ namespace AIMS.UnitTests.Services
                 LicenseTotalSeats = 10,
                 LicenseSeatsUsed = 2
             });
+
             _db.SaveChanges();
         }
 
+        // duplicate license key validation
         [Fact]
-        public async Task ValidateEditAsync_AddError_When_LicenseKeyNotUnique()
+        public async Task ValidateEditAsync_Throws_When_LicenseKeyNotUnique()
         {
-            // existing seeded record: ABC-123
             var existing = await _db.SoftwareAssets.FirstAsync();
 
-            // add a duplicate with same license key but different ID
             _db.SoftwareAssets.Add(new Software
             {
                 SoftwareName = "DuplicateApp",
-                SoftwareLicenseKey = "ABC-123",
-                LicenseTotalSeats = 5,
-                LicenseSeatsUsed = 1
+                SoftwareLicenseKey = "ABC-123"
             });
             await _db.SaveChangesAsync();
 
-            var dto = new UpdateSoftwareDto
-            {
-                SoftwareLicenseKey = "ABC-123"
-            };
+            var dto = new UpdateSoftwareDto { SoftwareLicenseKey = "ABC-123" };
 
-            var modelState = new ModelStateDictionary();
-            var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
-
-            Assert.NotNull(result);
-            Assert.False(modelState.IsValid);
-            Assert.True(modelState.ContainsKey(nameof(dto.SoftwareLicenseKey)));
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default)
+            );
         }
 
+        // null or whitespace name skips validation
         [Fact]
-        public async Task ValidateEditAsync_AddError_When_SeatsNegative()
+        public async Task ValidateEditAsync_Throws_When_NameNotUnique()
+        {
+            var existing = await _db.SoftwareAssets.FirstAsync();
+
+            _db.SoftwareAssets.Add(new Software
+            {
+                SoftwareName = "Adobe Acrobat" // duplicate name
+            });
+            await _db.SaveChangesAsync();
+
+            var dto = new UpdateSoftwareDto { SoftwareName = "Adobe Acrobat" };
+
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default)
+            );
+        }
+
+        //negative seats
+        [Fact]
+        public async Task ValidateEditAsync_Throws_When_SeatsNegative()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
@@ -76,18 +86,14 @@ namespace AIMS.UnitTests.Services
                 LicenseSeatsUsed = -1
             };
 
-            var modelState = new ModelStateDictionary();
-
-            var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
-
-            Assert.NotNull(result);
-            Assert.False(modelState.IsValid);
-            Assert.Contains(nameof(dto.LicenseTotalSeats), modelState.Keys);
-            Assert.Contains(nameof(dto.LicenseSeatsUsed), modelState.Keys);
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default)
+            );
         }
 
+        // Used > Total
         [Fact]
-        public async Task ValidateEditAsync_AddError_When_UsedExceedsTotal()
+        public async Task ValidateEditAsync_Throws_When_UsedExceedsTotal()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
@@ -96,19 +102,17 @@ namespace AIMS.UnitTests.Services
                 LicenseSeatsUsed = 10
             };
 
-            var modelState = new ModelStateDictionary();
-
-            var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
-
-            Assert.NotNull(result);
-            Assert.False(modelState.IsValid);
-            Assert.True(modelState.ContainsKey(nameof(dto.LicenseSeatsUsed)));
+            await Assert.ThrowsAsync<Exception>(() =>
+                _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default)
+            );
         }
 
+        // Valid DTO → PASS
         [Fact]
-        public async Task ValidateEditAsync_Pass_When_DataValid()
+        public async Task ValidateEditAsync_Passes_When_Valid()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
+
             var dto = new UpdateSoftwareDto
             {
                 SoftwareLicenseKey = "UNIQUE-999",
@@ -116,28 +120,22 @@ namespace AIMS.UnitTests.Services
                 LicenseSeatsUsed = 3
             };
 
-            var modelState = new ModelStateDictionary();
-
-            var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
-
-            Assert.Null(result);
-            Assert.True(modelState.IsValid);
+            await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default);
         }
+
+        // Skip License Key Validation
         [Fact]
-        public async Task ValidateEditAsync_Skip_LicenseKeyValidation_When_NullOrEmpty()
+        public async Task ValidateEditAsync_Passes_When_LicenseKeyBlank()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto { SoftwareLicenseKey = "   " };
 
-            var modelState = new ModelStateDictionary();
-            var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
-
-            Assert.Null(result);
-            Assert.True(modelState.IsValid);
+            await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default);
         }
 
+        // Used == Total → allowed
         [Fact]
-        public async Task ValidateEditAsync_Pass_When_UsedEqualsTotal()
+        public async Task ValidateEditAsync_Passes_When_UsedEqualsTotal()
         {
             var existing = await _db.SoftwareAssets.FirstAsync();
             var dto = new UpdateSoftwareDto
@@ -146,11 +144,7 @@ namespace AIMS.UnitTests.Services
                 LicenseSeatsUsed = 5
             };
 
-            var modelState = new ModelStateDictionary();
-            var result = await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, modelState, default);
-
-            Assert.Null(result);
-            Assert.True(modelState.IsValid);
+            await _service.ValidateEditAsync(existing, dto, existing.SoftwareID, default);
         }
     }
 }

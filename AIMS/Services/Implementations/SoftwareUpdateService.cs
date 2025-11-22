@@ -19,43 +19,47 @@ public class SoftwareUpdateService
         _db = db;
     }
 
-    public async Task<IActionResult> ValidateEditAsync(
-        Software software,
+    public async Task ValidateEditAsync(
+         Software software,
         UpdateSoftwareDto dto,
         int id,
-        ModelStateDictionary modelState,
         CancellationToken ct)
     {
-        if (dto.SoftwareLicenseKey is not null)
+        // duplicate name
+        if (!string.IsNullOrWhiteSpace(dto.SoftwareName))
         {
-            var (isValidKey, error) = await ValidateLicenseKeyAsync(dto, id, ct);
-            if (!isValidKey)
-                modelState.AddModelError(nameof(dto.SoftwareLicenseKey), error!);
+            bool nameExists = await _db.SoftwareAssets
+                .AnyAsync(x => x.SoftwareName == dto.SoftwareName &&
+                               x.SoftwareID != id, ct);
+
+            if (nameExists)
+                throw new Exception("A software asset with this name already exists.");
         }
 
-        ValidateNonNegatives(dto, modelState);
-
-        //cross-field validation for seat counts
-        var effectiveTotal = dto.LicenseTotalSeats ?? software.LicenseTotalSeats;
-        var effectiveUsed = dto.LicenseSeatsUsed ?? software.LicenseSeatsUsed;
-        if (effectiveUsed > effectiveTotal)
+        // duplicate license key
+        if (!string.IsNullOrWhiteSpace(dto.SoftwareLicenseKey))
         {
-            modelState.AddModelError(nameof(dto.LicenseSeatsUsed), "Used seats cannot exceed total seats.");
+            bool keyExists = await _db.SoftwareAssets
+                .AnyAsync(x => x.SoftwareLicenseKey == dto.SoftwareLicenseKey &&
+                               x.SoftwareID != id, ct);
+
+            if (keyExists)
+                throw new Exception("A software asset with this license key already exists.");
         }
 
-        if (!modelState.IsValid)
-        {
-            return new BadRequestObjectResult(new ValidationProblemDetails(modelState));
-        }
-        return null;
-    }
+        // negative seats
+        if (dto.LicenseTotalSeats < 0)
+            throw new Exception("Total seats cannot be negative.");
 
-    private static void ValidateNonNegatives(UpdateSoftwareDto dto, ModelStateDictionary modelState)
-    {
-        if (dto.LicenseTotalSeats.HasValue && dto.LicenseTotalSeats < 0)
-            modelState.AddModelError(nameof(dto.LicenseTotalSeats), "Total seats cannot be negative.");
-        if (dto.LicenseSeatsUsed.HasValue && dto.LicenseSeatsUsed < 0)
-            modelState.AddModelError(nameof(dto.LicenseSeatsUsed), "Used seats cannot be negative.");
+        if (dto.LicenseSeatsUsed < 0)
+            throw new Exception("Seats used cannot be negative.");
+
+        // exceeding seats
+        var total = dto.LicenseTotalSeats ?? software.LicenseTotalSeats;
+        var used = dto.LicenseSeatsUsed ?? software.LicenseSeatsUsed;
+
+        if (used > total)
+            throw new Exception("Used seats cannot exceed total seats.");
     }
 
     public static void ApplyEdit(UpdateSoftwareDto dto, Software software)
@@ -69,22 +73,5 @@ public class SoftwareUpdateService
         if (dto.LicenseTotalSeats is not null) software.LicenseTotalSeats = dto.LicenseTotalSeats.Value;
         if (dto.LicenseSeatsUsed is not null) software.LicenseSeatsUsed = dto.LicenseSeatsUsed.Value;
         if (dto.Comment is not null) software.Comment = dto.Comment;
-    }
-
-    private async Task<(bool IsValid, string? Error)> ValidateLicenseKeyAsync(UpdateSoftwareDto dto, int id, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(dto.SoftwareLicenseKey))
-            return (true, null); // nothing to validate
-
-        var keyExists = await _db.SoftwareAssets
-            .AsNoTracking()
-            .AnyAsync(s =>
-                s.SoftwareLicenseKey == dto.SoftwareLicenseKey &&
-                s.SoftwareID != id, ct);
-
-        if (keyExists)
-            return (false, "This license key is already in use by another software record.");
-
-        return (true, null);
     }
 }

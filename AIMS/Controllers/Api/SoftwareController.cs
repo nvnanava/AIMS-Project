@@ -100,23 +100,24 @@ public class SoftwareController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var software = await _db.SoftwareAssets
-            .Where(s => s.SoftwareID == id)
-            .SingleOrDefaultAsync(ct);
-
+        var software = await _db.SoftwareAssets.FindAsync([id], ct);
         if (software == null)
             return NotFound();
 
-        var validation = await _softwareUpdateService.ValidateEditAsync(software, dto, id, ModelState, ct);
-        if (validation != null)
-            return validation;
+        try
+        {
+            await _softwareUpdateService.ValidateEditAsync(software, dto, id, ct);
 
-        SoftwareUpdateService.ApplyEdit(dto, software);
+            SoftwareUpdateService.ApplyEdit(dto, software);
+            await _db.SaveChangesAsync(ct);
+            CacheStamp.BumpAssets();
 
-        await _db.SaveChangesAsync(ct);
-        CacheStamp.BumpAssets();
-
-        return Ok(software);
+            return Ok(software);
+        }
+        catch (Exception ex)
+        {
+            return ValidationProblem(ex.Message);
+        }
     }
 
     // add bulk software licenses 
