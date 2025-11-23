@@ -44,7 +44,7 @@ public class GraphUserService : IGraphUserService
         {
             return await _graphClient.Users[graphObjectId].GetAsync(cfg =>
             {
-                cfg.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName" }; //this can be extended as needed
+                cfg.QueryParameters.Select = new[] { "id", "displayName", "mail", "userPrincipalName", "officeLocation" }; //this can be extended as needed
             }, ct);
         }
         catch (Microsoft.Graph.Models.ODataErrors.ODataError ex) when (ex.Error?.Code == "Request_ResourceNotFound")
