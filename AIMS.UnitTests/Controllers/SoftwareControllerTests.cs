@@ -51,8 +51,12 @@ public class SoftwareControllerTests
 
         var result = await _controller.EditSoftware(software.SoftwareID, dto);
 
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.NotNull(badRequest.Value);
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.IsType<ValidationProblemDetails>(obj.Value);
+
+        // ValidationProblem() sets no StatusCode
+        Assert.Null(obj.StatusCode);
+
     }
 
     [Fact]

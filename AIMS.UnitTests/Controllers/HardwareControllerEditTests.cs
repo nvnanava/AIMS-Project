@@ -2,11 +2,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Services;
+using AIMS.Utilities;
 using AIMS.Dtos.Hardware;
 using AIMS.Controllers.Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+
 
 namespace AIMS.UnitTests.Controllers;
 
@@ -60,5 +62,40 @@ public class HardwareControllerEditTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var updated = Assert.IsAssignableFrom<AIMS.Models.Hardware>(ok.Value);
         Assert.Equal("Updated", updated.AssetName);
+    }
+
+    [Fact]
+    public async Task EditHardware_Changes_ShouldTriggerCacheStamp()
+    {
+        using var db = NewDb();
+
+        db.HardwareAssets.Add(new AIMS.Models.Hardware
+        {
+            HardwareID = 10,
+            AssetTag = "X10",
+            SerialNumber = "S10",
+            PurchaseDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3)),
+            AssetName = "Before"
+        });
+        await db.SaveChangesAsync();
+
+        long beforeStamp = CacheStamp.AssetsVersion;
+
+        var controller = new HardwareController(
+            db,
+            new AIMS.Queries.HardwareQuery(db),
+            new HardwareAssetService(db)
+        );
+
+        await controller.EditHardware(
+            10,
+            new UpdateHardwareDto { AssetName = "After" },
+            CancellationToken.None
+        );
+
+        long afterStamp = CacheStamp.AssetsVersion;
+
+        Assert.True(afterStamp > beforeStamp);
     }
 }
