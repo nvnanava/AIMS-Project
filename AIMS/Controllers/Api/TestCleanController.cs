@@ -14,12 +14,15 @@ public class TestCleanController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly AimsDbContext _db;
     private readonly ILogger<TestCleanController> _logger;
+    private readonly bool isAllowed;
 
     public TestCleanController(IWebHostEnvironment env, AimsDbContext db, ILogger<TestCleanController> logger)
     {
         _env = env;
         _db = db;
         _logger = logger;
+
+        isAllowed = _env.IsDevelopment() || _env.IsEnvironment("Playwright");
     }
 
     // Clean out a user added during testing
@@ -27,7 +30,7 @@ public class TestCleanController : ControllerBase
     public async Task<IActionResult> DeleteUser([FromQuery] string GraphObjectID)
     {
         // if not in the development environment, forbid this api route
-        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright"))
+        if (!isAllowed)
         {
             return Forbid();
         }
@@ -58,7 +61,7 @@ public class TestCleanController : ControllerBase
     public async Task<IActionResult> DeleteOffice([FromQuery] string OfficeName)
     {
         // if not in the development environment, forbid this api route
-        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright"))
+        if (!isAllowed)
         {
             return Forbid();
         }
@@ -74,5 +77,23 @@ public class TestCleanController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok($"Deleted test office {office.OfficeID} ({office.OfficeName})");
+    }
+    [HttpDelete("reports")]
+    public async Task<IActionResult> DeleteTestReports()
+    {
+        if (!isAllowed)
+        {
+            return Forbid();
+        }
+
+        var reports = await _db.Reports.Where(r => r.Name.Contains("e2e-test")).ToListAsync();
+
+        foreach (var report in reports)
+        {
+            _db.Reports.Remove(report);
+        }
+        await _db.SaveChangesAsync();
+
+        return Ok();
     }
 }

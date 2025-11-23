@@ -9,11 +9,13 @@ namespace AIMS.Controllers.Api;
 [Route("api/debug")]
 public class DebugController : ControllerBase
 {
+    private readonly IWebHostEnvironment _env;
     private readonly AimsDbContext _context;
 
-    public DebugController(AimsDbContext context)
+    public DebugController(AimsDbContext context, IWebHostEnvironment env)
     {
         _context = context;
+        _env = env;
     }
 
     // Get a List of Offices in the local DB
@@ -31,19 +33,16 @@ public class DebugController : ControllerBase
     [HttpPost("seed-offices")]
     public async Task<IActionResult> SeedOffices()
     {
-        if (await _context.Offices.AnyAsync())
-            return Ok("Offices already exist — no action taken.");
-
-        var offices = new[]
+        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright"))
         {
-                new Office { OfficeName = "Houston", Location = "Houston, TX" },
-                new Office { OfficeName = "San Ramon", Location = "San Ramon, CA" },
-                new Office { OfficeName = "Remote", Location = "Remote" }
-            };
+            return Forbid();
+        }
 
-        _context.Offices.AddRange(offices);
+        Office office = new Office { OfficeName = "Test Office", Location = "Test Office" };
+
+        _context.Offices.AddRange(office);
         await _context.SaveChangesAsync();
 
-        return Ok("Seeded 3 offices successfully.");
+        return Ok("Seeded a test office successfully.");
     }
 }
