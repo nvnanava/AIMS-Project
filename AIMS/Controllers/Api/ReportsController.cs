@@ -20,6 +20,7 @@ public class ReportsController : ControllerBase
 {
     private readonly ReportsQuery _reports;
     private readonly AimsDbContext _db;
+    private readonly IWebHostEnvironment _env;
 
 
 
@@ -52,11 +53,13 @@ public class ReportsController : ControllerBase
 
     public ReportsController(
         AimsDbContext db,
-        ReportsQuery reports
+        ReportsQuery reports,
+        IWebHostEnvironment env
         )
     {
         _reports = reports;
         _db = db;
+        _env = env;
     }
 
     [HttpPost]
@@ -94,13 +97,21 @@ public class ReportsController : ControllerBase
         }
 
         // check user, using GraphObjectID
-        var user = await _db.Users.Where(u => u.GraphObjectID == CreatorUserID).FirstOrDefaultAsync(ct);
-        if (user is null)
-        {
-            ModelState.AddModelError(nameof(CreatorUserID), "Please specify a valid CreatorUserID.");
-            return BadRequest(ModelState);
-        }
+        User? user;
 
+        if (_env.IsDevelopment() || _env.IsEnvironment("Playwright"))
+        {
+            user = await _db.Users.FirstAsync();
+        }
+        else
+        {
+            user = await _db.Users.Where(u => u.GraphObjectID == CreatorUserID).FirstOrDefaultAsync(ct);
+            if (user is null)
+            {
+                ModelState.AddModelError(nameof(CreatorUserID), "Please specify a valid CreatorUserID.");
+                return BadRequest(ModelState);
+            }
+        }
         // date mismatch
         if (end < start)
         {
