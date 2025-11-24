@@ -763,7 +763,7 @@
                     btn?.removeAttribute("disabled"); // Re-enable button on error
                     throw new Error(msg || "Failed to save user.");
                 }
-                refreshUserTable();
+                // refreshUserTable();
             } else {
                 // other edits were made
             }
