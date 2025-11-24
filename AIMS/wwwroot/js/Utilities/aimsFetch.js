@@ -67,27 +67,33 @@ async function aimsFetch(url, options = {}) {
             }
             // ----- Handle HTTP Errors -----
             if (!response.ok) {
-                const errorObj = { status: response.status, isValidation: false };
+                const errorObj = {
+                    status: response.status,
+                    isValidation: false,
+                    data: null
+                };
 
-                // Read body ONCE
-                const rawText = await response.text();
-                const contentType = (response.headers.get("content-type") || "").toLowerCase();
+                // Read the body ONCE as text
+                let text = "";
+                try {
+                    text = await response.text();
+                } catch {
+                    text = "";
+                }
 
-                if (contentType.includes("application/json")) {
+                // Try to parse JSON from the text (if any)
+                if (text) {
                     try {
-                        const json = JSON.parse(rawText);
+                        const json = JSON.parse(text);
                         errorObj.data = json;
 
                         if (response.status >= 400 && response.status < 500) {
                             errorObj.isValidation = true;
                         }
                     } catch {
-                        // JSON advertised but invalid
-                        errorObj.data = { message: rawText || "Invalid JSON error payload." };
+                        // Not JSON, keep raw text
+                        errorObj.data = { message: text };
                     }
-                } else {
-                    // Non-JSON (e.g. HTML dev exception page)
-                    errorObj.data = { message: rawText };
                 }
 
                 throw errorObj;

@@ -45,6 +45,7 @@ namespace AIMS.Services
                     Email = g.Mail ?? g.UserPrincipalName ?? "",
                     EmployeeNumber = Guid.NewGuid().ToString("N")[..8],
                     //IsActive = true,
+                    //IsActive = true,
                     IsArchived = false
                 };
 

@@ -4,6 +4,7 @@ using AIMS.Dtos.Common;
 using AIMS.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace AIMS.Controllers.Api;
 
@@ -21,7 +22,6 @@ public sealed class SearchApiController : ControllerBase
         _env = env;
     }
 
-    // GET /api/assets/search?q=&type=&status=&page=&pageSize=&impersonate=...
     [HttpGet("/api/assets/search")]
     public async Task<ActionResult<PagedResult<AssetRowDto>>> Get(
         [FromQuery] string? q,
@@ -29,43 +29,58 @@ public sealed class SearchApiController : ControllerBase
         [FromQuery] string? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25,
-        [FromQuery] string? impersonate = null,
-        [FromQuery] bool showArchived = false)
+        [FromQuery] bool showArchived = false,
+        [FromQuery] string? impersonateRole = null) // <-- NEW (test-only)
     {
-        // DEV impersonation support
-        if (!string.IsNullOrWhiteSpace(impersonate) && _env.IsDevelopment())
-        {
-            var key = impersonate.Trim();
-            var impUser = await _db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.EmployeeNumber == key || u.Email == key);
+        var ct = HttpContext.RequestAborted;
 
-            if (impUser is not null)
-            {
-                HttpContext.Items["ImpersonatedUserId"] = impUser.UserID;
-                HttpContext.Items["ImpersonatedEmail"] = impUser.Email;
-            }
+        // -----------------------------------------------------
+        // 1) Resolve actual user
+        // -----------------------------------------------------
+        var (_, roleName) = await _search.ResolveCurrentUserAsync(ct);
+
+        // -----------------------------------------------------
+        // 2) Test-only role override for branch coverage
+        // -----------------------------------------------------
+        if (!string.IsNullOrWhiteSpace(impersonateRole) && _env.IsEnvironment("Test"))
+        {
+            roleName = impersonateRole.Trim();
         }
 
-        // If ALL filters are blank: only allow auto-load for Supervisors
-        var isBlank = string.IsNullOrWhiteSpace(q)
-                      && string.IsNullOrWhiteSpace(type)
-                      && string.IsNullOrWhiteSpace(status);
+        var isSupervisor =
+            string.Equals(roleName, "Supervisor", StringComparison.OrdinalIgnoreCase);
 
-        if (isBlank)
+        // -----------------------------------------------------
+        // 3) Blank-search early return unless Supervisor
+        // -----------------------------------------------------
+        if (IsBlankSearch(q, type, status) && !isSupervisor)
         {
-            var (_, roleName) = await _search.ResolveCurrentUserAsync(HttpContext.RequestAborted);
-            if (!string.Equals(roleName, "Supervisor", StringComparison.OrdinalIgnoreCase))
-                return Ok(PagedResult<AssetRowDto>.Empty());
+            return Ok(PagedResult<AssetRowDto>.Empty());
         }
 
+        // -----------------------------------------------------
+        // 4) Run the real search
+        // -----------------------------------------------------
         var result = await _search.SearchAsync(
-            q: q, type: type, status: status,
-            page: page, pageSize: pageSize,
-            ct: HttpContext.RequestAborted,
+            q: q,
+            type: type,
+            status: status,
+            page: page,
+            pageSize: pageSize,
+            ct: ct,
             category: null,
             showArchived: showArchived,
-            totalsMode: PagingTotals.Exact);       // <— SEARCH = EXACT TOTALS
+            totalsMode: PagingTotals.Exact);
 
         return Ok(result);
+    }
+
+    // ----------------- Helpers -----------------
+
+    private static bool IsBlankSearch(string? q, string? type, string? status)
+    {
+        return string.IsNullOrWhiteSpace(q)
+               && string.IsNullOrWhiteSpace(type)
+               && string.IsNullOrWhiteSpace(status);
     }
 }

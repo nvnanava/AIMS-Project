@@ -47,6 +47,8 @@ builder.Services.AddScoped<ISummaryCardService, SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
 builder.Services.AddScoped<SoftwareSeatService>();
 builder.Services.AddScoped<OfficeQuery>();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddScoped<OfficeQuery>();
 builder.Services.AddScoped<SoftwareUpdateService>();
 builder.Services.AddScoped<HardwareAssetService>();
 
@@ -599,31 +601,6 @@ else
     app.UseHttpsRedirection();
 }
 
-// Dev impersonation helper (?impersonate=empIdOrEmail)
-if (app.Environment.IsDevelopment())
-{
-    app.Use(async (ctx, next) =>
-    {
-        var imp = ctx.Request.Query["impersonate"].ToString();
-        if (!string.IsNullOrWhiteSpace(imp))
-        {
-            using var scope = ctx.RequestServices.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AimsDbContext>();
-
-            var user = await db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.EmployeeNumber == imp || u.Email == imp);
-
-            if (user != null)
-            {
-                ctx.Items["ImpersonatedUserId"] = user.UserID;
-                ctx.Items["ImpersonatedEmail"] = user.Email;
-            }
-        }
-        await next();
-    });
-}
-
-
 // Order matters
 app.UseRouting();
 
@@ -642,9 +619,9 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/e2e/bearer-login", async (
+app.MapGet("/e2e/bearer-login", async(
     HttpContext http,
-    [FromServices] IOptionsMonitor<JwtBearerOptions> jwtOpts,
+    [FromServices] IOptionsMonitor < JwtBearerOptions > jwtOpts,
     [FromServices] IConfiguration cfg,
     string token) =>
 {

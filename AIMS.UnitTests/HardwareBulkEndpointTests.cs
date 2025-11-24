@@ -3,10 +3,10 @@ using AIMS.Data;
 using AIMS.Dtos.Hardware;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Services;
 
 namespace AIMS.UnitTests
 {

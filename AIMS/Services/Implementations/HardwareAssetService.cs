@@ -1,10 +1,10 @@
+using AIMS.Data;
+using AIMS.Dtos.Hardware;
+using AIMS.Models;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Data;
-using AIMS.Models;
-using AIMS.Dtos.Hardware;
-using AIMS.Utilities;
 using Microsoft.Graph.Models;
 
 public class HardwareAssetService : IHardwareAssetService

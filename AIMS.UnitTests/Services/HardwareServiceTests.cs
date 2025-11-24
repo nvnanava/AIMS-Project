@@ -2,12 +2,13 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using AIMS.Data;
+using AIMS.Dtos.Hardware;
 using AIMS.Models;
 using AIMS.Services;
-using AIMS.Dtos.Hardware;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
+
 namespace AIMS.UnitTests.Services
 {
     public class HardwareServiceTests
@@ -19,6 +20,7 @@ namespace AIMS.UnitTests.Services
                 .Options;
             return new AimsDbContext(opt);
         }
+
         //reject when list is null or empty
         [Fact]
         public async Task NullOrEmptyDto_ReturnsBadRequest()
@@ -29,7 +31,6 @@ namespace AIMS.UnitTests.Services
             var output = await Assert.ThrowsAsync<ArgumentException>(() => svc.AddHardwareBulkAsync(req, CancellationToken.None));
             Console.WriteLine(output.Message);
         }
-
 
         [Fact]
         public async Task ValidateEditAsync_DuplicateTag_ReturnsBadRequest()
@@ -56,6 +57,8 @@ namespace AIMS.UnitTests.Services
 
             var svc = new HardwareAssetService(db);
             var target = await db.HardwareAssets.FindAsync(2);
+            Assert.NotNull(target);
+
             var dto = new UpdateHardwareDto { AssetTag = "TAG1" };
 
             var errors = await svc.ValidateEditAsync(target!, dto, 2, CancellationToken.None);
@@ -85,13 +88,17 @@ namespace AIMS.UnitTests.Services
                 WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(6))
             });
             await db.SaveChangesAsync();
+
             var svc = new HardwareAssetService(db);
             var hw = await db.HardwareAssets.FindAsync(2);
+            Assert.NotNull(hw);
+
             var dto = new UpdateHardwareDto
             {
                 SerialNumber = "SN-DUP" // create duplicate
             };
-            var errors = await svc.ValidateEditAsync(hw, dto, 2, CancellationToken.None);
+            var errors = await svc.ValidateEditAsync(hw!, dto, 2, CancellationToken.None);
+
             Assert.NotEmpty(errors);
             Assert.Contains("A hardware asset with this serial number already exists.", errors);
         }
@@ -112,6 +119,7 @@ namespace AIMS.UnitTests.Services
 
             var svc = new HardwareAssetService(db);
             var hw = await db.HardwareAssets.FindAsync(5);
+            Assert.NotNull(hw);
 
             var dto = new UpdateHardwareDto
             {
@@ -142,6 +150,7 @@ namespace AIMS.UnitTests.Services
 
             var svc = new HardwareAssetService(db);
             var hw = await db.HardwareAssets.FindAsync(7);
+            Assert.NotNull(hw);
 
             // Warranty expiration BEFORE purchase date → invalid
             var dto = new UpdateHardwareDto
@@ -169,8 +178,11 @@ namespace AIMS.UnitTests.Services
                 WarrantyExpiration = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(5))
             });
             await db.SaveChangesAsync();
+
             var svc = new HardwareAssetService(db);
             var hw = await db.HardwareAssets.FindAsync(9);
+            Assert.NotNull(hw);
+
             var dto = new UpdateHardwareDto
             {
                 AssetName = "NewName"
@@ -413,6 +425,7 @@ namespace AIMS.UnitTests.Services
                 AssetName = "Dell XPS13"
             });
             await db.SaveChangesAsync();
+
             var svc = new HardwareAssetService(db);
             var dto = new CreateHardwareDto
             {
@@ -432,7 +445,6 @@ namespace AIMS.UnitTests.Services
             Assert.StartsWith("Duplicate asset tag: EXISTING-001", ex.Message);
         }
 
-        
         [Fact]
         public async Task ValidateDatabaseDuplicates_ExistingSerialNumber_ThrowsException()
         {
@@ -470,6 +482,7 @@ namespace AIMS.UnitTests.Services
             var ex = await Assert.ThrowsAsync<Exception>(() => svc.AddHardwareBulkAsync(req));
             Assert.StartsWith("Duplicate serial number: SN-EXIST-001", ex.Message);
         }
+
         [Fact]
         public async Task UpdateHardwareAsync_ValidEdit_UpdatesAndSaves()
         {
@@ -496,6 +509,7 @@ namespace AIMS.UnitTests.Services
             var fromDb = await db.HardwareAssets.FindAsync(10);
             Assert.Equal("NewName", fromDb!.AssetName);
         }
+
         [Fact]
         public async Task UpdateHardwareAsync_InvalidEdit_ThrowsException()
         {
@@ -525,6 +539,7 @@ namespace AIMS.UnitTests.Services
             // check that it contains an error for the relevant incorrect input. in this case, the purchase date is moved to an unacceptable future date.
             Assert.Contains("Purchase date cannot be in the future.", ex.Message);
         }
+
         [Fact]
         public async Task UpdateHardwareAsync_HardwareNotFound_ThrowsException()
         {
@@ -542,5 +557,4 @@ namespace AIMS.UnitTests.Services
             Assert.Contains("Hardware not found", ex.Message);
         }
     }
-
 }

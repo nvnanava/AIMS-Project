@@ -141,6 +141,8 @@
                 if (idInput) idInput.value = u.id || ""; // set AAD object id
                 // automatically populate the AAD office name
                 if (officeInput) officeInput.value = office;
+                // automatically populate the AAD office name
+                if (officeInput) officeInput.value = office;
 
                 //: preflight check
                 if (u.id) checkUserExists(u.id);
@@ -530,6 +532,7 @@
                 const msg = await resp.text().catch(() => "");
                 btn?.removeAttribute("disabled"); // Re-enable button on error
                 throw new Error(msg || "Failed to save user.");
+                throw new Error(msg || "Failed to save user.");
             }
 
             const saved = await resp.json();
@@ -537,10 +540,12 @@
             // Insert the saved row into the table
             insertUserRow({
                 Id: saved.userID ?? saved.userId ?? null,
+                Id: saved.userID ?? saved.userId ?? null,
                 Name: saved.fullName,
                 Email: saved.email,
                 Role: getRoleNameFromId(roleId) || "",
                 Status: status,
+                IsArchived: false,
                 IsArchived: false,
                 SeparationDate: "",
             });
@@ -652,6 +657,20 @@
                 box.innerHTML = "";
             }
         });
+        // ----- Activate search bar userSearch -----
+        const userSearchInput = document.getElementById("userSearch");
+        if (userSearchInput) {
+            // Handle input events for real-time search
+            userSearchInput.addEventListener("input", applyAdminTableFilters);
+
+            // Handle Enter key press
+            userSearchInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    applyAdminTableFilters();
+                }
+            });
+        }
 
         // ----- Keep striping updated -----
         stripeAdminTable();

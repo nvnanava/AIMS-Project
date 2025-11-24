@@ -1,5 +1,6 @@
 using AIMS.Data;
 using AIMS.Dtos.Audit;
+using AIMS.Dtos.Software;
 using AIMS.Models;
 using AIMS.Queries;
 using AIMS.Utilities;
@@ -13,6 +14,7 @@ public class SoftwareSeatService
     // Test-only override for retry count. Null = use default (3).
     public static int? RetryOverride { get; set; }
 #endif
+
     private readonly AimsDbContext _db;
     private readonly AuditLogQuery _audit;
 
@@ -22,11 +24,21 @@ public class SoftwareSeatService
         _audit = audit;
     }
 
-    public async Task AssignSeatAsync(int softwareId, int userId, CancellationToken ct = default)
+    /// <summary>
+    /// Assigns a software seat to a user, enforcing capacity and one-open-assignment-per (software,user).
+    /// Writes an audit record including optional comment and a link hint to the Audit Log.
+    /// Returns a SeatOperationResultDto including the AssignmentID.
+    /// </summary>
+    public async Task<SeatOperationResultDto> AssignSeatAsync(
+        int softwareId,
+        int assignedUserId,
+        int actorUserId,
+        string? comment = null,
+        CancellationToken ct = default)
     {
         // ---- Resolve user (for nice audit text) ----
         var userInfo = await _db.Users.AsNoTracking()
-            .Where(u => u.UserID == userId)
+            .Where(u => u.UserID == assignedUserId)
             .Select(u => new { u.UserID, u.FullName, u.EmployeeNumber })
             .SingleOrDefaultAsync(ct)
             ?? throw new KeyNotFoundException("User not found.");
@@ -37,7 +49,7 @@ public class SoftwareSeatService
 #if DEBUG
         var maxRetries = RetryOverride ?? 3;
 #else
-        const inst maxRetries = 3;
+        const int maxRetries = 3;
 #endif
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
@@ -70,10 +82,22 @@ public class SoftwareSeatService
             var alreadyOpen = await _db.Assignments.AnyAsync(a =>
                     a.AssetKind == AssetKind.Software &&
                     a.SoftwareID == softwareId &&
-                    a.UserID == userId &&
+                    a.UserID == assignedUserId &&
                     a.UnassignedAtUtc == null,
                 ct);
-            if (alreadyOpen) return; // idempotent
+
+            if (alreadyOpen)
+            {
+                // Idempotent: just return current counts, no new AssignmentID
+                return new SeatOperationResultDto
+                {
+                    SoftwareID = sw.SoftwareID,
+                    LicenseTotalSeats = sw.LicenseTotalSeats,
+                    LicenseSeatsUsed = sw.LicenseSeatsUsed,
+                    AssignmentID = null,
+                    Message = "User already has an active seat for this software."
+                };
+            }
 
             // Snapshot counts for audit (Prev/New)
             var usedBefore = sw.LicenseSeatsUsed;
@@ -81,14 +105,16 @@ public class SoftwareSeatService
             var usedAfter = Math.Min(usedBefore + 1, total);
 
             // Open the assignment row
-            _db.Assignments.Add(new Assignment
+            var assignment = new Assignment
             {
-                UserID = userId,
+                UserID = assignedUserId,
                 AssetKind = AssetKind.Software,
                 SoftwareID = softwareId,
                 AssignedAtUtc = DateTime.UtcNow,
                 UnassignedAtUtc = null
-            });
+            };
+
+            _db.Assignments.Add(assignment);
 
             // Increment (clamped; race protected by rowversion + retry)
             sw.LicenseSeatsUsed = usedAfter;
@@ -98,14 +124,15 @@ public class SoftwareSeatService
                 await _db.SaveChangesAsync(ct);
                 CacheStamp.BumpAssets();
 
-                // ---- AUDIT via AuditLogQuery with Prev/New seats ("used/total") ----
+                // ---- AUDIT with Prev/New seats + optional comment + link ----
                 await _audit.CreateAuditRecordAsync(new CreateAuditRecordDto
                 {
-                    UserID = userId,
+                    UserID = actorUserId, // ← actor, NOT assignee
                     Action = "Assign",
-                    Description = $"Assigned seat for {sw.SoftwareName} {sw.SoftwareVersion} to {whoLabel}",
+                    Description = BuildAssignDescription(sw, whoLabel, comment),
                     AssetKind = AssetKind.Software,
                     SoftwareID = sw.SoftwareID,
+                    AssignmentID = assignment.AssignmentID,
                     Changes = new List<CreateAuditLogChangeDto>
                     {
                         new CreateAuditLogChangeDto
@@ -118,7 +145,15 @@ public class SoftwareSeatService
                 }, ct);
                 // --------------------------------------------------------------------
 
-                return; // success
+                // Return result with new AssignmentID so the controller/JS can upload agreement
+                return new SeatOperationResultDto
+                {
+                    SoftwareID = sw.SoftwareID,
+                    LicenseTotalSeats = sw.LicenseTotalSeats,
+                    LicenseSeatsUsed = sw.LicenseSeatsUsed,
+                    AssignmentID = assignment.AssignmentID,
+                    Message = "Seat assigned."
+                };
             }
             catch (DbUpdateConcurrencyException) when (attempt < maxRetries)
             {
@@ -130,11 +165,20 @@ public class SoftwareSeatService
         throw new DbUpdateConcurrencyException("Failed to assign seat after retries.");
     }
 
-    public async Task ReleaseSeatAsync(int softwareId, int userId, CancellationToken ct = default)
+    /// <summary>
+    /// Releases a software seat for a user (if open). Idempotent.
+    /// Writes an audit record including optional comment and a link hint to the Audit Log.
+    /// </summary>
+    public async Task ReleaseSeatAsync(
+        int softwareId,
+        int assignedUserId,
+        int actorUserId,
+        string? comment = null,
+        CancellationToken ct = default)
     {
         // ---- Resolve user (for nice audit text) ----
         var userInfo = await _db.Users.AsNoTracking()
-            .Where(u => u.UserID == userId)
+            .Where(u => u.UserID == assignedUserId)
             .Select(u => new { u.UserID, u.FullName, u.EmployeeNumber })
             .SingleOrDefaultAsync(ct)
             ?? throw new KeyNotFoundException("User not found.");
@@ -145,8 +189,9 @@ public class SoftwareSeatService
 #if DEBUG
         var maxRetries = RetryOverride ?? 3;
 #else
-        const inst maxRetries = 3;
+        const int maxRetries = 3;
 #endif
+
         for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
             ct.ThrowIfCancellationRequested();
@@ -160,9 +205,9 @@ public class SoftwareSeatService
             // Find open assignment
             var open = await _db.Assignments
                 .Where(a => a.AssetKind == AssetKind.Software
-                         && a.SoftwareID == softwareId
-                         && a.UserID == userId
-                         && a.UnassignedAtUtc == null)
+                        && a.SoftwareID == softwareId
+                        && a.UserID == assignedUserId
+                        && a.UnassignedAtUtc == null)
                 .SingleOrDefaultAsync(ct);
 
             if (open is null) return; // idempotent
@@ -182,14 +227,15 @@ public class SoftwareSeatService
                 await _db.SaveChangesAsync(ct);
                 CacheStamp.BumpAssets();
 
-                // ---- AUDIT via AuditLogQuery with Prev/New seats ("used/total") ----
+                // ---- AUDIT with Prev/New seats + optional comment + link ----
                 await _audit.CreateAuditRecordAsync(new CreateAuditRecordDto
                 {
-                    UserID = userId,
+                    UserID = actorUserId, // ← actor, not assignee
                     Action = "Unassign",
-                    Description = $"Released seat for {sw.SoftwareName} {sw.SoftwareVersion} from {whoLabel}",
+                    Description = BuildReleaseDescription(sw, whoLabel, comment),
                     AssetKind = AssetKind.Software,
                     SoftwareID = sw.SoftwareID,
+                    AssignmentID = open.AssignmentID,
                     Changes = new List<CreateAuditLogChangeDto>
                     {
                         new CreateAuditLogChangeDto
@@ -212,6 +258,30 @@ public class SoftwareSeatService
         }
 
         throw new DbUpdateConcurrencyException("Failed to release seat after retries.");
+    }
+
+    // ------------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------------
+
+    private static string BuildAssignDescription(Software sw, string whoLabel, string? comment)
+    {
+        var baseText = $"Assigned seat for {sw.SoftwareName} {sw.SoftwareVersion} to {whoLabel}";
+        var commentPart = string.IsNullOrWhiteSpace(comment)
+            ? string.Empty
+            : $" Comment: {comment.Trim()}";
+
+        return baseText + commentPart;
+    }
+
+    private static string BuildReleaseDescription(Software sw, string whoLabel, string? comment)
+    {
+        var baseText = $"Released seat for {sw.SoftwareName} {sw.SoftwareVersion} from {whoLabel}";
+        var commentPart = string.IsNullOrWhiteSpace(comment)
+            ? string.Empty
+            : $" Comment: {comment.Trim()}";
+
+        return baseText + commentPart;
     }
 }
 

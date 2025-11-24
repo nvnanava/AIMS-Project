@@ -87,6 +87,7 @@ public class ReportsController : ControllerBase
         if (OfficeID is not null)
         {
             // OfficeIDs are pulled from the Local DB on the frontend
+            // OfficeIDs are pulled from the Local DB on the frontend
             var office = await _db.Offices.Where(o => o.OfficeID == OfficeID).FirstOrDefaultAsync(ct);
 
             if (office is null)
@@ -99,17 +100,36 @@ public class ReportsController : ControllerBase
         // check user, using GraphObjectID
         User? user;
 
-        if (_env.IsDevelopment() || _env.IsEnvironment("Playwright"))
+        if (_env.IsEnvironment("Playwright"))
         {
-            user = await _db.Users.FirstAsync();
+            // E2E tests: use a deterministic seeded user, no GraphObjectID dependency
+            user = await _db.Users.FirstAsync(ct);
         }
         else
         {
-            user = await _db.Users.Where(u => u.GraphObjectID == CreatorUserID).FirstOrDefaultAsync(ct);
+            user = null;
+
+            // Try to resolve from CreatorUserID (GraphObjectID from Entra)
+            if (!string.IsNullOrWhiteSpace(CreatorUserID))
+            {
+                user = await _db.Users
+                    .FirstOrDefaultAsync(u => u.GraphObjectID == CreatorUserID, ct);
+            }
+
             if (user is null)
             {
-                ModelState.AddModelError(nameof(CreatorUserID), "Please specify a valid CreatorUserID.");
-                return BadRequest(ModelState);
+                if (_env.IsDevelopment())
+                {
+                    // Dev convenience fallback: still let you generate reports
+                    user = await _db.Users.FirstAsync(ct);
+                }
+                else
+                {
+                    // In Production (or other non-dev envs) this must match
+                    ModelState.AddModelError(nameof(CreatorUserID),
+                        "Please specify a valid CreatorUserID.");
+                    return BadRequest(ModelState);
+                }
             }
         }
         // date mismatch

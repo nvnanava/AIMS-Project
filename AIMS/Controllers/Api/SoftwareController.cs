@@ -19,13 +19,19 @@ public class SoftwareController : ControllerBase
     private readonly AimsDbContext _db;
     private readonly SoftwareQuery _softwareQuery;
     private readonly SoftwareUpdateService _softwareUpdateService;
+    private readonly ICurrentUser _currentUser;
 
     [ActivatorUtilitiesConstructor]
-    public SoftwareController(AimsDbContext db, SoftwareQuery softwareQuery, SoftwareUpdateService softwareUpdateService)
+    public SoftwareController(
+        AimsDbContext db,
+        SoftwareQuery softwareQuery,
+        SoftwareUpdateService softwareUpdateService,
+        ICurrentUser currentUser)
     {
         _db = db;
         _softwareQuery = softwareQuery;
         _softwareUpdateService = softwareUpdateService;
+        _currentUser = currentUser;
     }
 
     [HttpGet("get-all")]
@@ -147,7 +153,6 @@ public class SoftwareController : ControllerBase
         {
             var dto = dtos[i];
             var itemErrors = new List<string>();
-            // validate unique SoftwareLicenseKey
 
             // required fields
             if (string.IsNullOrWhiteSpace(dto.SoftwareName) ||
@@ -194,7 +199,7 @@ public class SoftwareController : ControllerBase
             SoftwareType = (dto.SoftwareType ?? string.Empty).Trim(),
             SoftwareVersion = (dto.SoftwareVersion ?? string.Empty).Trim(),
             SoftwareLicenseKey = dto.SoftwareLicenseKey.Trim(),
-            SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration, // accept as provided
+            SoftwareLicenseExpiration = dto.SoftwareLicenseExpiration,
             SoftwareUsageData = dto.SoftwareUsageData,
             SoftwareCost = dto.SoftwareCost,
             LicenseTotalSeats = dto.LicenseTotalSeats,
@@ -306,41 +311,38 @@ public class SoftwareController : ControllerBase
         [FromServices] SoftwareSeatService svc,
         CancellationToken ct = default)
     {
-        // Expect dto.SoftwareID + dto.UserID
         var exists = await _db.SoftwareAssets.AnyAsync(s => s.SoftwareID == dto.SoftwareID, ct);
         if (!exists) return NotFound();
 
         try
         {
-            await svc.AssignSeatAsync(dto.SoftwareID, dto.UserID, ct);
+            var actorUserId = await _currentUser.GetUserIdAsync(ct);
+            if (actorUserId is null)
+                return Forbid();
 
-            // Return current counts
-            var sw = await _db.SoftwareAssets
-                .Where(s => s.SoftwareID == dto.SoftwareID)
-                .Select(s => new
-                {
-                    s.SoftwareID,
-                    s.LicenseTotalSeats,
-                    s.LicenseSeatsUsed
-                })
-                .SingleAsync(ct);
+            var result = await svc.AssignSeatAsync(
+                dto.SoftwareID,
+                dto.UserID,
+                actorUserId.Value,
+                dto.Comment,
+                ct);
 
             return Created("/api/software/assign", new
             {
-                sw.SoftwareID,
-                sw.LicenseTotalSeats,
-                sw.LicenseSeatsUsed,
-                dto.UserID,
-                message = "Seat assigned."
+                softwareId = result.SoftwareID,
+                licenseTotalSeats = result.LicenseTotalSeats,
+                licenseSeatsUsed = result.LicenseSeatsUsed,
+                userId = dto.UserID,
+                assignmentId = result.AssignmentID,
+                message = result.Message
             });
         }
         catch (SeatCapacityException ex)
         {
-            return Conflict(new { message = ex.Message }); // “No available seats…”
+            return Conflict(new { message = ex.Message });
         }
         catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Assignments_SoftwareID_UserID_UnassignedAtUtc") == true)
         {
-            // unique index on (SoftwareID, UserID, UnassignedAtUtc IS NULL) tripped
             return Conflict(new { message = "User already has an active seat for this software." });
         }
         catch (DbUpdateConcurrencyException)
@@ -359,13 +361,21 @@ public class SoftwareController : ControllerBase
         [FromServices] SoftwareSeatService svc,
         CancellationToken ct = default)
     {
-        // Expect dto.SoftwareID + dto.UserID
         var exists = await _db.SoftwareAssets.AnyAsync(s => s.SoftwareID == dto.SoftwareID, ct);
         if (!exists) return NotFound();
 
         try
         {
-            await svc.ReleaseSeatAsync(dto.SoftwareID, dto.UserID, ct);
+            var actorUserId = await _currentUser.GetUserIdAsync(ct);
+            if (actorUserId is null)
+                return Forbid();
+
+            await svc.ReleaseSeatAsync(
+                dto.SoftwareID,
+                dto.UserID,
+                actorUserId.Value,
+                dto.Comment,
+                ct);
 
             var sw = await _db.SoftwareAssets
                 .Where(s => s.SoftwareID == dto.SoftwareID)

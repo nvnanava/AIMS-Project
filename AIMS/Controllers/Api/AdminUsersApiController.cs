@@ -178,16 +178,16 @@ public class AdminUsersApiController : ControllerBase
     {
         // If searchInactive is true, ONLY search inactive users
         // If searchInactive is false, ONLY search active users
-        var query = searchInactive 
-            ? _db.Users.IgnoreQueryFilters().Where(u => u.IsArchived) 
+        var query = searchInactive
+            ? _db.Users.IgnoreQueryFilters().Where(u => u.IsArchived)
             : _db.Users.Where(u => !u.IsArchived);
 
         // Apply search filter if query is provided
         if (!string.IsNullOrWhiteSpace(q))
         {
             var searchTerm = q.Trim().ToLower();
-            query = query.Where(u => 
-                u.FullName.ToLower().Contains(searchTerm) || 
+            query = query.Where(u =>
+                u.FullName.ToLower().Contains(searchTerm) ||
                 u.Email.ToLower().Contains(searchTerm));
         }
 
@@ -295,4 +295,3 @@ public class AdminUsersApiController : ControllerBase
     }
 
 }
-

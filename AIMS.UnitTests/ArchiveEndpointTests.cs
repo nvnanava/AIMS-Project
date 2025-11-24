@@ -3,9 +3,9 @@ using AIMS.Data;
 using AIMS.Dtos.Assets;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AIMS.Services;
 
 namespace AIMS.UnitTests
 {

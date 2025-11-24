@@ -25,7 +25,8 @@ public class SoftwareQuery
                 SoftwareCost = s.SoftwareCost,
                 LicenseTotalSeats = s.LicenseTotalSeats,
                 LicenseSeatsUsed = s.LicenseSeatsUsed,
-                Comment = s.Comment
+                Comment = s.Comment,
+                IsArchived = s.IsArchived
             })
             .ToListAsync(ct);
     }

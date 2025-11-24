@@ -1,45 +1,46 @@
-using System;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using AIMS.Data;
-using AIMS.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
-public interface ICurrentUser
+namespace AIMS.Services
 {
-    string? GraphObjectId { get; }
-    Task<int?> GetUserIdAsync(CancellationToken ct = default);
-
-}
-
-
-public sealed class CurrentUser : ICurrentUser
-{
-    private readonly IHttpContextAccessor _http;
-    private readonly AimsDbContext _db;
-
-    public CurrentUser(IHttpContextAccessor http, AimsDbContext db)
+    public interface ICurrentUser
     {
-        _http = http;
-        _db = db;
+        string? GraphObjectId { get; }
+
+        Task<int?> GetUserIdAsync(CancellationToken ct = default);
     }
 
-    public string? GraphObjectId =>
-        _http.HttpContext?.User?.FindFirst("oid")?.Value
-        ?? _http.HttpContext?.User?.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
-    // NOTE: no fallback to ClaimTypes.NameIdentifier (that’s the JWT 'sub')
-
-    public async Task<int?> GetUserIdAsync(CancellationToken ct = default)
+    public sealed class CurrentUser : ICurrentUser
     {
-        var goid = GraphObjectId;
-        if (string.IsNullOrWhiteSpace(goid)) return null;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly AimsDbContext _db;
 
-        return await _db.Users
-            .Where(u => u.GraphObjectID == goid && !u.IsArchived)
-            .Select(u => (int?)u.UserID)
-            .SingleOrDefaultAsync(ct);
+        public CurrentUser(IHttpContextAccessor httpContextAccessor, AimsDbContext db)
+        {
+            _httpContextAccessor = httpContextAccessor;
+            _db = db;
+        }
+
+        public string? GraphObjectId =>
+            _httpContextAccessor.HttpContext?
+                .User?
+                .FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")
+                ?.Value;
+
+        public async Task<int?> GetUserIdAsync(CancellationToken ct = default)
+        {
+            var oid = GraphObjectId;
+            if (string.IsNullOrWhiteSpace(oid))
+                return null;
+
+            return await _db.Users
+                .Where(u => u.GraphObjectID == oid)
+                .Select(u => (int?)u.UserID)
+                .FirstOrDefaultAsync(ct);
+        }
     }
 }
