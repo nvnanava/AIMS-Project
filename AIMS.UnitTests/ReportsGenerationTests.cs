@@ -7,6 +7,8 @@ using AIMS.Models;
 using AIMS.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
+using Moq;
 using Xunit.Abstractions;
 
 public class ReportsGenerationTests
@@ -69,7 +71,15 @@ public class ReportsGenerationTests
         db.SaveChanges();
 
         var reportsQuery = new ReportsQuery(db);
-        return new ReportsController(db, reportsQuery);
+
+        // Mock IWebHostEnvironment
+        var mockEnv = new Mock<IWebHostEnvironment>();
+        mockEnv.Setup(e => e.WebRootPath).Returns("wwwroot");
+        mockEnv.Setup(e => e.ContentRootPath).Returns(Directory.GetCurrentDirectory());
+        mockEnv.Setup(e => e.EnvironmentName).Returns("Testing");
+        mockEnv.Setup(e => e.ApplicationName).Returns("TestApp");
+
+        return new ReportsController(db, reportsQuery, mockEnv.Object);
     }
 
     private static async Task<IActionResult> CreateCompat(
