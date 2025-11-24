@@ -122,7 +122,6 @@
             const name = u.displayName || "";
             const email = u.mail || u.userPrincipalName || "";
             const office = u.officeLocation || "";
-            const office = u.officeLocation || "";
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "aad-user-item";
@@ -136,7 +135,6 @@
                 const nameInput = document.getElementById("userName");
                 const emailInput = document.getElementById("userEmail");
                 const idInput = document.getElementById("graphObjectId");
-                const officeInput = document.getElementById("userOffice");
                 const officeInput = document.getElementById("userOffice");
                 if (nameInput) nameInput.value = name;
                 if (emailInput) emailInput.value = email;
@@ -317,11 +315,6 @@
 
         const tdActions = document.createElement("td");
         tdActions.innerHTML = `
-        <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
-            <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
-                <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
-            </svg>
-        </button>`;
         <button class="icon-btn" title="Edit" onclick="AIMS.Admin.openEditUserModal(this)">
             <svg viewBox="0 0 16 16" width="16" height="16" class="pencil-svg" aria-hidden="true">
                 <path d="M12.146.146a.5.5 0 01.708 0l3 3a.5.5 0 010 .708l-9.793 9.793a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168L12.146.146zM11.207 2L3 10.207V13h2.793L14 4.793 11.207 2z"></path>
@@ -508,7 +501,6 @@
         const role = document.getElementById("userRole")?.value;
         const status = document.getElementById("userStatus")?.value || "Active";
         const graphId = document.getElementById("graphObjectId")?.value;
-        const officeName = document.getElementById("userOffice")?.value;
         const officeName = document.getElementById("userOffice")?.value;
 
         if (!graphId) {
@@ -790,7 +782,7 @@
                     btn?.removeAttribute("disabled"); // Re-enable button on error
                     throw new Error(msg || "Failed to save user.");
                 }
-                refreshUserTable();
+              //  refreshUserTable();
             } else {
                 // other edits were made
             }
