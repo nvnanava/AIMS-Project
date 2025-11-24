@@ -28,6 +28,7 @@ public class AdminUsersApiController : ControllerBase
 
     // we use OfficeName here since that is what is held in common between AAD and the local DB
     public record AddAadUserRequest(string GraphObjectId, int? RoleId, int? SupervisorId, string? OfficeName); //defines the request body for adding an AAD user, used in the POST method
+    public record EditLocalUserRequest(int UserID, int? RoleId, int? SupervisorId, string? OfficeName); //defines the request body for adding an AAD user, used in the POST method
 
     [HttpGet("exists")] // Endpoint to check if a user with the given GraphObjectId exists
     public async Task<IActionResult> Exists([FromQuery] string graphObjectId, CancellationToken ct) //checks if a user with the specified GraphObjectId exists in the database
@@ -80,6 +81,71 @@ public class AdminUsersApiController : ControllerBase
 
 
     }
+
+    [HttpGet("refresh")]
+    public async Task<IActionResult> RefreshUser([FromQuery] string GraphObjectId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(GraphObjectId))
+            return BadRequest("GraphObjectId is required.");
+
+        var saved = await _svc.UpsertAdminUserAsync(GraphObjectId, null, null, null, ct);
+        return Ok(new //returns the saved user details as JSON
+        {
+            saved.UserID,
+            saved.GraphObjectID,
+            OfficeName = saved.Office?.OfficeName ?? "",
+            saved.FullName,
+            saved.Email,
+            saved.RoleID,
+            saved.SupervisorID
+
+        });
+    }
+    [HttpPost("edit-local-id")]
+    public async Task<IActionResult> EditUserLocalID([FromBody] EditLocalUserRequest req, CancellationToken ct = default)
+    {
+        var user = await _db.Users.Where(u => u.UserID == req.UserID).FirstOrDefaultAsync(ct);
+
+        if (user is null)
+        {
+            return BadRequest("User Not Found");
+        }
+
+        var newRoleID = req.RoleId;
+        var newSupervisorID = req.SupervisorId;
+        var newOffice = req.OfficeName;
+
+        if (newRoleID is not null)
+        {
+            user.RoleID = (int)newRoleID;
+        }
+
+        if (newSupervisorID is not null)
+        {
+            user.SupervisorID = (int)newSupervisorID;
+        }
+
+        if (!string.IsNullOrEmpty(newOffice))
+        {
+            // check if the database contains an office of the same name
+            var office = await _db.Offices.Where(o => o.OfficeName.ToLower() == newOffice.ToLower()).FirstOrDefaultAsync(ct);
+            // store the OfficeID
+            var OfficeId = office is not null ? office.OfficeID : -1;
+
+            // if a new office is being added
+            if (office is null)
+            {
+                // create the new office and retrieve its ID in the local DB
+                OfficeId = await _officeQuery.AddOffice(newOffice);
+            }
+
+            user.OfficeID = OfficeId;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok();
+    }
     // GET /api/admin/users?includeArchived=true|false
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] bool includeArchived = false, CancellationToken ct = default)
@@ -92,6 +158,7 @@ public class AdminUsersApiController : ControllerBase
             .Select(u => new
             {
                 userID = u.UserID,
+                graphObjectID = u.GraphObjectID,
                 employeeNumber = u.EmployeeNumber,
                 name = u.FullName,
                 email = u.Email,

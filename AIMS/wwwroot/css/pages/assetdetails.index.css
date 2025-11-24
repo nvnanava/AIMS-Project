@@ -237,3 +237,23 @@
   color: #34495e;
   font-size: 0.9rem;
 }
+.manage-asset-col {
+    width: 200px !important;     
+    min-width: 200px !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+}
+
+.manage-asset-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+}
+
+.manage-asset-btn {
+    min-width: 150px;
+    padding: 8px 14px !important;
+    border-radius: 8px;
+    white-space: nowrap;
+}
