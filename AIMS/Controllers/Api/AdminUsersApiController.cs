@@ -171,6 +171,44 @@ public class AdminUsersApiController : ControllerBase
 
         return Ok(rows);
     }
+
+    // GET /api/admin/users/search?q=<search>&searchInactive=true|false
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] string? q = null, [FromQuery] bool searchInactive = false, CancellationToken ct = default)
+    {
+        // If searchInactive is true, ONLY search inactive users
+        // If searchInactive is false, ONLY search active users
+        var query = searchInactive 
+            ? _db.Users.IgnoreQueryFilters().Where(u => u.IsArchived) 
+            : _db.Users.Where(u => !u.IsArchived);
+
+        // Apply search filter if query is provided
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var searchTerm = q.Trim().ToLower();
+            query = query.Where(u => 
+                u.FullName.ToLower().Contains(searchTerm) || 
+                u.Email.ToLower().Contains(searchTerm));
+        }
+
+        var rows = await query
+            .Include(u => u.Office)
+            .OrderBy(u => u.FullName)
+            .Select(u => new
+            {
+                userID = u.UserID,
+                employeeNumber = u.EmployeeNumber,
+                name = u.FullName,
+                email = u.Email,
+                officeId = u.OfficeID,
+                officeName = u.Office != null ? u.Office.OfficeName : null,
+                isArchived = u.IsArchived,
+                archivedAtUtc = u.ArchivedAtUtc
+            })
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
     // POST /api/admin/users/archive/{id}
     [HttpPost("archive/{id:int}")]
     public async Task<IActionResult> Archive(
