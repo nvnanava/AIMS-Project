@@ -3,6 +3,7 @@ using AIMS.Data;
 using AIMS.Dtos.Software;
 using AIMS.Models;
 using AIMS.Queries;
+using AIMS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +27,7 @@ namespace AIMS.UnitTests
             }
 
             var softwareQuery = new SoftwareQuery(db);
-            return new SoftwareController(db, softwareQuery);
+            return new SoftwareController(db, softwareQuery, new SoftwareUpdateService(db));
         }
 
         [Fact]

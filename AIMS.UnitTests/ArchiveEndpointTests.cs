@@ -5,6 +5,7 @@ using AIMS.Models;
 using AIMS.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AIMS.Services;
 
 namespace AIMS.UnitTests
 {
@@ -20,8 +21,8 @@ namespace AIMS.UnitTests
 
         private HardwareController CreateController(AimsDbContext db)
         {
-            // HardwareQuery dependency is not used in archive/unarchive endpoints
-            return new HardwareController(db, hardwareQuery: null!);
+            // Provide both dependencies to match HardwareController constructor
+            return new HardwareController(db, new HardwareQuery(db), new HardwareAssetService(db));
         }
 
         // ------------------------------------------------------
@@ -67,7 +68,7 @@ namespace AIMS.UnitTests
             });
             await db.SaveChangesAsync();
 
-            var controller = new HardwareController(db, new HardwareQuery(db));
+            var controller = CreateController(db);
 
             // Act
             var result = await controller.ArchiveHardware(hardware.HardwareID);
