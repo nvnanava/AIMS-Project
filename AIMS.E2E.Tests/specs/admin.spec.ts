@@ -115,16 +115,13 @@ test.describe('Admin Page - UI is displayed properly', () => {
 
     test.describe('Valid UI Elements', () => {
         test('UI Actions', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
+            
             await expect(adminPage.getByRole('button', { name: 'Add User' })).toBeVisible();
-            await expect(adminPage.getByRole('textbox', { name: 'Search Users...' })).toBeVisible();
-            await expect(adminPage.getByText('All Roles ▾')).toBeVisible();
-            await adminPage.getByText('Show Inactive Users').click();
-            await expect(adminPage.getByText('Show Inactive Users')).toBeVisible();
+            await expect(adminPage.getByRole('textbox', { name: 'Search active users by name' })).toBeVisible();
+            await expect(adminPage.locator('span').filter({ hasText: 'Inactive' })).toBeVisible();
         })
 
         test('Table Cells Visible', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
             await expect(adminPage.getByRole('cell', { name: 'Actions' })).toBeVisible();
             await expect(adminPage.getByRole('cell', { name: 'Name' })).toBeVisible();
             await expect(adminPage.getByRole('cell', { name: 'Email' })).toBeVisible();
@@ -133,17 +130,9 @@ test.describe('Admin Page - UI is displayed properly', () => {
             await expect(adminPage.getByRole('cell', { name: 'Separation Date' })).toBeVisible();
         })
 
-        test('Roles dropdown', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByText('All Roles ▾').click();
-            await expect(adminPage.getByRole('option', { name: 'All Roles' })).toBeVisible();
-            await expect(adminPage.getByRole('option', { name: 'Admin' })).toBeVisible();
-            await expect(adminPage.getByRole('option', { name: 'User' })).toBeVisible();
-        })
     });
 
     test('Open Add User Modal', async ({ adminPage }) => {
-        await adminPage.locator('.slider').click();
         await adminPage.getByRole('button', { name: 'Add User' }).click();
         await expect(adminPage.getByRole('heading', { name: 'Add New User' })).toBeVisible();
         await expect(adminPage.getByRole('textbox', { name: 'Name *' })).toBeVisible();
@@ -154,15 +143,15 @@ test.describe('Admin Page - UI is displayed properly', () => {
         await expect(adminPage.getByLabel('Add New User').getByRole('button', { name: 'Add User' })).toBeVisible();
     })
     test('Search for User', async ({ adminPage }) => {
-        await adminPage.locator('.slider').click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+        await adminPage.waitForTimeout(300);
         await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
     })
     test('Open Edit User Modal', async ({ adminPage }) => {
-        await adminPage.locator('.slider').click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+        await adminPage.waitForTimeout(300);
         await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
         await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
         const nameBox = adminPage.getByRole('textbox', { name: 'Name' });
@@ -189,14 +178,13 @@ test.describe('Add User: Valid, Invalid, Existing', () => {
     test.describe('Add a User: Success', () => {
         // since a user is already added as part of the setup, we just need to verify the result explicitly
         test('Verify User Setup', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
         })
 
         test('New office name displays adding message', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
             await adminPage.getByRole('button', { name: 'Add User' }).click();
             await adminPage.getByRole('textbox', { name: 'Office *' }).click();
             await adminPage.getByRole('textbox', { name: 'Office *' }).fill('NewOffice');
@@ -205,7 +193,6 @@ test.describe('Add User: Valid, Invalid, Existing', () => {
         })
 
         test('Role selection proper options', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
             await adminPage.getByRole('button', { name: 'Add User' }).click();
             await expect(adminPage.getByLabel('Role *')).toBeVisible();
             const options = await adminPage.locator('#userRole option').allInnerTexts();
@@ -270,9 +257,9 @@ test.describe('Edit User: Valid, Invalid', () => {
     test.describe('Sucessful Edits', () => {
         // since we pull user data from Entra ID, only Office, Status, and Separation Edits should work
         test('Change Office', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
             await adminPage.getByRole('textbox', { name: 'Office' }).click();
@@ -285,14 +272,19 @@ test.describe('Edit User: Valid, Invalid', () => {
             await expect(officeBoxValue).toBe('Test Office');
         });
         test('Change Archive Status', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
             await adminPage.getByRole('combobox', { name: 'Archive Status Active (Not' }).click();
             await adminPage.getByRole('option', { name: 'Archived', exact: true }).click();
             await adminPage.getByRole('button', { name: 'Save Changes' }).click();
+
+            await adminPage.locator('.slider').click();
+            await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).click();
+            await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).press('Enter');
 
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
@@ -303,14 +295,19 @@ test.describe('Edit User: Valid, Invalid', () => {
             await adminPage.getByRole('button', { name: 'Save Changes' }).click();
         });
         test('Change Separation Date', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
             await adminPage.getByRole('combobox', { name: 'Archive Status Active (Not' }).click();
             await adminPage.getByRole('option', { name: 'Archived', exact: true }).click();
             await adminPage.getByRole('button', { name: 'Save Changes' }).click();
+
+            await adminPage.locator('.slider').click();
+            await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).click();
+            await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).press('Enter');
 
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
@@ -333,9 +330,9 @@ test.describe('Edit User: Valid, Invalid', () => {
 
     test.describe('Failed Edits', () => {
         test('Separation should not save without archival', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
 
@@ -349,17 +346,21 @@ test.describe('Edit User: Valid, Invalid', () => {
             await expect(separationBoxContents).toBe('');
         })
         test('Name should not update', async ({ adminPage }) => {
-            await adminPage.locator('.slider').click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-            await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
             await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
-            await adminPage.getByRole('textbox', { name: 'Name' }).fill('Best User');
+            await adminPage.getByRole('textbox', { name: 'Name', exact: true }).fill('Best User');
             await adminPage.getByRole('button', { name: 'Save Changes' }).click();
 
             // re-open panel and validate user name
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+            await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+            await adminPage.waitForTimeout(300);
+
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
-            const nameBox = adminPage.getByRole('textbox', { name: 'Name' });
+            const nameBox = adminPage.getByRole('textbox', { name: 'Name', exact: true });
             const nameBoxValue = await nameBox.inputValue();
             await expect(nameBoxValue).toBe('test user');
         })
@@ -378,15 +379,16 @@ test.describe('Search Users', () => {
     });
 
     test('Search: Valid User', async ({ adminPage }) => {
-        await adminPage.locator('.slider').click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('test');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+        await adminPage.waitForTimeout(300);
         await expect(adminPage.getByRole('cell', { name: 'test user' })).toBeVisible();
+
     })
     test('Search: InValid User', async ({ adminPage }) => {
-        await adminPage.locator('.slider').click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).click();
-        await adminPage.getByRole('textbox', { name: 'Search Users...' }).fill('invalid user');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).fill('invalid user');
+        await adminPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
+        await adminPage.waitForTimeout(300);
         await expect(adminPage.getByRole('cell', { name: 'invalid user' })).not.toBeVisible();
     })
 });
