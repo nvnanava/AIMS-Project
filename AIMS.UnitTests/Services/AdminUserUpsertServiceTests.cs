@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AIMS.Data;
 using AIMS.Models;
+using AIMS.Queries;
 using AIMS.Services;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -52,7 +53,8 @@ public class AdminUserUpsertServiceTests
         using var db = new AimsDbContext(options);
         db.Database.EnsureCreated();
 
-        var svc = new AdminUserUpsertService(db, graph.Object);
+        var officeQuery = new OfficeQuery(db);
+        var svc = new AdminUserUpsertService(db, graph.Object, officeQuery);
 
         var saved = await svc.UpsertAdminUserAsync(
             graphId,
@@ -93,7 +95,8 @@ public class AdminUserUpsertServiceTests
         });
         await db.SaveChangesAsync();
 
-        var svc = new AdminUserUpsertService(db, graph.Object);
+        var officeQuery = new OfficeQuery(db);
+        var svc = new AdminUserUpsertService(db, graph.Object, officeQuery);
 
         var saved = await svc.UpsertAdminUserAsync(
             graphId,
@@ -133,8 +136,8 @@ public class AdminUserUpsertServiceTests
             RoleID = 2
         });
         await db.SaveChangesAsync();
-
-        var svc = new AdminUserUpsertService(db, graph.Object);
+        var officeQuery = new OfficeQuery(db);
+        var svc = new AdminUserUpsertService(db, graph.Object, officeQuery);
 
         var saved = await svc.UpsertAdminUserAsync(
             graphId,
@@ -178,7 +181,8 @@ public class AdminUserUpsertServiceTests
 
         // Use a DbContext that throws a one-time unique violation to hit the catch path
         using var throwingDb = new ThrowOnceOnSaveAimsDbContext(options, throwOnce: true);
-        var svc = new AdminUserUpsertService(throwingDb, graph.Object);
+        var officeQuery = new OfficeQuery(throwingDb);
+        var svc = new AdminUserUpsertService(throwingDb, graph.Object, officeQuery);
 
         await Assert.ThrowsAsync<DbUpdateException>(async () =>
             await svc.UpsertAdminUserAsync(
@@ -199,7 +203,8 @@ public class AdminUserUpsertServiceTests
 
         using var db = new AimsDbContext(options);
         db.Database.EnsureCreated();
-        var svc = new AdminUserUpsertService(db, graph.Object);
+        var officeQuery = new OfficeQuery(db);
+        var svc = new AdminUserUpsertService(db, graph.Object, officeQuery);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             svc.UpsertAdminUserAsync(

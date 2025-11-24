@@ -1,10 +1,3 @@
-/* ======================================================================
-   AIMS Global: Modal Theme + Custom Select
-   - Make all Bootstrap modals look/behave consistently.
-   - Opt-in via aimsds-* classes and aims-select on <select>.
-   ====================================================================== */
-
-/* -------- AIMS palette -------- */
 :root {
     --aims-bg: #ecf0f1;
     --aims-bg-contrast: #f7f9fa;
@@ -15,7 +8,6 @@
     --aims-focus: rgba(26, 188, 156, .35);
 }
 
-/* -------- Modal chrome -------- */
 .modal .aimsds-shell {
     --bs-modal-border-radius: 8px;
     --bs-modal-inner-border-radius: 8px;
@@ -24,68 +16,32 @@
     border-radius: 8px;
     box-shadow: 0 4px 8px var(--aims-shadow);
     overflow: hidden;
-    /* select menu is portaled to avoid clipping */
 }
 
 .modal .aimsds-header {
     background: var(--aims-navy);
     color: var(--aims-bg);
     border-bottom: 3px solid #34495e;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-    background-clip: padding-box;
 }
 
-.modal .btn-close.aimsds-close {
-    opacity: .85;
-    transition: all .15s ease-out;
-    outline: none;
-    box-shadow: none;
-    background-color: red;
-}
-
-.modal .btn-close.aimsds-close:hover {
-    border: 3px solid red;
-}
-
-.modal .btn-close.aimsds-close:focus,
-.modal .btn-close.aimsds-close:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(26, 188, 156, .6);
-    border-radius: 50%;
-    opacity: 1;
-    filter: brightness(1.1);
-}
-
-/* Body / footer helpers (optional utility classes) */
 .modal .aimsds-body {
     padding: 12px 16px;
 }
 
 .modal .aimsds-footer {
     display: flex;
-    align-items: center;
     justify-content: space-between;
     gap: 12px;
     border-top: 3px solid #34495e;
     background: var(--aims-bg);
 }
 
-.modal .aimsds-footer-right {
-    display: flex;
-    gap: 10px;
-}
-
-/* -------- Inputs baseline -------- */
 .modal .form-control {
     background: var(--aims-bg-contrast);
     color: var(--aims-ink);
     border: 2px solid rgba(52, 73, 94, .35);
     border-radius: 8px;
     padding: 10px 12px;
-    outline: none;
-    box-shadow: none;
-    transition: border-color .15s ease, box-shadow .15s ease;
 }
 
 .modal .form-control:focus {
@@ -93,204 +49,185 @@
     box-shadow: 0 0 8px var(--aims-focus);
 }
 
-/* -------- Native selects fallback (if not enhanced) -------- */
-.modal .form-select,
-.modal select {
+.modal select,
+.modal .form-select {
     background: var(--aims-bg-contrast);
     color: var(--aims-ink);
-    border: 2px solid rgba(52, 73, 94, .35);
+    border: 2px solid rgba(52,73,94,.35);
     border-radius: 8px;
     font-weight: 600;
     padding: 10px 40px 10px 12px;
-    box-shadow: 0 4px 4px rgba(0, 0, 0, .12);
-    -webkit-appearance: none;
-    appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%2334495e' d='M4.646 6.646a.5.5 0 01.708 0L8 9.293l2.646-2.647a.5.5 0 01.708.708l-3 3a.5.5 0 01-.708 0l-3-3a.5.5 0 010-.708z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 16px 16px;
-    transition: border-color .15s ease, background-color .15s ease;
 }
 
-.modal .form-select:focus,
-.modal select:focus {
+.modal select:focus,
+.modal .form-select:focus {
     border-color: var(--aims-accent);
     box-shadow: 0 0 0 3px var(--aims-focus);
-    background-color: var(--aims-bg-contrast);
 }
 
-.modal .form-select:hover,
-.modal select:hover {
-    background-color: var(--aims-bg-contrast);
-}
-
-.modal .form-select:disabled,
-.modal select:disabled {
-    opacity: .7;
-    cursor: not-allowed;
-}
-
-/* -------- Primary action button helper -------- */
-.modal .aimsds-btn {
-    height: 41px;
-    padding: 0 16px;
-    background: var(--aims-bg);
-    color: var(--aims-ink);
-    border: 3px solid #34495e;
-    box-shadow: 0 4px 4px #0000003e;
-    border-radius: 20px;
-    cursor: pointer;
-}
-
-.modal .aimsds-btn:hover {
-    border-color: var(--aims-accent);
-    transition: all .15s ease-out;
-}
-
-.modal .aimsds-btn.aimsds-primary {
-    font-weight: 700;
-    background: var(--aims-accent);
-    color: #fff;
-    border-color: transparent;
-}
-
-/* ======================================================================
-   AIMS Custom Select (progressive enhancement) — global
-   ====================================================================== */
-
-/* Visually hide native select when enhanced, keep it submittable */
 .aims-select.is-enhanced {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
-    padding: 0 !important;
     margin: -1px !important;
     overflow: hidden !important;
     clip: rect(0 0 0 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-    pointer-events: none !important;
 }
 
-/* Wrapper */
 .aims-select-wrap {
     position: relative;
-    display: block;
 }
 
-/* Toggle button */
 .aims-select-toggle {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    width: 100%;
+    align-items: center;
     background: var(--aims-bg-contrast);
     color: var(--aims-ink);
-    border: 2px solid rgba(52, 73, 94, .35);
+    border: 2px solid rgba(52,73,94,.35);
     border-radius: 8px;
     font-weight: 600;
     padding: 10px 12px;
-    box-shadow: 0 4px 4px rgba(0, 0, 0, .12);
-    cursor: pointer;
-    transition: border-color .15s, box-shadow .15s, transform .05s;
-    outline: none;
 }
 
 .aims-select-toggle:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, .16);
+    box-shadow: 0 6px 8px rgba(0,0,0,.16);
 }
 
-.aims-select-toggle:focus,
-.aims-select-toggle:focus-visible {
-    outline: none;
-    box-shadow: 0 6px 8px rgba(0, 0, 0, .16), 0 0 0 3px var(--aims-focus);
+.aims-select-toggle:focus {
+    box-shadow: 0 6px 8px rgba(0,0,0,.16), 0 0 0 3px var(--aims-focus);
     border-color: var(--aims-accent);
 }
 
-.aims-select-caret {
-    pointer-events: none;
-    font-size: .95rem;
-    line-height: 1;
-}
-
-/* Menu (default) */
 .aims-select-menu {
     position: absolute;
     inset-inline: 0;
     top: calc(100% + 6px);
     z-index: 1060;
-    display: none;
     background: #f7f9fa;
-    color: var(--aims-ink);
     border: 3px solid #34495e;
     border-radius: 8px;
-    box-shadow: 0 8px 14px rgba(0, 0, 0, .14);
+    box-shadow: 0 8px 14px rgba(0,0,0,.14);
     padding: 6px;
     max-height: 260px;
     overflow: auto;
+    display: none;
 }
 
 .aims-select-wrap[data-open="true"] .aims-select-menu {
     display: block;
 }
 
-/* Portaled to <body> */
-.aims-select-menu[data-portal="true"] {
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 2000;
-}
-
-/* Items */
 .aims-select-item {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    text-align: left;
     padding: 10px 12px;
     border-radius: 6px;
     font-weight: 600;
+}
+
+.aims-select-item:hover {
+    background: rgba(26,188,156,.12);
+}
+
+.aims-modal {
+    background: #ecf0f1 !important;
+    border: 3px solid #34495e !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,.15) !important;
+}
+
+.aims-modal-header {
+    background: #1f3447 !important;
+    color: white !important;
+    padding: 16px 24px;
+}
+
+.aims-modal-body {
+    padding: 24px;
+    background: #f9fafb;
+}
+
+.aims-modal-footer {
+    padding: 16px 24px;
+    background: #f1f3f5;
+}
+
+.aims-btn-secondary {
+    background-color: #e2e8f0;
+    border: 1px solid #94a3b8;
+    color: #1e293b;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.aims-btn-secondary:hover,
+.aims-btn-reset:hover {
+    background-color: #1abc9c !important;   /* SAME mint as Apply Filters */
+    border-color: #1abc9c !important;
+    color: #ffffff !important;
+}
+
+.aims-btn-success {
+    background-color: #1abc9c !important;
+    border-radius: 20px;
+    padding: 8px 24px;
+    font-weight: 600;
+    color: white !important;
+}
+
+.aims-btn-success:hover {
+    background-color: #17a589 !important;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.3s;
+}
+
+.aims-close-circle,
+.aims-close-circle * {
+    all: unset;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.aims-close-circle {
+    width: 26px;
+    height: 26px;
+    background: #e63946;
+    border: 2px solid #4ecdc4;
+    border-radius: 6px;
+    margin-left: auto;
+    margin-right: 6px;
     cursor: pointer;
-    transition: background-color .12s ease, transform .06s ease, box-shadow .12s ease;
-    outline: none;
+    transition: transform .15s, border-radius .2s, box-shadow .2s;
 }
 
-.aims-select-item:hover,
-.aims-select-item[data-active="true"] {
-    background: rgba(26, 188, 156, .12);
+.aims-close-circle:hover {
+    border-radius: 50%;
+    transform: scale(1.12);
 }
 
-.aims-select-item:focus,
-.aims-select-item:focus-visible {
-    outline: none;
-    box-shadow: inset 0 0 0 3px var(--aims-focus);
-    background: rgba(26, 188, 156, .12);
+.aims-close-circle:focus {
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(78,205,196,0.5);
 }
 
-.aims-select-item[aria-selected="true"]::after {
-    content: "✓";
-    margin-inline-start: auto;
+.aims-close-x {
+    font-size: 16px;
     font-weight: 700;
+    color: black;
 }
 
-/* After at least one selection, suppress hover flash */
-.aims-select-wrap[data-chosen="true"] .aims-select-item:hover {
-    background: transparent;
-}
-
-.aims-select-wrap[data-chosen="true"] .aims-select-item:focus,
-.aims-select-wrap[data-chosen="true"] .aims-select-item:focus-visible {
-    background: rgba(26, 188, 156, .12);
-}
-
-@media (max-width:480px) {
-    .aims-select-menu {
-        max-height: 48vh;
-    }
-}

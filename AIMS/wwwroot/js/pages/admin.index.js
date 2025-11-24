@@ -152,10 +152,9 @@
         resultsList.appendChild(frag);
     }
 
-
     // if Admins wish to use existing offices from the local DB, they can
     // enter text into the office field to search for those offices.
-    async function searchOffices(query) {
+    async function searchOffices(query, isEdit = false) {
         const resultsList = document.getElementById("officeResults");
         // if DOM element not found, exit
         if (!resultsList) return;
@@ -170,11 +169,11 @@
         try {
             // use an automated builder to create the parameter structure
             const params = new URLSearchParams({
-                query: query
+                query: query,
             });
             const url = `/api/office/search?${params.toString()}`;
             const offices = await aimsFetch(url, { signal: aadAbortCtrl.signal });
-            renderOfficeResults(offices, query);
+            renderOfficeResults(offices, query, isEdit);
         } catch (e) {
             if (e.name === "AbortError") return;
             resultsList.innerHTML = `<div class="aad-error">Error searching</div>`;
@@ -182,9 +181,10 @@
         }
     }
 
+
     // create elements for office results in the DOM
-    async function renderOfficeResults(items, query) {
-        const resultsList = document.getElementById("officeResults");
+    async function renderOfficeResults(items, query, isEdit = false) {
+        const resultsList = isEdit ? document.getElementById("editOfficeResults") : document.getElementById("officeResults");
         if (!resultsList) return;
 
         resultsList.innerHTML = "";
@@ -193,24 +193,24 @@
             // in the local db.
             resultsList.innerHTML = `<div class="aad-hint">No results for "${escapeHtml(
                 query
-            )}. A new office will be added into the database."</div>`;
+            )}." A new office will be added into the database.</div>`;
             return;
         }
 
         const frag = document.createDocumentFragment();
         items.forEach((o) => {
-            const officeName =  o.officeName || "";
+            const officeName = o.officeName || "";
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "aad-user-item";
             // highlight office names/query matching
             btn.innerHTML = `
                 <div class="aad-line"><strong>${highlight(
-                officeName,
-                query
-            )}</strong></div>`;
+                    officeName,
+                    query
+                )}</strong></div>`;
             btn.onclick = () => {
-                const officeInput = document.getElementById("userOffice");
+                const officeInput = isEdit ? document.getElementById("editUserOffice") : document.getElementById("userOffice");
                 if (officeInput) officeInput.value = officeName;
                 resultsList.innerHTML = "";
             };
@@ -218,6 +218,13 @@
         });
         resultsList.appendChild(frag);
     }
+
+    async function officeInputHandler(input, isEdit = false) {
+            const q = input.value.trim();
+            clearTimeout(aadDebounceTimer);
+            aadDebounceTimer = setTimeout(() => searchOffices(q, isEdit), 250);
+    }
+
 
     // ----- Modals --------------------------------------------------------
     function openAddUserModal() {
@@ -231,37 +238,14 @@
         hideModalById("addUserModal");
     }
 
-    // function openEditUserModal(button) {
-    //     const row = button.closest("tr");
-    //     const index = Array.from(row.parentNode.children).indexOf(row);
-    //     document.getElementById("editUserIndex").value = index;
-
-    //     const cells = row.getElementsByTagName("td");
-    //     document.getElementById("editUserName").value =
-    //         cells[1].innerText.trim();
-    //     document.getElementById("editUserEmail").value =
-    //         cells[2].innerText.trim();
-    //     document.getElementById("editUserRole").value =
-    //         cells[3].innerText.trim();
-    //     document.getElementById("editUserStatus").value =
-    //         cells[4].innerText.trim();
-    //     document.getElementById("editUserSeparationDate").value =
-    //         cells[5].innerText.trim();
-
-    //     showModalById("editUserModal");
-    // }
     function closeEditUserModal() {
         hideModalById("editUserModal");
     }
 
     // ----- Table Filters / Sorting --------------------------------------
 
-    function toggleInactiveUsers() {
-        applyAdminTableFilters();
-    }
-    function filterByRole() {
-        applyAdminTableFilters();
-    }
+    // Removed: toggleInactiveUsers() and filterByRole() - no longer needed
+    // All filtering is done server-side via search
 
     function sortTable(n) {
         const table = document.getElementById("adminTable");
@@ -314,53 +298,9 @@
     //         row.style.display = visible ? "" : "none";
     //     });
 
-    //     stripeAdminTable(); // <— add this
+    //     stripeAdminTable();
     // }
-    // Add this somewhere after other helper functions, near your other AIMS.Admin methods
-
-    function applyAdminTableFilters() {
-        const showInactive =
-            document.getElementById("showInactive")?.checked ?? true;
-        const roleFilter =
-            document.getElementById("roleFilter")?.value ?? "All";
-        const searchQuery =
-            document.getElementById("userSearch")?.value.trim().toLowerCase() ||
-            "";
-
-        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
-
-        // If no search query, hide all users
-        if (searchQuery === "") {
-            rows.forEach((row) => (row.style.display = "none"));
-            stripeAdminTable();
-            return;
-        }
-
-        rows.forEach((row) => {
-            const isInactive = row.classList.contains("inactive");
-            const userRole = row.cells[3]?.innerText.trim() || "";
-            const name = row.cells[1]?.innerText.trim().toLowerCase() || "";
-            const email = row.cells[2]?.innerText.trim().toLowerCase() || "";
-
-            let visible = true;
-
-            // Apply inactive filter
-            if (!showInactive && isInactive) visible = false;
-
-            // Apply role filter
-            if (roleFilter !== "All" && userRole !== roleFilter)
-                visible = false;
-
-            // Apply search filter - search in both name and email
-            if (!name.includes(searchQuery) && !email.includes(searchQuery)) {
-                visible = false;
-            }
-
-            row.style.display = visible ? "" : "none";
-        });
-
-        stripeAdminTable();
-    }
+   
 
     // ----- Insert / Save -------------------------------------------------
     function insertUserRow(u) {
@@ -383,6 +323,7 @@
         if (editBtn) {
             editBtn.dataset.id = u.Id != null ? String(u.Id) : "";
             editBtn.dataset.name = u.Name ?? "";
+            editBtn.dataset.graphid = u.graphObjectID ?? "";
             editBtn.dataset.email = u.Email ?? "";
             editBtn.dataset.status = u.Status ?? "Active";
             editBtn.dataset.isArchived = u.IsArchived ? "true" : "false";
@@ -431,9 +372,11 @@
           class="icon-btn js-edit-user"
           title="Edit"
           data-id="${u.userID}"
+          data-graphId="${u.graphObjectID ?? ""}"
           data-name="${u.name ?? ""}"
           data-email="${u.email ?? ""}"
           data-status="${u.isArchived ? "Inactive" : "Active"}"
+          data-office="${u.officeName ?? ""}"
           data-archivedat="${u.archivedAtUtc ?? ""}"
           data-bs-toggle="modal"
           data-bs-target="#editUserModal"
@@ -460,16 +403,92 @@
 
         tbody.replaceChildren(frag);
 
-        // keep your existing UX helpers
-        applyAdminTableFilters();
+        // Apply zebra striping
         stripeAdminTable();
     }
 
-    async function refreshUserTable() {
-        const includeArchived =
-            document.getElementById("showInactive")?.checked ?? false;
-        const users = await fetchUsers(includeArchived);
-        renderUsers(users);
+    async function reloadCurrentSearch() {
+        const q = document.getElementById("userSearch")?.value.trim() || "";
+        if (q) {
+            await searchUsersFromServer(q);
+        } else {
+            // maybe show nothing, or some default
+            document.querySelector("#adminTable tbody")?.replaceChildren();
+        }
+    }
+
+    let userAbortCtrl = null; // for aborting user fetches
+    let userSpinnerStartedAt = 0; // Timestamp when the spinner started
+    const MIN_SPINNER_MS = 500; // Minimum spinner display time in ms
+
+    function startUserSearchLoading() {
+        userSpinnerStartedAt = performance.now();
+        document.querySelector("#adminTable tbody")?.replaceChildren();
+        if (window.GlobalSpinner?.show) window.GlobalSpinner.show();
+    }
+
+    function minSpinnerDelay() {
+        const elapsed = performance.now() - userSpinnerStartedAt;
+        return new Promise((res) => {
+            setTimeout(res, Math.max(0, MIN_SPINNER_MS - elapsed));
+        });
+    }
+
+    async function searchUsersFromServer(query) {
+        if (!query) {
+            document.querySelector("#adminTable tbody")?.replaceChildren();
+            // Reset to default empty state message
+            const emptyEl = document.getElementById("admin-empty");
+            if (emptyEl) {
+                emptyEl.textContent = "Enter a name or email to search for users.";
+                emptyEl.style.display = "";
+            }
+            return;
+        }
+
+        if (userAbortCtrl) userAbortCtrl.abort();
+        userAbortCtrl = new AbortController();
+
+        startUserSearchLoading();
+        
+        // Hide empty state when searching
+        const emptyEl = document.getElementById("admin-empty");
+        if (emptyEl) emptyEl.style.display = "none";
+        
+        try {
+            // Check toggle: if checked, search inactive users; if unchecked, search active users
+            const searchInactive = document.getElementById("showInactive")?.checked ?? false;
+            const params = new URLSearchParams({
+                q: query,
+                searchInactive: searchInactive ? "true" : "false"
+            });
+            const resp = await fetch(
+                `/api/admin/users/search?${params.toString()}`,
+                {
+                    signal: userAbortCtrl.signal,
+                }
+            );
+            if (!resp.ok) throw new Error("User search failed");
+            const users = await resp.json();
+            await minSpinnerDelay();
+            
+            // Show "No users found" message if results are empty
+            if (!users || users.length === 0) {
+                document.querySelector("#adminTable tbody")?.replaceChildren();
+                const emptyEl = document.getElementById("admin-empty");
+                if (emptyEl) {
+                    emptyEl.textContent = "No users found matching your search.";
+                    emptyEl.style.display = "";
+                }
+            } else {
+                renderUsers(users);
+            }
+        } catch (e) {
+            if (e.name === "AbortError") return;
+            console.error("Error searching users:", e);
+        } finally {
+            if (window.GlobalSpinner?.hide) GlobalSpinner.hide();
+        }
     }
 
     async function addUser(e) {
@@ -500,7 +519,11 @@
             const resp = await fetch("/api/admin/users", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ graphObjectId: graphId, roleId, officeName }), // roleId (camelCase)
+                body: JSON.stringify({
+                    graphObjectId: graphId,
+                    roleId,
+                    officeName,
+                }), // roleId (camelCase)
             });
 
             if (!resp.ok) {
@@ -522,7 +545,7 @@
                 SeparationDate: "",
             });
 
-            // applyAdminTableFilters(); // this function no longer exists, so calling 
+            // applyAdminTableFilters(); // this function no longer exists, so calling
             // it will cause this try-catch block to fail
             hideModalById("addUserModal");
             document.getElementById("addUserForm")?.reset();
@@ -562,28 +585,6 @@
         }
     }
 
-    // function saveUserEdit(event) {
-    //     event.preventDefault();
-    //     const idx = document.getElementById("editUserIndex").value;
-    //     const row = document.querySelectorAll(".user-row")[idx];
-    //     if (!row) return;
-
-    //     row.cells[1].innerText = document.getElementById("editUserName").value;
-    //     row.cells[2].innerText = document.getElementById("editUserEmail").value;
-    //     row.cells[3].innerText = document.getElementById("editUserRole").value;
-
-    //     const status = document.getElementById("editUserStatus").value;
-    //     row.cells[4].innerHTML = `<span class="badge ${status.toLowerCase()}">${status}</span>`;
-    //     row.classList.remove("active", "inactive");
-    //     row.classList.add(status.toLowerCase());
-
-    //     row.cells[5].innerText =
-    //         document.getElementById("editUserSeparationDate").value || " ";
-    //     hideModalById("editUserModal");
-    //     applyAdminTableFilters();
-    //     stripeAdminTable();
-    // }
-
     // ----- DOM Ready -----------------------------------------------------
     window.addEventListener("DOMContentLoaded", () => {
         // ----- Typeahead search for AAD (debounced) -----
@@ -596,13 +597,13 @@
             });
         }
         // Fetch on page load
-        refreshUserTable();
+        //refreshUserTable();
 
         // Wire the “Show Archived” (showInactive) toggle to call the API
         const toggleArchived = document.getElementById("showInactive");
         if (toggleArchived) {
             toggleArchived.addEventListener("change", () => {
-                refreshUserTable();
+                reloadCurrentSearch();
             });
         }
 
@@ -615,14 +616,14 @@
                 await fetch(`/api/admin/users/archive/${id}`, {
                     method: "POST",
                 });
-                await refreshUserTable();
+                await reloadCurrentSearch();
             }
             if (unarchBtn) {
                 const id = unarchBtn.dataset.id;
                 await fetch(`/api/admin/users/unarchive/${id}`, {
                     method: "POST",
                 });
-                await refreshUserTable();
+                await reloadCurrentSearch();
             }
         });
 
@@ -635,6 +636,8 @@
                 aadDebounceTimer = setTimeout(() => searchOffices(q), 250);
             });
         }
+
+       
 
         // ----- Click-away to close the AAD suggestion list -----
         document.addEventListener("click", (e) => {
@@ -649,20 +652,6 @@
                 box.innerHTML = "";
             }
         });
-        // ----- Activate search bar userSearch -----
-        const userSearchInput = document.getElementById("userSearch");
-        if (userSearchInput) {
-            // Handle input events for real-time search
-            userSearchInput.addEventListener("input", applyAdminTableFilters);
-
-            // Handle Enter key press
-            userSearchInput.addEventListener("keypress", (e) => {
-                if (e.key === "Enter") {
-                    e.preventDefault();
-                    applyAdminTableFilters();
-                }
-            });
-        }
 
         // ----- Keep striping updated -----
         stripeAdminTable();
@@ -674,10 +663,7 @@
         closeAddUserModal,
         closeEditUserModal,
         addUser,
-        toggleInactiveUsers,
-        filterByRole,
         sortTable,
-        applyAdminTableFilters: applyAdminTableFilters,
         stripeAdminTable: stripeAdminTable,
     });
 
@@ -695,38 +681,55 @@
     });
 
     AIMS.Admin.openEditUserModal = function (btn) {
-        console.log("Opening Edit Modal Debug:");
-        console.log("- Button data-id:", btn.dataset.id);
-        console.log("- Button data-status:", btn.dataset.status);
-        console.log("- Button data-name:", btn.dataset.name);
-        console.log("- Button data-email:", btn.dataset.email);
-
         document.getElementById("editUserId").value = btn.dataset.id;
         document.getElementById("editUserIsArchived").value =
             btn.dataset.status === "Inactive" ? "true" : "false";
-
+        document.getElementById("userGraphId").value = btn.dataset.graphid;
         document.getElementById("editUserName").value = btn.dataset.name || "";
+        document.getElementById("editUserOffice").value = btn.dataset.office || "";
+        document.getElementById("oldOffice").value = btn.dataset.office || ""; 
         document.getElementById("editUserEmail").value = btn.dataset.email || "";
 
         const statusSelect = document.getElementById("editUserStatus");
         statusSelect.value =
             btn.dataset.status === "Inactive" ? "Inactive" : "Active";
 
-        console.log(
-            "- Set editUserId to:",
-            document.getElementById("editUserId").value
-        );
-        console.log(
-            "- Set editUserIsArchived to:",
-            document.getElementById("editUserIsArchived").value
-        );
-        console.log("- Set editUserStatus to:", statusSelect.value);
-
         const sep = document.getElementById("editUserSeparationDate");
         sep.value = btn.dataset.archivedat
             ? new Date(btn.dataset.archivedat + "Z").toLocaleDateString()
             : "";
         
+        const userRefreshBtn = document.getElementById("refreshUserBtn");
+        if (userRefreshBtn) {
+            const graphId = document.getElementById("userGraphId").value;
+            userRefreshBtn.addEventListener("click", async () => { 
+                try {
+                    const resp = await fetch(`/api/admin/users/refresh?GraphObjectId=${encodeURIComponent(graphId)}`, {
+                        method: "GET",
+                        headers: { "Content-Type": "application/json" },
+                    });
+                    if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+                    else {
+                        const newValues = await resp.json();
+                        document.getElementById("editUserName").value = newValues.fullName ?? "";
+                        document.getElementById("editUserOffice").value = newValues.officeName ?? "";
+                        document.getElementById("oldOffice").value = newValues.officeName ?? ""; 
+                        document.getElementById("editUserEmail").value = newValues.email ?? "";
+                        const status = document.getElementById("refreshUserStatus");
+                        status.innerHTML = "";
+                    }
+                } catch (e) {
+                    const status = document.getElementById("refreshUserStatus");
+                    status.innerHTML = `<div class="aad-error">Error refreshing user</div>`;
+                    console.error(e);
+                }
+            })
+        }
+
+        const editOfficeInput = document.getElementById("editUserOffice");
+        if (editOfficeInput) {
+            editOfficeInput.addEventListener("input", () => officeInputHandler(editOfficeInput, true));
+        }
         showModalById("editUserModal");
     };
 
@@ -734,33 +737,40 @@
         e.preventDefault();
 
         const id = document.getElementById("editUserId").value;
+        const office = document.getElementById("editUserOffice").value;
+        const oldOffice = document.getElementById("oldOffice").value;
         const wasArchived =
             document.getElementById("editUserIsArchived").value === "true";
         const desired = document.getElementById("editUserStatus").value; // "Active" | "Inactive"
         const wantsArchived = desired === "Inactive";
-
-        console.log("Save User Edit Debug:");
-        console.log("- User ID:", id);
-        console.log("- Was Archived:", wasArchived);
-        console.log("- Desired Status:", desired);
-        console.log("- Wants Archived:", wantsArchived);
-        console.log("- Status Changed:", wantsArchived !== wasArchived);
 
         try {
             if (wantsArchived !== wasArchived) {
                 const url = wantsArchived
                     ? `/api/admin/users/archive/${id}`
                     : `/api/admin/users/unarchive/${id}`;
-                console.log("Making API call to:", url);
                 const res = await fetch(url, { method: "POST" });
-                console.log("API Response:", res.status, res.statusText);
                 if (!res.ok) throw new Error(`${url} failed: ${res.status}`);
-                console.log("API call successful");
+            } else if (office !== oldOffice) {
+                const resp = await fetch("/api/admin/users/edit-local-id", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userID: id, officeName: office }), 
+                });
+
+                if (!resp.ok) {
+                    const msg = await resp.text().catch(() => "");
+                    btn?.removeAttribute("disabled"); // Re-enable button on error
+                    throw new Error(msg || "Failed to save user.");
+                }
+                refreshUserTable();
             } else {
-                console.log("No status change needed");
+                // other edits were made
             }
 
             // close modal
+
+
             const modalEl = document.getElementById("editUserModal");
             const bsModal =
                 bootstrap.Modal.getInstance(modalEl) ||
@@ -768,7 +778,7 @@
             bsModal.hide();
 
             // refresh table honoring the Show Inactive toggle
-            await refreshUserTable();
+            await reloadCurrentSearch();
         } catch (err) {
             console.error(err);
             alert("Failed to save changes. Please try again.");
@@ -776,10 +786,43 @@
     };
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Start with empty table - users must search to see results
-        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
-        rows.forEach((row) => (row.style.display = "none"));
+        // Start with empty table and show empty state message
+        const tbody = document.querySelector("#adminTable tbody");
+        if (tbody) tbody.replaceChildren();
+        
+        const emptyEl = document.getElementById("admin-empty");
+        if (emptyEl) emptyEl.style.display = "";
 
-        stripeAdminTable();
+        const userSearchInput = document.getElementById("userSearch");
+        const showInactiveToggle = document.getElementById("showInactive");
+        
+        if (userSearchInput) {
+            // ONLY search on Enter key press - no typing/debounce to avoid database hits
+            userSearchInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    searchUsersFromServer(userSearchInput.value.trim());
+                }
+            });
+        }
+
+        // Update placeholder text when toggle changes
+        if (showInactiveToggle && userSearchInput) {
+            showInactiveToggle.addEventListener("change", () => {
+                if (showInactiveToggle.checked) {
+                    userSearchInput.placeholder = "Search inactive users by name or email... (Press Enter)";
+                } else {
+                    userSearchInput.placeholder = "Search active users by name or email... (Press Enter)";
+                }
+                
+                // Clear results when switching between active/inactive
+                tbody?.replaceChildren();
+                userSearchInput.value = "";
+                if (emptyEl) {
+                    emptyEl.textContent = "Enter a name or email to search for users.";
+                    emptyEl.style.display = "";
+                }
+            });
+        }
     });
 })();

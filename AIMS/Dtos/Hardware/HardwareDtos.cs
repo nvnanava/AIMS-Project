@@ -67,6 +67,9 @@ public class UpdateHardwareDto
     public string? Manufacturer { get; set; }
     public string? Model { get; set; }
     public string? Comment { get; set; }
+    public string? SerialNumber { get; set; }
+    public DateOnly? WarrantyExpiration { get; set; }
+    public DateOnly? PurchaseDate { get; set; }
 }
 
 public sealed class BulkHardwareRequest

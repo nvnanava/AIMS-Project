@@ -47,6 +47,8 @@ builder.Services.AddScoped<ISummaryCardService, SummaryCardService>();
 builder.Services.AddScoped<AssetTypeCatalogService>();
 builder.Services.AddScoped<SoftwareSeatService>();
 builder.Services.AddScoped<OfficeQuery>();
+builder.Services.AddScoped<SoftwareUpdateService>();
+builder.Services.AddScoped<HardwareAssetService>();
 
 builder.Services.Configure<RouteOptions>(o =>
 {
@@ -640,9 +642,9 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/e2e/bearer-login", async(
+app.MapGet("/e2e/bearer-login", async (
     HttpContext http,
-    [FromServices] IOptionsMonitor < JwtBearerOptions > jwtOpts,
+    [FromServices] IOptionsMonitor<JwtBearerOptions> jwtOpts,
     [FromServices] IConfiguration cfg,
     string token) =>
 {
