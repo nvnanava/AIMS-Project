@@ -1,45 +1,57 @@
-@* ======================================================================
-   Partial: _SearchLogsModal
-   Purpose: Shared modal for filtering Audit Logs
-   Triggered by Filter Icon (Audit Log page)
-   Accepts: from, to, actor, kind, includeArchived
-   ====================================================================== *@
+<div class="modal fade" id="searchLogsModal" tabindex="-1"
+     aria-labelledby="searchLogsModalLabel"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
 
-<div class="modal fade" id="searchLogsModal" tabindex="-1" aria-labelledby="searchLogsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content shadow-lg border-0">
-            <div class="modal-header bg-dark text-white">
+        <div class="modal-content aimsds-shell">
+
+            <div class="modal-header aims-modal-header">
                 <h5 class="modal-title" id="searchLogsModalLabel">Filter Logs</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                    aria-label="Close"></button>
+
+                <button type="button" class="aims-close-circle" data-bs-dismiss="modal" aria-label="Close">
+                    <span class="aims-close-x">&#10005;</span>
+                </button>
             </div>
 
-            <div class="modal-body">
+            <div class="modal-body aims-modal-body">
                 <form id="searchLogsForm">
-                    <div class="row g-3">
+                    <div class="row g-4">
 
-                        <!-- Date Range -->
                         <div class="col-md-6">
                             <label for="fromDate" class="form-label fw-bold">From</label>
-                            <input type="date" class="form-control warranty-input" id="fromDate" name="from" />
+                            <input type="date"
+                                   id="fromDate"
+                                   name="from"
+                                   class="form-control aims-input" />
                         </div>
+
                         <div class="col-md-6">
                             <label for="toDate" class="form-label fw-bold">To</label>
-                            <input type="date" class="form-control warranty-input" id="toDate" name="to" />
+                            <input type="date"
+                                   id="toDate"
+                                   name="to"
+                                   class="form-control aims-input" />
                         </div>
 
-                        <!-- Actor (Autocomplete) -->
-                        <div class="col-md-6">
+                        <div class="col-md-6 position-relative">
                             <label for="actorInput" class="form-label fw-bold">Actor</label>
-                            <input type="text" class="form-control" id="actorInput" name="actor"
-                                   placeholder="Search by user ID" autocomplete="off" />
-                            <div id="actorSuggestions" class="list-group position-absolute w-100 d-none"></div>
+                            <input type="text"
+                                   id="actorInput"
+                                   name="actor"
+                                   class="form-control aims-input"
+                                   placeholder="Search by user ID"
+                                   autocomplete="off" />
+                            <div id="actorSuggestions"
+                                 class="list-group position-absolute w-100 d-none"
+                                 style="z-index:2000;"></div>
                         </div>
 
-                        <!-- Action Type -->
                         <div class="col-md-6">
-                            <label for="actionType" class="form-label fw-bold">Asset Type</label>
-                            <select id="actionType" name="kind" class="form-select">
+                            <label for="actionType" class="form-label fw-bold">Action Type</label>
+                            <select id="actionType"
+                                    name="kind"
+                                    class="form-select aims-input aims-custom-dropdown">
                                 <option value="">All</option>
                                 <option value="Assign">Assign</option>
                                 <option value="Unassign">Unassign</option>
@@ -52,33 +64,62 @@
                             </select>
                         </div>
 
-                        <!-- Asset Type -->
-                        <!-- <div class="col-md-6">
-                            <label for="assetKind" class="form-label fw-bold">Asset Type</label>
-                            <select id="assetKind" name="kind" class="form-select">
-                                <option value="">All</option>
-                                <option value="Hardware">Hardware</option>
-                                <option value="Software">Software</option>
-                            </select>
-                        </div> -->
+                        <div class="col-12">
+                            <label for="assetId" class="form-label fw-bold">Asset ID</label>
+                            <input type="text"
+                                   id="assetId"
+                                   name="assetId"
+                                   class="form-control aims-input"
+                                   placeholder="Enter Asset ID" />
+                        </div>
 
-                        <!-- Archived -->
-                        <!-- <div class="col-12">
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" value="true" id="includeArchived" name="includeArchived" />
-                                <label class="form-check-label fw-semibold" for="includeArchived">
-                                    Include Archived Logs
-                                </label>
-                            </div>
-                        </div> -->
                     </div>
                 </form>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" form="searchLogsForm" class="btn btn-primary">Apply Filters</button>
+            <div class="modal-footer aims-modal-footer d-flex justify-content-between">
+
+                <button type="button"
+                        class="btn aims-btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <div class="d-flex gap-2">
+                    <button type="button"
+                            id="resetFilterBtn"
+                            class="btn aims-btn-secondary">
+                        Reset
+                    </button>
+
+                    <button type="submit"
+                            form="searchLogsForm"
+                            class="btn aims-btn-success">
+                        Apply Filters
+                    </button>
+                </div>
+
             </div>
+
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById("resetFilterBtn").addEventListener("click", function () {
+    document.getElementById("fromDate").value = "";
+    document.getElementById("toDate").value = "";
+    document.getElementById("actorInput").value = "";
+    document.getElementById("assetId").value = "";
+    document.getElementById("actionType").selectedIndex = 0;
+});
+
+document.getElementById("searchLogsModal").addEventListener("click", function(e) {
+    if (e.target.classList.contains("modal")) {
+        const dialog = this.querySelector(".modal-dialog");
+        dialog.classList.add("shake");
+        setTimeout(() => dialog.classList.remove("shake"), 300);
+    }
+});
+</script>
+
