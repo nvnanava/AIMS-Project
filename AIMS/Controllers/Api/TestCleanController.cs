@@ -35,9 +35,13 @@ public class TestCleanController : ControllerBase
             return Forbid();
         }
         _logger.LogInformation("Beginning user delete");
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.GraphObjectID == GraphObjectID);
+        var graphId = GraphObjectID.Trim();
+        var user = await _db.Users
+        .IgnoreQueryFilters()
+        .FirstOrDefaultAsync(u => u.GraphObjectID.ToLower().Equals(graphId.ToLower()));
 
-        if (user == null)
+        _logger.LogInformation($"User found: {user != null}");
+        if (user is null)
         {
             // User not found, which is a successful cleanup for us.
             return NoContent();
