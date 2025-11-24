@@ -12,6 +12,7 @@
 // a user doesn't step on other tests' toes.
 import { test as base, BrowserContext, Page, expect } from "@playwright/test";
 
+const TEST_USER_ID = "e05d050b-7c37-4e59-90ab-f19872d808b8";
 type AdminFixtures = {
     sharedContext: BrowserContext;
     adminPage: Page;
@@ -46,10 +47,10 @@ export const test = base.extend<{}, AdminFixtures>({
         console.log("Starting user setup...");
 
         // Check if user exists (via API) and delete if necessary
-        const req = await sharedPage.request.get('/api/admin/users/exists?graphObjectId=e05d050b-7c37-4e59-90ab-f19872d808b8');
+        const req = await sharedPage.request.get(`/api/admin/users/exists?graphObjectId=${encodeURIComponent(TEST_USER_ID)}`);
         const resp = await req.json();
         if (resp.exists) {
-            await sharedPage.request.delete(`/api/clean/user?GraphObjectID=e05d050b-7c37-4e59-90ab-f19872d808b8`);
+            const delete_resp = await sharedPage.request.delete(`/api/clean/user?GraphObjectID=${encodeURIComponent(TEST_USER_ID)}`);
         }
 
         // Insert user via UI
@@ -68,10 +69,14 @@ export const test = base.extend<{}, AdminFixtures>({
         const alreadyExistsLabel = sharedPage.getByText('User is already in the system.');
         if (!(await alreadyExistsLabel.isVisible({ timeout: 1000 }))) {
             await addBtn.click();
+        } else {
+            sharedPage.getByRole('button', { name: 'Close' }).click();
         }
         
 
         // Final assertion
+        await sharedPage.getByRole('textbox', { name: 'Search active users by name' }).fill('test');
+        await sharedPage.getByRole('textbox', { name: 'Search active users by name' }).press('Enter');
         await expect(sharedPage.getByRole('cell', { name: 'test user' })).toBeVisible();
         console.log("User seeded successfully.");
 
@@ -84,7 +89,7 @@ export const test = base.extend<{}, AdminFixtures>({
             console.log("Starting user cleanup...");
 
             // Clean out user/office via API
-            const userRes = await sharedPage.request.delete(`/api/clean/user?GraphObjectID=e05d050b-7c37-4e59-90ab-f19872d808b8`);
+            const userRes = await sharedPage.request.delete(`/api/clean/user?GraphObjectID=${encodeURIComponent(TEST_USER_ID)}`);
             if (!(userRes.ok() || userRes.status() === 204)) {
                 console.log(`Delete test user failed: ${userRes.status()} ${userRes.statusText()}`);
             }
@@ -279,7 +284,13 @@ test.describe('Edit User: Valid, Invalid', () => {
             await adminPage.getByRole('row', { name: 'test user' }).getByRole('button').click();
             await adminPage.getByRole('combobox', { name: 'Archive Status Active (Not' }).click();
             await adminPage.getByRole('option', { name: 'Archived', exact: true }).click();
+            await adminPage.waitForTimeout(300);
             await adminPage.getByRole('button', { name: 'Save Changes' }).click();
+            if (await await adminPage.getByRole('button', { name: 'Save Changes' }).isVisible()) {
+                await adminPage.getByRole('button', { name: 'Save Changes' }).click();
+            }
+           
+            await adminPage.waitForTimeout(300);
 
             await adminPage.locator('.slider').click();
             await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).click();
@@ -303,6 +314,9 @@ test.describe('Edit User: Valid, Invalid', () => {
             await adminPage.getByRole('combobox', { name: 'Archive Status Active (Not' }).click();
             await adminPage.getByRole('option', { name: 'Archived', exact: true }).click();
             await adminPage.getByRole('button', { name: 'Save Changes' }).click();
+            if (await await adminPage.getByRole('button', { name: 'Save Changes' }).isVisible()) {
+                await adminPage.getByRole('button', { name: 'Save Changes' }).click();
+            }
 
             await adminPage.locator('.slider').click();
             await adminPage.getByRole('textbox', { name: 'Search inactive users by name' }).click();
