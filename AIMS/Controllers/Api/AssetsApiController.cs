@@ -511,7 +511,7 @@ public class AssetsApiController : ControllerBase
                 select new
                 {
                     h.HardwareID,
-                    AssetName = h.AssetName,
+                    h.AssetName,
                     Type = h.AssetType,
                     Tag = h.AssetTag,
                     Status = string.IsNullOrEmpty(h.Status)
@@ -594,7 +594,9 @@ public class AssetsApiController : ControllerBase
                                 ? (s.LicenseSeatsUsed >= s.LicenseTotalSeats ? "Assigned" : "Available")
                                 : (a != null ? "Assigned" : "Available"),
                     AssignedUserId = a != null ? (int?)a.UserID : null,
-                    isArchived = s.IsArchived
+                    isArchived = s.IsArchived,
+                    s.LicenseSeatsUsed,
+                    s.LicenseTotalSeats
                 }
             ).FirstOrDefaultAsync(ct);
 
@@ -641,7 +643,9 @@ public class AssetsApiController : ControllerBase
                     AssignedUserId = sw.AssignedUserId,
                     AssignedEmployeeNumber = empNum,
                     AssignedEmployeeName = empName,
-                    AssignedAtUtc = null
+                    AssignedAtUtc = null,
+                    LicenseSeatsUsed = sw.LicenseSeatsUsed,
+                    LicenseTotalSeats = sw.LicenseTotalSeats
                 };
                 var etagSw = $"W/\"{dto.Tag}-{dto.Status}-{dto.AssignedUserId?.ToString() ?? "none"}\"";
                 if (Request.Headers.TryGetValue("If-None-Match", out var inmSw) && inmSw.Contains(etagSw))

@@ -245,7 +245,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId, userId) = await SeedAsync(dbName, totalSeats: 2, usedSeats: 0);
             var svc = NewService(ctx, out var bc);
 
-            await svc.AssignSeatAsync(swId, userId);
+            await svc.AssignSeatAsync(swId, userId, userId);
 
             var (used, total) = await ReadSeatCounts(ctx, swId);
             Assert.Equal(1, used);
@@ -272,8 +272,8 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId, userId) = await SeedAsync(dbName, totalSeats: 5, usedSeats: 0);
             var svc = NewService(ctx, out _);
 
-            await svc.AssignSeatAsync(swId, userId);
-            await svc.AssignSeatAsync(swId, userId); // no-op
+            await svc.AssignSeatAsync(swId, userId, userId);
+            await svc.AssignSeatAsync(swId, userId, userId); // no-op
 
             var openAssignments = await ctx.Assignments
                 .CountAsync(a => a.SoftwareID == swId && a.UserID == userId && a.UnassignedAtUtc == null);
@@ -290,7 +290,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId, userId) = await SeedAsync(dbName, totalSeats: 1, usedSeats: 1);
             var svc = NewService(ctx, out _);
 
-            await Assert.ThrowsAsync<SeatCapacityException>(() => svc.AssignSeatAsync(swId, userId));
+            await Assert.ThrowsAsync<SeatCapacityException>(() => svc.AssignSeatAsync(swId, userId, userId));
         }
 
         [Fact]
@@ -330,7 +330,7 @@ namespace AIMS.UnitTests.Services
             );
             await ctx.SaveChangesAsync();
 
-            await Assert.ThrowsAsync<SeatCapacityException>(() => svc.AssignSeatAsync(swId, user1));
+            await Assert.ThrowsAsync<SeatCapacityException>(() => svc.AssignSeatAsync(swId, user1, user1));
         }
 
         [Fact]
@@ -340,7 +340,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId, userId) = await SeedAsync(dbName, totalSeats: 2, usedSeats: 0, archived: true);
             var svc = NewService(ctx, out _);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.AssignSeatAsync(swId, userId));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.AssignSeatAsync(swId, userId, userId));
         }
 
         [Fact]
@@ -357,7 +357,7 @@ namespace AIMS.UnitTests.Services
             var ctx = new AimsDbContext(NewDbOptions(dbName, interceptor));
             var svc = NewService(ctx, out var bc);
 
-            await svc.AssignSeatAsync(swId, userId); // should succeed after retry
+            await svc.AssignSeatAsync(swId, userId, userId); // should succeed after retry
 
             var (used, total) = await ReadSeatCounts(ctx, swId);
             Assert.Equal(1, used);
@@ -387,7 +387,7 @@ namespace AIMS.UnitTests.Services
 
             using var ctx = new AimsDbContext(NewDbOptions(dbName));
             var svc = NewService(ctx, out _);
-            await svc.AssignSeatAsync(swId, userId);
+            await svc.AssignSeatAsync(swId, userId, userId);
 
             var desc = LastAuditDescription(ctx);
             Assert.Contains("Ada Lovelace (Emp #12345)", desc);
@@ -408,7 +408,7 @@ namespace AIMS.UnitTests.Services
 
             using var ctx = new AimsDbContext(NewDbOptions(dbName));
             var svc = NewService(ctx, out _);
-            await svc.AssignSeatAsync(swId, userId);
+            await svc.AssignSeatAsync(swId, userId, userId);
 
             var desc = LastAuditDescription(ctx);
             Assert.Contains("Grace Hopper (Emp #N/A)", desc);
@@ -427,7 +427,7 @@ namespace AIMS.UnitTests.Services
             using var ctx = new AimsDbContext(NewDbOptions(dbName, new ThrowAlwaysConcurrencyInterceptor()));
             var svc = NewService(ctx, out _);
 
-            var ex = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.AssignSeatAsync(swId, userId));
+            var ex = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.AssignSeatAsync(swId, userId, userId));
             Assert.True(
                 ex.Message.Contains("Failed to assign seat after retries.") ||
                 ex.Message.Contains("Simulated hard conflict"),
@@ -441,7 +441,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId) = await SeedSoftwareOnlyAsync(dbName); // no users at all
             var svc = NewService(ctx, out _);
 
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.AssignSeatAsync(swId, userId: 999_999));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.AssignSeatAsync(swId, 999_999, 999_999));
         }
 
         [Fact]
@@ -451,7 +451,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, userId) = await SeedUserOnlyAsync(dbName);
             var svc = NewService(ctx, out _);
 
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.AssignSeatAsync(softwareId: 999_999, userId));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.AssignSeatAsync(999_999, userId, userId));
         }
 
         // --- Release (existing) ------------------------------------------------
@@ -463,8 +463,8 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId, userId) = await SeedAsync(dbName, totalSeats: 2, usedSeats: 0);
             var svc = NewService(ctx, out var bc);
 
-            await svc.AssignSeatAsync(swId, userId);
-            await svc.ReleaseSeatAsync(swId, userId);
+            await svc.AssignSeatAsync(swId, userId, userId);
+            await svc.ReleaseSeatAsync(swId, userId, userId);
 
             var (used, total) = await ReadSeatCounts(ctx, swId);
             Assert.Equal(0, used);
@@ -491,7 +491,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId, userId) = await SeedAsync(dbName, totalSeats: 2, usedSeats: 0);
             var svc = NewService(ctx, out var bc);
 
-            await svc.ReleaseSeatAsync(swId, userId); // no-op
+            await svc.ReleaseSeatAsync(swId, userId, userId); // no-op
 
             var (used, total) = await ReadSeatCounts(ctx, swId);
             Assert.Equal(0, used);
@@ -526,7 +526,7 @@ namespace AIMS.UnitTests.Services
             using var ctx = new AimsDbContext(NewDbOptions(dbName, new ThrowOnceConcurrencyInterceptor(1)));
             var svc = NewService(ctx, out var bc);
 
-            await svc.ReleaseSeatAsync(swId, userId); // should succeed after retry
+            await svc.ReleaseSeatAsync(swId, userId, userId); // should succeed after retry
 
             var sw = await ctx.SoftwareAssets.SingleAsync(s => s.SoftwareID == swId);
             Assert.Equal(0, sw.LicenseSeatsUsed);
@@ -554,7 +554,7 @@ namespace AIMS.UnitTests.Services
             using var ctx = new AimsDbContext(NewDbOptions(dbName, new ThrowAlwaysConcurrencyInterceptor()));
             var svc = NewService(ctx, out _);
 
-            var ex2 = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.ReleaseSeatAsync(swId, userId));
+            var ex2 = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.ReleaseSeatAsync(swId, userId, userId));
             Assert.True(
                 ex2.Message.Contains("Failed to release seat after retries.") ||
                 ex2.Message.Contains("Simulated hard conflict"),
@@ -576,8 +576,8 @@ namespace AIMS.UnitTests.Services
             using var ctx = new AimsDbContext(NewDbOptions(dbName));
             var svc = NewService(ctx, out var bc);
 
-            await svc.AssignSeatAsync(swId, userId);
-            await svc.ReleaseSeatAsync(swId, userId);
+            await svc.AssignSeatAsync(swId, userId, userId);
+            await svc.ReleaseSeatAsync(swId, userId, userId);
 
             var desc = LastAuditDescription(ctx);
             Assert.Contains("No Emp (Emp #N/A)", desc);
@@ -591,7 +591,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, swId) = await SeedSoftwareOnlyAsync(dbName);
             var svc = NewService(ctx, out _);
 
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.ReleaseSeatAsync(swId, userId: 999_999));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.ReleaseSeatAsync(swId, 999_999, 999_999));
         }
 
         [Fact]
@@ -601,7 +601,7 @@ namespace AIMS.UnitTests.Services
             var (ctx, userId) = await SeedUserOnlyAsync(dbName);
             var svc = NewService(ctx, out _);
 
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.ReleaseSeatAsync(softwareId: 999_999, userId));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => svc.ReleaseSeatAsync(999_999, userId, userId));
         }
 
 #if DEBUG
@@ -618,7 +618,7 @@ namespace AIMS.UnitTests.Services
 
             try
             {
-                var ex = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.AssignSeatAsync(swId, userId));
+                var ex = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.AssignSeatAsync(swId, userId, userId));
                 Assert.Contains("Failed to assign seat after retries.", ex.Message);
             }
             finally
@@ -654,7 +654,7 @@ namespace AIMS.UnitTests.Services
 
             try
             {
-                var ex = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.ReleaseSeatAsync(swId, userId));
+                var ex = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => svc.ReleaseSeatAsync(swId, userId, userId));
                 Assert.Contains("Failed to release seat after retries.", ex.Message);
             }
             finally

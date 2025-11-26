@@ -141,6 +141,8 @@
                 if (idInput) idInput.value = u.id || ""; // set AAD object id
                 // automatically populate the AAD office name
                 if (officeInput) officeInput.value = office;
+                // automatically populate the AAD office name
+                if (officeInput) officeInput.value = office;
 
                 //: preflight check
                 if (u.id) checkUserExists(u.id);
@@ -151,7 +153,6 @@
         });
         resultsList.appendChild(frag);
     }
-
 
     // if Admins wish to use existing offices from the local DB, they can
     // enter text into the office field to search for those offices.
@@ -170,7 +171,7 @@
         try {
             // use an automated builder to create the parameter structure
             const params = new URLSearchParams({
-                query: query
+                query: query,
             });
             const url = `/api/office/search?${params.toString()}`;
             const offices = await aimsFetch(url, { signal: aadAbortCtrl.signal });
@@ -200,16 +201,16 @@
 
         const frag = document.createDocumentFragment();
         items.forEach((o) => {
-            const officeName =  o.officeName || "";
+            const officeName = o.officeName || "";
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "aad-user-item";
             // highlight office names/query matching
             btn.innerHTML = `
                 <div class="aad-line"><strong>${highlight(
-                officeName,
-                query
-            )}</strong></div>`;
+                    officeName,
+                    query
+                )}</strong></div>`;
             btn.onclick = () => {
                 const officeInput = isEdit ? document.getElementById("editUserOffice") : document.getElementById("userOffice");
                 if (officeInput) officeInput.value = officeName;
@@ -245,12 +246,8 @@
 
     // ----- Table Filters / Sorting --------------------------------------
 
-    function toggleInactiveUsers() {
-        applyAdminTableFilters();
-    }
-    function filterByRole() {
-        applyAdminTableFilters();
-    }
+    // Removed: toggleInactiveUsers() and filterByRole() - no longer needed
+    // All filtering is done server-side via search
 
     function sortTable(n) {
         const table = document.getElementById("adminTable");
@@ -290,49 +287,22 @@
         });
     }
 
-    function applyAdminTableFilters() {
-        const showInactive =
-            document.getElementById("showInactive")?.checked ?? true;
-        const roleFilter =
-            document.getElementById("roleFilter")?.value ?? "All";
-        const searchQuery =
-            document.getElementById("userSearch")?.value.trim().toLowerCase() ||
-            "";
+    // function applyAdminTableFilters() {
+    //     const showInactive = document.getElementById("showInactive")?.checked ?? true;
+    //     const roleFilter = document.getElementById("roleFilter")?.value ?? "All";
 
-        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
+    //     document.querySelectorAll("#adminTable tbody tr.user-row").forEach(row => {
+    //         const isInactive = row.classList.contains("inactive");
+    //         const userRole = row.cells[3]?.innerText.trim() || "";
+    //         let visible = true;
+    //         if (!showInactive && isInactive) visible = false;
+    //         if (roleFilter !== "All" && userRole !== roleFilter) visible = false;
+    //         row.style.display = visible ? "" : "none";
+    //     });
 
-        // If no search query, hide all users
-        if (searchQuery === "") {
-            rows.forEach((row) => (row.style.display = "none"));
-            stripeAdminTable();
-            return;
-        }
-
-        rows.forEach((row) => {
-            const isInactive = row.classList.contains("inactive");
-            const userRole = row.cells[3]?.innerText.trim() || "";
-            const name = row.cells[1]?.innerText.trim().toLowerCase() || "";
-            const email = row.cells[2]?.innerText.trim().toLowerCase() || "";
-
-            let visible = true;
-
-            // Apply inactive filter
-            if (!showInactive && isInactive) visible = false;
-
-            // Apply role filter
-            if (roleFilter !== "All" && userRole !== roleFilter)
-                visible = false;
-
-            // Apply search filter - search in both name and email
-            if (!name.includes(searchQuery) && !email.includes(searchQuery)) {
-                visible = false;
-            }
-
-            row.style.display = visible ? "" : "none";
-        });
-
-        stripeAdminTable();
-    }
+    //     stripeAdminTable();
+    // }
+   
 
     // ----- Insert / Save -------------------------------------------------
     function insertUserRow(u) {
@@ -435,16 +405,92 @@
 
         tbody.replaceChildren(frag);
 
-        // keep your existing UX helpers
-        applyAdminTableFilters();
+        // Apply zebra striping
         stripeAdminTable();
     }
 
-    async function refreshUserTable() {
-        const includeArchived =
-            document.getElementById("showInactive")?.checked ?? false;
-        const users = await fetchUsers(includeArchived);
-        renderUsers(users);
+    async function reloadCurrentSearch() {
+        const q = document.getElementById("userSearch")?.value.trim() || "";
+        if (q) {
+            await searchUsersFromServer(q);
+        } else {
+            // maybe show nothing, or some default
+            document.querySelector("#adminTable tbody")?.replaceChildren();
+        }
+    }
+
+    let userAbortCtrl = null; // for aborting user fetches
+    let userSpinnerStartedAt = 0; // Timestamp when the spinner started
+    const MIN_SPINNER_MS = 500; // Minimum spinner display time in ms
+
+    function startUserSearchLoading() {
+        userSpinnerStartedAt = performance.now();
+        document.querySelector("#adminTable tbody")?.replaceChildren();
+        if (window.GlobalSpinner?.show) window.GlobalSpinner.show();
+    }
+
+    function minSpinnerDelay() {
+        const elapsed = performance.now() - userSpinnerStartedAt;
+        return new Promise((res) => {
+            setTimeout(res, Math.max(0, MIN_SPINNER_MS - elapsed));
+        });
+    }
+
+    async function searchUsersFromServer(query) {
+        if (!query) {
+            document.querySelector("#adminTable tbody")?.replaceChildren();
+            // Reset to default empty state message
+            const emptyEl = document.getElementById("admin-empty");
+            if (emptyEl) {
+                emptyEl.textContent = "Enter a name or email to search for users.";
+                emptyEl.style.display = "";
+            }
+            return;
+        }
+
+        if (userAbortCtrl) userAbortCtrl.abort();
+        userAbortCtrl = new AbortController();
+
+        startUserSearchLoading();
+        
+        // Hide empty state when searching
+        const emptyEl = document.getElementById("admin-empty");
+        if (emptyEl) emptyEl.style.display = "none";
+        
+        try {
+            // Check toggle: if checked, search inactive users; if unchecked, search active users
+            const searchInactive = document.getElementById("showInactive")?.checked ?? false;
+            const params = new URLSearchParams({
+                q: query,
+                searchInactive: searchInactive ? "true" : "false"
+            });
+            const resp = await fetch(
+                `/api/admin/users/search?${params.toString()}`,
+                {
+                    signal: userAbortCtrl.signal,
+                }
+            );
+            if (!resp.ok) throw new Error("User search failed");
+            const users = await resp.json();
+            await minSpinnerDelay();
+            
+            // Show "No users found" message if results are empty
+            if (!users || users.length === 0) {
+                document.querySelector("#adminTable tbody")?.replaceChildren();
+                const emptyEl = document.getElementById("admin-empty");
+                if (emptyEl) {
+                    emptyEl.textContent = "No users found matching your search.";
+                    emptyEl.style.display = "";
+                }
+            } else {
+                renderUsers(users);
+            }
+        } catch (e) {
+            if (e.name === "AbortError") return;
+            console.error("Error searching users:", e);
+        } finally {
+            if (window.GlobalSpinner?.hide) GlobalSpinner.hide();
+        }
     }
 
     async function addUser(e) {
@@ -475,12 +521,17 @@
             const resp = await fetch("/api/admin/users", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ graphObjectId: graphId, roleId, officeName }), // roleId (camelCase)
+                body: JSON.stringify({
+                    graphObjectId: graphId,
+                    roleId,
+                    officeName,
+                }), // roleId (camelCase)
             });
 
             if (!resp.ok) {
                 const msg = await resp.text().catch(() => "");
                 btn?.removeAttribute("disabled"); // Re-enable button on error
+                throw new Error(msg || "Failed to save user.");
                 throw new Error(msg || "Failed to save user.");
             }
 
@@ -489,15 +540,17 @@
             // Insert the saved row into the table
             insertUserRow({
                 Id: saved.userID ?? saved.userId ?? null,
+                Id: saved.userID ?? saved.userId ?? null,
                 Name: saved.fullName,
                 Email: saved.email,
                 Role: getRoleNameFromId(roleId) || "",
                 Status: status,
                 IsArchived: false,
+                IsArchived: false,
                 SeparationDate: "",
             });
 
-            // applyAdminTableFilters(); // this function no longer exists, so calling 
+            // applyAdminTableFilters(); // this function no longer exists, so calling
             // it will cause this try-catch block to fail
             hideModalById("addUserModal");
             document.getElementById("addUserForm")?.reset();
@@ -549,13 +602,13 @@
             });
         }
         // Fetch on page load
-        refreshUserTable();
+        //refreshUserTable();
 
         // Wire the “Show Archived” (showInactive) toggle to call the API
         const toggleArchived = document.getElementById("showInactive");
         if (toggleArchived) {
             toggleArchived.addEventListener("change", () => {
-                refreshUserTable();
+                reloadCurrentSearch();
             });
         }
 
@@ -568,14 +621,14 @@
                 await fetch(`/api/admin/users/archive/${id}`, {
                     method: "POST",
                 });
-                await refreshUserTable();
+                await reloadCurrentSearch();
             }
             if (unarchBtn) {
                 const id = unarchBtn.dataset.id;
                 await fetch(`/api/admin/users/unarchive/${id}`, {
                     method: "POST",
                 });
-                await refreshUserTable();
+                await reloadCurrentSearch();
             }
         });
 
@@ -629,10 +682,7 @@
         closeAddUserModal,
         closeEditUserModal,
         addUser,
-        toggleInactiveUsers,
-        filterByRole,
         sortTable,
-        applyAdminTableFilters: applyAdminTableFilters,
         stripeAdminTable: stripeAdminTable,
     });
 
@@ -732,7 +782,7 @@
                     btn?.removeAttribute("disabled"); // Re-enable button on error
                     throw new Error(msg || "Failed to save user.");
                 }
-                refreshUserTable();
+                // refreshUserTable();
             } else {
                 // other edits were made
             }
@@ -747,7 +797,7 @@
             bsModal.hide();
 
             // refresh table honoring the Show Inactive toggle
-            await refreshUserTable();
+            await reloadCurrentSearch();
         } catch (err) {
             console.error(err);
             alert("Failed to save changes. Please try again.");
@@ -755,10 +805,43 @@
     };
 
     document.addEventListener("DOMContentLoaded", () => {
-        // Start with empty table - users must search to see results
-        const rows = document.querySelectorAll("#adminTable tbody tr.user-row");
-        rows.forEach((row) => (row.style.display = "none"));
+        // Start with empty table and show empty state message
+        const tbody = document.querySelector("#adminTable tbody");
+        if (tbody) tbody.replaceChildren();
+        
+        const emptyEl = document.getElementById("admin-empty");
+        if (emptyEl) emptyEl.style.display = "";
 
-        stripeAdminTable();
+        const userSearchInput = document.getElementById("userSearch");
+        const showInactiveToggle = document.getElementById("showInactive");
+        
+        if (userSearchInput) {
+            // ONLY search on Enter key press - no typing/debounce to avoid database hits
+            userSearchInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    searchUsersFromServer(userSearchInput.value.trim());
+                }
+            });
+        }
+
+        // Update placeholder text when toggle changes
+        if (showInactiveToggle && userSearchInput) {
+            showInactiveToggle.addEventListener("change", () => {
+                if (showInactiveToggle.checked) {
+                    userSearchInput.placeholder = "Search inactive users by name or email... (Press Enter)";
+                } else {
+                    userSearchInput.placeholder = "Search active users by name or email... (Press Enter)";
+                }
+                
+                // Clear results when switching between active/inactive
+                tbody?.replaceChildren();
+                userSearchInput.value = "";
+                if (emptyEl) {
+                    emptyEl.textContent = "Enter a name or email to search for users.";
+                    emptyEl.style.display = "";
+                }
+            });
+        }
     });
 })();

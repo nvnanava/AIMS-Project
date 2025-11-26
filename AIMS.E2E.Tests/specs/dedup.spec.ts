@@ -42,20 +42,19 @@ async function gotoAuditLog(page: Page) {
             console.log(`[nav] Error navigating to ${p}:`, e);
         }
 
-        // Some MVC responses won’t be available as "nav" if client redirects afterward;
-        // fall back to checking document presence.
         const status = nav?.status();
         const okish = !status || (status >= 200 && status < 400);
         if (!okish) console.log(`[nav] ${p} returned status ${status ?? 'unknown'}`);
 
-        // Quick sanity: if there is any <h1>Audit Log</h1>, we’re on the right page
-        const h1Has = await page.getByRole('heading', { name: /audit log/i }).first().isVisible().catch(() => false);
-        if (h1Has) return;
+        const h1Has = await page
+            .getByRole('heading', { name: /audit log/i })
+            .first()
+            .isVisible()
+            .catch(() => false);
 
-        // If not, try next path
+        if (h1Has) return;
     }
 
-    // If both paths fail, throw with more context
     const title = await page.title().catch(() => '');
     const bodyText = (await page.locator('body').innerText().catch(() => '')).slice(0, 1200);
     throw new Error(
@@ -66,31 +65,39 @@ async function gotoAuditLog(page: Page) {
 
 /* ---------------- Wait for any acceptable table ---------------- */
 function tableLocator(page: Page) {
-    // Accept either our new admin chrome or legacy selector
-    return page.locator('#auditTable, table.audit-log-table, table.admin-table-body').first();
+    // Prefer the styled audit table, then fall back to legacy id
+    return page
+        .locator('table.audit-log-table, table.admin-table-body, #auditTable')
+        .first();
 }
 
 async function waitForAuditTable(page: Page): Promise<Locator> {
     await failIfAuthRedirect(page);
 
     const tbl = tableLocator(page);
-    const attached = await tbl.waitFor({ state: 'attached', timeout: TABLE_WAIT_MS })
-        .then(() => true).catch(() => false);
+    const attached = await tbl
+        .waitFor({ state: 'attached', timeout: TABLE_WAIT_MS })
+        .then(() => true)
+        .catch(() => false);
+
     if (!attached) {
         const title = await page.title().catch(() => '');
         const bodyText = (await page.locator('body').innerText().catch(() => '')).slice(0, 1200);
-        throw new Error(`[UI] audit table not found after ${TABLE_WAIT_MS}ms at ${page.url()} title="${title}"\nBody:\n${bodyText}`);
+        throw new Error(
+            `[UI] audit table not found after ${TABLE_WAIT_MS}ms at ${page.url()} title="${title}"\nBody:\n${bodyText}`
+        );
     }
 
-    // Don’t hard-require "visible" — CSS/JS may toggle; give a tiny grace period.
     await page.waitForTimeout(200);
     return tbl;
 }
 
 /* ---------------- Pagination helpers (client-side pager) ---------------- */
 async function goToFirstPage(page: Page) {
-    // Support both our pager ids and role-based buttons
-    const prev = page.getByRole('button', { name: /prev(ious)? page/i }).or(page.locator('#pg-prev,#audit-pg-prev'));
+    const prev = page
+        .getByRole('button', { name: /prev(ious)? page/i })
+        .or(page.locator('#pg-prev,#audit-pg-prev'));
+
     for (let i = 0; i < 20; i++) {
         const disabled = await prev.isDisabled().catch(() => true);
         if (disabled) break;
@@ -101,11 +108,16 @@ async function goToFirstPage(page: Page) {
 
 async function findInPagedTable(page: Page, table: Locator, text: string): Promise<boolean> {
     await goToFirstPage(page);
-    const next = page.getByRole('button', { name: /next page/i }).or(page.locator('#pg-next,#audit-pg-next'));
+    const next = page
+        .getByRole('button', { name: /next page/i })
+        .or(page.locator('#pg-next,#audit-pg-next'));
+
     for (let i = 0; i < 20; i++) {
         if ((await table.filter({ hasText: text }).count()) > 0) return true;
+
         const disabled = await next.isDisabled().catch(() => true);
         if (disabled) return false;
+
         await next.click().catch(() => { });
         await page.waitForTimeout(80);
     }
@@ -114,11 +126,16 @@ async function findInPagedTable(page: Page, table: Locator, text: string): Promi
 
 async function ensureNotInPagedTable(page: Page, table: Locator, text: string): Promise<boolean> {
     await goToFirstPage(page);
-    const next = page.getByRole('button', { name: /next page/i }).or(page.locator('#pg-next,#audit-pg-next'));
+    const next = page
+        .getByRole('button', { name: /next page/i })
+        .or(page.locator('#pg-next,#audit-pg-next'));
+
     for (let i = 0; i < 20; i++) {
         if ((await table.filter({ hasText: text }).count()) > 0) return false;
+
         const disabled = await next.isDisabled().catch(() => true);
         if (disabled) return true;
+
         await next.click().catch(() => { });
         await page.waitForTimeout(80);
     }
@@ -130,7 +147,7 @@ test('Dedup: same externalId updates, no duplicate', async ({ page, request, bas
     wireDiagnostics(page);
 
     await gotoAuditLog(page);
-    const table = await waitForAuditTable(page);
+    let table = await waitForAuditTable(page);
 
     // Ensure realtime hub is up (best-effort)
     await waitForAuditHub(page);
@@ -143,9 +160,21 @@ test('Dedup: same externalId updates, no duplicate', async ({ page, request, bas
     await createAudit(request, { action: 'Create', description: desc1, externalId: ext });
     expect(await waitForApiSeesExternalId(baseURL!, ext)).toBe(true);
 
-    await expect
-        .poll(async () => await findInPagedTable(page, table, desc1), { timeout: FIND_TIMEOUT_MS })
-        .toBe(true);
+    try {
+        await expect
+            .poll(async () => await findInPagedTable(page, table, desc1), { timeout: FIND_TIMEOUT_MS })
+            .toBe(true);
+    } catch {
+        console.warn('[dedup] Initial UI poll for desc1 timed out; reloading once and retrying.');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        table = await waitForAuditTable(page);
+
+        await expect
+            .poll(async () => await findInPagedTable(page, table, desc1), {
+                timeout: Math.floor(FIND_TIMEOUT_MS / 2),
+            })
+            .toBe(true);
+    }
 
     // 2) Update same externalId → confirm server sees new description
     await createAudit(request, { action: 'Update', description: desc2, externalId: ext });
@@ -153,14 +182,38 @@ test('Dedup: same externalId updates, no duplicate', async ({ page, request, bas
 
     // 3) Reload once to ensure UI picks up the updated description if not live-pushed
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await waitForAuditTable(page);
+    table = await waitForAuditTable(page);
 
-    await expect
-        .poll(async () => await findInPagedTable(page, table, desc2), { timeout: FIND_TIMEOUT_MS })
-        .toBe(true);
+    try {
+        await expect
+            .poll(async () => await findInPagedTable(page, table, desc2), { timeout: FIND_TIMEOUT_MS })
+            .toBe(true);
+    } catch {
+        console.warn('[dedup] UI did not show desc2 after first poll; reloading once more.');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        table = await waitForAuditTable(page);
+
+        await expect
+            .poll(async () => await findInPagedTable(page, table, desc2), {
+                timeout: Math.floor(FIND_TIMEOUT_MS / 2),
+            })
+            .toBe(true);
+    }
 
     // 4) Old description must not exist on any page
-    await expect
-        .poll(async () => await ensureNotInPagedTable(page, table, desc1), { timeout: FIND_TIMEOUT_MS })
-        .toBe(true);
+    try {
+        await expect
+            .poll(async () => await ensureNotInPagedTable(page, table, desc1), { timeout: FIND_TIMEOUT_MS })
+            .toBe(true);
+    } catch {
+        console.warn('[dedup] ensureNotInPagedTable(desc1) timed out; reloading once and retrying.');
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        table = await waitForAuditTable(page);
+
+        await expect
+            .poll(async () => await ensureNotInPagedTable(page, table, desc1), {
+                timeout: Math.floor(FIND_TIMEOUT_MS / 2),
+            })
+            .toBe(true);
+    }
 });

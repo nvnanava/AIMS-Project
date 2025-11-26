@@ -34,6 +34,7 @@ public sealed class GetAuditRecordDto
     public AssetKind AssetKind { get; set; }
     public int? HardwareID { get; set; }
     public int? SoftwareID { get; set; }
+    public int? AssignmentID { get; set; }
 
     // Convenience
     public string? HardwareName { get; set; }
@@ -69,4 +70,5 @@ public sealed class CreateAuditRecordDto
 
     // Used for dedup/upsert (matches ExternalId on AuditLog)
     public Guid? ExternalId { get; set; }
+    public int? AssignmentID { get; set; }
 }

@@ -223,6 +223,7 @@ namespace AIMS.Queries
             AssetKind = a.AssetKind,
             HardwareID = a.HardwareID,
             SoftwareID = a.SoftwareID,
+            AssignmentID = a.AssignmentID,
             HardwareName = a.HardwareAsset != null ? a.HardwareAsset.AssetName : null,
             SoftwareName = a.SoftwareAsset != null ? a.SoftwareAsset.SoftwareName : null,
             SnapshotJson = a.SnapshotBytes != null ? Encoding.UTF8.GetString(a.SnapshotBytes) : null,
@@ -230,15 +231,14 @@ namespace AIMS.Queries
             AttachmentContentType = a.AttachmentContentType,
 
             Changes = a.Changes
-        .OrderBy(c => c.AuditLogChangeID)
-        .Select(c => new AuditLogChangeDto
-        {
-            AuditLogChangeID = c.AuditLogChangeID,
-            Field = c.Field,
-            OldValue = c.OldValue,
-            NewValue = c.NewValue
-        }).ToList()
-
+                .OrderBy(c => c.AuditLogChangeID)
+                .Select(c => new AuditLogChangeDto
+                {
+                    AuditLogChangeID = c.AuditLogChangeID,
+                    Field = c.Field,
+                    OldValue = c.OldValue,
+                    NewValue = c.NewValue
+                }).ToList()
         };
 
         private static Expression<Func<AuditLog, GetAuditRecordDto>> ProjectRecentDto() => a => new GetAuditRecordDto
@@ -252,7 +252,8 @@ namespace AIMS.Queries
             Description = a.Description,
             AssetKind = a.AssetKind,
             HardwareID = a.HardwareID,
-            SoftwareID = a.SoftwareID
+            SoftwareID = a.SoftwareID,
+            AssignmentID = a.AssignmentID
         };
 
         private static IQueryable<AuditLogRowDto> ProjectRows(IQueryable<AuditLog> q)
@@ -449,6 +450,7 @@ namespace AIMS.Queries
         {
             log.HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null;
             log.SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null;
+            log.AssignmentID = data.AssignmentID;
         }
 
         /// <summary>Create a new entity from DTO (without changes collection).</summary>
@@ -465,7 +467,8 @@ namespace AIMS.Queries
             SnapshotBytes = ToBytesOrNull(data.SnapshotJson),
             AssetKind = data.AssetKind,
             HardwareID = data.AssetKind == AssetKind.Hardware ? data.HardwareID : null,
-            SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null
+            SoftwareID = data.AssetKind == AssetKind.Software ? data.SoftwareID : null,
+            AssignmentID = data.AssignmentID
         };
 
         /// <summary>Append child changes (no-op on null/empty).</summary>
@@ -525,7 +528,8 @@ namespace AIMS.Queries
                 ChangeField = last?.Field,
                 PrevValue = last?.OldValue,
                 NewValue = last?.NewValue,
-                Hash = ComputeEventHash(log)
+                Hash = ComputeEventHash(log),
+                AssignmentID = log.AssignmentID
             };
         }
 

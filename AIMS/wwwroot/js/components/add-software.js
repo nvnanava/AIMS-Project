@@ -4,11 +4,12 @@ document.addEventListener('DOMContentLoaded', function () {
     window.AIMS = window.AIMS || {};
     window.AIMS.__wiredSoftware = true;
 
-    const softwareForm = document.getElementById('SoftwareAddForm'); //phase 1 form
+    const softwareForm = document.getElementById('SoftwareAddForm'); // phase 1 form
     const addSoftwareModal = document.getElementById('addSoftwareModal');
     const softwareErrorBox = document.getElementById('softwareErrorMessage');
+    const errorBox = softwareErrorBox; // alias for generic error handler
 
-    const licenseForm = document.getElementById('licenseDetailsForm'); //phase 2 form
+    const licenseForm = document.getElementById('licenseDetailsForm'); // phase 2 form
     const softwareDetailsModal = document.getElementById('softwareDetailsModal');
     const licenseStep = document.getElementById('licenseStep');
     const softwarePreviewList = document.getElementById('softwarePreviewList');
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let inTransition = false;
     let editIndex = null;
     let isSubmitting = false;
+    let costGuardsApplied = false;
 
     // ---------------- utils ----------------
     function todayLocalYMD() {
@@ -80,6 +82,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function refreshSoftwareList() {
+        // Prefer new AIMS helper if present
+        if (window.AIMS?.refreshList) {
+            try {
+                await window.AIMS.refreshList('Software', 1, 50, { invalidate: true, scrollTop: true });
+                return;
+            } catch { /* ignore and fall through */ }
+        }
+
         if (typeof window.loadAssetsPaged === 'function') {
             try { await window.loadAssetsPaged('Software', 1, 50); return; } catch { /* ignore */ }
         }
@@ -168,7 +178,8 @@ document.addEventListener('DOMContentLoaded', function () {
             expInput.setAttribute('min', today);
         }
         // Prevent negative cost
-        if (costInput) {
+        if (costInput && !costGuardsApplied) {
+            costGuardsApplied = true;
             // Block '-' key
             costInput.addEventListener('keydown', (e) => {
                 if (e.key === '-' || e.key === 'Subtract') e.preventDefault();
@@ -379,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 showServerErrorsInline(err.data);
                 return;
             }
-            // 3) Fallback unexpected error
+            // Fallback unexpected error
             showErrorMessages(
                 {
                     title: "Server error",
@@ -387,11 +398,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 errorBox
             );
+        } finally {
+            isSubmitting = false;
         }
-
-        isSubmitting = false;
     });
-
 
     // ---------------- save/load progress ----------------
     const saveBtn = document.getElementById('saveSoftwareProgress');
@@ -521,5 +531,32 @@ document.addEventListener('DOMContentLoaded', function () {
     function showServerErrors(data) {
         softwareErrorBox.textContent = data.error || "An unknown error occurred.";
         softwareErrorBox.style.display = "block";
+    }
+
+    function showErrorMessages(data, container) {
+        if (!container) return;
+
+        let message = "";
+
+        try {
+            if (data && typeof data === "object") {
+                if (data.errors && typeof data.errors === "object") {
+                    for (const [key, arr] of Object.entries(data.errors)) {
+                        if (Array.isArray(arr)) message += arr.join(" ") + " ";
+                    }
+                } else {
+                    for (const [key, arr] of Object.entries(data)) {
+                        if (Array.isArray(arr)) message += arr.join(" ") + " ";
+                    }
+                    if (!message && (data.title || data.detail)) {
+                        message = `${data.title ?? ""} ${data.detail ?? ""}`;
+                    }
+                }
+            }
+        } catch { /* ignore */ }
+
+        if (!message.trim()) message = "An error occurred. Please check your entries.";
+        container.textContent = message.trim();
+        container.style.display = "block";
     }
 });

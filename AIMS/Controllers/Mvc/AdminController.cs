@@ -29,13 +29,7 @@ public class AdminController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var users = await _db.Users
-            .AsNoTracking()
-            .Include(u => u.Role)
-            .Where(u => !u.IsArchived)
-            .OrderBy(u => u.FullName)
-            .ToListAsync();
-
-        return View(users);
+        // Return empty list - users are loaded via search API only
+        return View(new List<AIMS.Models.User>());
     }
 }

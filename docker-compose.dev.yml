@@ -22,8 +22,8 @@ services:
       DOTNET_WATCH_SUPPRESS_EMOJI: "${DOTNET_WATCH_SUPPRESS_EMOJI}"
 
       # --- Connection strings ---
-      ConnectionStrings__Default: "Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
-      ConnectionStrings__DockerConnection: "Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__DefaultConnection: "Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+      ConnectionStrings__DockerConnection:    "Server=${SQL_HOST},${SQL_PORT};Database=${SQL_DB};User Id=${SQL_USER};Password=${SQL_PASSWORD};TrustServerCertificate=True;Encrypt=False"
 
       # --- Azure AD IDs from .env ---
       AzureAd__TenantId: ${AZUREAD_TENANT_ID}

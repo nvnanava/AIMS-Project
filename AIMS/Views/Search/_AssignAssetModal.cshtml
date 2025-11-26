@@ -1,18 +1,22 @@
 <!-- Assign Asset Modal -->
-<div class="modal fade" id="assignAssetModal" tabindex="-1" aria-labelledby="assignAssetLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+<div class="modal fade" id="assignAssetModal" tabindex="-1"
+     aria-labelledby="assignAssetLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+        <div class="modal-content aimsds-shell">
+
             <!-- Header -->
-            <div class="modal-header">
+            <div class="modal-header aimsds-header">
                 <h5 class="modal-title" id="assignAssetLabel">Assign an Asset</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close aimsds-close" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
             </div>
 
             <!-- Body -->
-            <div class="modal-body">
+            <div class="modal-body aimsds-body">
                 <!-- Selected asset summary (shown when opened from 👤) -->
                 <div id="selectedAssetBox" class="mb-3" style="display:none;">
-                    <label class="form-label mb-1">Selected Asset</label>
+                    <label class="form-label mb-1 fw-bold">Selected Asset</label>
                     <div class="p-2 border rounded bg-white">
                         <div><strong>Name:</strong> <span id="selAssetName">—</span></div>
                         <div><strong>Tag #:</strong> <span id="selAssetTag">—</span></div>
@@ -20,43 +24,85 @@
                     </div>
                 </div>
 
-                <form id="assignAssetForm">
+                <form id="assignAssetForm" novalidate>
                     <!-- Select User -->
                     <div class="mb-3">
-                        <label for="userSelect" class="form-label">Select User</label>
-                        <!-- We will only create a search box once in JS if one doesn’t exist -->
-                        <select class="form-select" id="userSelect" required>
-                            <option selected disabled value="">Choose a user...</option>
-                        </select>
+                        <label for="assignUserSearchInput" class="form-label fw-bold">Select User</label>
+
+                        <div class="aims-userpicker" id="userPicker">
+                            <!-- Navbar-style search bar -->
+                            <div class="search-container aims-userpicker__search">
+                                <input
+                                    type="search"
+                                    id="assignUserSearchInput"
+                                    class="form-control search-input"
+                                    placeholder="Search users…"
+                                    autocomplete="off"
+                                    spellcheck="false"
+                                    autocapitalize="off"
+                                    autocorrect="nope"
+                                    aria-label="Search users" />
+                            </div>
+
+                            <!-- User list (keyboard + click controlled by JS) -->
+                            <div
+                                id="userList"
+                                class="aims-userpicker__list"
+                                role="listbox"
+                                aria-label="Available users"
+                                tabindex="0">
+                                <!-- user options injected by JS -->
+                            </div>
+
+                            <!-- Hidden field is the "real" form value (required for HTML5 validation) -->
+                            <input type="hidden" id="userIdHidden" name="SelectedUserId" required />
+                        </div>
                     </div>
 
                     <!-- Select Asset (hidden when opened from 👤) -->
                     <div class="mb-3" id="assetRow">
-                        <label for="assetSelect" class="form-label">Select Asset</label>
-                        <!-- We will only create a search box once in JS if one doesn’t exist -->
-                        <select class="form-select" id="assetSelect" required>
-                            <option selected disabled value="">Choose an asset...</option>
-                        </select>
+                        <label for="assetSelect" class="form-label fw-bold">Select Asset</label>
+                        <div class="aimsds-controls d-flex flex-column gap-2 w-100">
+                            <!-- search input injected above via JS -->
+                            <select class="form-select aimsds-input" id="assetSelect" required size="8">
+                                <option selected disabled value="">Choose an asset...</option>
+                            </select>
+                        </div>
                     </div>
 
+                    <!-- Comment -->
                     <div class="mb-3">
-                        <label for="commentBox" class="form-label">Assignment Comment</label>
-                        <textarea id="commentBox" class="form-control" rows="3"
-                            placeholder="Reason for assignment..."></textarea>
+                        <label for="commentBox" class="form-label fw-bold">Assignment Comment</label>
+                        <textarea id="commentBox"
+                                  class="form-control aimsds-input"
+                                  rows="3"
+                                  required
+                                  placeholder="Reason for assignment (will be added to the audit log)..."></textarea>
+                        <div class="invalid-feedback">
+                            Please provide a brief comment for this assignment.
+                        </div>
                     </div>
                 </form>
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer justify-content-center gap-3">
-                <div>
-                    <label for="userAgreementUpload" class="btn custom-modal-btn custom-upload-btn">Upload Agreement
-                        ✒️</label>
-                    <input type="file" id="userAgreementUpload" style="display: none;" />
+            <div class="modal-footer aimsds-footer">
+                <div class="aimsds-footer-right w-100 d-flex justify-content-between align-items-center gap-3">
+                    <div class="flex-grow-1 flex-md-grow-0">
+                        <label for="userAgreementUpload"
+                            id="uploadAgreementButton"
+                            class="add-btn upload-btn w-100"
+                            tabindex="0">
+                            Upload Agreement ✒️
+                        </label>
+                        <input type="file" id="userAgreementUpload" style="display:none;" />
+                    </div>
+                    <button type="submit"
+                            form="assignAssetForm"
+                            class="add-btn aimsds-primary assign-btn flex-grow-1 flex-md-grow-0">
+                        Assign Asset
+                    </button>
                 </div>
-                <button type="submit" form="assignAssetForm" class="btn custom-modal-btn custom-submit-btn">
-                    Assign Asset
-                </button>
             </div>
         </div>
     </div>

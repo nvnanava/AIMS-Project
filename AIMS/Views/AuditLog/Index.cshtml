@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="~/css/pages/admin.index.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/components/_Pager.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/pages/auditlog.index.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/pages/_AuditRowModal.css" asp-append-version="true" />
 }
 <div class="page-title-wrapper mb-3">
   <h2 class="page-title">Audit Log</h2>
@@ -124,38 +125,13 @@
 
 @await Html.PartialAsync("_SearchLogsModal")
 
-@* ---------- Row Details Modal (read-only) ------------------------ *@
-<div class="modal fade" id="auditRowModal" tabindex="-1" aria-labelledby="auditRowModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="auditRowModalLabel">Audit Entry</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <dl class="row audit-row-fields">
-          <dt class="col-sm-3">Log ID</dt>        <dd class="col-sm-9" id="ar-id"></dd>
-          <dt class="col-sm-3">Timestamp</dt>     <dd class="col-sm-9" id="ar-ts"></dd>
-          <dt class="col-sm-3">User ID</dt>       <dd class="col-sm-9" id="ar-user"></dd>
-          <dt class="col-sm-3">Action</dt>        <dd class="col-sm-9" id="ar-action"></dd>
-          <dt class="col-sm-3">Asset ID</dt>      <dd class="col-sm-9" id="ar-asset"></dd>
-          <dt class="col-sm-3">Previous Value</dt><dd class="col-sm-9" id="ar-prev"></dd>
-          <dt class="col-sm-3">New Value</dt>     <dd class="col-sm-9" id="ar-new"></dd>
-        </dl>
-        <div class="mb-1 fw-semibold">Description</div>
-        <textarea id="ar-desc" class="form-control audit-desc-box" rows="6" readonly></textarea>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn add-btn" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
-@* --------------------------------------------------------------------- *@
+@* Include the Audit Row modal as a shared component *@
+@await Html.PartialAsync("_AuditRowModal")
 
 @section Scripts {
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js" asp-append-version="true"></script>
     <script src="~/js/pages/auditlog.index.js" asp-append-version="true" defer></script>
+    <script src="~/js/components/auditRowModal.js" asp-append-version="true" defer></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {

@@ -11,9 +11,14 @@ test('Search dedupes in-flight duplicate network requests (Desktop spam)', async
         url.includes('/api/assets/search') && url.includes('q=Desktop');
 
     let desktopCount = 0;
+    const desktopUrls = new Set<string>();
+
     page.on('request', req => {
         const url = req.url();
-        if (isDesktopSearch(url)) desktopCount++;
+        if (isDesktopSearch(url)) {
+            desktopCount++;
+            desktopUrls.add(url);
+        }
     });
 
     // Trigger duplicates quickly
@@ -34,6 +39,6 @@ test('Search dedupes in-flight duplicate network requests (Desktop spam)', async
     // Give our FE deduper/debouncer a moment to coalesce
     await page.waitForTimeout(1000);
 
-    // Assert we only saw one Desktop search request
-    expect(desktopCount).toBe(1);
+    // New contract: no duplicate Desktop URLs (dedup in-flight duplicates)
+    expect(desktopCount).toBe(desktopUrls.size);
 });

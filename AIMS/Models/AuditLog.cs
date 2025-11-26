@@ -39,6 +39,10 @@ public class AuditLog
     public int? SoftwareID { get; set; }
     public Software? SoftwareAsset { get; set; }
 
+    // Link to the assignment (for preview agreement)
+    public int? AssignmentID { get; set; }
+    public Assignment? Assignment { get; set; }
+
     // Fine-grained changes (zero or more)
     public ICollection<AuditLogChange> Changes { get; set; } = new List<AuditLogChange>();
 }

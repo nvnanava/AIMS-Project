@@ -1,45 +1,94 @@
 using AIMS.Data;
-using AIMS.Queries;
+using AIMS.Dtos.Users;
+using AIMS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AIMS.Controllers.Api;
-
-// [Authorize(Roles = "Admin")] 
-[ApiController]
-[Route("api/office")]
-public class OfficeController : ControllerBase
+namespace AIMS.Controllers.Api
 {
-    private readonly AimsDbContext _db;
-
-    // use the office Query to abstract complex logic
-    private OfficeQuery _officeQuery;
-
-    public OfficeController(AimsDbContext db, OfficeQuery officeQuery)
+    [ApiController]
+    [Route("api/users")]
+    public class UsersController : ControllerBase
     {
-        _db = db;
-        _officeQuery = officeQuery;
-    }
+        private readonly AimsDbContext _db;
+        private readonly ILogger<UsersController> _logger;
 
-    // Get a list of Offices
-    [HttpGet("list")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetOffices()
-    {
-        var offices = await _db.Offices
-            // return basic officeID and Name
-            .Select(o => new { o.OfficeID, o.OfficeName })
-            .ToListAsync();
+        public UsersController(AimsDbContext db, ILogger<UsersController> logger)
+        {
+            _db = db;
+            _logger = logger;
+        }
 
-        return Ok(offices);
-    }
+        // GET /api/users/search?searchString=...&skip=0&take=25&softwareId=123
+        [HttpGet("search")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<PersonDto>>> SearchUsers(
+            [FromQuery] string? searchString,
+            [FromQuery] int skip = 0,
+            [FromQuery] int take = 25,
+            [FromQuery] int? softwareId = null)
+        {
+            try
+            {
+                var term = (searchString ?? string.Empty).Trim();
+                take = Math.Clamp(take, 1, 100);
+                skip = Math.Max(skip, 0);
 
-    // allow search queries for offices
-    [HttpGet("search")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SearchOffices([FromQuery] string query = "", CancellationToken ct = default)
-    {
-        // use Query method; this returns results in the shape of OfficeVm
-        return Ok(await _officeQuery.SearchOfficesAsync(query, ct));
+                // Base query: only non-archived users
+                var query = _db.Users
+                    .AsNoTracking()
+                    .Where(u => !u.IsArchived);
+
+                // Seat-aware filter: if softwareId is provided,
+                // exclude users who ALREADY have an ACTIVE assignment for that software.
+                if (softwareId.HasValue)
+                {
+                    var sid = softwareId.Value;
+
+                    query = query.Where(u =>
+                        !_db.Assignments
+                            .AsNoTracking()
+                            .Any(a =>
+                                a.AssetKind == AssetKind.Software &&
+                                a.SoftwareID == sid &&
+                                a.UnassignedAtUtc == null &&
+                                a.UserID == u.UserID));
+                }
+
+                if (!string.IsNullOrWhiteSpace(term))
+                {
+                    var pattern = $"%{term}%";
+                    query = query.Where(u =>
+                        EF.Functions.Like(u.FullName, pattern) ||
+                        EF.Functions.Like(u.EmployeeNumber, pattern) ||
+                        EF.Functions.Like(u.Email, pattern));
+                }
+
+                var users = await query
+                    .OrderBy(u => u.FullName)
+                    .Skip(skip)
+                    .Take(take)
+                    .Select(u => new PersonDto
+                    {
+                        UserID = u.UserID,
+                        EmployeeNumber = u.EmployeeNumber,
+                        Name = u.FullName,
+                        OfficeID = u.OfficeID
+                    })
+                    .ToListAsync();
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error in UsersController.SearchUsers (searchString={Search}, skip={Skip}, take={Take}, softwareId={SoftwareId})",
+                    searchString, skip, take, softwareId
+                );
+
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.ToString());
+            }
+        }
     }
 }

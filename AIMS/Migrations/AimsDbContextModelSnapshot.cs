@@ -55,7 +55,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Agreements", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_Agreement_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -66,6 +66,15 @@ namespace AIMS.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AssignmentID"));
+
+                    b.Property<string>("AgreementContentType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("AgreementFile")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("AgreementFileName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("AssetKind")
                         .HasColumnType("int");
@@ -99,7 +108,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("Assignments", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_Assignment_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -116,6 +125,9 @@ namespace AIMS.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("AssetKind")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AssignmentID")
                         .HasColumnType("int");
 
                     b.Property<byte[]>("AttachmentBytes")
@@ -153,6 +165,8 @@ namespace AIMS.Migrations
 
                     b.HasKey("AuditLogID");
 
+                    b.HasIndex("AssignmentID");
+
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
@@ -170,7 +184,7 @@ namespace AIMS.Migrations
 
                     b.ToTable("AuditLogs", "dbo", t =>
                         {
-                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\r\n                    (\r\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\r\n                        OR\r\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\r\n                    )");
+                            t.HasCheckConstraint("CK_AuditLog_ExactlyOneAsset", "\n                    (\n                        ([AssetKind] = 1 AND [HardwareID] IS NOT NULL AND [SoftwareID] IS NULL)\n                        OR\n                        ([AssetKind] = 2 AND [SoftwareID] IS NOT NULL AND [HardwareID] IS NULL)\n                    )");
                         });
                 });
 
@@ -561,6 +575,10 @@ namespace AIMS.Migrations
 
             modelBuilder.Entity("AIMS.Models.AuditLog", b =>
                 {
+                    b.HasOne("AIMS.Models.Assignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentID");
+
                     b.HasOne("AIMS.Models.Hardware", "HardwareAsset")
                         .WithMany()
                         .HasForeignKey("HardwareID")
@@ -576,6 +594,8 @@ namespace AIMS.Migrations
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Assignment");
 
                     b.Navigation("HardwareAsset");
 

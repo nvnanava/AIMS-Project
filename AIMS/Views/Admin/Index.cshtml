@@ -63,23 +63,17 @@
         type="text"
         id="userSearch"
         class="admin-search-pill"
-        placeholder="Search Users..."
-        oninput="AIMS.Admin.applyAdminTableFilters()"
+        placeholder="Search active users by name or email... (Press Enter)"
       />
     </div>
 
     <div class="d-flex align-items-center gap-3 flex-wrap admin-table-controls-right">
       <label class="toggle-container d-flex align-items-center gap-2 m-0">
-        <input type="checkbox" id="showInactive" onchange="AIMS.Admin.toggleInactiveUsers()" />
+        <span>Active</span>
+        <input type="checkbox" id="showInactive" />
         <span class="slider"></span>
-        Show Inactive Users
+        <span>Inactive</span>
       </label>
-
-      <select id="roleFilter" class="aims-select" onchange="AIMS.Admin.filterByRole()">
-        <option value="All">All Roles</option>
-        <option value="Admin">Admin</option>
-        <option value="User">User</option>
-      </select>
     </div>
   </div>
 
@@ -125,6 +119,12 @@
     </table>
   </div>
 </div>
+
+<!-- Empty state message -->
+<div id="admin-empty" class="search-empty" style="text-align: center; padding: 2rem; color: #666;">
+  Enter a name or email to search for users.
+</div>
+
 </div>
 <!-- Modals -->
 @await Html.PartialAsync("_AddUserModal")

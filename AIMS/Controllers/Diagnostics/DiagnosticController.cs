@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AIMS.Controllers.Diagnostics;
 
 [ApiController]
-[Route("api/diag")]
+[Route("api/debug")]
 public class DiagnosticsController : ControllerBase
 {
     private readonly AimsDbContext _db;
@@ -27,6 +27,51 @@ public class DiagnosticsController : ControllerBase
         _userQuery = userQuery;
         _assignQuery = assignQuery;
         _assetQuery = assetQuery;
+    }
+
+    // ---------- 0) Debug offices helpers ----------
+    // GET /api/debug/offices
+    [HttpGet("offices")]
+    public async Task<IActionResult> GetOffices()
+    {
+        var offices = await _db.Offices
+            .AsNoTracking()
+            .Select(o => new { o.OfficeID, o.OfficeName })
+            .ToListAsync();
+
+        return Ok(offices);
+    }
+
+    // POST /api/debug/seed-offices
+    [HttpPost("seed-offices")]
+    public async Task<IActionResult> SeedOffices()
+    {
+        // Always ensure "Test Office" exists (needed for E2E tests)
+        var officesToEnsure = new[]
+        {
+        new Office { OfficeName = "Test Office", Location = "Test Location" },
+        new Office { OfficeName = "Houston",     Location = "Houston, TX" },
+        new Office { OfficeName = "San Ramon",   Location = "San Ramon, CA" },
+        new Office { OfficeName = "Remote",      Location = "Remote" }
+    };
+
+        var existingNames = await _db.Offices
+            .Select(o => o.OfficeName)
+            .ToListAsync();
+
+        var newOnes = officesToEnsure
+            .Where(o => !existingNames.Contains(o.OfficeName))
+            .ToList();
+
+        if (newOnes.Count == 0)
+        {
+            return Ok("All debug offices already exist (including Test Office) — no action taken.");
+        }
+
+        _db.Offices.AddRange(newOnes);
+        await _db.SaveChangesAsync();
+
+        return Ok($"Seeded {newOnes.Count} offices (including any missing Test Office).");
     }
 
     // ---------- 1) Quick sanity: table counts ----------
@@ -50,7 +95,7 @@ public class DiagnosticsController : ControllerBase
                     a.UserID,
                     User = a.User != null ? a.User.FullName : null,
                     a.AssetKind,
-                    a.HardwareID,          // <— was AssetTag
+                    a.HardwareID,
                     a.SoftwareID,
                     a.AssignedAtUtc,
                     a.UnassignedAtUtc
@@ -60,7 +105,7 @@ public class DiagnosticsController : ControllerBase
         return Ok(summary);
     }
 
-    // ---------- 2) Show active assignments with who/what ----------
+    // ---------- 2) Active assignments ----------
     [HttpGet("active-assignments")]
     public async Task<IActionResult> GetActiveAssignments()
     {
@@ -68,15 +113,14 @@ public class DiagnosticsController : ControllerBase
         return Ok(rows);
     }
 
-    // ---------- 3) Inspect users (incl. role + supervisor id) ----------
+    // ---------- 3) Users ----------
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers()
     {
-        var users = await _userQuery.GetAllUsersAsync();
-        return Ok(users);
+        return Ok(await _userQuery.GetAllUsersAsync());
     }
 
-    // ---------- 4) Full consolidated asset table (Hardware + Software) ----------
+    // ---------- 4) Consolidated asset table ----------
     [HttpGet("asset-table")]
     public async Task<IActionResult> GetAssetTable()
     {
@@ -85,19 +129,19 @@ public class DiagnosticsController : ControllerBase
 
         var active = _db.Assignments.AsNoTracking()
             .Where(a => a.UnassignedAtUtc == null)
-            .Select(a => new { AssetKind = (int)a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID }); // <— was AssetTag
+            .Select(a => new { AssetKind = (int)a.AssetKind, a.HardwareID, a.SoftwareID, a.UserID });
 
         var hardware =
             from h in _db.HardwareAssets.AsNoTracking()
             join aa in active.Where(x => x.AssetKind == HardwareKind)
-                on h.HardwareID equals aa.HardwareID into ha             // <— was aa.AssetTag
+                on h.HardwareID equals aa.HardwareID into ha
             from aa in ha.DefaultIfEmpty()
             select new
             {
                 h.AssetName,
                 TypeRaw = h.AssetType,
                 Tag = h.SerialNumber,
-                AssignedUserId = (int?)aa.UserID,
+                AssignedUserId = aa == null ? (int?)null : (int?)aa.UserID,
                 StatusRaw = h.Status
             };
 
@@ -111,7 +155,7 @@ public class DiagnosticsController : ControllerBase
                 AssetName = s.SoftwareName,
                 TypeRaw = s.SoftwareType,
                 Tag = s.SoftwareLicenseKey,
-                AssignedUserId = (int?)aa.UserID,
+                AssignedUserId = aa == null ? (int?)null : (int?)aa.UserID,
                 StatusRaw = ""
             };
 
@@ -126,29 +170,26 @@ public class DiagnosticsController : ControllerBase
             Type = string.IsNullOrWhiteSpace(x.TypeRaw) ? "Software" : x.TypeRaw!,
             x.Tag,
             Assigned = x.AssignedUserId.HasValue,
-            Status = !string.IsNullOrWhiteSpace(x.StatusRaw)
-                ? x.StatusRaw
-                : (x.AssignedUserId.HasValue ? "Assigned" : "Available")
+            Status = string.IsNullOrWhiteSpace(x.StatusRaw)
+                ? (x.AssignedUserId.HasValue ? "Assigned" : "Available")
+                : x.StatusRaw
         }));
     }
 
     // ---------- 5) Search available assets ----------
-    // GET /api/diag/assets?q=foo
     [HttpGet("assets")]
-    [Produces("application/json")]
     public async Task<IActionResult> GetAvailableAssets(
-       [FromQuery(Name = "q")] string? searchString,
-       [FromQuery] int take = 50,
-       CancellationToken ct = default)
+        [FromQuery(Name = "q")] string? searchString,
+        [FromQuery] int take = 50,
+        CancellationToken ct = default)
     {
         take = Math.Clamp(take, 1, 100);
 
-        // Available hardware = hardware with NO open assignment
         var availableHardware = _db.HardwareAssets.AsNoTracking()
             .Where(h => !_db.Assignments.Any(a =>
                 a.UnassignedAtUtc == null &&
                 a.AssetKind == AssetKind.Hardware &&
-                a.HardwareID == h.HardwareID))               // <— was a.AssetTag
+                a.HardwareID == h.HardwareID))
             .Select(h => new AssetLookupItemDto
             {
                 AssetID = h.HardwareID,
@@ -156,7 +197,6 @@ public class DiagnosticsController : ControllerBase
                 AssetKind = (int)AssetKind.Hardware
             });
 
-        // Available software = software with NO open assignment
         var availableSoftware = _db.SoftwareAssets.AsNoTracking()
             .Where(s => !_db.Assignments.Any(a =>
                 a.UnassignedAtUtc == null &&
@@ -169,7 +209,6 @@ public class DiagnosticsController : ControllerBase
                 AssetKind = (int)AssetKind.Software
             });
 
-        // Union + optional search
         var query = availableHardware.Concat(availableSoftware);
 
         if (!string.IsNullOrWhiteSpace(searchString))

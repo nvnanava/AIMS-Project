@@ -1,10 +1,10 @@
 using System.Threading;
 using System.Threading.Tasks;
+using AIMS.Controllers.Api;
 using AIMS.Data;
+using AIMS.Dtos.Hardware;
 using AIMS.Services;
 using AIMS.Utilities;
-using AIMS.Dtos.Hardware;
-using AIMS.Controllers.Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
