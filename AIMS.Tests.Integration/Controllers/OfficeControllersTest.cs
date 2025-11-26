@@ -33,7 +33,7 @@ namespace AIMS.Tests.Integration.Controllers
             }
 
             // Call endpoint
-            var response = await client.PostAsync("/api/debug/seed-offices", null);
+            var response = await client.PostAsync("/api/office/seed-offices", null);
             var content = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -66,7 +66,7 @@ namespace AIMS.Tests.Integration.Controllers
             }
 
             // Call endpoint again
-            var response = await client.PostAsync("/api/debug/seed-offices", null);
+            var response = await client.PostAsync("/api/office/seed-offices", null);
             var content = await response.Content.ReadAsStringAsync();
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
