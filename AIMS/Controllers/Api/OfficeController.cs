@@ -1,4 +1,5 @@
 using AIMS.Data;
+using AIMS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,28 +7,23 @@ namespace AIMS.Controllers.Api;
 
 [ApiController]
 [Route("api/office")]
-public class OfficeController : ControllerBase
+public class DebugController : ControllerBase
 {
+    private readonly IWebHostEnvironment _env;
     private readonly AimsDbContext _db;
 
-    public OfficeController(AimsDbContext db)
+    public DebugController(AimsDbContext db, IWebHostEnvironment env)
     {
         _db = db;
+        _env = env;
     }
 
-    // GET /api/office/list
-    // Used by the app to populate office dropdowns, etc.
-    [HttpGet("list")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    // Get a List of Offices in the local DB
+    [HttpGet("offices")]
     public async Task<IActionResult> GetOffices()
     {
         var offices = await _db.Offices
-            .AsNoTracking()
-            .Select(o => new
-            {
-                o.OfficeID,
-                o.OfficeName
-            })
+            .Select(o => new { o.OfficeID, o.OfficeName })
             .ToListAsync();
 
         return Ok(offices);
@@ -43,16 +39,15 @@ public class OfficeController : ControllerBase
         }
 
         // Check if a Test Office already exists
-        var exists = await _context.Offices.AnyAsync(o => o.OfficeName == "Test Office");
+        var exists = await _db.Offices.AnyAsync(o => o.OfficeName == "Test Office");
         if (exists)
             return Ok("Offices already exist — no action taken.");
 
         Office office = new Office { OfficeName = "Test Office", Location = "Test Office" };
 
-        _context.Offices.Add(office);
-        await _context.SaveChangesAsync();
+        _db.Offices.Add(office);
+        await _db.SaveChangesAsync();
 
         return Ok("Seeded a test office successfully.");
     }
-
 }
