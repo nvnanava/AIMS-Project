@@ -33,14 +33,19 @@ public class DebugController : ControllerBase
     [HttpPost("seed-offices")]
     public async Task<IActionResult> SeedOffices()
     {
-        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright"))
+        if (!_env.IsDevelopment() && !_env.IsEnvironment("Playwright") && !_env.IsEnvironment("Test"))
         {
             return Forbid();
         }
 
+        // Check if a Test Office already exists
+        var exists = await _context.Offices.AnyAsync(o => o.OfficeName == "Test Office");
+        if (exists)
+            return Ok("Offices already exist — no action taken.");
+
         Office office = new Office { OfficeName = "Test Office", Location = "Test Office" };
 
-        _context.Offices.AddRange(office);
+        _context.Offices.Add(office);
         await _context.SaveChangesAsync();
 
         return Ok("Seeded a test office successfully.");
