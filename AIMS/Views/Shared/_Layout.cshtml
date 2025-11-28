@@ -88,17 +88,33 @@
     <header>
         <nav
             class="navbar navbar-expand-sm custom-navbar navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3 fixed-top">
-            <div class="container-fluid">
+            <div class="container-fluid aims-nav-shell">
                 <a class="navbar-brand" asp-controller="Home" asp-action="Index" data-testid="navbar-brand">
                     <img src="~/images/AIMS_LOGO_W.png" alt="AIMS Logo" width="164" height="60"
                         class="d-inline-block align-text-top" asp-append-version="true" />
                 </a>
 
+                <!-- Search lives in the middle slot -->
+                <div class="navbar-right">
+                    <form asp-controller="Search" asp-action="Index" method="get">
+                        <div id="search-container" class="search-container"
+                            style="display:flex;justify-content:center;align-items:center;width:100%;">
+                            <button type="submit" id="search-addon" class="input-group-text search-icon"
+                                    style="padding:10px;font-size:1rem;">🔍</button>
+                            <input name="searchQuery" type="text" id="search-input" class="form-control search-input"
+                                placeholder="Search for assets or employees..." aria-label="Search"
+                                aria-describedby="search-addon">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Hamburger -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
                     aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
+                <!-- Nav links -->
                 <div id="mainNav" class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         @if (User.IsSupervisor())
@@ -129,7 +145,8 @@
                             </li>
                         }
 
-                        @if (User.IsAdmin() || User.IsHelpDesk())
+                        @* Audit Log: Admin only *@
+                        @if (User.IsAdmin())
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="AuditLog" asp-action="Index">
@@ -149,19 +166,6 @@
                             </form>
                         </li>
                     </ul>
-                </div>
-
-                <div class="navbar-right">
-                    <form asp-controller="Search" asp-action="Index" method="get">
-                        <div id="search-container" class="search-container"
-                            style="display:flex;justify-content:center;align-items:center;width:100%;">
-                            <button type="submit" id="search-addon" class="input-group-text search-icon"
-                                style="padding:10px;font-size:1rem;">🔍</button>
-                            <input name="searchQuery" type="text" id="search-input" class="form-control search-input"
-                                placeholder="Search for assets or employees..." aria-label="Search"
-                                aria-describedby="search-addon">
-                        </div>
-                    </form>
                 </div>
             </div>
         </nav>

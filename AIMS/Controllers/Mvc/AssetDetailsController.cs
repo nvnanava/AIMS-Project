@@ -1,10 +1,12 @@
 using AIMS.Data;
+using AIMS.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AIMS.Controllers.Mvc;
 
+[Authorize] // require a logged-in user
 public class AssetDetailsController : Controller
 {
     private readonly ILogger<AssetDetailsController> _logger;
@@ -19,12 +21,13 @@ public class AssetDetailsController : Controller
     // Keep parity with old route (/AssetDetails/Index) and provide a clean route (/AssetDetails)
     [HttpGet("/AssetDetails")]
     [HttpGet("/AssetDetails/Index")]
-    [AllowAnonymous]
     public async Task<IActionResult> Index([FromQuery] string? category, [FromQuery] string? tag)
     {
-        // Supervisors do not use details—send to Search
-        if (User.IsInRole("Supervisor") || User.HasClaim("role", "Supervisor"))
-            return RedirectToAction(nameof(SearchController.Index), "Search", new { searchQuery = (string?)null });
+        // Supervisors should never see Asset Details → show 403 page
+        if (User.IsSupervisor())
+        {
+            return View("~/Views/Error/NotAuthorized.cshtml");
+        }
 
         var requestedCategory = string.IsNullOrWhiteSpace(category) ? "Laptop" : category.Trim();
         ViewData["Category"] = requestedCategory;

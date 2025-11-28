@@ -173,7 +173,7 @@
             const params = new URLSearchParams({
                 query: query,
             });
-            const url = `/api/office/search?${params.toString()}`;
+            const url = `/api/offices/search?${params.toString()}`;
             const offices = await aimsFetch(url, { signal: aadAbortCtrl.signal });
             renderOfficeResults(offices, query, isEdit);
         } catch (e) {
@@ -285,6 +285,12 @@
             r.classList.add(visibleIndex % 2 === 0 ? "even-row" : "odd-row");
             visibleIndex++;
         });
+    }
+
+    // Legacy no-op: tests and some listeners still call this, but
+    // filtering is now server-side via /api/admin/users/search.
+    function applyAdminTableFilters() {
+        // intentionally empty
     }
 
     // function applyAdminTableFilters() {

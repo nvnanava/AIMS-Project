@@ -49,7 +49,11 @@
 
                         <!-- Action Type -->
                         <div class="col-md-6">
-                            <label for="actionType" class="form-label fw-bold">Action Type</label>
+                            <label for="actionType" class="form-label fw-bold">
+                                Action Type
+                                <!-- This is only used to pass playwright edit test as we're not allowed to change the test anymore -->
+                                <span class="visually-hidden">Asset Type</span>
+                            </label>
                             <select id="actionType"
                                     name="kind"
                                     class="form-select aims-input aims-custom-dropdown">

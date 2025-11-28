@@ -71,8 +71,6 @@
   --aims-dropdown-text: var(--secondary);
   --aims-dropdown-hover-bg: var(--accent);
   --aims-dropdown-hover-text: #fff;
-
-
 }
 
 html {
@@ -215,34 +213,55 @@ body {
   display: none !important;
 }
 
-/* Desktop (≥992px): right-align search, comfy width */
+/* Desktop (≥992px): right-align search for non-AIMS navbars */
 @media (min-width: 992px) {
-  .navbar .search-container {
+  .navbar:not(.custom-navbar) .search-container {
     width: clamp(22rem, 32vw, 36rem) !important;
     margin: 0 0 0 auto !important;
   }
 
-  .navbar .search-input {
+  .navbar:not(.custom-navbar) .search-input {
     min-width: 16rem;
   }
 }
 
-/* Small/medium (<992px): let the search flex between logo and toggler */
+/* Small/medium (<992px): default behavior for non-AIMS navbars */
 @media (max-width: 991.98px) {
-  .navbar .search-container {
+  .navbar:not(.custom-navbar) .search-container {
     min-width: 14rem;
     max-width: none;
     flex: 1 1 auto;
-    /* grow to use the middle space */
     margin: 0 .5rem 0 0;
-    /* small gap before toggle */
   }
 
-  /* Avoid over-tall bar */
-  .navbar .search-input,
-  .navbar .search-icon {
+  .navbar:not(.custom-navbar) .search-input,
+  .navbar:not(.custom-navbar) .search-icon {
     height: auto;
   }
+}
+
+/* AIMS navbar – make 🔍 mimic icon-btn style */
+.custom-navbar .search-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(26, 188, 156, .10);
+  border: 2px solid var(--aims-accent, #1abc9c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .14);
+  color: var(--aims-ink, #34495e);
+  /* dark icon, not pale */
+  padding: 0;
+  font-size: 1rem;
+}
+
+.custom-navbar .search-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
+  background: rgba(26, 188, 156, .18);
 }
 
 .container-fluid.layout-flex {
@@ -330,4 +349,179 @@ body {
 .aims-select-sm .aims-select-item {
   padding: 6px 10px;
   font-size: 0.9rem;
+}
+
+/* === Navbar flex shell + ordering ===================================== */
+.custom-navbar .aims-nav-shell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  /* allow nav to drop to a second row when needed */
+}
+
+/* Base ordering (will be refined by media queries) */
+.custom-navbar .navbar-brand {
+  order: 0;
+}
+
+.custom-navbar .navbar-right {
+  order: 2;
+}
+
+.custom-navbar .navbar-toggler {
+  order: 3;
+}
+
+.custom-navbar #mainNav {
+  order: 1;
+  flex: 1 1 auto;
+}
+
+/* ≥ 1232px: Logo | Nav links | Search, no hamburger, single row */
+@media (min-width: 1232px) {
+  .custom-navbar .aims-nav-shell {
+    flex-wrap: nowrap;
+  }
+
+  .custom-navbar .navbar-brand {
+    order: 0;
+    margin-right: 1rem;
+  }
+
+  .custom-navbar #mainNav {
+    order: 1;
+  }
+
+  .custom-navbar .navbar-right {
+    order: 2;
+    margin-left: 1.5rem;
+  }
+
+  /* Hide toggler on big screens */
+  .custom-navbar .navbar-toggler {
+    display: none;
+  }
+
+  /* Desktop search styling for AIMS navbar */
+.custom-navbar .search-container {
+  width: clamp(22rem, 32vw, 36rem) !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+  .custom-navbar .search-input {
+    min-width: 16rem;
+  }
+}
+
+/* < 1232px: Logo | Search (fills middle) | Hamburger, links in dropdown */
+@media (max-width: 1231.98px) {
+  .custom-navbar .navbar-brand {
+    order: 0;
+    margin-right: .5rem;
+  }
+
+  .custom-navbar .navbar-right {
+    order: 1;
+    flex: 1 1 auto;
+    /* let the middle slot grow */
+  }
+
+  .custom-navbar .navbar-right form {
+    width: 100%;
+    /* search form spans the whole middle area */
+  }
+
+  /* Search bar stretches to fill remaining space */
+  .custom-navbar .search-container {
+    width: 100%;
+    max-width: none;
+    margin: 0 .5rem 0 0;
+  }
+
+  /* Show hamburger + align contents */
+  .custom-navbar .navbar-toggler {
+    order: 2;
+    margin-left: .5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Collapsed nav drops onto its own row */
+  .custom-navbar #mainNav {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  /* Force Bootstrap collapse behavior under 1232px
+     even though we use navbar-expand-sm */
+  .custom-navbar.navbar-expand-sm #mainNav {
+    display: none !important;
+  }
+
+  .custom-navbar.navbar-expand-sm #mainNav.show {
+    display: block !important;
+    margin-top: .5rem;
+  }
+
+  /* Make collapsed list vertical instead of spread out */
+  .custom-navbar #mainNav .navbar-nav {
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: .25rem;
+  }
+}
+
+/* AIMS-styled navbar hamburger toggle (visuals only; layout handled above) */
+.custom-navbar .navbar-toggler {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  padding: 0;
+  margin-left: .5rem;
+
+  background: rgba(26, 188, 156, .12);
+  border: 2px solid var(--aims-accent, #1abc9c);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .14);
+  transition:
+    transform .05s ease,
+    box-shadow .15s ease,
+    background-color .15s ease;
+}
+
+/* Hover + focus */
+.custom-navbar .navbar-toggler:hover {
+  transform: translateY(-1px);
+  background: rgba(26, 188, 156, .20);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .18);
+}
+
+.custom-navbar .navbar-toggler:focus,
+.custom-navbar .navbar-toggler:focus-visible {
+  outline: none;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, .18),
+    0 0 0 3px var(--aims-focus, rgba(26, 188, 156, .35));
+}
+
+/* Kill Bootstrap’s background image */
+.custom-navbar .navbar-toggler-icon {
+  background-image: none;
+}
+
+/* Draw 3 bars using one element + box-shadow */
+.custom-navbar .navbar-toggler-icon {
+  position: relative;
+  width: 22px;
+  height: 2.5px;
+  background: var(--aims-accent, #1abc9c);
+  border-radius: 2px;
+  box-shadow:
+    0 -6px 0 var(--aims-accent, #1abc9c),
+    /* top bar */
+    0 6px 0 var(--aims-accent, #1abc9c);
+  /* bottom bar */
 }

@@ -35,9 +35,6 @@
     const toolbar = document.getElementById("search-toolbar");
     const adminWrapper = document.querySelector(".admin-table-wrapper");
 
-    const filterFab = document.getElementById("filter-fab");
-    const hiddenFilterAnchor = document.getElementById("searchFilters");
-
     // Filters (toolbar)
     const inputName = document.querySelector('[name="Asset Name"]');
     const selectType = document.querySelector('[name="Type"]');
@@ -45,8 +42,12 @@
     const inputAssn = document.querySelector('[name="Assignment"]');
     const selectStat = document.querySelector('[name="Status"]');
 
-    const archivedToggle = document.querySelector('[data-role="show-archived-toggle"]');
     const inlineArchivedToggle = document.getElementById("showArchivedToggle");
+    // Wire the header "Show Archived" pill to the shared handler
+    inlineArchivedToggle?.addEventListener("change", (e) => {
+        const checked = e.target.checked;
+        handleShowArchivedChanged(checked);
+    });
 
     // Normalize many "truthy" representations used by APIs/DBs
     const asTrue = (v) => {
@@ -56,8 +57,9 @@
 
     // Role flags
     const asBool = v => String(v).toLowerCase() === "true" || String(v) === "1";
-    const CAN_ADMIN = asBool(window.__CAN_ADMIN__);
-    const IS_SUPERVISOR = asBool(window.__IS_SUPERVISOR__);
+    const CAN_ADMIN = asBool(window.__CAN_ADMIN__);          // Admin OR Help Desk
+    const IS_SUPERVISOR = asBool(window.__IS_SUPERVISOR__);  // Supervisor
+    const CAN_ASSIGN = asBool(window.__CAN_ASSIGN__);        // Admin
 
     // ---- Normalizers ------------------------------------------------------------
     const getTag = (row) => String(row.assetTag ?? row.AssetTag ?? row.tag ?? row.Tag ?? "");
@@ -384,24 +386,6 @@
         persistFiltersSnapshot();
     }
 
-    // Initialize global filter icon logic (archive-filter.js from _Layout)
-    try {
-        AIMSFilterIcon.init("searchFilters", {
-            onChange: ({ showArchived: newVal }) => {
-                handleShowArchivedChanged(newVal);
-            }
-        });
-    } catch (e) {
-        console.warn("AIMSFilterIcon not initialized:", e);
-    }
-
-    // Wire the inline header toggle ("Show Archived Assets") into the same flow
-    if (inlineArchivedToggle) {
-        inlineArchivedToggle.addEventListener("change", (e) => {
-            handleShowArchivedChanged(e.target.checked);
-        });
-    }
-
     // ----- Page safety: ensure nothing overlays the navbar --------------------
     function ensureNavbarClickable() {
         [toolbar, document.querySelector(".table-wrapper")].forEach(el => {
@@ -424,73 +408,6 @@
             });
         });
     }
-
-    /* ---- FAB → popover toggle (Show archived) -------------------------------- */
-    function wireFilterFab() {
-        if (!filterFab || !hiddenFilterAnchor) return;
-
-        const pop = document.querySelector('[data-component="filter-icon"][data-id="searchFilters"]');
-        if (!pop) return;
-
-        let cleanupTracker = null;
-
-        const closePop = () => {
-            if (!pop.classList.contains("open")) return;
-            pop.classList.remove("open");
-            pop.hidden = true;
-            cleanupTracker?.();
-            cleanupTracker = null;
-        };
-
-        // Close on outside click
-        document.addEventListener("click", (ev) => {
-            if (!pop.classList.contains("open")) return;
-            const inside = pop.contains(ev.target) || filterFab.contains(ev.target);
-            if (!inside) closePop();
-        });
-
-        filterFab.addEventListener("click", () => {
-            // keep the invisible anchor centered on the FAB (for any consumers)
-            const r = filterFab.getBoundingClientRect();
-            hiddenFilterAnchor.style.position = "fixed";
-            hiddenFilterAnchor.style.left = Math.round(r.left + r.width * 0.5) + "px";
-            hiddenFilterAnchor.style.top = Math.round(r.top + r.height * 0.5) + "px";
-
-            const opening = !pop.classList.contains("open");
-            pop.hidden = !opening;
-            pop.classList.toggle("open", opening);
-
-            if (opening) {
-                // size hints so clamping is sane on first paint
-                pop.style.minWidth = "220px";
-                pop.style.maxInlineSize = "calc(100vw - 24px)";
-
-                // place & start live tracking; no transform-based nudges
-                cleanupTracker = trackOverlay(filterFab, pop, 8);
-                pop.querySelector('[data-role="show-archived-toggle"]')?.focus();
-            } else {
-                closePop();
-            }
-        });
-    }
-
-    // If CSS background image failed, inject an <img> fallback so the icon appears
-    (function ensureFabIcon() {
-        if (!filterFab) return;
-        const bg = getComputedStyle(filterFab).backgroundImage || "";
-        if (bg === "none" || bg.trim() === "") {
-            const img = document.createElement("img");
-            img.src = "/images/filter-icon-blue.png";
-            img.alt = "";
-            img.width = 24;
-            img.height = 24;
-            img.decoding = "async";
-            img.loading = "eager";
-            img.style.pointerEvents = "none";
-            filterFab.appendChild(img);
-            img.addEventListener("error", () => { img.src = "../../images/filter-icon-blue.png"; });
-        }
-    })();
 
     // ----- Scoped CSS attr (razor isolation friendly) -------------------------
     const scopeAttrName = (() => {
@@ -632,33 +549,18 @@
 
     function setToolbarVisible(visible) {
         if (toolbar) toolbar.hidden = !visible;
-        if (filterFab) filterFab.hidden = !visible;
         document.body.classList.toggle("is-blank", !visible);
     }
 
     function hideArchivedToggles() {
-        // Popover checkbox (FAB filters panel)
-        const pop = archivedToggle?.closest('[data-component="filter-icon"]');
-        if (pop) {
-            pop.hidden = true;              // HTML hidden attribute
-            pop.style.display = "none";     // belt-and-suspenders
-        }
-
-        // Header checkbox next to the Search title
         const header = inlineArchivedToggle?.closest(".toggle-container");
         if (header) {
-            header.hidden = true;           // HTML hidden attribute
-            header.style.display = "none";  // ensure it’s gone visually
+            header.hidden = true;
+            header.style.display = "none";
         }
     }
 
     function showArchivedToggles() {
-        const pop = archivedToggle?.closest('[data-component="filter-icon"]');
-        if (pop) {
-            pop.hidden = false;
-            pop.style.display = "";         // revert to stylesheet default
-        }
-
         const header = inlineArchivedToggle?.closest(".toggle-container");
         if (header) {
             header.hidden = false;
@@ -669,23 +571,9 @@
     function setArchivedToggleState({ checked = false, disabled = false } = {}) {
         showArchived = !!checked;
 
-        // Popover checkbox inside the filter icon panel
-        if (archivedToggle) {
-            archivedToggle.checked = !!checked;
-            archivedToggle.disabled = !!disabled;
-        }
-
-        // Inline header checkbox next to the page title
         if (inlineArchivedToggle) {
             inlineArchivedToggle.checked = !!checked;
             inlineArchivedToggle.disabled = !!disabled;
-        }
-
-        // Keep popover closed when disabled
-        const pop = document.querySelector('[data-component="filter-icon"][data-id="searchFilters"]');
-        if (disabled && pop) {
-            pop.classList.remove("open");
-            pop.hidden = true;
         }
     }
 
@@ -823,7 +711,7 @@
 
     // Assignment cell (includes 👤 button for Admin/Supervisor)
     function renderAssignmentCell(row) {
-        const canShowButton = CAN_ADMIN;
+        const canShowButton = CAN_ASSIGN;  // Admin + Supervisor only
 
         const isSoftware = (row.softwareID ?? row.SoftwareID ?? row.softwareId) != null;
         const totalSeats = Number(row.licenseTotalSeats ?? row.LicenseTotalSeats ?? 0);
@@ -1157,8 +1045,8 @@
     function applyFiltersAndRender({ page = 1 } = {}) {
         const v = (s) => (s || "").trim().toLowerCase();
 
-        // The checkbox is the source of truth. If it’s checked, we must include archived.
-        if (archivedToggle) showArchived = !!archivedToggle.checked;
+        // The header checkbox is the source of truth.
+        if (inlineArchivedToggle) showArchived = !!inlineArchivedToggle.checked;
 
         filteredItems = cacheAllItems.filter(row => {
             // Absolute rule: if toggle is OFF, archived rows never participate in paging or filters.
@@ -1777,7 +1665,6 @@
     (async function init() {
         hydrateCacheFromSession();
         setArchivedToggleState({ checked: showArchived, disabled: false });
-        wireFilterFab();
         initCustomDropdowns();
         scheduleSync(); // sync toolbar widths on boot
 
@@ -1787,7 +1674,7 @@
         if (restored) {
             // 1) Archive toggle: prefer explicit snapshot value only on reload of same query
             showArchived = !!restored.archived;
-            if (archivedToggle) archivedToggle.checked = showArchived;
+            if (inlineArchivedToggle) inlineArchivedToggle.checked = showArchived;
 
             // 2) Filters object
             activeFilters = { ...(restored.filters || {}) };

@@ -12,9 +12,17 @@
     ViewData["Title"] = "Search";
     var tableHeaders = new List<string> { "Asset Name", "Type", "Tag #", "Assignment", "Status" };
 
-    // Server-rendered role flags
+    // Admin-ish chrome (deep-link rows, etc.): Admin OR Help Desk
     var __CAN_ADMIN__ = User.IsAdminOrHelpdesk();
+
+    // Supervisor (already correct)
     var __IS_SUPERVISOR__ = User.IsSupervisor();
+
+    // Only Admin can assign/unassign
+    var __CAN_ASSIGN__ = User.IsAdmin();
+
+    // Only Admin can see archived toggle
+    var __CAN_VIEW_ARCHIVED__ = User.IsAdmin();
 }
 
 @section Styles {
@@ -30,13 +38,15 @@
 <script>
     window.__CAN_ADMIN__ = @(__CAN_ADMIN__ ? "true" : "false");
     window.__IS_SUPERVISOR__ = @(__IS_SUPERVISOR__ ? "true" : "false");
+    window.__CAN_ASSIGN__ = @(__CAN_ASSIGN__ ? "true" : "false");
+    window.__CAN_VIEW_ARCHIVED__ = @(__CAN_VIEW_ARCHIVED__ ? "true" : "false");
     window.__ASSETS_VER__ = @CacheStamp.AssetsVersion;
 </script>
 
 <div class="search-layout">
     <div class="report-page-size search-page-header">
         <h1>Search</h1>
-        @if (__CAN_ADMIN__)
+        @if (__CAN_VIEW_ARCHIVED__)
         {
             <label class="toggle-container d-flex align-items-center gap-2 m-0">
                 <input type="checkbox" id="showArchivedToggle" />
@@ -113,26 +123,11 @@
     </div>
 </div>
 
-@if (__CAN_ADMIN__)
-{
-    <!-- Anchor for FAB popover -->
-    <button id="searchFilters" type="button" class="filter-anchor" aria-hidden="true"></button>
-    <div class="filter-popover" data-component="filter-icon" data-id="searchFilters" hidden>
-        <div class="filter-popover__inner">
-            <label class="chk-row aims-check">
-                <input type="checkbox" data-role="show-archived-toggle" />
-                <span>Show archived assets</span>
-            </label>
-        </div>
-    </div>
-}
-
 @await Html.PartialAsync("_AssignAssetModal")
 @await Html.PartialAsync("_UnassignAssetModal")
 @await Html.PartialAsync("_SeatModeModal")
 
 @section Scripts {
-    <script src="~/js/components/archive-filter.js" asp-append-version="true" defer></script>
     <script src="~/js/pages/search.index.js" asp-append-version="true" defer></script>
     <script src="~/js/components/assignAssetModal.js" asp-append-version="true" defer></script>
     <script src="~/js/components/unassignAssetModal.js" asp-append-version="true" defer></script>
