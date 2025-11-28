@@ -67,7 +67,7 @@ button.accept-policy {
   background-color: #ecf0f1;
   border: 2px solid transparent;
   border-radius: 20px;
-  padding: 5px 12px;
+  padding: 5px 12px 5px 0px;
   transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
@@ -87,20 +87,6 @@ button.accept-policy {
 .search-container:focus-within {
   border-color: #1abc9c;
   box-shadow: 0 0 8px rgba(26, 188, 156, 0.7);
-}
-
-/* Search Icon */
-.search-icon {
-  background-color: transparent;
-  color: #ecf0f1;
-  border: none;
-  padding: 5px 5px;
-  border-radius: 20px;
-  transition: border 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
-
-.search-icon:hover {
-  background-color: #d5dbdb;
 }
 
 .nav-link.active {

@@ -60,14 +60,19 @@
   <link rel="stylesheet" href="~/css/pages/home.index.css" asp-append-version="true" />
 }
 
-<!-- Single settings trigger (opens the modal) -->
-<button
-    class="settings-btn"
-    type="button"
-    data-bs-toggle="modal"
-    data-bs-target="#dashboardSettingsModal"
-    aria-label="Open dashboard settings">
-</button>
+@* Dashboard Settings – Admin only *@
+@if (User.IsInRole("Admin"))
+{
+    <!-- Single settings trigger (opens the modal) -->
+    <button
+        class="settings-btn"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#dashboardSettingsModal"
+        aria-label="Open dashboard settings">
+    </button>
+}
+
 
 <!-- Cards viewport -->
 <section class="cards-viewport" role="region" aria-label="Asset categories">

@@ -97,31 +97,6 @@ async function retryUntil<T>(
     throw new Error(`[${label}] timed out after ${attempts * delayMs}ms`);
 }
 
-// Fetch a single valid UserID with retries + endpoint fallbacks.
-async function getAnyUserId(request: APIRequestContext): Promise<number> {
-    const endpoints = ['/api/diag/users', '/api/users', '/api/users/get-all'];
-
-    const id = await retryUntil<number | null>(
-        async () => {
-            for (const ep of endpoints) {
-                const data = await safeJson<any>(() =>
-                    request.get(ep, { headers: { Accept: 'application/json' } })
-                );
-                const rows = rowsFrom(data);
-                const id = pickFirstNumberRowId(rows, 'UserID', 'userID', 'userId', 'id');
-                if (id) return id;
-            }
-            return null;
-        },
-        (v) => typeof v === 'number' && v > 0,
-        40,
-        250,
-        'getAnyUserId'
-    );
-
-    return id!;
-}
-
 // Fetch a single valid HardwareID with retries + endpoint fallbacks.
 async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
     const endpoints = ['/api/hardware/get-all', '/api/diag/hardware', '/api/hardware'];
@@ -148,12 +123,9 @@ async function getAnyHardwareId(request: APIRequestContext): Promise<number> {
 }
 
 // Optional validators to avoid 400s
-async function isValidUserId(request: APIRequestContext, id: number): Promise<boolean> {
-    if (!id) return false;
-    const res = await request.get('/api/diag/users', { headers: { Accept: 'application/json' } });
-    const data = (await res.json().catch(() => null)) as Any | null;
-    const rows: Any[] = rowsFrom(data);
-    return rows.some((r) => pickNumber(r, 'UserID', 'userID', 'userId', 'id') === id);
+// For E2E, just treat any non-zero as "valid" and let the API reject if needed.
+async function isValidUserId(_request: APIRequestContext, id: number): Promise<boolean> {
+    return Number.isFinite(id) && id > 0;
 }
 
 async function isValidHardwareId(request: APIRequestContext, id: number): Promise<boolean> {
@@ -170,8 +142,8 @@ async function isValidHardwareId(request: APIRequestContext, id: number): Promis
 
 /**
  * Creates an audit entry via /api/audit/create.
- * Prefers explicit args → env/cache (REAL_* IDs if valid) → discovery.
- * On HTTP 400 for invalid IDs, retries once with discovered IDs.
+ * Prefers explicit args → env/cache (REAL_* IDs if valid) → simple fallback.
+ * On HTTP 400 for invalid IDs, retries once with discovered HardwareID.
  */
 export async function createAudit(
     request: APIRequestContext,
@@ -193,12 +165,13 @@ export async function createAudit(
         externalId?: string;
     }> = {}
 ): Promise<APIResponse> {
-    // Prefer explicit param → env/cache (validated) → discovery (with retries)
-    let resolvedUserId =
-        userId ??
-        (await (async () =>
-            (await isValidUserId(request, REAL_USER_ID)) ? REAL_USER_ID : await getAnyUserId(request)
-        )());
+    // Prefer explicit param → REAL_USER_ID → hard-coded fallback (1)
+    let resolvedUserId: number =
+        (typeof userId === 'number' && userId > 0)
+            ? userId
+            : (REAL_USER_ID && REAL_USER_ID > 0)
+                ? REAL_USER_ID
+                : 1;
 
     let resolvedHardwareId: number | null = hardwareId ?? null;
     if (assetKind === 1) {
@@ -224,6 +197,7 @@ export async function createAudit(
         request.post('/api/audit/create', {
             headers: { 'Content-Type': 'application/json' },
             data: {
+                req: uuid(),
                 userId: uid,
                 action,
                 description,
@@ -243,8 +217,14 @@ export async function createAudit(
         const badHw = /Hardware with ID .* does not exist/i.test(body);
 
         if (badUser || badHw) {
-            // Retry with discovered IDs
-            if (badUser) resolvedUserId = await getAnyUserId(request);
+            // Retry with discovered IDs (user fallback stays simple)
+            if (badUser) {
+                // If REAL_USER_ID is bad, just fallback to 1 for retry
+                resolvedUserId =
+                    (REAL_USER_ID && REAL_USER_ID > 0)
+                        ? REAL_USER_ID
+                        : 1;
+            }
             if (assetKind === 1 && (badHw || !resolvedHardwareId)) {
                 resolvedHardwareId = await getAnyHardwareId(request);
             }
