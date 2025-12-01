@@ -1,12 +1,118 @@
 # AIMS - Asset Inventory Management System
 
-![AIMS Logo](./Images/AIMSLOGO.png)
+![AIMS Logo](./Images/AIMS_LOGOT.png)
 
 ## Project Overview
 
 An Asset Inventory Management System built for the Medical Board of California, a local state agency. The IT Asset Tracking System will be a web-based application that provides a structured and automated approach for managing IT assets, tracking asset lifecycle, and enhancing accountability. This system will be designed to integrate with the Medical Board’s existing Microsoft-based infrastructure, supporting role-based access, workflow automation, and audit logging for IT staff.
 
-## Installation Instructions
+## System Requirements
+
+| Component                                  | Version / Details                           |
+| ------------------------------------------ | ------------------------------------------- |
+| **.NET**                                   | 9.0                                         |
+| **Node.js**                                | 20.11.1                                     |
+| **Docker**                                 | 4.52.0                                      |
+| **Operating Systems Used for Development** | Windows 11, macOS Sequoia, macOS Tahoe      |
+| **Version Control**                        | Git                                         |
+| **Shell**                                  | Bash                                        |
+| **Hosting Target**                         | IIS on Windows Server 2019 Datacenter       |
+| **Authentication / Authorization**         | Microsoft Entra ID (Azure Active Directory) |
+
+## Testing Frameworks
+
+| Framework / Tool  | Version |
+| ----------------- | ------- |
+| **Moq**           | 4.20.72 |
+| **xUnit**         | 2.9.2   |
+| **Playwright**    | 1.56.1  |
+| **Postman**       | 11.70.7 |
+| **.NET Test SDK** | 17.12.0 |
+| **TypeScript**    | 5.9.3   |
+
+## Development Environment
+
+| Component              | Version / Details                                       |
+| ---------------------- | ------------------------------------------------------- |
+| **Visual Studio Code** | 1.106                                                   |
+| **Backend**            | Microsoft C# .NET 9.0                                   |
+| **ORM**                | Entity Framework                                        |
+| **Database**           | SQL Server 2016+ (installed via provided Docker script) |
+
+## Installing the System Requirements
+
+---
+
+## .NET 9.0 SDK
+
+Users must install the **.NET 9.0 SDK**.
+
+**Option 1: Download Manually**
+Download directly from the official .NET website:
+https://dotnet.microsoft.com/en-us/download/dotnet/9.0
+
+**Option 2: Install via Visual Studio Code (Recommended)**
+The **C# Dev Kit Extension** for VSCode can automatically install the .NET SDK.
+
+1. Install Visual Studio Code:
+   https://code.visualstudio.com/download
+2. Open VSCode and navigate to the **Extensions** tab on the left sidebar.
+   Docs: https://code.visualstudio.com/docs/configure/extensions/extension-marketplace
+3. Install the **C# Dev Kit** extension:
+   https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csdevkit
+4. After cloning the AIMS repository (see instructions later), open it in VSCode.
+   The C# extension will detect the `.csproj` file and prompt you to install the SDK.
+   Follow the on-screen instructions.
+
+---
+
+## Node.js
+
+Download and install Node.js from:
+https://nodejs.org/en/download
+
+Follow the installation wizard to complete setup.
+
+---
+
+### Docker Desktop
+
+Docker Desktop provides the CLI and GUI for container management.
+
+Download Docker Desktop:
+https://docs.docker.com/desktop/
+
+Run the installer and follow the steps in the setup wizard.
+
+---
+
+### Git Version Control
+
+To install Git, download it from:
+https://git-scm.com/install/mac
+
+Installing Git also installs **Git Bash**, which is recommended for Windows users.
+
+---
+
+### Bash Shell
+
+-   **macOS/Linux:** Bash is installed by default.
+-   **Windows:** Use **Git Bash**, included when you install Git.
+
+To integrate Bash with VSCode, follow the official guide:
+https://code.visualstudio.com/docs/terminal/shell-integration
+
+---
+
+## Installing the Development Environment
+
+### ### Visual Studio Code
+
+Install Visual Studio Code (latest version recommended):
+https://code.visualstudio.com/Download
+
+## Running the application (DEVS)
 
 Follow these steps to set up the AIMS (Asset Inventory Management System) project on your local machine.
 
@@ -158,15 +264,13 @@ Follow these steps to set up the AIMS (Asset Inventory Management System) projec
     http://localhost:5119/swagger/index.html
     ```
 
-8. **Azure Entra Authentication(For Devs during testing)**
+8. **Azure Entra Authentication(For production)**
 
-    - Use your CSUS SSO for sign in purposes, by default devs are all registered as admins.
-
-    - To switch to a different role stop the scripts, go to `ClaimsPrincipalExtensions.cs` to change your account to Help Desk or Supervisor.
+    - Use your MBC SSO to sign in to the application. Role based access is configured through Microsoft Azure Entra and users need to be added through the Azure portal before being allowed to access the application.
 
     - Once you sign in, you should see the page of your respective role: Help Desk, Supervisor or Admin.
 
-    - NOTE: Admin and Help Desk have the same UI landing page, Help Desk has lack of adding/assigning assets/editing.
+    - NOTE: Admin and Help Desk have the same UI landing page, Help Desk has READ ONLY access to the application.
 
 ### Final Check
 
@@ -276,18 +380,28 @@ From then on, every commit will be blocked if formatting issues are detected.
 
 SQL Server is **x86_64 only**. On Apple Silicon, Docker must emulate it using **Rosetta**.
 
-Make sure Docker Desktop → **Settings** → **Features in Development** → ✅ **Use Rosetta for x86/amd64 emulation** is enabled.
+Make sure Docker Desktop → **Settings** → **Features in Development** → **Use Rosetta for x86/amd64 emulation** is enabled.
 Without this, the SQL Server container will fail to start.
 
 ---
 
-This is what the home screen will look like:
+This is what the home screen will look like for Admin, Help Desk and Supervisor Users:
 
-![AIMS Homepage](./Images/Homepage.png)
+## ADMIN
+
+![AIMS Homepage](./Images/ADMINVIEW.png)
+
+## HELP DESK
+
+![AIMS Homepage](./Images/ITHELPDESKVIEW.png)
+
+## SUPERVISOR
+
+![AIMS Homepage](./Images/SUPERVISORVIEW.png)
 
 ## Design
 
-![ERD Image](./Images/ERDImage.png)
+![ERD Image](./Images/UPDATED-ERD.png)
 
 # Features
 
@@ -327,7 +441,7 @@ This is what the home screen will look like:
 
 ### Backend
 
--   **Microsoft SQL Server 2016+**: Relational database system for managing assets and users.
+-   **Microsoft SQL Server 2017+**: Relational database system for managing assets and users.
 -   **Entity Framework**: ORM (Object-Relational Mapping) for database interactions.
 -   **LINQ**: Language Integrated Query for data manipulation.
 -   **APIs**:
@@ -337,55 +451,143 @@ This is what the home screen will look like:
 ### Servers
 
 -   **Azure**: Cloud platform used for hosting and managing applications and databases.
+-   **Microsoft IIS Web Server**: developed by Microsoft for hosting websites, web applications, and media services.
 
----
+### Testing Tools
 
-# Planned Features
-
--   **Finalize Role-Based Access Control**: Complete implementation of role-based security features.
--   **Implement Survey Notes + Popup Feature**: Add the ability for users to leave notes and display them in popups.
--   **Rename and Update Roles**: Adjust user roles based on client feedback.
--   **Connect Local Database with MBC through Microsoft Entra**: Ensure seamless integration with Microsoft Entra for authentication and authorization.
-
----
-
-# Timeline
-
-### Sprint 5 (8/25/25 - 9/7/25)
-
--   Set up **Role-Based Authorization** in the backend.
--   Connect **Frontend Forms** to the API.
--   Implement **Assignment API**.
-
-### Sprint 6 (9/8/25 - 9/21/25)
-
--   Test the functionality and limits of the **Authentication Page** to ensure seamless and secure logins for clients.
--   Implement **Role-Based Permissions** for asset history editing.
--   **Undo Asset Deletions** by moving them to the archive instead of permanent deletion.
-
-### Sprint 7 (9/22/25 - 10/5/25)
-
--   Implement **Asset History View**.
--   Build **Asset Reassignment Workflow**.
-
-### Sprint 8 (10/6/25 - 10/19/25)
-
--   Test all **Assignment API Features**.
-
----
+-   **xUnit** : a free, open source, community-focused unit testing tool for C#, F#, and Visual Basic.
+-   **Dapper**: An open-source object-relational mapping (ORM) library for the .NET and .NET Core platforms.
+-   **Playright**: framework for end-to-end testing of modern web applications.
+-   **Postman**: API development and testing tool, to validate the functionality, performance, and reliability of APIs.
 
 # Testing
 
-To be completed as part of **CSC 191**.
+![Testing Image](./Images/TestingImage.png)
+
+The **AIMS** solution is organized into five main project folders:
+
+AIMS
+AIMS.UnitTests
+AIMS.Tests.Integration
+AIMS.Postman.Tests
+AIMS.E2E.Tests
+
+### **AIMS.UnitTests**
+
+Unit tests focused on controller logic.
+Tools and frameworks used:
+
+-   **xUnit** for test execution
+-   **Moq** for mocking dependencies
+-   **EF Core In-Memory** for lightweight, reproducible test data
+-   **Arrange–Act–Assert** pattern for test consistency
+
+To set up unit tesing, you need to navigate to the AIMS Unit Test folder and install its dependencies. As mentioned previously, a bash shell instance is necessary.
+
+![Unit Tests](./Images/UNITTEST.png)
+
+### **AIMS.Tests.Integration**
+
+Integration tests designed to validate the database layer.
+Key characteristics:
+
+-   Uses **Dapper** for executing SQL queries
+-   Tests against **SQL Server schema constraints**
+-   Ensures database-level data integrity and proper constraint behavior
+
+To set up integration testing, you need to navigate to the AIMS Integration Test folder and install its dependencies.
+
+![Integration Tests](./Images/INTEGRATIONTest.png)
+
+### **AIMS.Postman.Tests**
+
+Tests API functionality and resilience using:
+
+-   **Postman** collections
+-   Automated checks to validate backend behavior before UI testing occurs
+
+To configure Postman testing:
+
+1. **Install the Postman VSCode Extension**
+   Download here:
+   https://marketplace.visualstudio.com/items?itemName=Postman.postman-for-vscode
+
+2. **Open the Postman Panel**
+   After installation, navigate to the **Postman** tab in the left Activity Bar.
+
+3. **Import the Postman Test Suite**
+
+    - Click the **cloud icon with an up arrow** (Import).
+    - Choose the **“Folder”** option.
+    - Select the **AIMS.Postman.Tests** folder in your file explorer.
+
+4. **Configure the Postman Environment**
+
+    - Go to the **Environments** tab.
+    - Select **"AIMS Local Environment"**.
+    - In the editor window that opens, locate the `clientSecret` row.
+    - Insert the **client secret** provided in your deliverable `.env` file.
+
+5. **Run the Test Collection**
+    - Return to the **Collections** tab in the Postman panel.
+    - Run the collection titled:
+      **AIMS — QA (Audit Events: Polling, ETag, Dedup, Resilience)**
 
 ---
+
+### **AIMS.E2E.Tests**
+
+End-to-end UI testing powered by **Playwright**.
+This suite provides:
+
+-   Full workflow validation from the browser perspective
+-   Confidence that the application functions correctly across layers
+
+To configure E2E testing:
+
+1. Navigate to the **AIMS.E2E.Tests** folder.
+
+![E2E Tests](./Images/E2E.png)
 
 # Deployment
 
-To be done as part of **CSC 191**.
+## Deployment Model
+
+-   Development > Production
+
+-   Docker hosted > On-prem Windows Server + IIS + SQL Server
+
+-   On-prem IIS: Hosts AIMS and serves internal requests through HTTPS
+
+-   On-prem SQL Server: EF Core Migrations will create database schema
+
+-   No cloud hosting except Azure AD & Graph
 
 ---
 
-# Developer Instructions
+## Compiled DLLs
 
-To be completed as part of **CSC 191**.
+To compile the AIMS application into a deployable library for MBC, run the following command in a Bash shell:
+
+```bash
+dotnet publish AIMS/AIMS.csproj -c Release -o <FOLDER>
+```
+
+This command compiles the application in Release mode and outputs the published artifacts to the specified <FOLDER>.
+
+### Repository Access
+
+The AIMS team will provide access to the public GitHub repository so the receiving development team can modify any required configuration values before publishing the code.
+
+### Additional Build Assets
+
+-   wwwroot Bundle – Automatically included as part of the publish command.
+
+-   Entity Framework Migrations – Located in:
+    AIMS/Data/Migrations
+
+-   Production appsettings – Can be modified either before or after publishing.
+
+### Handover to MBC
+
+The AIMS team will provide a zipped file containing the compiled code to the MBC development team.
