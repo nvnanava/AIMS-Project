@@ -698,15 +698,6 @@ nav {
   font-size: .9rem;
 }
 
-/* Invisible anchor for positioning */
-.filter-anchor {
-  position: fixed;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* Outer border state with rows */
 .admin-table-wrapper.table-has-rows .table-toolbar {
   border-bottom-left-radius: 0;
@@ -729,29 +720,6 @@ nav {
   visibility: visible;
 }
 
-/* Filter popover */
-.filter-popover {
-  position: fixed;
-  min-width: 220px;
-  background: #fff;
-  border: 2px solid #34495e;
-  border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, .12);
-  padding: 10px 12px;
-  z-index: 2000;
-  max-inline-size: calc(100vw - 24px);
-}
-
-/* Mint checkbox style */
-.aims-check input[type="checkbox"] {
-  accent-color: var(--aims-accent);
-}
-
-.aims-check input[type="checkbox"]:focus-visible {
-  outline: 3px solid var(--aims-focus);
-  outline-offset: 2px;
-}
-
 .search-empty {
   display: flex;
   align-items: center;
@@ -766,38 +734,8 @@ nav {
   color: #34495e;
 }
 
-.is-blank .table-toolbar,
-.is-blank #filter-fab {
+.is-blank .table-toolbar {
   display: none !important;
-}
-
-/* For old browsers that lack accent-color */
-@supports not (accent-color: red) {
-  .aims-check input[type="checkbox"] {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #34495e;
-    border-radius: 4px;
-    display: inline-block;
-    position: relative;
-    background: #fff;
-  }
-
-  .aims-check input[type="checkbox"]:checked {
-    background: var(--aims-accent);
-    border-color: var(--aims-accent);
-  }
-
-  .aims-check input[type="checkbox"]:checked::after {
-    content: "";
-    position: absolute;
-    inset: 3px;
-    border: 2px solid #fff;
-    border-top: 0;
-    border-left: 0;
-    transform: rotate(45deg);
-  }
 }
 
 /* Preserve table layout for the rows inside the scrolling tbody */
